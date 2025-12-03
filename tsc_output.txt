@@ -1,0 +1,15 @@
+﻿src/routes/admin/AdminDashboardPage.tsx(10,5): error TS6133: 'Eye' is declared but its value is never read.
+src/routes/admin/AdminSettingsPage.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/routes/admin/AdminUsersPage.tsx(3,30): error TS6133: 'Trash2' is declared but its value is never read.
+src/routes/admin/AdminUsersPage.tsx(3,84): error TS6133: 'Mail' is declared but its value is never read.
+src/routes/instructor/InstructorAssignmentsPage.tsx(6,5): error TS6133: 'Trash2' is declared but its value is never read.
+src/routes/instructor/InstructorAssignmentsPage.tsx(17,5): error TS6133: 'Filter' is declared but its value is never read.
+src/routes/instructor/InstructorAssignmentsPage.tsx(18,5): error TS6133: 'Search' is declared but its value is never read.
+src/routes/instructor/InstructorAssignmentsPage.tsx(49,12): error TS6133: 'showCreateModal' is declared but its value is never read.
+src/routes/LoginPage.tsx(85,33): error TS2783: 'onBlur' is specified more than once, so this usage will be overwritten.
+src/routes/LoginPage.tsx(108,33): error TS2783: 'onBlur' is specified more than once, so this usage will be overwritten.
+src/routes/MessagesPage.tsx(6,5): error TS6133: 'Filter' is declared but its value is never read.
+src/routes/MessagesPage.tsx(12,5): error TS6133: 'Reply' is declared but its value is never read.
+src/routes/student/AssignmentsPage.tsx(2,1): error TS6133: 'Link' is declared but its value is never read.
+src/routes/student/DashboardPage.tsx(2,29): error TS6133: 'Button' is declared but its value is never read.
+src/routes/student/DashboardPage.tsx(3,20): error TS6133: 'Clock' is declared but its value is never read.
