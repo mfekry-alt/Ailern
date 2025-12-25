@@ -1,62 +1,93 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui';
-import { Bell, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle } from 'lucide-react';
+import { Bell, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Award, UserCheck, XCircle, Filter } from 'lucide-react';
+
+type NotificationType = 'all' | 'enrollment' | 'announcement' | 'assignment_grade' | 'quiz_grade' | 'course_update';
+
+interface Notification {
+    id: number;
+    title: string;
+    time: string;
+    isRead: boolean;
+    icon: any;
+    iconBg: string;
+    iconColor: string;
+    type: NotificationType;
+}
 
 export const NotificationsPage = () => {
-    const [notifications, setNotifications] = useState([
+    const [selectedType, setSelectedType] = useState<NotificationType>('all');
+    
+    const [notifications, setNotifications] = useState<Notification[]>([
         {
             id: 1,
-            title: 'New assignment posted in Introduction to Psychology',
+            title: 'Enrollment approved: Data Structures course',
             time: '10:30 AM',
             isRead: false,
-            icon: BookOpen,
+            icon: UserCheck,
             iconBg: 'bg-green-100',
-            iconColor: 'text-green-600'
+            iconColor: 'text-green-600',
+            type: 'enrollment'
         },
         {
             id: 2,
-            title: 'Student submitted assignment for History 101',
+            title: 'Assignment graded: Programming Assignment 1 - Score: 95/100',
             time: 'Yesterday',
-            isRead: true,
-            icon: Users,
-            iconBg: 'bg-green-100',
-            iconColor: 'text-green-600'
+            isRead: false,
+            icon: Award,
+            iconBg: 'bg-blue-100',
+            iconColor: 'text-blue-600',
+            type: 'assignment_grade'
         },
         {
             id: 3,
-            title: 'Grading deadline approaching for Calculus 202',
-            time: '2 days ago',
+            title: 'Quiz graded: Quiz 1: AI Fundamentals - Score: 18/20',
+            time: 'Yesterday',
             isRead: true,
-            icon: AlertTriangle,
-            iconBg: 'bg-yellow-100',
-            iconColor: 'text-yellow-600'
+            icon: Award,
+            iconBg: 'bg-purple-100',
+            iconColor: 'text-purple-600',
+            type: 'quiz_grade'
         },
         {
             id: 4,
-            title: 'New discussion post in Literature 303',
-            time: '3 days ago',
+            title: 'New announcement: Assignment 1 Deadline Extended',
+            time: '2 days ago',
             isRead: true,
             icon: MessageSquare,
-            iconBg: 'bg-green-100',
-            iconColor: 'text-green-600'
+            iconBg: 'bg-yellow-100',
+            iconColor: 'text-yellow-600',
+            type: 'announcement'
         },
         {
             id: 5,
-            title: 'Student requested extension for Physics 404',
-            time: '4 days ago',
+            title: 'Enrollment rejected: Advanced Machine Learning',
+            time: '3 days ago',
             isRead: true,
-            icon: Clock,
-            iconBg: 'bg-gray-100',
-            iconColor: 'text-gray-600'
+            icon: XCircle,
+            iconBg: 'bg-red-100',
+            iconColor: 'text-red-600',
+            type: 'enrollment'
         },
         {
             id: 6,
-            title: 'System maintenance scheduled for next week',
+            title: 'New material added to Introduction to AI course',
+            time: '4 days ago',
+            isRead: true,
+            icon: BookOpen,
+            iconBg: 'bg-indigo-100',
+            iconColor: 'text-indigo-600',
+            type: 'course_update'
+        },
+        {
+            id: 7,
+            title: 'New assignment posted in Introduction to Psychology',
             time: '5 days ago',
             isRead: true,
-            icon: CheckCircle,
-            iconBg: 'bg-red-100',
-            iconColor: 'text-red-600'
+            icon: BookOpen,
+            iconBg: 'bg-green-100',
+            iconColor: 'text-green-600',
+            type: 'course_update'
         }
     ]);
 
@@ -66,7 +97,17 @@ export const NotificationsPage = () => {
         );
     };
 
+    const filteredNotifications = useMemo(() => {
+        if (selectedType === 'all') return notifications;
+        return notifications.filter(n => n.type === selectedType);
+    }, [notifications, selectedType]);
+
     const unreadCount = notifications.filter(n => !n.isRead).length;
+    const enrollmentCount = notifications.filter(n => n.type === 'enrollment').length;
+    const announcementCount = notifications.filter(n => n.type === 'announcement').length;
+    const assignmentGradeCount = notifications.filter(n => n.type === 'assignment_grade').length;
+    const quizGradeCount = notifications.filter(n => n.type === 'quiz_grade').length;
+    const courseUpdateCount = notifications.filter(n => n.type === 'course_update').length;
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
@@ -81,13 +122,50 @@ export const NotificationsPage = () => {
                     </p>
                 </div>
 
+                {/* Filter Tabs */}
+                <Card variant="elevated">
+                    <CardContent className="p-4">
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { id: 'all' as NotificationType, label: 'All', count: notifications.length },
+                                { id: 'enrollment' as NotificationType, label: 'Enrollment', count: enrollmentCount },
+                                { id: 'announcement' as NotificationType, label: 'Announcements', count: announcementCount },
+                                { id: 'assignment_grade' as NotificationType, label: 'Assignment Grades', count: assignmentGradeCount },
+                                { id: 'quiz_grade' as NotificationType, label: 'Quiz Grades', count: quizGradeCount },
+                                { id: 'course_update' as NotificationType, label: 'Course Updates', count: courseUpdateCount },
+                            ].map((filter) => (
+                                <button
+                                    key={filter.id}
+                                    onClick={() => setSelectedType(filter.id)}
+                                    className={`px-4 py-2 rounded-lg text-[14px] font-medium transition-colors ${
+                                        selectedType === filter.id
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {filter.label}
+                                    {filter.count > 0 && (
+                                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[12px] ${
+                                            selectedType === filter.id
+                                                ? 'bg-blue-700 text-white'
+                                                : 'bg-gray-200 text-gray-700'
+                                        }`}>
+                                            {filter.count}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Notifications Card */}
                 <Card variant="elevated" className="overflow-hidden">
                     <CardContent className="p-0">
                         {/* Header */}
                         <div className="border-b border-gray-200 h-[57px] flex items-center justify-between px-4">
                             <h3 className="text-[18px] font-medium text-gray-900">
-                                Notifications
+                                {selectedType === 'all' ? 'All Notifications' : selectedType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </h3>
                             <button
                                 onClick={markAllAsRead}
@@ -99,7 +177,7 @@ export const NotificationsPage = () => {
 
                         {/* Notifications List */}
                         <div className="max-h-[384px] overflow-auto">
-                            {notifications.map((notification) => {
+                            {filteredNotifications.map((notification) => {
                                 const IconComponent = notification.icon;
                                 return (
                                     <div
@@ -145,7 +223,7 @@ export const NotificationsPage = () => {
                 </Card>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     <Card variant="elevated">
                         <CardContent className="p-4 text-center">
                             <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
@@ -159,26 +237,56 @@ export const NotificationsPage = () => {
                     <Card variant="elevated">
                         <CardContent className="p-4 text-center">
                             <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-2">
-                                <BookOpen className="w-6 h-6 text-green-600" />
+                                <UserCheck className="w-6 h-6 text-green-600" />
                             </div>
-                            <h3 className="text-[18px] font-semibold text-gray-900">{notifications.filter(n => n.title.includes('assignment')).length}</h3>
-                            <p className="text-[14px] text-gray-600">Assignments</p>
+                            <h3 className="text-[18px] font-semibold text-gray-900">{enrollmentCount}</h3>
+                            <p className="text-[14px] text-gray-600">Enrollment</p>
                         </CardContent>
                     </Card>
 
                     <Card variant="elevated">
                         <CardContent className="p-4 text-center">
                             <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-full mx-auto mb-2">
-                                <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                                <MessageSquare className="w-6 h-6 text-yellow-600" />
                             </div>
-                            <h3 className="text-[18px] font-semibold text-gray-900">{notifications.filter(n => n.title.includes('deadline')).length}</h3>
-                            <p className="text-[14px] text-gray-600">Deadlines</p>
+                            <h3 className="text-[18px] font-semibold text-gray-900">{announcementCount}</h3>
+                            <p className="text-[14px] text-gray-600">Announcements</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card variant="elevated">
+                        <CardContent className="p-4 text-center">
+                            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
+                                <Award className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <h3 className="text-[18px] font-semibold text-gray-900">{assignmentGradeCount}</h3>
+                            <p className="text-[14px] text-gray-600">Assignment Grades</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card variant="elevated">
+                        <CardContent className="p-4 text-center">
+                            <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mx-auto mb-2">
+                                <Award className="w-6 h-6 text-purple-600" />
+                            </div>
+                            <h3 className="text-[18px] font-semibold text-gray-900">{quizGradeCount}</h3>
+                            <p className="text-[14px] text-gray-600">Quiz Grades</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card variant="elevated">
+                        <CardContent className="p-4 text-center">
+                            <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mx-auto mb-2">
+                                <BookOpen className="w-6 h-6 text-indigo-600" />
+                            </div>
+                            <h3 className="text-[18px] font-semibold text-gray-900">{courseUpdateCount}</h3>
+                            <p className="text-[14px] text-gray-600">Course Updates</p>
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Empty State */}
-                {notifications.length === 0 && (
+                {filteredNotifications.length === 0 && (
                     <div className="text-center py-12">
                         <div className="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4">
                             <Bell className="w-8 h-8 text-gray-400" />

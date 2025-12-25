@@ -1,13 +1,14 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import { Edit2, Trash2, Plus, Users, Calendar, BookOpen } from 'lucide-react';
+import { useState } from 'react';
 
 interface Course {
     id: string;
     title: string;
     courseId: string;
     instructor: string;
-    status: 'Draft' | 'Approved' | 'Ready to Submit' | 'Pending Review';
+    status: 'Draft' | 'Pending Approval' | 'Published';
     statusColor: string;
     statusBg: string;
     primaryAction?: string;
@@ -17,64 +18,88 @@ interface Course {
     modules: number;
 }
 
-const courses: Course[] = [
-    {
-        id: '1',
-        title: 'CS101 - Introduction to Programming',
-        courseId: 'CS101',
-        instructor: 'Dr. Emily Carter',
-        status: 'Draft',
-        statusColor: '#854d0e',
-        statusBg: '#fef9c3',
-        secondaryAction: 'Mark as Ready',
-        primaryAction: 'Open Course',
-        students: 45,
-        startDate: 'Jan 15, 2024',
-        modules: 12
-    },
-    {
-        id: '2',
-        title: 'CS202 - Data Structures',
-        courseId: 'CS202',
-        instructor: 'Dr. Emily Carter',
-        status: 'Approved',
-        statusColor: '#166534',
-        statusBg: '#dcfce7',
-        primaryAction: 'Open Course',
-        students: 38,
-        startDate: 'Jan 20, 2024',
-        modules: 15
-    },
-    {
-        id: '3',
-        title: 'MA203 - Linear Algebra',
-        courseId: 'MA203',
-        instructor: 'Dr. Emily Carter',
-        status: 'Ready to Submit',
-        statusColor: '#166534',
-        statusBg: '#dcfce7',
-        secondaryAction: 'Submit for Approval',
-        primaryAction: 'Open Course',
-        students: 52,
-        startDate: 'Jan 25, 2024',
-        modules: 10
-    },
-    {
-        id: '4',
-        title: 'PHY105 - Classical Mechanics',
-        courseId: 'PHY105',
-        instructor: 'Dr. Emily Carter',
-        status: 'Pending Review',
-        statusColor: '#6b21a8',
-        statusBg: '#f0f1f4',
-        primaryAction: 'Open Course',
-        students: 28,
-        startDate: 'Feb 1, 2024',
-        modules: 8
-    },
-];
-
 export const InstructorCoursesPage = () => {
+    const navigate = useNavigate();
+    const [courses, setCourses] = useState<Course[]>([
+        {
+            id: '1',
+            title: 'CS101 - Introduction to Programming',
+            courseId: 'CS101',
+            instructor: 'Dr. Emily Carter',
+            status: 'Draft',
+            statusColor: '#854d0e',
+            statusBg: '#fef9c3',
+            secondaryAction: 'Submit for Approval',
+            primaryAction: 'Open Course',
+            students: 45,
+            startDate: 'Jan 15, 2024',
+            modules: 12
+        },
+        {
+            id: '2',
+            title: 'CS202 - Data Structures',
+            courseId: 'CS202',
+            instructor: 'Dr. Emily Carter',
+            status: 'Published',
+            statusColor: '#166534',
+            statusBg: '#dcfce7',
+            primaryAction: 'Open Course',
+            students: 38,
+            startDate: 'Jan 20, 2024',
+            modules: 15
+        },
+        {
+            id: '3',
+            title: 'MA203 - Linear Algebra',
+            courseId: 'MA203',
+            instructor: 'Dr. Emily Carter',
+            status: 'Pending Approval',
+            statusColor: '#6b21a8',
+            statusBg: '#f0f1f4',
+            primaryAction: 'Open Course',
+            students: 52,
+            startDate: 'Jan 25, 2024',
+            modules: 10
+        },
+        {
+            id: '4',
+            title: 'PHY105 - Classical Mechanics',
+            courseId: 'PHY105',
+            instructor: 'Dr. Emily Carter',
+            status: 'Pending Approval',
+            statusColor: '#6b21a8',
+            statusBg: '#f0f1f4',
+            primaryAction: 'Open Course',
+            students: 28,
+            startDate: 'Feb 1, 2024',
+            modules: 8
+        },
+    ]);
+
+    const deleteCourse = (id: string) => {
+        setCourses((prev) => prev.filter((c) => c.id !== id));
+    };
+
+    const runSecondaryAction = (course: Course) => {
+        setCourses((prev) =>
+            prev.map((c) => {
+                if (c.id !== course.id) return c;
+
+                if (c.status === 'Draft') {
+                    return {
+                        ...c,
+                        status: 'Pending Approval',
+                        statusColor: '#6b21a8',
+                        statusBg: '#f0f1f4',
+                        secondaryAction: undefined,
+                    };
+                }
+
+                return c;
+            })
+        );
+    };
+
     return (
         <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
             {/* Header */}
@@ -156,10 +181,18 @@ export const InstructorCoursesPage = () => {
                         <div className="bg-gray-50 px-6 py-4 flex justify-between items-center">
                             {/* Icon Actions */}
                             <div className="flex gap-2">
-                                <button className="p-2 hover:bg-gray-200 rounded-md transition-colors">
+                                <button
+                                    onClick={() => navigate(ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id))}
+                                    className="p-2 hover:bg-gray-200 rounded-md transition-colors"
+                                    title="Edit Course"
+                                >
                                     <Edit2 className="w-5 h-5 text-gray-600" />
                                 </button>
-                                <button className="p-2 hover:bg-gray-200 rounded-md transition-colors">
+                                <button
+                                    onClick={() => deleteCourse(course.id)}
+                                    className="p-2 hover:bg-gray-200 rounded-md transition-colors"
+                                    title="Delete Course"
+                                >
                                     <Trash2 className="w-5 h-5 text-gray-600" />
                                 </button>
                             </div>
@@ -167,13 +200,22 @@ export const InstructorCoursesPage = () => {
                             {/* Button Actions */}
                             <div className="flex gap-2">
                                 {course.secondaryAction && (
-                                    <button className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-md transition-colors">
+                                    <button
+                                        onClick={() => runSecondaryAction(course)}
+                                        className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-md transition-colors"
+                                    >
                                         {course.secondaryAction}
                                     </button>
                                 )}
+                                <button
+                                    onClick={() => navigate(ROUTES.INSTRUCTOR_MANAGE_COURSE.replace(':id', course.id))}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-md transition-colors"
+                                >
+                                    Manage
+                                </button>
                                 {course.primaryAction && (
                                     <Link to={`/instructor/courses/${course.id}/content`}>
-                                        <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-md transition-colors">
+                                        <button className="bg-gray-600 hover:bg-gray-700 text-white font-medium text-[14px] px-4 py-2 rounded-md transition-colors">
                                             {course.primaryAction}
                                         </button>
                                     </Link>

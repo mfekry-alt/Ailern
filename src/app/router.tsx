@@ -11,8 +11,10 @@ import { InstructorLayout } from './layouts/InstructorLayout';
 // Public pages
 import { HomePage } from '@/routes/HomePage';
 import { LoginPage } from '@/routes/LoginPage';
-import { RegisterPage } from '@/routes/RegisterPage';
 import { ForgotPasswordPage } from '@/routes/ForgotPasswordPage';
+import { VerifyEmailPage } from '@/routes/VerifyEmailPage';
+import { SetPasswordPage } from '@/routes/SetPasswordPage';
+import { ChangePasswordPage } from '@/routes/ChangePasswordPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 import { ForbiddenPage } from '@/routes/ForbiddenPage';
 import { NotificationsPage } from '@/routes/NotificationsPage';
@@ -26,22 +28,34 @@ import { CourseDetailPage } from '@/routes/student/CourseDetailPage';
 import { LessonPlayerPage } from '@/routes/student/LessonPlayerPage';
 import { ProfilePage } from '@/routes/student/ProfilePage';
 import { AssignmentsPage } from '@/routes/student/AssignmentsPage';
+import { AssignmentDetailPage } from '@/routes/student/AssignmentDetailPage';
+import { QuizzesPage } from '@/routes/student/QuizzesPage';
+import { QuizPage } from '@/routes/student/QuizPage';
 import { GradesPage } from '@/routes/student/GradesPage';
 
 // Instructor pages
 import { InstructorDashboardPage } from '@/routes/instructor/InstructorDashboardPage';
 import { InstructorCoursesPage } from '@/routes/instructor/InstructorCoursesPage';
+import { InstructorManageCoursePage } from '@/routes/instructor/InstructorManageCoursePage';
 import { InstructorCourseEditPage } from '@/routes/instructor/InstructorCourseEditPage';
 import { InstructorCourseEditContentPage } from '@/routes/instructor/InstructorCourseEditContentPage';
 import { InstructorGradebookPage } from '@/routes/instructor/InstructorGradebookPage';
 import { InstructorCalendarPage } from '@/routes/instructor/InstructorCalendarPage';
 import { InstructorMessagesPage } from '@/routes/instructor/InstructorMessagesPage';
 import { InstructorAssignmentsPage } from '@/routes/instructor/InstructorAssignmentsPage';
+import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';
+import { InstructorQuizQuestionBuilderPage } from '@/routes/instructor/InstructorQuizQuestionBuilderPage';
+import { InstructorAssignmentCreatePage } from '@/routes/instructor/InstructorAssignmentCreatePage';
+import { InstructorAssignmentEditPage } from '@/routes/instructor/InstructorAssignmentEditPage';
+import { InstructorSubmissionsPage } from '@/routes/instructor/InstructorSubmissionsPage';
 
 // Admin pages
 import { AdminDashboardPage } from '@/routes/admin/AdminDashboardPage';
 import { AdminUsersPage } from '@/routes/admin/AdminUsersPage';
+import { AdminUserCreatePage } from '@/routes/admin/AdminUserCreatePage';
+import { AdminUserEditPage } from '@/routes/admin/AdminUserEditPage';
 import { AdminCoursesPage } from '@/routes/admin/AdminCoursesPage';
+import { AdminCourseApprovalPage } from '@/routes/admin/AdminCourseApprovalPage';
 import { AdminReportsPage } from '@/routes/admin/AdminReportsPage';
 import { AdminSettingsPage } from '@/routes/admin/AdminSettingsPage';
 
@@ -56,15 +70,31 @@ export const AppRouter = () => {
                     </GuestOnly>
                 }
             >
-                <Route path={ROUTES.HOME} element={<LoginPage />} />
                 <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-                <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+                <Route path={ROUTES.REGISTER} element={<Navigate to={ROUTES.LOGIN} replace />} />
                 <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+                <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
+                <Route path={ROUTES.SET_PASSWORD} element={<SetPasswordPage />} />
             </Route>
 
             {/* Public routes */}
             <Route element={<MainLayout />}>
-                <Route path="/home" element={<HomePage />} />
+                <Route
+                    path={ROUTES.HOME}
+                    element={
+                        <GuestOnly>
+                            <HomePage />
+                        </GuestOnly>
+                    }
+                />
+                <Route
+                    path="/home"
+                    element={
+                        <GuestOnly>
+                            <HomePage />
+                        </GuestOnly>
+                    }
+                />
                 <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
                 <Route path={ROUTES.FORBIDDEN} element={<ForbiddenPage />} />
             </Route>
@@ -83,8 +113,12 @@ export const AppRouter = () => {
                 <Route path={ROUTES.COURSE_DETAIL} element={<CourseDetailPage />} />
                 <Route path={ROUTES.LEARN} element={<LessonPlayerPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+                <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
                 <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
                 <Route path={ROUTES.ASSIGNMENTS} element={<AssignmentsPage />} />
+                <Route path={ROUTES.ASSIGNMENT_DETAIL} element={<AssignmentDetailPage />} />
+                <Route path={ROUTES.QUIZZES} element={<QuizzesPage />} />
+                <Route path={ROUTES.QUIZ} element={<QuizPage />} />
                 <Route path={ROUTES.MESSAGES} element={<MessagesPage />} />
                 <Route path={ROUTES.GRADES} element={<GradesPage />} />
             </Route>
@@ -98,14 +132,20 @@ export const AppRouter = () => {
                 }
             >
                 <Route path={ROUTES.INSTRUCTOR} element={<InstructorDashboardPage />} />
-                <Route path={ROUTES.INSTRUCTOR_COURSES} element={<InstructorCoursesPage />} />
-                <Route path={ROUTES.INSTRUCTOR_COURSE_NEW} element={<InstructorCourseEditPage />} />
+                <Route path={ROUTES.INSTRUCTOR_COURSES} element={<InstructorCoursesPage />} />                <Route path={ROUTES.INSTRUCTOR_MANAGE_COURSE} element={<InstructorManageCoursePage />} />                <Route path={ROUTES.INSTRUCTOR_COURSE_NEW} element={<InstructorCourseEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_COURSE_EDIT} element={<InstructorCourseEditPage />} />
                 <Route path="/instructor/courses/:id/content" element={<InstructorCourseEditContentPage />} />
                 <Route path={ROUTES.INSTRUCTOR_GRADEBOOK} element={<InstructorGradebookPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENTS} element={<InstructorAssignmentsPage />} />
+                <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<InstructorAssignmentCreatePage />} />
+                <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT} element={<InstructorAssignmentEditPage />} />
+                <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />
+                <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
+                <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS} element={<InstructorQuizQuestionBuilderPage />} />
                 <Route path="/instructor/calendar" element={<InstructorCalendarPage />} />
                 <Route path="/instructor/messages" element={<InstructorMessagesPage />} />
+                <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+                <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
             </Route>
             {/* Protected admin routes */}
             <Route
@@ -117,9 +157,14 @@ export const AppRouter = () => {
             >
                 <Route path={ROUTES.ADMIN} element={<AdminDashboardPage />} />
                 <Route path={ROUTES.ADMIN_USERS} element={<AdminUsersPage />} />
+                <Route path={ROUTES.ADMIN_USER_CREATE} element={<AdminUserCreatePage />} />
+                <Route path={ROUTES.ADMIN_USER_EDIT} element={<AdminUserEditPage />} />
                 <Route path={ROUTES.ADMIN_COURSES} element={<AdminCoursesPage />} />
+                <Route path={ROUTES.ADMIN_COURSE_APPROVAL} element={<AdminCourseApprovalPage />} />
                 <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReportsPage />} />
                 <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettingsPage />} />
+                <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+                <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
             </Route>
 
             {/* Catch all */}

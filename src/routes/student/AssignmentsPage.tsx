@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import { Card, CardContent } from '@/components/ui';
 import {
@@ -24,6 +24,8 @@ interface Assignment {
     points: number;
     description: string;
     attachments: string[];
+    allowedFileTypes?: string[];
+    maxFileSize?: string;
     grade?: number;
     feedback?: string;
     submittedAt?: string;
@@ -33,7 +35,7 @@ export const AssignmentsPage = () => {
     const [selectedCourse, setSelectedCourse] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
 
-    const assignments: Assignment[] = [
+    const [assignments, setAssignments] = useState<Assignment[]>([
         {
             id: '1',
             title: 'Programming Assignment 1: Basic Algorithms',
@@ -44,6 +46,8 @@ export const AssignmentsPage = () => {
             points: 100,
             description: 'Implement basic sorting algorithms including bubble sort, selection sort, and insertion sort. Include time complexity analysis.',
             attachments: ['assignment1.pdf', 'rubric.pdf'],
+            allowedFileTypes: ['PDF', 'DOC', 'DOCX', 'ZIP'],
+            maxFileSize: '10 MB',
             grade: 95,
             feedback: 'Excellent implementation! Your code is well-documented and efficient. Consider optimizing the bubble sort algorithm.',
             submittedAt: '2024-01-14T10:30:00Z'
@@ -58,6 +62,8 @@ export const AssignmentsPage = () => {
             points: 150,
             description: 'Create a comprehensive linked list implementation with all basic operations.',
             attachments: ['lab2.pdf'],
+            allowedFileTypes: ['PDF', 'ZIP'],
+            maxFileSize: '15 MB',
             submittedAt: '2024-01-19T15:45:00Z'
         },
         {
@@ -69,7 +75,9 @@ export const AssignmentsPage = () => {
             status: 'pending',
             points: 80,
             description: 'Solve problems related to eigenvalues, eigenvectors, and diagonalization.',
-            attachments: ['ps3.pdf']
+            attachments: ['ps3.pdf'],
+            allowedFileTypes: ['PDF', 'DOC', 'DOCX'],
+            maxFileSize: '5 MB'
         },
         {
             id: '4',
@@ -80,9 +88,113 @@ export const AssignmentsPage = () => {
             status: 'late',
             points: 120,
             description: 'Write a comprehensive lab report on projectile motion experiments.',
-            attachments: ['lab_report_template.pdf']
+            attachments: ['lab_report_template.pdf'],
+            allowedFileTypes: ['PDF', 'DOC', 'DOCX'],
+            maxFileSize: '20 MB',
+            submittedAt: '2024-01-13T08:00:00Z'
         }
-    ];
+    ]);
+
+    const [showSubmitModal, setShowSubmitModal] = useState(false);
+    const [submittingId, setSubmittingId] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [submitNotes, setSubmitNotes] = useState<string>('');
+    const [submitError, setSubmitError] = useState<string>('');
+    const [progress, setProgress] = useState<number>(0);
+    const [currentAssignment, setCurrentAssignment] = useState<Assignment | null>(null);
+
+    const allowedExtensions = useMemo(() => {
+        const map: Record<string, string[]> = {
+            PDF: ['pdf'],
+            DOC: ['doc'],
+            DOCX: ['docx'],
+            ZIP: ['zip'],
+        };
+        const types = currentAssignment?.allowedFileTypes || [];
+        return types.flatMap((t) => map[t] || []);
+    }, [currentAssignment]);
+
+    const maxBytes = useMemo(() => {
+        const label = currentAssignment?.maxFileSize || '';
+        const match = label.match(/(\d+(?:\.\d+)?)\s*(KB|MB|GB)/i);
+        if (!match) return Infinity;
+        const val = parseFloat(match[1]);
+        const unit = match[2].toUpperCase();
+        if (unit === 'KB') return Math.round(val * 1024);
+        if (unit === 'MB') return Math.round(val * 1024 * 1024);
+        if (unit === 'GB') return Math.round(val * 1024 * 1024 * 1024);
+        return Infinity;
+    }, [currentAssignment]);
+
+    const openSubmitModal = (assignment: Assignment) => {
+        setCurrentAssignment(assignment);
+        setSelectedFile(null);
+        setSubmitNotes('');
+        setSubmitError('');
+        setProgress(0);
+        setShowSubmitModal(true);
+    };
+
+    const closeSubmitModal = () => {
+        if (submittingId) return; // prevent closing during submit
+        setShowSubmitModal(false);
+        setCurrentAssignment(null);
+        setSelectedFile(null);
+        setSubmitNotes('');
+        setSubmitError('');
+        setProgress(0);
+    };
+
+    const onFileSelected = (file: File | null) => {
+        setSubmitError('');
+        setSelectedFile(file);
+        if (!file || !currentAssignment) return;
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (allowedExtensions.length && (!ext || !allowedExtensions.includes(ext))) {
+            setSubmitError(`Invalid file type. Allowed: ${allowedExtensions.join(', ').toUpperCase()}`);
+            setSelectedFile(null);
+            return;
+        }
+        if (file.size > maxBytes) {
+            setSubmitError(`File too large. Max: ${currentAssignment.maxFileSize}`);
+            setSelectedFile(null);
+        }
+    };
+
+    const submitAssignment = async () => {
+        if (!currentAssignment) return;
+        setSubmitError('');
+        if (!selectedFile) {
+            setSubmitError('Please select a file to submit.');
+            return;
+        }
+        setSubmittingId(currentAssignment.id);
+        setProgress(0);
+        // Simulate upload progress
+        await new Promise<void>((resolve) => {
+            const interval = setInterval(() => {
+                setProgress((p) => {
+                    const next = Math.min(p + 10, 100);
+                    if (next >= 100) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                    return next;
+                });
+            }, 120);
+        });
+        // Simulate server response and update state
+        const submittedAt = new Date().toISOString();
+        setAssignments((prev) =>
+            prev.map((a) =>
+                a.id === currentAssignment.id
+                    ? { ...a, status: 'submitted', submittedAt }
+                    : a
+            )
+        );
+        setSubmittingId(null);
+        setShowSubmitModal(false);
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -104,6 +216,29 @@ export const AssignmentsPage = () => {
         if (grade >= 80) return 'text-blue-600';
         if (grade >= 70) return 'text-yellow-600';
         return 'text-red-600';
+    };
+
+    const getDeadlineStatus = (assignment: Assignment) => {
+        if (!assignment.submittedAt) return null;
+
+        const dueDate = new Date(assignment.dueDate);
+        const submittedDate = new Date(assignment.submittedAt);
+
+        if (submittedDate <= dueDate) {
+            return {
+                text: 'Submitted on time',
+                color: 'text-green-600',
+                bgColor: 'bg-green-50',
+                borderColor: 'border-green-200'
+            };
+        } else {
+            return {
+                text: 'Submitted after deadline',
+                color: 'text-red-600',
+                bgColor: 'bg-red-50',
+                borderColor: 'border-red-200'
+            };
+        }
     };
 
     const filteredAssignments = assignments.filter(assignment => {
@@ -261,6 +396,41 @@ export const AssignmentsPage = () => {
                                                 </div>
                                             )}
 
+                                            {/* File Restrictions */}
+                                            {(assignment.allowedFileTypes || assignment.maxFileSize) && (
+                                                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                    <p className="text-[12px] font-medium text-gray-700 mb-2">Submission Requirements:</p>
+                                                    <div className="flex flex-wrap gap-4 text-[12px] text-gray-600">
+                                                        {assignment.allowedFileTypes && (
+                                                            <span>
+                                                                <span className="font-medium">Allowed types:</span> {assignment.allowedFileTypes.join(', ')}
+                                                            </span>
+                                                        )}
+                                                        {assignment.maxFileSize && (
+                                                            <span>
+                                                                <span className="font-medium">Max size:</span> {assignment.maxFileSize}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Deadline Status */}
+                                            {assignment.submittedAt && (() => {
+                                                const deadlineStatus = getDeadlineStatus(assignment);
+                                                if (!deadlineStatus) return null;
+                                                return (
+                                                    <div className={`mt-3 p-3 rounded-lg border ${deadlineStatus.bgColor} ${deadlineStatus.borderColor}`}>
+                                                        <p className={`text-[12px] font-medium ${deadlineStatus.color}`}>
+                                                            {deadlineStatus.text}
+                                                        </p>
+                                                        <p className="text-[11px] text-gray-600 mt-1">
+                                                            Submitted: {new Date(assignment.submittedAt).toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })()}
+
                                             {/* Feedback */}
                                             {assignment.feedback && (
                                                 <div className="mt-3 p-3 bg-blue-50 rounded-lg">
@@ -273,7 +443,10 @@ export const AssignmentsPage = () => {
                                         {/* Actions */}
                                         <div className="flex flex-col gap-2 lg:min-w-[200px]">
                                             {assignment.status === 'pending' && (
-                                                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
+                                                <button
+                                                    onClick={() => openSubmitModal(assignment)}
+                                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                                                >
                                                     Submit Assignment
                                                 </button>
                                             )}
@@ -288,7 +461,10 @@ export const AssignmentsPage = () => {
                                                 </button>
                                             )}
                                             {assignment.status === 'late' && (
-                                                <button className="w-full bg-red-600 hover:bg-red-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
+                                                <button
+                                                    onClick={() => openSubmitModal(assignment)}
+                                                    className="w-full bg-red-600 hover:bg-red-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                                                >
                                                     Submit Late
                                                 </button>
                                             )}
@@ -315,6 +491,112 @@ export const AssignmentsPage = () => {
                         <p className="text-gray-600">Try adjusting your filter criteria</p>
                     </div>
                 )}
+            </div>
+            {/* Submit Modal Portal */}
+            <SubmissionModal
+                open={showSubmitModal}
+                onClose={closeSubmitModal}
+                assignment={currentAssignment}
+                submitting={!!submittingId}
+                progress={progress}
+                error={submitError}
+                onFileChange={onFileSelected}
+                notes={submitNotes}
+                setNotes={setSubmitNotes}
+                onSubmit={submitAssignment}
+            />
+        </div>
+    );
+};
+
+// Submission Modal
+// We append the modal markup after the component for clarity.
+export const SubmissionModal = ({
+    open,
+    onClose,
+    assignment,
+    submitting,
+    progress,
+    error,
+    onFileChange,
+    notes,
+    setNotes,
+    onSubmit,
+}: {
+    open: boolean;
+    onClose: () => void;
+    assignment: Assignment | null;
+    submitting: boolean;
+    progress: number;
+    error: string;
+    onFileChange: (file: File | null) => void;
+    notes: string;
+    setNotes: (v: string) => void;
+    onSubmit: () => void;
+}) => {
+    if (!open || !assignment) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+            <div className="relative bg-white w-full max-w-xl rounded-lg shadow-lg border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                    <h3 className="text-[18px] font-bold text-gray-900">Submit Assignment</h3>
+                    <p className="text-[14px] text-gray-600 mt-1">{assignment.title}</p>
+                </div>
+                <div className="p-6 space-y-4">
+                    <div className="space-y-1">
+                        <label className="text-[14px] font-medium text-gray-900">File</label>
+                        <input
+                            type="file"
+                            onChange={(e) => onFileChange(e.target.files?.[0] || null)}
+                            className="w-full"
+                            accept={assignment.allowedFileTypes?.map((t) => `.${t.toLowerCase()}`).join(',')}
+                        />
+                        <p className="text-[12px] text-gray-600">
+                            Allowed: {assignment.allowedFileTypes?.join(', ') || 'Any'} • Max size: {assignment.maxFileSize || '—'}
+                        </p>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[14px] font-medium text-gray-900">Notes (optional)</label>
+                        <textarea
+                            rows={3}
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Add any notes for your instructor"
+                        />
+                    </div>
+                    {error && (
+                        <div className="p-3 rounded-md border border-red-200 bg-red-50 text-[14px] text-red-700">{error}</div>
+                    )}
+                    {submitting && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[12px] text-gray-600">
+                                <span>Uploading...</span>
+                                <span>{progress}%</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                                <div className="h-full bg-blue-600" style={{ width: `${progress}%` }} />
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+                    <button
+                        onClick={onClose}
+                        disabled={submitting}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onSubmit}
+                        disabled={submitting}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Submit
+                    </button>
+                </div>
             </div>
         </div>
     );

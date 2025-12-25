@@ -1,4 +1,6 @@
 import { Card, CardContent } from '@/components/ui';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/lib/constants';
 import {
     Users,
     BookOpen,
@@ -36,7 +38,7 @@ interface Activity {
     activity: string;
     user: string;
     timestamp: string;
-    type: 'enrollment' | 'approval' | 'course_creation' | 'completion' | 'registration' | 'system';
+    type: 'enrollment' | 'approval' | 'course_creation' | 'completion' | 'system';
 }
 
 interface PendingApproval {
@@ -48,11 +50,50 @@ interface PendingApproval {
 }
 
 export const AdminDashboardPage = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState<Stat[]>([]);
     const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
     const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
     const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const downloadText = (filename: string, text: string) => {
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const exportDashboardReport = () => {
+        const rows: Array<Array<string>> = [
+            ['section', 'label', 'value'],
+            ...stats.map((s) => ['stats', s.label, s.value]),
+            ...systemMetrics.map((m) => ['system_metrics', m.label, m.value]),
+            ...pendingApprovals.map((p) => ['pending_approvals', `${p.type}: ${p.title}`, `${p.instructor} (${p.submittedAt})`]),
+            ...recentActivity.map((a) => ['recent_activity', a.type, `${a.activity} | ${a.user} | ${a.timestamp}`]),
+        ];
+        const csv = rows
+            .map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+        downloadText('admin-dashboard-report.csv', csv);
+    };
+
+    const handleApprove = (id: number) => {
+        setPendingApprovals((prev) => prev.filter((a) => a.id !== id));
+    };
+
+    const handleReview = (approval: PendingApproval) => {
+        if (approval.type === 'Course') {
+            navigate(ROUTES.ADMIN_COURSES);
+            return;
+        }
+        navigate(ROUTES.ADMIN_USERS);
+    };
 
     useEffect(() => {
         // Simulate API fetch
@@ -63,16 +104,16 @@ export const AdminDashboardPage = () => {
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
                 setStats([
-                    { label: 'Total Students', value: '1,250', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100', change: '+12%' },
-                    { label: 'Total Instructors', value: '150', icon: BookOpen, color: 'text-green-600', bgColor: 'bg-green-100', change: '+5%' },
-                    { label: 'Total Courses', value: '300', icon: Award, color: 'text-purple-600', bgColor: 'bg-purple-100', change: '+8%' },
-                    { label: 'Pending Approvals', value: '15', icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100', change: '-3%' },
+                    { label: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100', change: '+0%' },
+                    { label: 'Total Instructors', value: '0', icon: BookOpen, color: 'text-green-600', bgColor: 'bg-green-100', change: '+0%' },
+                    { label: 'Total Courses', value: '0', icon: Award, color: 'text-purple-600', bgColor: 'bg-purple-100', change: '+0%' },
+                    { label: 'Pending Approvals', value: '0', icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100', change: '-0%' },
                 ]);
 
                 setSystemMetrics([
-                    { label: 'Active Users Today', value: '892', icon: TrendingUp, color: 'text-green-600' },
-                    { label: 'Course Completions', value: '45', icon: CheckCircle, color: 'text-blue-600' },
-                    { label: 'Messages Sent', value: '234', icon: MessageSquare, color: 'text-purple-600' },
+                    { label: 'Active Users Today', value: '0', icon: TrendingUp, color: 'text-green-600' },
+                    { label: 'Course Completions', value: '0', icon: CheckCircle, color: 'text-blue-600' },
+                    { label: 'Messages Sent', value: '0', icon: MessageSquare, color: 'text-purple-600' },
                     { label: 'System Uptime', value: '99.9%', icon: BarChart3, color: 'text-green-600' }
                 ]);
 
@@ -81,13 +122,12 @@ export const AdminDashboardPage = () => {
                     { activity: "Course 'Advanced Data Science' approved", user: 'Admin', timestamp: '2024-07-25 03:45 PM', type: 'approval' },
                     { activity: "Instructor 'David' created course 'Machine Learning Fundamentals'", user: 'David', timestamp: '2024-07-24 09:15 AM', type: 'course_creation' },
                     { activity: "User 'Emily' completed course 'Digital Marketing Essentials'", user: 'Emily', timestamp: '2024-07-23 05:00 PM', type: 'completion' },
-                    { activity: "New user 'Michael' registered", user: 'Michael', timestamp: '2024-07-22 11:20 AM', type: 'registration' },
                     { activity: "System backup completed successfully", user: 'System', timestamp: '2024-07-22 02:00 AM', type: 'system' },
                 ]);
 
                 setPendingApprovals([
                     { id: 1, type: 'Course', title: 'Advanced Machine Learning', instructor: 'Dr. Sarah Wilson', submittedAt: '2024-01-15' },
-                    { id: 2, type: 'User', title: 'New Instructor Application', instructor: 'Prof. John Smith', submittedAt: '2024-01-14' },
+                    { id: 2, type: 'User', title: 'New Instructor ', instructor: 'Prof. John Smith', submittedAt: '2024-01-14' },
                     { id: 3, type: 'Course', title: 'Data Visualization Techniques', instructor: 'Dr. Maria Garcia', submittedAt: '2024-01-13' },
                 ]);
             } catch (error) {
@@ -122,11 +162,17 @@ export const AdminDashboardPage = () => {
                         </p>
                     </div>
                     <div className="flex gap-3">
-                        <button className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
+                        <button
+                            onClick={exportDashboardReport}
+                            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                        >
                             <Download className="w-4 h-4" />
                             Export Report
                         </button>
-                        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
+                        <button
+                            onClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                        >
                             <Settings className="w-4 h-4" />
                             System Settings
                         </button>
@@ -171,7 +217,10 @@ export const AdminDashboardPage = () => {
                                     <h2 className="text-[20px] font-bold text-gray-900">
                                         System Metrics
                                     </h2>
-                                    <button className="text-blue-600 hover:text-blue-700 font-medium text-[14px]">
+                                    <button
+                                        onClick={() => navigate(ROUTES.ADMIN_REPORTS)}
+                                        className="text-blue-600 hover:text-blue-700 font-medium text-[14px]"
+                                    >
                                         View Details
                                     </button>
                                 </div>
@@ -230,10 +279,16 @@ export const AdminDashboardPage = () => {
                                                 Submitted: {approval.submittedAt}
                                             </p>
                                             <div className="flex gap-2">
-                                                <button className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium text-[12px] px-3 py-1.5 rounded-lg transition-colors">
+                                                <button
+                                                    onClick={() => handleApprove(approval.id)}
+                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium text-[12px] px-3 py-1.5 rounded-lg transition-colors"
+                                                >
                                                     Approve
                                                 </button>
-                                                <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-1.5 rounded-lg transition-colors">
+                                                <button
+                                                    onClick={() => handleReview(approval)}
+                                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-1.5 rounded-lg transition-colors"
+                                                >
                                                     Review
                                                 </button>
                                             </div>
@@ -241,7 +296,10 @@ export const AdminDashboardPage = () => {
                                     ))}
                                 </div>
 
-                                <button className="w-full mt-4 text-blue-600 hover:text-blue-700 font-medium text-[14px] py-2">
+                                <button
+                                    onClick={() => navigate(ROUTES.ADMIN_COURSES)}
+                                    className="w-full mt-4 text-blue-600 hover:text-blue-700 font-medium text-[14px] py-2"
+                                >
                                     View All Approvals
                                 </button>
                             </CardContent>
@@ -256,19 +314,31 @@ export const AdminDashboardPage = () => {
                             Quick Actions
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <button className="flex flex-col items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                            <button
+                                onClick={() => navigate(ROUTES.ADMIN_USERS)}
+                                className="flex flex-col items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                            >
                                 <Users className="w-8 h-8 text-blue-600" />
                                 <span className="text-[14px] font-medium text-blue-700">Manage Users</span>
                             </button>
-                            <button className="flex flex-col items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
+                            <button
+                                onClick={() => navigate(ROUTES.ADMIN_COURSES)}
+                                className="flex flex-col items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                            >
                                 <BookOpen className="w-8 h-8 text-green-600" />
                                 <span className="text-[14px] font-medium text-green-700">Manage Courses</span>
                             </button>
-                            <button className="flex flex-col items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
+                            <button
+                                onClick={() => navigate(ROUTES.ADMIN_REPORTS)}
+                                className="flex flex-col items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                            >
                                 <BarChart3 className="w-8 h-8 text-purple-600" />
                                 <span className="text-[14px] font-medium text-purple-700">View Reports</span>
                             </button>
-                            <button className="flex flex-col items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors">
+                            <button
+                                onClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
+                                className="flex flex-col items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                            >
                                 <Settings className="w-8 h-8 text-orange-600" />
                                 <span className="text-[14px] font-medium text-orange-700">System Settings</span>
                             </button>
@@ -320,8 +390,7 @@ export const AdminDashboardPage = () => {
                                                     activity.type === 'approval' ? 'bg-green-100 text-green-800' :
                                                         activity.type === 'course_creation' ? 'bg-purple-100 text-purple-800' :
                                                             activity.type === 'completion' ? 'bg-yellow-100 text-yellow-800' :
-                                                                activity.type === 'registration' ? 'bg-orange-100 text-orange-800' :
-                                                                    'bg-gray-100 text-gray-800'
+                                                                'bg-gray-100 text-gray-800'
                                                     }`}>
                                                     {activity.type.replace('_', ' ')}
                                                 </span>

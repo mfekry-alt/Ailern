@@ -61,7 +61,7 @@ interface GuestOnlyProps {
 }
 
 export const GuestOnly = ({ children }: GuestOnlyProps) => {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading, user } = useAuth();
 
     if (isLoading) {
         return (
@@ -72,6 +72,17 @@ export const GuestOnly = ({ children }: GuestOnlyProps) => {
     }
 
     if (isAuthenticated) {
+        // Redirect based on user role
+        console.log('GuestOnly guard: User is authenticated, redirecting. User roles:', user?.roles);
+        if (user?.roles?.includes('Admin')) {
+            console.log('GuestOnly: Redirecting to ADMIN dashboard');
+            return <Navigate to={ROUTES.ADMIN} replace />;
+        }
+        if (user?.roles?.includes('Instructor')) {
+            console.log('GuestOnly: Redirecting to INSTRUCTOR dashboard');
+            return <Navigate to={ROUTES.INSTRUCTOR} replace />;
+        }
+        console.log('GuestOnly: Redirecting to STUDENT dashboard');
         return <Navigate to={ROUTES.DASHBOARD} replace />;
     }
 

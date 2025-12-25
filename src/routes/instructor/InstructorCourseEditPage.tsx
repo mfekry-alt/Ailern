@@ -7,31 +7,52 @@ export const InstructorCourseEditPage = () => {
     const navigate = useNavigate();
     const isNew = !id;
 
+    const [statusMessage, setStatusMessage] = useState<string>('');
+
     const [formData, setFormData] = useState({
         title: '',
         courseId: '',
         description: '',
         department: '',
         academicYear: '',
+        category: '',
+        thumbnail: null as File | null,
+        prerequisites: '',
+        learningObjectives: '',
         readyToSubmit: false,
     });
 
+    const generateCourseId = (title: string) => {
+        const cleaned = title
+            .trim()
+            .toUpperCase()
+            .replace(/[^A-Z0-9\s]/g, ' ')
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((w) => w.slice(0, 3))
+            .join('');
+        if (cleaned.length >= 4) return cleaned;
+        const suffix = String(Date.now()).slice(-4);
+        return `${cleaned || 'COURSE'}${suffix}`;
+    };
+
     const handleSubmit = (isDraft: boolean) => {
+        setStatusMessage('');
         if (!isDraft && !formData.title.trim()) {
-            alert('Course title is required for submission');
+            setStatusMessage('Course title is required for submission.');
             return;
         }
 
-        console.log('Submitting course:', { ...formData, isDraft });
+        const courseId = formData.courseId.trim() ? formData.courseId.trim() : generateCourseId(formData.title);
+        const payload = { ...formData, courseId, isDraft };
 
-        if (isDraft) {
-            alert('Course saved as draft successfully!');
-        } else {
-            alert('Course submitted for approval successfully!');
-        }
+        setFormData((prev) => ({ ...prev, courseId }));
+        setStatusMessage(isDraft ? 'Draft saved.' : 'Submitted for approval.');
 
         // API call will go here
-        navigate(ROUTES.INSTRUCTOR_COURSES);
+        void payload;
+        setTimeout(() => navigate(ROUTES.INSTRUCTOR_COURSES), 400);
     };
 
     return (
@@ -46,6 +67,11 @@ export const InstructorCourseEditPage = () => {
                                 {isNew ? 'Create New Course' : 'Edit Course'}
                             </div>
                         </div>
+                        {statusMessage && (
+                            <div className="mt-3 w-full rounded-md border border-[#fde68a] bg-[#fffbeb] px-4 py-2 text-[14px] text-[#92400e]">
+                                {statusMessage}
+                            </div>
+                        )}
                     </div>
 
                     {/* Form */}
@@ -188,6 +214,103 @@ export const InstructorCourseEditPage = () => {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Category */}
+                            <div className="flex flex-col items-start gap-1 relative self-stretch w-full flex-[0_0_auto]">
+                                <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+                                    <div className="relative flex items-start justify-start self-stretch mt-[-1.00px] font-medium text-[#495057] text-[14px] leading-[20px]">
+                                        Category
+                                    </div>
+                                </div>
+
+                                <div className="relative self-stretch w-full h-[38px] bg-white rounded-md border border-solid border-[#dee2e6] shadow-[0px_1px_2px_#0000000d]">
+                                    <select
+                                        value={formData.category}
+                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                        className="w-full h-full px-[13px] py-[9px] bg-transparent border-none outline-none font-normal text-black text-[14px] leading-[20px]"
+                                    >
+                                        <option value="">Select a category</option>
+                                        <option value="programming">Programming</option>
+                                        <option value="mathematics">Mathematics</option>
+                                        <option value="science">Science</option>
+                                        <option value="engineering">Engineering</option>
+                                        <option value="business">Business</option>
+                                        <option value="arts">Arts</option>
+                                        <option value="language">Language</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                    <div className="flex flex-col w-[379px] h-[38px] items-end justify-center pl-[349px] pr-[9px] py-[8.5px] absolute top-0 left-0 pointer-events-none">
+                                        <div className="relative w-[21px] h-[21px]">
+                                            <svg className="absolute w-[40.00%] h-[20.00%] top-[40.00%] left-[30.00%]" viewBox="0 0 24 24" fill="none">
+                                                <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Thumbnail Upload */}
+                            <div className="flex flex-col items-start gap-1 relative self-stretch w-full flex-[0_0_auto]">
+                                <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+                                    <div className="relative flex items-start justify-start self-stretch mt-[-1.00px] font-medium text-[#495057] text-[14px] leading-[20px]">
+                                        Thumbnail (Optional)
+                                    </div>
+                                    <div className="text-[12px] text-gray-500 mt-1">Recommended: 1280x720px, max 5MB</div>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    <label className="flex items-center justify-center px-4 py-2 bg-white border border-solid border-[#dee2e6] rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
+                                        <span className="text-[14px] font-medium text-[#495057]">Choose File</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => setFormData({ ...formData, thumbnail: e.target.files?.[0] || null })}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                    {formData.thumbnail && (
+                                        <span className="text-[14px] text-gray-600">{formData.thumbnail.name}</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Prerequisites */}
+                            <div className="flex flex-col items-start gap-1 relative self-stretch w-full flex-[0_0_auto]">
+                                <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+                                    <div className="relative flex items-start justify-start self-stretch mt-[-1.00px] font-medium text-[#495057] text-[14px] leading-[20px]">
+                                        Prerequisites Description
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-start pt-[9px] pb-[69px] px-[13px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-md overflow-scroll border border-solid border-[#dee2e6] shadow-[0px_1px_2px_#0000000d]">
+                                    <textarea
+                                        rows={4}
+                                        placeholder="List the prerequisites for this course (e.g., CS101 - Introduction to Programming, MATH201 - Linear Algebra)"
+                                        value={formData.prerequisites}
+                                        onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
+                                        className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] font-normal text-gray-500 text-[14px] leading-[20px] bg-transparent border-none outline-none resize-none"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* What You Will Learn */}
+                            <div className="flex flex-col items-start gap-1 relative self-stretch w-full flex-[0_0_auto]">
+                                <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+                                    <div className="relative flex items-start justify-start self-stretch mt-[-1.00px] font-medium text-[#495057] text-[14px] leading-[20px]">
+                                        What You Will Learn
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-start pt-[9px] pb-[69px] px-[13px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-md overflow-scroll border border-solid border-[#dee2e6] shadow-[0px_1px_2px_#0000000d]">
+                                    <textarea
+                                        rows={4}
+                                        placeholder="Describe what students will learn in this course (e.g., Understand core concepts, Apply algorithms, Analyze data structures)"
+                                        value={formData.learningObjectives}
+                                        onChange={(e) => setFormData({ ...formData, learningObjectives: e.target.value })}
+                                        className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] font-normal text-gray-500 text-[14px] leading-[20px] bg-transparent border-none outline-none resize-none"
+                                    />
                                 </div>
                             </div>
 

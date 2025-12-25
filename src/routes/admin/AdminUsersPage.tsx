@@ -1,12 +1,19 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, Button } from '@/components/ui';
-import { Search, Plus, Edit, Shield, Filter, Download, MoreVertical, User, Calendar, ShieldCheck } from 'lucide-react';
+import { Search, Edit, Shield, Filter, Download, MoreVertical, User, Calendar, ShieldCheck, Trash2, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/lib/constants';
 
 export const AdminUsersPage = () => {
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRole, setSelectedRole] = useState('all');
+    const [onlyActive, setOnlyActive] = useState(false);
+    const [editingUserId, setEditingUserId] = useState<number | null>(null);
 
-    const users = [
+    const [statusMessage, setStatusMessage] = useState<string>('');
+
+    const [users, setUsers] = useState([
         {
             id: 1,
             name: 'John Doe',
@@ -62,7 +69,131 @@ export const AdminUsersPage = () => {
             courses: 4,
             avatar: 'LW'
         }
-    ];
+    ]);
+
+    const [userForm, setUserForm] = useState({
+        name: '',
+        email: '',
+        role: 'Student',
+        status: 'Active',
+        courses: 0,
+    });
+
+    const openEditUser = (u: (typeof users)[number]) => {
+        setEditingUserId(u.id);
+        setUserForm({
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            status: u.status,
+            courses: u.courses,
+        });
+        setEditingUserId(u.id);
+        setStatusMessage('');
+    };
+
+    const saveUser = () => {
+        if (!userForm.name.trim() || !userForm.email.trim()) return;
+
+        if (editingUserId) {
+            setUsers((prev) =>
+                prev.map((u) =>
+                    u.id === editingUserId
+                        ? {
+                            ...u,
+                            name: userForm.name.trim(),
+                            email: userForm.email.trim(),
+                            role: userForm.role,
+                            status: userForm.status,
+                            courses: userForm.courses,
+                            avatar: userForm.name
+                                .trim()
+                                .split(' ')
+                                .filter(Boolean)
+                                .slice(0, 2)
+                                .map((p) => p[0]?.toUpperCase())
+                                .join(''),
+                        }
+                        : u
+                )
+            );
+            setStatusMessage('User updated.');
+        }
+
+        setEditingUserId(null);
+    };
+
+    const cycleRole = (id: number) => {
+        const roles = ['Student', 'Instructor', 'Admin'] as const;
+        setUsers((prev) =>
+            prev.map((u) => {
+                if (u.id !== id) return u;
+                const idx = roles.indexOf(u.role as (typeof roles)[number]);
+                const next = roles[(idx + 1) % roles.length];
+                return { ...u, role: next };
+            })
+        );
+    };
+
+    const toggleActive = (id: number) => {
+        setUsers((prev) =>
+            prev.map((u) => {
+                if (u.id !== id) return u;
+                return { ...u, status: u.status === 'Active' ? 'Restricted' : 'Active' };
+            })
+        );
+    };
+
+    const deleteUser = (id: number) => {
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+        setStatusMessage('User deleted.');
+        setTimeout(() => setStatusMessage(''), 2000);
+    };
+
+    const filteredUsers = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        return users.filter((u) => {
+            const roleMatch = selectedRole === 'all' || u.role === selectedRole;
+            const activeMatch = !onlyActive || u.status === 'Active';
+            const searchMatch =
+                !q ||
+                u.name.toLowerCase().includes(q) ||
+                u.email.toLowerCase().includes(q);
+            return roleMatch && activeMatch && searchMatch;
+        });
+    }, [onlyActive, searchQuery, selectedRole, users]);
+
+    const downloadText = (filename: string, text: string) => {
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const exportUsers = () => {
+        const rows = [
+            ['id', 'name', 'email', 'role', 'status', 'joinedDate', 'lastActive', 'courses'],
+            ...filteredUsers.map((u) => [
+                String(u.id),
+                u.name,
+                u.email,
+                u.role,
+                u.status,
+                u.joinedDate,
+                u.lastActive,
+                String(u.courses),
+            ]),
+        ];
+        const csv = rows
+            .map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+        downloadText('users-export.csv', csv);
+    };
 
     const getRoleBadge = (role: string) => {
         switch (role) {
@@ -81,7 +212,7 @@ export const AdminUsersPage = () => {
         switch (status) {
             case 'Active':
                 return 'bg-green-100 text-green-800';
-            case 'Inactive':
+            case 'Restricted':
                 return 'bg-red-100 text-red-800';
             case 'Pending':
                 return 'bg-yellow-100 text-yellow-800';
@@ -91,10 +222,10 @@ export const AdminUsersPage = () => {
     };
 
     const stats = [
-        { label: 'Total Users', value: '1,250', icon: User, color: 'text-blue-600' },
-        { label: 'Active Users', value: '1,180', icon: ShieldCheck, color: 'text-green-600' },
-        { label: 'New This Month', value: '45', icon: Calendar, color: 'text-purple-600' },
-        { label: 'Instructors', value: '150', icon: Shield, color: 'text-orange-600' }
+        { label: 'Total Users', value: String(users.length), icon: User, color: 'text-blue-600' },
+        { label: 'Active Users', value: String(users.filter((u) => u.status === 'Active').length), icon: ShieldCheck, color: 'text-green-600' },
+        { label: 'New This Month', value: String(users.length), icon: Calendar, color: 'text-purple-600' },
+        { label: 'Instructors', value: String(users.filter((u) => u.role === 'Instructor').length), icon: Shield, color: 'text-orange-600' }
     ];
 
     return (
@@ -107,16 +238,22 @@ export const AdminUsersPage = () => {
                         <p className="text-[18px] text-gray-600 mt-1">Manage platform users and their roles</p>
                     </div>
                     <div className="flex gap-3">
-                        <Button variant="outline">
+                        <Button variant="outline" onClick={exportUsers}>
                             <Download className="w-4 h-4 mr-2" />
                             Export
                         </Button>
-                        <Button>
+                        <Button variant="primary" onClick={() => navigate(ROUTES.ADMIN_USER_CREATE)}>
                             <Plus className="w-4 h-4 mr-2" />
-                            Add User
+                            Create User
                         </Button>
                     </div>
                 </div>
+
+                {statusMessage && (
+                    <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-[14px] text-green-800">
+                        {statusMessage}
+                    </div>
+                )}
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -165,6 +302,29 @@ export const AdminUsersPage = () => {
                                     <option value="Instructor">Instructors</option>
                                     <option value="Admin">Admins</option>
                                 </select>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setSelectedRole('Student')}
+                                        className={`px-4 py-2 border rounded-lg text-[14px] font-medium transition-colors ${selectedRole === 'Student' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                    >
+                                        Students
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedRole('Instructor')}
+                                        className={`px-4 py-2 border rounded-lg text-[14px] font-medium transition-colors ${selectedRole === 'Instructor' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                    >
+                                        Instructors
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={() => setOnlyActive((v) => !v)}
+                                    className={`px-4 py-2 border rounded-lg text-[14px] font-medium transition-colors ${onlyActive
+                                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    Active Only
+                                </button>
                                 <Button variant="outline">
                                     <Filter className="w-4 h-4 mr-2" />
                                     More Filters
@@ -205,8 +365,8 @@ export const AdminUsersPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.map((user, index) => (
-                                        <tr key={user.id} className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${index === users.length - 1 ? 'border-b-0' : ''}`}>
+                                    {filteredUsers.map((user, index) => (
+                                        <tr key={user.id} className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${index === filteredUsers.length - 1 ? 'border-b-0' : ''}`}>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
@@ -233,14 +393,37 @@ export const AdminUsersPage = () => {
                                             <td className="py-4 px-6 text-[14px] text-gray-600">{user.courses}</td>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-2">
-                                                    <button className="p-2 hover:bg-gray-100 rounded-md transition-colors">
+                                                    <button
+                                                        onClick={() => openEditUser(user)}
+                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                    >
                                                         <Edit className="w-4 h-4 text-gray-600" />
                                                     </button>
-                                                    <button className="p-2 hover:bg-gray-100 rounded-md transition-colors">
+                                                    <button
+                                                        onClick={() => cycleRole(user.id)}
+                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                    >
                                                         <Shield className="w-4 h-4 text-gray-600" />
                                                     </button>
-                                                    <button className="p-2 hover:bg-gray-100 rounded-md transition-colors">
+                                                    <button
+                                                        onClick={() => toggleActive(user.id)}
+                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                    >
                                                         <MoreVertical className="w-4 h-4 text-gray-600" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteUser(user.id)}
+                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 className="w-4 h-4 text-red-600" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate(ROUTES.ADMIN_USER_EDIT.replace(':id', String(user.id)))}
+                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                        title="Edit Page"
+                                                    >
+                                                        <Edit className="w-4 h-4 text-blue-600" />
                                                     </button>
                                                 </div>
                                             </td>
@@ -253,17 +436,116 @@ export const AdminUsersPage = () => {
                 </Card>
 
                 {/* Empty State */}
-                {users.length === 0 && (
+                {filteredUsers.length === 0 && (
                     <div className="text-center py-12">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <User className="w-8 h-8 text-gray-400" />
                         </div>
                         <h3 className="text-[20px] font-semibold text-gray-900 mb-2">No users found</h3>
                         <p className="text-gray-600 mb-6">Try adjusting your search criteria</p>
-                        <Button>Add First User</Button>
                     </div>
                 )}
             </div>
+
+            {editingUserId !== null && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-lg w-full overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-[18px] font-bold text-gray-900">
+                                    Edit User
+                                </h2>
+                                <p className="text-[14px] text-gray-600">Update user details and role.</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setEditingUserId(null);
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Name</label>
+                                <input
+                                    value={userForm.name}
+                                    onChange={(e) => setUserForm((p) => ({ ...p, name: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Email</label>
+                                <input
+                                    type="email"
+                                    value={userForm.email}
+                                    onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Role</label>
+                                    <select
+                                        value={userForm.role}
+                                        onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        <option value="Student">Student</option>
+                                        <option value="Instructor">Instructor</option>
+                                        <option value="Admin">Admin</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Status</label>
+                                    <select
+                                        value={userForm.status}
+                                        onChange={(e) => setUserForm((p) => ({ ...p, status: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        <option value="Active">Active</option>
+                                        <option value="Inactive">Inactive</option>
+                                        <option value="Pending">Pending</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Courses</label>
+                                <input
+                                    type="number"
+                                    value={userForm.courses}
+                                    onChange={(e) => setUserForm((p) => ({ ...p, courses: Number(e.target.value) }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={() => {
+                                        setEditingUserId(null);
+                                    }}
+                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={saveUser}
+                                    disabled={!userForm.name.trim() || !userForm.email.trim()}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

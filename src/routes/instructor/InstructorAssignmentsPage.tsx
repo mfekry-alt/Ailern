@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui';
+import { ROUTES } from '@/lib/constants';
 import {
     Plus,
     Edit,
@@ -41,12 +43,14 @@ interface Submission {
 }
 
 export const InstructorAssignmentsPage = () => {
+    const navigate = useNavigate();
     const [selectedCourse, setSelectedCourse] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
     const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
 
-    const assignments: Assignment[] = [
+    const [assignments, setAssignments] = useState<Assignment[]>([
         {
             id: '1',
             title: 'Programming Assignment 1: Basic Algorithms',
@@ -86,9 +90,9 @@ export const InstructorAssignmentsPage = () => {
             attachments: ['ps3.pdf'],
             createdAt: '2024-01-10'
         }
-    ];
+    ]);
 
-    const submissions: Submission[] = [
+    const [submissions, setSubmissions] = useState<Submission[]>([
         {
             id: '1',
             studentName: 'John Doe',
@@ -117,7 +121,129 @@ export const InstructorAssignmentsPage = () => {
             status: 'submitted',
             attachments: ['solution.py']
         }
-    ];
+    ]);
+
+    const courseOptions = useMemo(
+        () => [
+            'CS101 - Introduction to Programming',
+            'CS202 - Data Structures',
+            'MA203 - Linear Algebra',
+        ],
+        []
+    );
+
+    const editingAssignment = useMemo(() => {
+        if (!editingAssignmentId) return null;
+        return assignments.find((a) => a.id === editingAssignmentId) ?? null;
+    }, [assignments, editingAssignmentId]);
+
+    const [assignmentForm, setAssignmentForm] = useState({
+        title: '',
+        course: 'CS101 - Introduction to Programming',
+        dueDate: '',
+        totalPoints: 100,
+        status: 'draft' as Assignment['status'],
+        description: '',
+    });
+
+    const openCreate = () => {
+        navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE);
+    };
+
+    const openEdit = (assignment: Assignment) => {
+        navigate(`/instructor/assignments/${assignment.id}/edit`);
+    };
+
+    const downloadText = (filename: string, text: string) => {
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const exportAssignment = (assignment: Assignment) => {
+        const rows = [
+            ['id', 'title', 'course', 'dueDate', 'totalPoints', 'submissions', 'graded', 'status', 'createdAt'],
+            [
+                assignment.id,
+                assignment.title,
+                assignment.course,
+                assignment.dueDate,
+                String(assignment.totalPoints),
+                String(assignment.submissions),
+                String(assignment.graded),
+                assignment.status,
+                assignment.createdAt,
+            ],
+        ];
+        const csv = rows
+            .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+        downloadText(`assignment-${assignment.id}.csv`, csv);
+    };
+
+    const handleSaveAssignment = () => {
+        if (!assignmentForm.title.trim()) return;
+
+        if (editingAssignmentId) {
+            setAssignments((prev) =>
+                prev.map((a) =>
+                    a.id === editingAssignmentId
+                        ? {
+                            ...a,
+                            title: assignmentForm.title.trim(),
+                            course: assignmentForm.course,
+                            dueDate: assignmentForm.dueDate,
+                            totalPoints: assignmentForm.totalPoints,
+                            status: assignmentForm.status,
+                            description: assignmentForm.description,
+                        }
+                        : a
+                )
+            );
+        } else {
+            const id = String(Date.now());
+            setAssignments((prev) => [
+                {
+                    id,
+                    title: assignmentForm.title.trim(),
+                    course: assignmentForm.course,
+                    dueDate: assignmentForm.dueDate,
+                    totalPoints: assignmentForm.totalPoints,
+                    submissions: 0,
+                    graded: 0,
+                    status: assignmentForm.status,
+                    description: assignmentForm.description,
+                    attachments: [],
+                    createdAt: new Date().toISOString().slice(0, 10),
+                },
+                ...prev,
+            ]);
+        }
+
+        setShowCreateModal(false);
+        setEditingAssignmentId(null);
+    };
+
+    const gradeSubmission = (submissionId: string) => {
+        setSubmissions((prev) =>
+            prev.map((s) => {
+                if (s.id !== submissionId) return s;
+                if (s.status === 'graded') return s;
+                return {
+                    ...s,
+                    status: 'graded',
+                    grade: 100,
+                    feedback: 'Graded.',
+                };
+            })
+        );
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -172,7 +298,7 @@ export const InstructorAssignmentsPage = () => {
                         </p>
                     </div>
                     <button
-                        onClick={() => setShowCreateModal(true)}
+                        onClick={openCreate}
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
                     >
                         <Plus className="w-5 h-5" />
@@ -299,7 +425,7 @@ export const InstructorAssignmentsPage = () => {
                                         {/* Actions */}
                                         <div className="flex flex-col gap-2 lg:min-w-[200px]">
                                             <button
-                                                onClick={() => setSelectedAssignment(assignment)}
+                                                onClick={() => navigate(`/instructor/assignments/${assignment.id}/submissions`)}
                                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
                                             >
                                                 <Eye className="w-4 h-4" />
@@ -307,11 +433,17 @@ export const InstructorAssignmentsPage = () => {
                                             </button>
 
                                             <div className="flex gap-2">
-                                                <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1">
+                                                <button
+                                                    onClick={() => openEdit(assignment)}
+                                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1"
+                                                >
                                                     <Edit className="w-3 h-3" />
                                                     Edit
                                                 </button>
-                                                <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1">
+                                                <button
+                                                    onClick={() => exportAssignment(assignment)}
+                                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1"
+                                                >
                                                     <Download className="w-3 h-3" />
                                                     Export
                                                 </button>
@@ -392,10 +524,16 @@ export const InstructorAssignmentsPage = () => {
                                                         </div>
 
                                                         <div className="flex gap-2">
-                                                            <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] px-3 py-2 rounded-lg transition-colors">
+                                                            <button
+                                                                onClick={() => gradeSubmission(submission.id)}
+                                                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] px-3 py-2 rounded-lg transition-colors"
+                                                            >
                                                                 Grade
                                                             </button>
-                                                            <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors">
+                                                            <button
+                                                                onClick={() => downloadText(`submission-${submission.id}.txt`, submission.attachments.join('\n') || 'No attachments')}
+                                                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors"
+                                                            >
                                                                 Download
                                                             </button>
                                                         </div>
@@ -419,7 +557,7 @@ export const InstructorAssignmentsPage = () => {
                         <h3 className="text-[20px] font-semibold text-gray-900 mb-2">No assignments found</h3>
                         <p className="text-gray-600 mb-6">Create your first assignment to get started</p>
                         <button
-                            onClick={() => setShowCreateModal(true)}
+                            onClick={openCreate}
                             className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
                         >
                             Create Assignment
@@ -431,14 +569,103 @@ export const InstructorAssignmentsPage = () => {
             {showCreateModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                        <h2 className="text-xl font-bold mb-4">Create Assignment</h2>
-                        <p className="text-gray-600 mb-6">This feature is coming soon.</p>
-                        <button
-                            onClick={() => setShowCreateModal(false)}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-                        >
-                            Close
-                        </button>
+                        <h2 className="text-xl font-bold mb-4">{editingAssignment ? 'Edit Assignment' : 'Create Assignment'}</h2>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Title</label>
+                                <input
+                                    value={assignmentForm.title}
+                                    onChange={(e) => setAssignmentForm((p) => ({ ...p, title: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Course</label>
+                                <select
+                                    value={assignmentForm.course}
+                                    onChange={(e) => setAssignmentForm((p) => ({ ...p, course: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    {courseOptions.map((c) => (
+                                        <option key={c} value={c}>
+                                            {c}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Due Date</label>
+                                    <input
+                                        type="date"
+                                        value={assignmentForm.dueDate}
+                                        onChange={(e) => setAssignmentForm((p) => ({ ...p, dueDate: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Points</label>
+                                    <input
+                                        type="number"
+                                        value={assignmentForm.totalPoints}
+                                        onChange={(e) =>
+                                            setAssignmentForm((p) => ({
+                                                ...p,
+                                                totalPoints: Number.isFinite(Number(e.target.value)) ? Number(e.target.value) : 0,
+                                            }))
+                                        }
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Status</label>
+                                <select
+                                    value={assignmentForm.status}
+                                    onChange={(e) =>
+                                        setAssignmentForm((p) => ({ ...p, status: e.target.value as Assignment['status'] }))
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    <option value="draft">Draft</option>
+                                    <option value="published">Published</option>
+                                    <option value="closed">Closed</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Description</label>
+                                <textarea
+                                    rows={3}
+                                    value={assignmentForm.description}
+                                    onChange={(e) => setAssignmentForm((p) => ({ ...p, description: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => {
+                                    setShowCreateModal(false);
+                                    setEditingAssignmentId(null);
+                                }}
+                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveAssignment}
+                                disabled={!assignmentForm.title.trim()}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Save
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

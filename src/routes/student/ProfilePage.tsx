@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLogout } from '@/features/auth/api';
 import { ROUTES } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui';
-import { Edit, Save, X, LogOut } from 'lucide-react';
+import { Edit, Save, X, LogOut, Lock, Image as ImageIcon } from 'lucide-react';
 
 export const ProfilePage = () => {
     const { user } = useAuth();
@@ -13,6 +13,7 @@ export const ProfilePage = () => {
     const [isEditingPersonal, setIsEditingPersonal] = useState(false);
     const [isEditingAcademic, setIsEditingAcademic] = useState(false);
     const [emailNotifications, setEmailNotifications] = useState(true);
+    const [statusMessage, setStatusMessage] = useState<string>('');
 
     // Form state for personal information
     const [personalForm, setPersonalForm] = useState({
@@ -53,25 +54,20 @@ export const ProfilePage = () => {
 
     // Save personal information
     const savePersonalInfo = () => {
-        // In a real app, this would make an API call
-        console.log('Saving personal info:', personalForm);
         setIsEditingPersonal(false);
-        // Show success message
-        alert('Personal information saved successfully!');
+        setStatusMessage('Personal information saved.');
     };
 
     // Save academic information
     const saveAcademicInfo = () => {
-        // In a real app, this would make an API call
-        console.log('Saving academic info:', academicForm);
         setIsEditingAcademic(false);
-        // Show success message
-        alert('Academic information saved successfully!');
+        setStatusMessage('Academic information saved.');
     };
 
     // Cancel editing
     const cancelPersonalEdit = () => {
         setIsEditingPersonal(false);
+        setStatusMessage('');
         // Reset form to original values
         setPersonalForm({
             firstName: user?.firstName || 'Alex',
@@ -85,6 +81,7 @@ export const ProfilePage = () => {
 
     const cancelAcademicEdit = () => {
         setIsEditingAcademic(false);
+        setStatusMessage('');
         // Reset form to original values
         setAcademicForm({
             program: 'Bachelor of Science in Computer Science',
@@ -98,13 +95,22 @@ export const ProfilePage = () => {
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                        <h1 className="text-[30px] font-bold leading-[36px] text-gray-900">
-                            Profile
-                        </h1>
-                        <p className="text-[16px] leading-[24px] text-gray-600">
-                            Manage your personal and academic information.
-                        </p>
+                    <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-lg border border-blue-200 overflow-hidden">
+                            {user?.avatarUrl ? (
+                                <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <ImageIcon className="w-7 h-7" />
+                            )}
+                        </div>
+                        <div className="space-y-1">
+                            <h1 className="text-[30px] font-bold leading-[36px] text-gray-900">
+                                Profile
+                            </h1>
+                            <p className="text-[16px] leading-[24px] text-gray-600">
+                                Manage your personal and academic information.
+                            </p>
+                        </div>
                     </div>
                     {/* Sign Out Button */}
                     <button
@@ -115,6 +121,12 @@ export const ProfilePage = () => {
                         Sign Out
                     </button>
                 </div>
+
+                {statusMessage && (
+                    <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-[14px] text-green-800">
+                        {statusMessage}
+                    </div>
+                )}
 
                 <div className="space-y-6">
                     {/* Personal Information */}
@@ -353,6 +365,37 @@ export const ProfilePage = () => {
                         </CardContent>
                     </Card>
 
+                    {/* Security */}
+                    <Card variant="elevated">
+                        <CardContent className="p-6">
+                            <h2 className="text-[24px] font-bold text-gray-900 mb-6">
+                                Security
+                            </h2>
+
+                            <div className="space-y-4">
+                                <Link
+                                    to={ROUTES.CHANGE_PASSWORD}
+                                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <Lock className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-[16px] font-medium text-gray-900">Change Password</h3>
+                                            <p className="text-[14px] text-gray-600">Update your password to keep your account secure</p>
+                                        </div>
+                                    </div>
+                                    <button className="text-gray-400 hover:text-gray-600">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </Link>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Preferences */}
                     <Card variant="elevated">
                         <CardContent className="p-6">
@@ -382,6 +425,35 @@ export const ProfilePage = () => {
                                         />
                                     </button>
                                 </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Change Password Section */}
+                    <Card variant="elevated">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 className="text-[20px] font-bold text-gray-900">Change Password</h2>
+                                    <p className="text-[14px] text-gray-600">Update your password regularly to keep your account secure.</p>
+                                </div>
+                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <Lock className="w-5 h-5 text-blue-600" />
+                                </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}
+                                    className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                >
+                                    Go to Change Password
+                                </button>
+                                <Link
+                                    to={ROUTES.LOGIN}
+                                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-center text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    Back to Login
+                                </Link>
                             </div>
                         </CardContent>
                     </Card>

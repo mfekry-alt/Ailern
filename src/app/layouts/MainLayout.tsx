@@ -1,8 +1,20 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from '@/components/Header';
-import { APP_NAME } from '@/lib/constants';
+import { APP_NAME, ROUTES } from '@/lib/constants';
 
 export const MainLayout = () => {
+    const location = useLocation();
+    const isHomePage = location.pathname === ROUTES.HOME || location.pathname === '/home';
+
+    if (isHomePage) {
+        // For landing page, render without header/footer
+        return (
+            <div className="min-h-screen">
+                <Outlet />
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Header />

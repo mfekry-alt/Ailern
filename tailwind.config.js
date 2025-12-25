@@ -8,13 +8,26 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Figma Design Tokens
+        // Figma Design Tokens - Support both direct usage and scale
         primary: {
+          DEFAULT: '#2563EB', // Blue-600 matching the header/button
           50: '#0d7ff2', // Azure Radiance
           500: '#2563eb', // Royal Blue
           600: '#2563eb',
           700: '#1d4ed8',
         },
+        secondary: {
+          DEFAULT: '#3B82F6',
+          600: '#3B82F6',
+        },
+        'background-light': '#F8FAFC', // Slate-50 matching dashboard bg
+        'background-dark': '#0F172A', // Slate-900
+        'card-light': '#FFFFFF',
+        'card-dark': '#1E293B',
+        'text-main-light': '#1E293B',
+        'text-main-dark': '#F1F5F9',
+        'text-muted-light': '#64748B',
+        'text-muted-dark': '#94A3B8',
         azure: {
           8: '#111318',  // Woodsmoke
           11: '#111827', // Ebony

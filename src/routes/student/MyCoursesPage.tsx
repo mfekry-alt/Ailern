@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import dropIcon from '../../../material/drop.svg';
+import { ROUTES } from '@/lib/constants';
 
 export const MyCoursesPage = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [searchQuery, setSearchQuery] = useState('');
     const [filterOption, setFilterOption] = useState('All');
     const [sortOption, setSortOption] = useState('none');
@@ -34,6 +37,12 @@ export const MyCoursesPage = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const q = params.get('search') || '';
+        setSearchQuery(q);
+    }, [location.search]);
 
     const courses = [
         {
@@ -359,10 +368,20 @@ export const MyCoursesPage = () => {
                 {/* Courses Grid */}
                 <div className={`grid gap-6 ${viewMode === 'grid' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
                     {paginatedCourses.map((course, index) => (
-                        <Link
+                        <div
                             key={course.id}
-                            to={`/courses/${course.id}`}
-                            className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl transition-all card-hover animate-scale-up"
+                            onClick={() => navigate(`${ROUTES.COURSES}/${course.id}`, {
+                                state: {
+                                    course: {
+                                        id: course.id,
+                                        title: course.title,
+                                        instructor: course.instructor,
+                                        isEnrolled: true,
+                                        progress: course.progress,
+                                    }
+                                }
+                            })}
+                            className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl transition-all card-hover animate-scale-up cursor-pointer"
                             style={{ animationDelay: `${(index % 3) * 0.1}s` }}
                         >
                             <div className="relative">
@@ -395,7 +414,7 @@ export const MyCoursesPage = () => {
                                     {course.status}
                                 </p>
                             </div>
-                        </Link>
+                        </div>
                     ))}
                 </div>
 

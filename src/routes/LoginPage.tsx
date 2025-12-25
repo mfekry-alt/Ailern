@@ -19,11 +19,12 @@ export const LoginPage = () => {
     const location = useLocation();
     const login = useLogin();
     const [error, setError] = useState<string>('');
+    const [unverifiedEmail, setUnverifiedEmail] = useState<string>('');
 
-    // Redirect based on user role after login
+    // Redirect based on user role after login - all roles go to their dashboard
     const getRedirectPath = (user: any) => {
         if (user?.roles?.includes('Admin')) return ROUTES.ADMIN;
-        if (user?.roles?.includes('Instructor')) return ROUTES.INSTRUCTOR_COURSES;
+        if (user?.roles?.includes('Instructor')) return ROUTES.INSTRUCTOR;
         return ROUTES.DASHBOARD;
     };
 
@@ -39,11 +40,19 @@ export const LoginPage = () => {
 
     const onSubmit = async (data: LoginFormData) => {
         setError('');
+        setUnverifiedEmail('');
         try {
             const result = await login.mutateAsync(data);
             const redirectPath = from || getRedirectPath(result.user);
+            console.log('Login successful, redirecting to:', redirectPath, 'User roles:', result.user?.roles);
             navigate(redirectPath, { replace: true });
         } catch (err: any) {
+            const apiCode = err.response?.data?.code as string | undefined;
+            if (apiCode === 'EMAIL_NOT_VERIFIED') {
+                setUnverifiedEmail(data.email);
+                setError('');
+                return;
+            }
             setError(err.response?.data?.message || 'Login failed. Please try again.');
         }
     };
@@ -63,6 +72,36 @@ export const LoginPage = () => {
                     {error && (
                         <div className="mb-6 p-4 rounded-md border" style={{ backgroundColor: '#fee2e2', borderColor: '#fecaca' }}>
                             <p className="text-sm" style={{ color: '#991b1b' }}>{error}</p>
+                        </div>
+                    )}
+
+                    {unverifiedEmail && (
+                        <div
+                            className="mb-6 p-4 rounded-md border"
+                            style={{ backgroundColor: '#fffbeb', borderColor: '#fcd34d' }}
+                        >
+                            <p className="text-sm font-semibold" style={{ color: '#92400e' }}>
+                                Verify your email to continue
+                            </p>
+                            <p className="text-sm mt-1" style={{ color: '#b45309' }}>
+                                We can&apos;t log you in until your email is confirmed. Use the links below to finish verification.
+                            </p>
+                            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <Link
+                                    to={`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(unverifiedEmail)}`}
+                                    className="text-[14px] font-medium underline"
+                                    style={{ color: '#92400e' }}
+                                >
+                                    Verify your email
+                                </Link>
+                                <Link
+                                    to={`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(unverifiedEmail)}`}
+                                    className="text-[14px] font-medium underline"
+                                    style={{ color: '#92400e' }}
+                                >
+                                    Resend confirmation
+                                </Link>
+                            </div>
                         </div>
                     )}
 

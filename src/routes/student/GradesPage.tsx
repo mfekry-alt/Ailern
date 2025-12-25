@@ -39,6 +39,7 @@ interface CourseGrade {
 export const GradesPage = () => {
     const [selectedCourse, setSelectedCourse] = useState('all');
     const [selectedSemester, setSelectedSemester] = useState('all');
+    const [selectedGrade, setSelectedGrade] = useState<Grade | null>(null);
 
     const grades: Grade[] = [
         {
@@ -176,10 +177,45 @@ export const GradesPage = () => {
         return courseMatch;
     });
 
+    const downloadText = (filename: string, text: string) => {
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const exportGrades = () => {
+        const rows = [
+            ['assignmentName', 'course', 'instructor', 'pointsEarned', 'totalPoints', 'percentage', 'letterGrade', 'status', 'gradedAt'],
+            ...filteredGrades.map((g) => [
+                g.assignmentName,
+                g.course,
+                g.instructor,
+                String(g.pointsEarned),
+                String(g.totalPoints),
+                String(g.percentage),
+                g.letterGrade,
+                g.status,
+                g.gradedAt,
+            ]),
+        ];
+
+        const csv = rows
+            .map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+
+        downloadText('grades-export.csv', csv);
+    };
+
     const stats = [
-        { label: 'Overall GPA', value: '3.2', icon: Award, color: 'text-purple-600' },
-        { label: 'Courses Completed', value: '8', icon: BookOpen, color: 'text-blue-600' },
-        { label: 'Credits Earned', value: '24', icon: Target, color: 'text-green-600' },
+        { label: 'Overall GPA', value: '0', icon: Award, color: 'text-purple-600' },
+        { label: 'Courses Completed', value: '0', icon: BookOpen, color: 'text-blue-600' },
+        { label: 'Credits Earned', value: '0', icon: Target, color: 'text-green-600' },
         { label: 'Assignments Graded', value: grades.filter(g => g.status === 'graded').length.toString(), icon: CheckCircle, color: 'text-orange-600' }
     ];
 
@@ -198,7 +234,10 @@ export const GradesPage = () => {
                             Track your academic progress and view instructor feedback
                         </p>
                     </div>
-                    <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
+                    <button
+                        onClick={exportGrades}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                    >
                         <Download className="w-5 h-5" />
                         Export Grades
                     </button>
@@ -393,10 +432,32 @@ export const GradesPage = () => {
                                                 </td>
                                                 <td className="py-4 px-6">
                                                     <div className="flex items-center gap-2">
-                                                        <button className="p-2 hover:bg-gray-100 rounded-md transition-colors">
+                                                        <button
+                                                            onClick={() => setSelectedGrade(grade)}
+                                                            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                        >
                                                             <Eye className="w-4 h-4 text-gray-600" />
                                                         </button>
-                                                        <button className="p-2 hover:bg-gray-100 rounded-md transition-colors">
+                                                        <button
+                                                            onClick={() => {
+                                                                const summary = [
+                                                                    `Assignment: ${grade.assignmentName}`,
+                                                                    `Course: ${grade.course}`,
+                                                                    `Instructor: ${grade.instructor}`,
+                                                                    `Score: ${grade.pointsEarned}/${grade.totalPoints} (${grade.percentage}%)`,
+                                                                    `Letter: ${grade.letterGrade}`,
+                                                                    `Status: ${grade.status}`,
+                                                                    grade.gradedAt ? `Graded At: ${new Date(grade.gradedAt).toLocaleString()}` : '',
+                                                                    '',
+                                                                    `Feedback:`,
+                                                                    grade.feedback || '—',
+                                                                ]
+                                                                    .filter(Boolean)
+                                                                    .join('\n');
+                                                                downloadText(`grade-${grade.id}.txt`, summary);
+                                                            }}
+                                                            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                        >
                                                             <Download className="w-4 h-4 text-gray-600" />
                                                         </button>
                                                     </div>
@@ -409,6 +470,81 @@ export const GradesPage = () => {
                         </div>
                     </CardContent>
                 </Card>
+
+                {selectedGrade && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg max-w-2xl w-full overflow-hidden">
+                            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-[18px] font-bold text-gray-900">Grade Details</h2>
+                                    <p className="text-[14px] text-gray-600">{selectedGrade.course}</p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedGrade(null)}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <div className="text-[14px] font-semibold text-gray-900">{selectedGrade.assignmentName}</div>
+                                    <div className="text-[14px] text-gray-600">Instructor: {selectedGrade.instructor}</div>
+                                </div>
+
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    <div className="rounded-lg border border-gray-200 p-4">
+                                        <div className="text-[12px] text-gray-600">Score</div>
+                                        <div className="text-[16px] font-bold text-gray-900">
+                                            {selectedGrade.pointsEarned}/{selectedGrade.totalPoints} ({selectedGrade.percentage}%)
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-gray-200 p-4">
+                                        <div className="text-[12px] text-gray-600">Letter Grade</div>
+                                        <div className="text-[16px] font-bold text-gray-900">{selectedGrade.letterGrade}</div>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-lg border border-gray-200 p-4">
+                                    <div className="text-[12px] text-gray-600 mb-2">Feedback</div>
+                                    <div className="text-[14px] text-gray-700 whitespace-pre-line">
+                                        {selectedGrade.feedback || '—'}
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            const summary = [
+                                                `Assignment: ${selectedGrade.assignmentName}`,
+                                                `Course: ${selectedGrade.course}`,
+                                                `Instructor: ${selectedGrade.instructor}`,
+                                                `Score: ${selectedGrade.pointsEarned}/${selectedGrade.totalPoints} (${selectedGrade.percentage}%)`,
+                                                `Letter: ${selectedGrade.letterGrade}`,
+                                                '',
+                                                `Feedback:`,
+                                                selectedGrade.feedback || '—',
+                                            ].join('\n');
+                                            downloadText(`grade-${selectedGrade.id}.txt`, summary);
+                                        }}
+                                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        Download
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedGrade(null)}
+                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Feedback Section */}
                 <Card variant="elevated">

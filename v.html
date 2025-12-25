@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AiLern LMS - Intelligent Learning Management</title>
+<meta content="AiLern is the modern LMS platform for managing students, courses, and instructors with ease." name="description"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#2563EB", // Blue-600 matching the header/button
+                        secondary: "#3B82F6",
+                        "background-light": "#F8FAFC", // Slate-50 matching dashboard bg
+                        "background-dark": "#0F172A", // Slate-900
+                        "card-light": "#FFFFFF",
+                        "card-dark": "#1E293B",
+                        "text-main-light": "#1E293B",
+                        "text-main-dark": "#F1F5F9",
+                        "text-muted-light": "#64748B",
+                        "text-muted-dark": "#94A3B8",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        sans: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem", // rounded-2xl look from screenshot
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'glow': '0 0 20px rgba(37, 99, 235, 0.15)',
+                    }
+                },
+            },
+        };
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .dashboard-gradient {
+            background: linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 100%);
+        }
+        .dark .dashboard-gradient {
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+        }::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark transition-colors duration-300">
+<nav class="fixed w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-100 dark:border-slate-800">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between h-20 items-center">
+<div class="flex items-center space-x-3">
+<div class="bg-primary p-1.5 rounded-lg">
+<span class="material-icons-round text-white text-2xl">school</span>
+</div>
+<span class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">AiLern</span>
+</div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors" href="#features">Features</a>
+<a class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors" href="#about">About</a>
+<a class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary transition-colors" href="#faq">FAQ</a>
+</div>
+<div class="hidden md:flex items-center space-x-4">
+<a class="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary transition-all bg-white dark:bg-slate-800" href="#">Login</a>
+<a class="bg-primary hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-500/30" href="#">
+                        Contact Us
+                    </a>
+</div>
+<div class="md:hidden flex items-center">
+<button class="text-slate-600 dark:text-slate-300 hover:text-primary p-2">
+<span class="material-icons-round text-2xl">menu</span>
+</button>
+</div>
+</div>
+</div>
+</nav>
+<section class="relative pt-32 pb-20 lg:pt-40 lg:pb-28 overflow-hidden">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+<div class="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+<div class="max-w-2xl">
+<div class="inline-flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/30 text-primary px-3 py-1 rounded-full text-xs font-semibold mb-6 border border-blue-100 dark:border-blue-800">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span>v2.0 System Update Live</span>
+</div>
+<h1 class="text-4xl lg:text-6xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-tight">
+                        Manage Education <br/>
+<span class="text-primary">Intelligently.</span>
+</h1>
+<p class="text-lg text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
+                        AiLern provides a comprehensive admin dashboard to oversee students, instructors, and course content with real-time analytics and seamless management tools.
+                    </p>
+<div class="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+<div class="flex -space-x-2">
+<img alt="User" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJqMIa5Flh8bxVEaVBiRtzgxfcLDWxYK-Z4OxXY3VRBl4il4F-V2fmaq9uvyNjJmm5YjvNYQBsMiwmfftnS9Sxe5i4CZl4CTgXm7pvXOifLt1a6vKrIkGcs1cVrVL1uKVWzIAExx7VSn_Y0I442oMxBXynxBDnDH9pWajGoEZL_TlwTFdW1caQo4DgIg1UjGOqyRFNEzgyjVwuoHxxdm8n8Z1Pg8jbQjAVRUx5UHVxLpQBL7mA6EkkNXdhA2eQOGhyI8CH3n1fmkU"/>
+<img alt="User" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHvwDB4Is-pNh9YIvB6jU1zOQYJxU4_EWMNpMN5LUfgW3XlcA9cKHWHvjCSoO3xY_Hs1ZbX1x29myAoIVpNrgqeT6xHL2d8JadjuKpp0eWuvM7bxNc5dnnUWVef5r4ePl3Vo3G6olFcepIApXCbmdTDk3njibjRpgGyXwtkepdKT4AwMMI1xa3l-vnArWWA2CsuC403gYH_LPnRx5UFNzK0HHS0-nTwco1iCxbs3HQxIg3rFLyOOWiFfKvxlnDvXOD6vJ3EQ2HBBc"/>
+<img alt="User" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5dmtBZRb66qucKu029iPsuOYaj91I6UOFOaRS6h3NW-DmQaudAItmvPNE0lgmcq5YI4G_41m1QyGgajpngdhg353w_Y4_Sv5MQjxSqJhVQhXDETJ-ZgQbLhgxtXIscU0NXWEG4Il_NcM_mdflm66TiyIL_mygUYze8mFGpRYiNX9AWX04e85zdWFUP_kg8JM0KPHYDtk7DbMHUPrzuOXOHTbO_rJ1PFYOpZ3T1vN3UVwToMkqC-N318EUiVlIjSupdqYaLAVM4-M"/>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold">+2k</div>
+</div>
+<p>Trusted by 2,000+ Instructors</p>
+</div>
+</div>
+<div class="relative lg:ml-10 perspective-1000">
+<div class="absolute -top-10 -right-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl dark:bg-blue-600/10"></div>
+<div class="absolute -bottom-10 -left-10 w-72 h-72 bg-purple-400/20 rounded-full blur-3xl dark:bg-purple-600/10"></div>
+<div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 transform rotate-y-6 hover:rotate-y-0 transition-transform duration-500 ease-out">
+<div class="flex justify-between items-center mb-8 border-b border-slate-100 dark:border-slate-700 pb-4">
+<div>
+<h3 class="text-xl font-bold text-slate-900 dark:text-white">Admin Dashboard</h3>
+<p class="text-xs text-slate-500">System overview</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-primary text-xs font-medium rounded-lg">Export</span>
+<span class="px-3 py-1 bg-primary text-white text-xs font-medium rounded-lg">Settings</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-6">
+<div class="p-4 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs text-slate-500 font-medium">Total Students</span>
+<div class="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+<span class="material-icons-round text-primary text-sm">people</span>
+</div>
+</div>
+<div class="text-2xl font-bold text-slate-900 dark:text-white">1,250</div>
+<div class="text-xs text-green-500 font-medium mt-1">+12% growth</div>
+</div>
+<div class="p-4 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs text-slate-500 font-medium">Active Courses</span>
+<div class="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
+<span class="material-icons-round text-purple-600 text-sm">bookmark</span>
+</div>
+</div>
+<div class="text-2xl font-bold text-slate-900 dark:text-white">300</div>
+<div class="text-xs text-green-500 font-medium mt-1">+8% growth</div>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-primary flex items-center justify-center text-xs font-bold">JD</div>
+<div>
+<div class="text-xs font-bold text-slate-900 dark:text-white">Machine Learning</div>
+<div class="text-[10px] text-slate-500">Dr. Sarah Wilson</div>
+</div>
+</div>
+<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Approved</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 opacity-60">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-600 flex items-center justify-center text-xs font-bold">JS</div>
+<div>
+<div class="text-xs font-bold text-slate-900 dark:text-white">Data Structures</div>
+<div class="text-[10px] text-slate-500">Prof. John Smith</div>
+</div>
+</div>
+<span class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Pending</span>
+</div>
+</div>
+<div class="absolute -right-6 bottom-10 bg-white dark:bg-slate-700 p-3 rounded-xl shadow-xl border border-slate-100 dark:border-slate-600 flex items-center gap-3 animate-bounce duration-[3000ms]">
+<div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+<span class="material-icons-round text-green-600 text-lg">check_circle</span>
+</div>
+<div>
+<div class="text-xs font-bold text-slate-900 dark:text-white">System Healthy</div>
+<div class="text-[10px] text-slate-500">99.9% Uptime</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-20 bg-white dark:bg-slate-900" id="features">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center max-w-3xl mx-auto mb-16">
+<h2 class="text-3xl font-bold text-slate-900 dark:text-white mb-4">Powerful Features for Modern Education</h2>
+<p class="text-slate-600 dark:text-slate-400">Experience a unified platform designed to streamline administrative tasks and enhance the learning experience.</p>
+</div>
+<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 hover:shadow-lg transition-shadow group">
+<div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-icons-round text-primary text-2xl">people</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Student Analytics</h3>
+<p class="text-sm text-slate-600 dark:text-slate-400">Track enrollment, attendance, and performance metrics in real-time.</p>
+<div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center text-primary text-sm font-medium">
+<span>View Stats</span>
+<span class="material-icons-round text-sm ml-1">arrow_forward</span>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 hover:shadow-lg transition-shadow group">
+<div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-icons-round text-emerald-600 text-2xl">school</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Instructor Portal</h3>
+<p class="text-sm text-slate-600 dark:text-slate-400">Manage faculty applications, course assignments, and schedules easily.</p>
+<div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center text-emerald-600 text-sm font-medium">
+<span>Manage Staff</span>
+<span class="material-icons-round text-sm ml-1">arrow_forward</span>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 hover:shadow-lg transition-shadow group">
+<div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-icons-round text-purple-600 text-2xl">bookmark</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Course Builder</h3>
+<p class="text-sm text-slate-600 dark:text-slate-400">Intuitive tools to create, approve, and organize curriculum content.</p>
+<div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center text-purple-600 text-sm font-medium">
+<span>Create Course</span>
+<span class="material-icons-round text-sm ml-1">arrow_forward</span>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 hover:shadow-lg transition-shadow group">
+<div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-icons-round text-amber-500 text-2xl">schedule</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Smart Approvals</h3>
+<p class="text-sm text-slate-600 dark:text-slate-400">Automated workflows for pending course and instructor approvals.</p>
+<div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center text-amber-600 text-sm font-medium">
+<span>Review Queue</span>
+<span class="material-icons-round text-sm ml-1">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-20 bg-background-light dark:bg-background-dark overflow-hidden" id="about">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid lg:grid-cols-2 gap-16 items-center">
+<div class="relative order-2 lg:order-1">
+<div class="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-20 blur-lg"></div>
+<div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-xl font-bold text-slate-900 dark:text-white">System Metrics</h3>
+<a class="text-sm text-primary font-medium hover:underline" href="#">View Details</a>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl flex items-start gap-4">
+<div class="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+<span class="material-icons-round text-green-500">trending_up</span>
+</div>
+<div>
+<div class="text-2xl font-bold text-slate-900 dark:text-white">892</div>
+<div class="text-xs text-slate-500">Active Users Today</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl flex items-start gap-4">
+<div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+<span class="material-icons-round text-primary">check_circle</span>
+</div>
+<div>
+<div class="text-2xl font-bold text-slate-900 dark:text-white">45</div>
+<div class="text-xs text-slate-500">Course Completions</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl flex items-start gap-4">
+<div class="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+<span class="material-icons-round text-purple-500">chat_bubble_outline</span>
+</div>
+<div>
+<div class="text-2xl font-bold text-slate-900 dark:text-white">234</div>
+<div class="text-xs text-slate-500">Messages Sent</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl flex items-start gap-4">
+<div class="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+<span class="material-icons-round text-green-500">bar_chart</span>
+</div>
+<div>
+<div class="text-2xl font-bold text-slate-900 dark:text-white">99.9%</div>
+<div class="text-xs text-slate-500">System Uptime</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="order-1 lg:order-2">
+<h2 class="text-3xl font-bold text-slate-900 dark:text-white mb-6">About AiLern Platform</h2>
+<p class="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+                        Built for speed and reliability, AiLern offers administrators a crystal-clear view of their educational ecosystem. Our platform isn't just about data entry; it's about actionable insights.
+                    </p>
+<p class="text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
+                        From monitoring system health to approving the next groundbreaking course in Machine Learning, AiLern puts control back in your hands with a clean, distraction-free interface.
+                    </p>
+<ul class="space-y-4 mb-8">
+<li class="flex items-center gap-3">
+<span class="material-icons-round text-green-500">check</span>
+<span class="text-slate-700 dark:text-slate-300">Centralized User Management</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-icons-round text-green-500">check</span>
+<span class="text-slate-700 dark:text-slate-300">Detailed Reporting &amp; Exports</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-icons-round text-green-500">check</span>
+<span class="text-slate-700 dark:text-slate-300">Customizable Admin Permissions</span>
+</li>
+</ul>
+<button class="text-primary font-semibold hover:text-blue-700 flex items-center gap-2 group">
+                        Learn more about our mission
+                        <span class="material-icons-round group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<section class="py-20 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800" id="faq">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-12">
+<h2 class="text-3xl font-bold text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h2>
+<p class="text-slate-500">Everything you need to know about the AiLern ecosystem.</p>
+</div>
+<div class="space-y-4">
+<details class="group bg-slate-50 dark:bg-slate-800 rounded-xl p-4 [&amp;_summary::-webkit-details-marker]:hidden cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+<summary class="flex items-center justify-between font-medium text-slate-900 dark:text-white">
+<span>How do I export system reports?</span>
+<span class="transition group-open:rotate-180">
+<span class="material-icons-round text-slate-400">expand_more</span>
+</span>
+</summary>
+<div class="mt-4 text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                        Reports can be exported directly from the dashboard header using the "Export Report" button. We support PDF, CSV, and Excel formats for your convenience.
+                    </div>
+</details>
+<details class="group bg-slate-50 dark:bg-slate-800 rounded-xl p-4 [&amp;_summary::-webkit-details-marker]:hidden cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+<summary class="flex items-center justify-between font-medium text-slate-900 dark:text-white">
+<span>Is there a limit to the number of instructors?</span>
+<span class="transition group-open:rotate-180">
+<span class="material-icons-round text-slate-400">expand_more</span>
+</span>
+</summary>
+<div class="mt-4 text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                        No, AiLern scales with your institution. You can add unlimited instructors and students depending on your subscription tier.
+                    </div>
+</details>
+<details class="group bg-slate-50 dark:bg-slate-800 rounded-xl p-4 [&amp;_summary::-webkit-details-marker]:hidden cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+<summary class="flex items-center justify-between font-medium text-slate-900 dark:text-white">
+<span>Can I customize the dashboard colors?</span>
+<span class="transition group-open:rotate-180">
+<span class="material-icons-round text-slate-400">expand_more</span>
+</span>
+</summary>
+<div class="mt-4 text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                        Yes, "System Settings" allows you to modify the branding, including the primary color and logo, to match your organization's identity.
+                    </div>
+</details>
+</div>
+</div>
+</section>
+<section class="py-20 bg-primary relative overflow-hidden">
+<div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+<div class="max-w-4xl mx-auto px-4 text-center relative z-10">
+<h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Ready to transform your institution?</h2>
+<p class="text-blue-100 mb-8 text-lg">Join thousands of administrators managing their LMS efficiently with AiLern.</p>
+<div class="flex flex-col sm:flex-row justify-center gap-4">
+<button class="bg-white text-primary hover:bg-blue-50 px-8 py-3.5 rounded-xl font-bold transition-colors">
+                    Get Started Now
+                </button>
+<button class="bg-blue-700 text-white hover:bg-blue-800 px-8 py-3.5 rounded-xl font-medium border border-blue-600 transition-colors">
+                    Contact Sales
+                </button>
+</div>
+</div>
+</section>
+<footer class="bg-slate-900 text-slate-300 pt-16 pb-8 border-t border-slate-800">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+<div class="col-span-2 md:col-span-1">
+<div class="flex items-center space-x-2 mb-4">
+<span class="material-icons-round text-primary text-xl">school</span>
+<span class="text-xl font-bold text-white">AiLern</span>
+</div>
+<p class="text-sm text-slate-400 mb-4">Empowering education through intelligent management systems.</p>
+<div class="flex space-x-4">
+<a class="text-slate-400 hover:text-white transition-colors" href="#"><i class="material-icons-round text-lg">facebook</i></a>
+<a class="text-slate-400 hover:text-white transition-colors" href="#"><i class="material-icons-round text-lg">public</i></a>
+<a class="text-slate-400 hover:text-white transition-colors" href="#"><i class="material-icons-round text-lg">email</i></a>
+</div>
+</div>
+<div>
+<h4 class="text-white font-semibold mb-4">Platform</h4>
+<ul class="space-y-2 text-sm">
+<li><a class="hover:text-primary transition-colors" href="#">Dashboard</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Instructors</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Student Analytics</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">System Status</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-semibold mb-4">Support</h4>
+<ul class="space-y-2 text-sm">
+<li><a class="hover:text-primary transition-colors" href="#">Help Center</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Documentation</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">API Reference</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Community</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-semibold mb-4">Legal</h4>
+<ul class="space-y-2 text-sm">
+<li><a class="hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Cookie Policy</a></li>
+</ul>
+</div>
+</div>
+<div class="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500">
+<p>© 2024 AiLern LMS. All rights reserved.</p>
+<div class="mt-4 md:mt-0">
+                    Made with <span class="text-red-500">♥</span> for Education
+                </div>
+</div>
+</div>
+</footer>
+<script>
+        // Simple dark mode toggle functionality logic if we had a button
+        // For now, it respects system preference due to Tailwind class strategy
+        // But let's add a small script to verify initial load visual
+        console.log("AiLern Landing Page Loaded");
+    </script>
+
+</body></html>
