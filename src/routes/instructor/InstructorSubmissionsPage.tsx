@@ -19,7 +19,7 @@ interface Submission {
 
 export const InstructorSubmissionsPage = () => {
     const navigate = useNavigate();
-    
+
     const [submissions, setSubmissions] = useState<Submission[]>([
         {
             id: 1,
@@ -232,11 +232,10 @@ export const InstructorSubmissionsPage = () => {
                                                 setSortOrder('desc');
                                             }
                                         }}
-                                        className={`flex items-center gap-1 px-3 py-1 rounded-lg text-[12px] font-medium transition-colors ${
-                                            sortBy === field
+                                        className={`flex items-center gap-1 px-3 py-1 rounded-lg text-[12px] font-medium transition-colors ${sortBy === field
                                                 ? 'bg-blue-100 text-blue-700'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                        }`}
+                                            }`}
                                     >
                                         {field.charAt(0).toUpperCase() + field.slice(1)}
                                         {sortBy === field && (
@@ -311,11 +310,10 @@ export const InstructorSubmissionsPage = () => {
                                         <button
                                             key={page}
                                             onClick={() => setCurrentPage(page)}
-                                            className={`px-3 py-1 rounded-lg text-[14px] transition-colors ${
-                                                currentPage === page
+                                            className={`px-3 py-1 rounded-lg text-[14px] transition-colors ${currentPage === page
                                                     ? 'bg-blue-600 text-white'
                                                     : 'border border-gray-300 hover:bg-gray-50'
-                                            }`}
+                                                }`}
                                         >
                                             {page}
                                         </button>

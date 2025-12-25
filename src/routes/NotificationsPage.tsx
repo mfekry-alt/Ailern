@@ -17,7 +17,7 @@ interface Notification {
 
 export const NotificationsPage = () => {
     const [selectedType, setSelectedType] = useState<NotificationType>('all');
-    
+
     const [notifications, setNotifications] = useState<Notification[]>([
         {
             id: 1,
@@ -137,19 +137,17 @@ export const NotificationsPage = () => {
                                 <button
                                     key={filter.id}
                                     onClick={() => setSelectedType(filter.id)}
-                                    className={`px-4 py-2 rounded-lg text-[14px] font-medium transition-colors ${
-                                        selectedType === filter.id
+                                    className={`px-4 py-2 rounded-lg text-[14px] font-medium transition-colors ${selectedType === filter.id
                                             ? 'bg-blue-600 text-white'
                                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
+                                        }`}
                                 >
                                     {filter.label}
                                     {filter.count > 0 && (
-                                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[12px] ${
-                                            selectedType === filter.id
+                                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[12px] ${selectedType === filter.id
                                                 ? 'bg-blue-700 text-white'
                                                 : 'bg-gray-200 text-gray-700'
-                                        }`}>
+                                            }`}>
                                             {filter.count}
                                         </span>
                                     )}

@@ -77,11 +77,10 @@ export const InstructorAssignmentCreatePage = () => {
                             </div>
 
                             {statusMessage && (
-                                <div className={`p-4 rounded-lg ${
-                                    statusMessage.includes('success')
+                                <div className={`p-4 rounded-lg ${statusMessage.includes('success')
                                         ? 'bg-green-50 border border-green-200 text-green-800'
                                         : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
-                                }`}>
+                                    }`}>
                                     <p className="text-sm">{statusMessage}</p>
                                 </div>
                             )}
@@ -170,11 +169,10 @@ export const InstructorAssignmentCreatePage = () => {
                                                 key={type}
                                                 type="button"
                                                 onClick={() => toggleFileType(type)}
-                                                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                                                    formData.allowedFileTypes.includes(type)
+                                                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${formData.allowedFileTypes.includes(type)
                                                         ? 'bg-blue-600 text-white'
                                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 {type}
                                             </button>

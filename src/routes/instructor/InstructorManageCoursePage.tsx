@@ -236,8 +236,8 @@ export const InstructorManageCoursePage = () => {
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id as TabType)}
                                         className={`flex items-center gap-2 px-6 py-4 font-medium text-[14px] border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id
-                                                ? 'border-blue-600 text-blue-600'
-                                                : 'border-transparent text-gray-600 hover:text-gray-900'
+                                            ? 'border-blue-600 text-blue-600'
+                                            : 'border-transparent text-gray-600 hover:text-gray-900'
                                             }`}
                                     >
                                         <Icon className="w-4 h-4" />
@@ -422,8 +422,8 @@ export const InstructorManageCoursePage = () => {
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <h3 className="text-[16px] font-semibold text-gray-900">{assignment.title}</h3>
                                                     <span className={`px-2 py-1 rounded-full text-[12px] font-medium ${assignment.status === 'Published'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-yellow-100 text-yellow-800'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-yellow-100 text-yellow-800'
                                                         }`}>
                                                         {assignment.status}
                                                     </span>
@@ -480,8 +480,8 @@ export const InstructorManageCoursePage = () => {
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <h3 className="text-[16px] font-semibold text-gray-900">{quiz.name}</h3>
                                                     <span className={`px-2 py-1 rounded-full text-[12px] font-medium ${quiz.status === 'Published' ? 'bg-green-100 text-green-800' :
-                                                            quiz.status === 'Scheduled' ? 'bg-blue-100 text-blue-800' :
-                                                                'bg-yellow-100 text-yellow-800'
+                                                        quiz.status === 'Scheduled' ? 'bg-blue-100 text-blue-800' :
+                                                            'bg-yellow-100 text-yellow-800'
                                                         }`}>
                                                         {quiz.status}
                                                     </span>
@@ -651,9 +651,9 @@ export const InstructorManageCoursePage = () => {
                                                     <td className="py-3 px-4 text-[14px] text-gray-900">{student.quizGrade}%</td>
                                                     <td className="py-3 px-4">
                                                         <span className={`font-semibold ${student.overallGrade >= 90 ? 'text-green-600' :
-                                                                student.overallGrade >= 80 ? 'text-blue-600' :
-                                                                    student.overallGrade >= 70 ? 'text-yellow-600' :
-                                                                        'text-red-600'
+                                                            student.overallGrade >= 80 ? 'text-blue-600' :
+                                                                student.overallGrade >= 70 ? 'text-yellow-600' :
+                                                                    'text-red-600'
                                                             }`}>
                                                             {student.overallGrade}%
                                                         </span>
@@ -711,8 +711,8 @@ export const InstructorManageCoursePage = () => {
                                                     <span>{request.email}</span>
                                                     <span>Requested: {new Date(request.requestDate).toLocaleDateString()}</span>
                                                     <span className={`px-2 py-1 rounded-full text-[12px] font-medium ${request.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                            request.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                                                'bg-red-100 text-red-800'
+                                                        request.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                                            'bg-red-100 text-red-800'
                                                         }`}>
                                                         {request.status}
                                                     </span>
