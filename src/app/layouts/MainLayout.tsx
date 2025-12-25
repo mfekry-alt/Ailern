@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from '@/components/Header';
+import { AIBot } from '@/components/AIBot';
 import { APP_NAME, ROUTES } from '@/lib/constants';
 
 export const MainLayout = () => {
@@ -11,6 +12,7 @@ export const MainLayout = () => {
         return (
             <div className="min-h-screen">
                 <Outlet />
+                <AIBot />
             </div>
         );
     }
@@ -28,6 +30,7 @@ export const MainLayout = () => {
                     </p>
                 </div>
             </footer>
+            <AIBot />
         </div>
     );
 };

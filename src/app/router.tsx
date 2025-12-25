@@ -62,7 +62,7 @@ import { AdminSettingsPage } from '@/routes/admin/AdminSettingsPage';
 export const AppRouter = () => {
     return (
         <Routes>
-            {/* Auth routes (guest only) - Index page is login */}
+            {/* Auth routes (guest only) */}
             <Route
                 element={
                     <GuestOnly>
@@ -79,22 +79,8 @@ export const AppRouter = () => {
 
             {/* Public routes */}
             <Route element={<MainLayout />}>
-                <Route
-                    path={ROUTES.HOME}
-                    element={
-                        <GuestOnly>
-                            <HomePage />
-                        </GuestOnly>
-                    }
-                />
-                <Route
-                    path="/home"
-                    element={
-                        <GuestOnly>
-                            <HomePage />
-                        </GuestOnly>
-                    }
-                />
+                <Route path={ROUTES.HOME} element={<HomePage />} />
+                <Route path="/home" element={<HomePage />} />
                 <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
                 <Route path={ROUTES.FORBIDDEN} element={<ForbiddenPage />} />
             </Route>

@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { AppProviders } from './app/providers';
 import { AppRouter } from './app/router';
+import { ErrorBoundary } from './app/ErrorBoundary';
+import { GlobalErrorOverlay } from './app/GlobalErrorOverlay';
 import { useMe } from './features/auth/api';
 import { useAuthStore } from './features/auth/store';
 
@@ -31,7 +33,10 @@ function AppContent() {
 function App() {
   return (
     <AppProviders>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
+      <GlobalErrorOverlay />
     </AppProviders>
   );
 }

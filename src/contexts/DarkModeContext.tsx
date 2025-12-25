@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { storage } from '@/lib/storage';
 
 interface DarkModeContextType {
     isDarkMode: boolean;
@@ -20,18 +21,21 @@ interface DarkModeProviderProps {
 }
 
 export const DarkModeProvider: React.FC<DarkModeProviderProps> = ({ children }) => {
-    const [isDarkMode, setIsDarkMode] = useState(() => {
-        // Check localStorage first, then system preference
-        const saved = localStorage.getItem('darkMode');
-        if (saved !== null) {
-            return JSON.parse(saved);
+    const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+        // Check storage first (safe wrapper), then system preference
+        const saved = storage.get<boolean>('darkMode');
+        if (typeof saved === 'boolean') {
+            return saved;
         }
-        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+        return false;
     });
 
     useEffect(() => {
-        // Update localStorage when dark mode changes
-        localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+        // Persist when dark mode changes (safe wrapper)
+        storage.set('darkMode', isDarkMode);
 
         // Update document class for Tailwind dark mode
         if (isDarkMode) {
@@ -42,7 +46,7 @@ export const DarkModeProvider: React.FC<DarkModeProviderProps> = ({ children }) 
     }, [isDarkMode]);
 
     const toggleDarkMode = () => {
-        setIsDarkMode(!isDarkMode);
+        setIsDarkMode((prev) => !prev);
     };
 
     return (

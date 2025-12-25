@@ -13,5 +13,14 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+    // Proxy API calls to local AI proxy server to avoid CORS and expose /api/ai/*
+    proxy: {
+      '/api/ai': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/ai/, '/api/ai'),
+      },
+    },
   },
 })
