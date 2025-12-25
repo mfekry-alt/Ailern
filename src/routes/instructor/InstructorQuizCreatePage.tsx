@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui';
-import { ArrowLeft, Save, Calendar } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 
 export const InstructorQuizCreatePage = () => {
     const navigate = useNavigate();

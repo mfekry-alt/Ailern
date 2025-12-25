@@ -85,7 +85,6 @@ export const QuizzesPage = () => {
 
     const getStatusBadge = (quiz: Quiz) => {
         if (quiz.status === 'completed') {
-            const percentage = quiz.score ? (quiz.score / quiz.totalPoints) * 100 : 0;
             return {
                 text: 'Completed',
                 className: 'bg-green-100 text-green-800',

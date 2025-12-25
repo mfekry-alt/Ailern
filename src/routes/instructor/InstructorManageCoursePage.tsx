@@ -17,10 +17,8 @@ import {
     Upload,
     Pin,
     PinOff,
-    Clock,
     CheckCircle,
     XCircle,
-    AlertCircle,
     Search,
     Eye
 } from 'lucide-react';

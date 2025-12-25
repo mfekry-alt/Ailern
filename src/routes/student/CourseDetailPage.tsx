@@ -279,7 +279,7 @@ export const CourseDetailPage = () => {
                             <CardContent className="p-6">
                                 <h2 className="text-[24px] font-bold text-gray-900 mb-4">Learning Objectives</h2>
                                 <ul className="space-y-3">
-                                    {course.learningObjectives.map((objective, index) => (
+                                    {course.learningObjectives.map((objective: string, index: number) => (
                                         <li key={index} className="flex items-start gap-3">
                                             <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
                                             <span className="text-[16px] leading-[24px] text-gray-700">{objective}</span>
@@ -295,7 +295,7 @@ export const CourseDetailPage = () => {
                                 <CardContent className="p-6">
                                     <h2 className="text-[24px] font-bold text-gray-900 mb-4">Prerequisites</h2>
                                     <ul className="space-y-2">
-                                        {course.prerequisites.map((prereq, index) => (
+                                        {course.prerequisites.map((prereq: string, index: number) => (
                                             <li key={index} className="flex items-center gap-3">
                                                 <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                                                 <span className="text-[16px] leading-[24px] text-gray-700">{prereq}</span>
@@ -415,7 +415,7 @@ export const CourseDetailPage = () => {
                                 {activeTab === 'lectures' && (
                                     <div className="space-y-4">
                                         <h2 className="text-[24px] font-bold text-gray-900 mb-4">Lecture List</h2>
-                                        {course.lectures.map((lecture) => {
+                                        {course.lectures.map((lecture: any) => {
                                             const isExpanded = expandedLectures.has(lecture.id);
                                             const toggleExpand = () => {
                                                 const newExpanded = new Set(expandedLectures);
@@ -504,7 +504,7 @@ export const CourseDetailPage = () => {
                                                                 <div>
                                                                     <h4 className="text-[14px] font-semibold text-gray-900 mb-3">Additional Materials</h4>
                                                                     <div className="space-y-2">
-                                                                        {lecture.materials.map((material) => {
+                                                                        {lecture.materials.map((material: any) => {
                                                                             const Icon = material.icon;
                                                                             return (
                                                                                 <div
@@ -562,7 +562,7 @@ export const CourseDetailPage = () => {
                                         )}
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {course.materials.map((material) => {
+                                            {course.materials.map((material: any) => {
                                                 const Icon = material.icon;
                                                 return (
                                                     <div
@@ -602,7 +602,7 @@ export const CourseDetailPage = () => {
                                 {activeTab === 'assignments' && (
                                     <div className="space-y-4">
                                         <h2 className="text-[24px] font-bold text-gray-900 mb-4">Assignment List</h2>
-                                        {course.assignments.map((assignment) => (
+                                        {course.assignments.map((assignment: any) => (
                                             <div
                                                 key={assignment.id}
                                                 className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -638,7 +638,7 @@ export const CourseDetailPage = () => {
                                 {activeTab === 'quizzes' && (
                                     <div className="space-y-4">
                                         <h2 className="text-[24px] font-bold text-gray-900 mb-4">Quiz List</h2>
-                                        {course.quizzes.map((quiz) => (
+                                        {course.quizzes.map((quiz: any) => (
                                             <div
                                                 key={quiz.id}
                                                 className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -669,7 +669,7 @@ export const CourseDetailPage = () => {
                                 {activeTab === 'announcements' && (
                                     <div className="space-y-4">
                                         <h2 className="text-[24px] font-bold text-gray-900 mb-4">Announcements</h2>
-                                        {course.announcements.map((announcement) => (
+                                        {course.announcements.map((announcement: any) => (
                                             <div
                                                 key={announcement.id}
                                                 className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui';
-import { Bell, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Award, UserCheck, XCircle, Filter } from 'lucide-react';
+import { Bell, BookOpen, MessageSquare, Award, UserCheck, XCircle } from 'lucide-react';
 
 type NotificationType = 'all' | 'enrollment' | 'announcement' | 'assignment_grade' | 'quiz_grade' | 'course_update';
 

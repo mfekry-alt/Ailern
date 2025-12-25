@@ -97,7 +97,13 @@ export const InstructorCourseEditContentPage = () => {
     const [announcementTitle, setAnnouncementTitle] = useState('');
     const [announcementBody, setAnnouncementBody] = useState('');
     const [announcementPinned, setAnnouncementPinned] = useState(false);
-    const [announcements, setAnnouncements] = useState([
+    const [announcements, setAnnouncements] = useState<Array<{
+        id: string;
+        title: string;
+        date: string;
+        pinned: boolean;
+        attachmentName?: string;
+    }>>([
         { id: '1', title: 'Welcome to the Course', date: '2024-02-01', pinned: true },
         { id: '2', title: 'Assignment 1 posted', date: '2024-02-05', pinned: false },
     ]);
@@ -105,9 +111,9 @@ export const InstructorCourseEditContentPage = () => {
     // Content state
     const [lectures, setLectures] = useState(initialLectures);
     const [generalMaterials, setGeneralMaterials] = useState(initialGeneralMaterials);
-    const [courseAssignments, setCourseAssignments] = useState(initialAssignments);
-    const [courseQuizzes, setCourseQuizzes] = useState(initialQuizzes);
-    const [students, setStudents] = useState(initialStudents);
+    const [courseAssignments] = useState(initialAssignments);
+    const [courseQuizzes] = useState(initialQuizzes);
+    const [students] = useState(initialStudents);
     const [enrollmentRequests, setEnrollmentRequests] = useState(initialEnrollmentRequests);
 
     // Inline add forms state

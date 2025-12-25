@@ -97,8 +97,8 @@ export const ProfilePage = () => {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-lg border border-blue-200 overflow-hidden">
-                            {user?.avatarUrl ? (
-                                <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                            {user?.avatar ? (
+                                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 <ImageIcon className="w-7 h-7" />
                             )}

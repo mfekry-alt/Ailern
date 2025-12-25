@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui';
-import { ArrowLeft, Download, Search, Filter, CheckCircle2, XCircle, Clock, ChevronUp, ChevronDown } from 'lucide-react';
-import { ROUTES } from '@/lib/constants';
+import { ArrowLeft, Download, Search, Filter, CheckCircle2, XCircle, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface Submission {
     id: number;
@@ -19,7 +18,6 @@ interface Submission {
 }
 
 export const InstructorSubmissionsPage = () => {
-    const { assignmentId } = useParams();
     const navigate = useNavigate();
     
     const [submissions, setSubmissions] = useState<Submission[]>([

@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui';
-import { CheckCircle, XCircle, Eye, Filter, Search, Calendar, User, BookOpen, FileText, HelpCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, Search, Calendar, User, BookOpen, FileText, HelpCircle } from 'lucide-react';
 
 interface CourseForApproval {
     id: string;
@@ -21,7 +20,6 @@ interface CourseForApproval {
 }
 
 export const AdminCourseApprovalPage = () => {
-    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('Pending');
     const [selectedCourse, setSelectedCourse] = useState<CourseForApproval | null>(null);
