@@ -97,8 +97,8 @@ export const AdminCourseApprovalPage = () => {
     const filteredCourses = courses.filter(course => {
         const statusMatch = selectedStatus === 'All' || course.status === selectedStatus;
         const searchMatch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          course.courseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          course.instructorName.toLowerCase().includes(searchQuery.toLowerCase());
+            course.courseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            course.instructorName.toLowerCase().includes(searchQuery.toLowerCase());
         return statusMatch && searchMatch;
     });
 
@@ -154,11 +154,10 @@ export const AdminCourseApprovalPage = () => {
                                                     {course.courseCode} • {course.category}
                                                 </p>
                                             </div>
-                                            <span className={`px-3 py-1 rounded-full text-[13px] font-medium ${
-                                                course.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                course.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                                'bg-red-100 text-red-800'
-                                            }`}>
+                                            <span className={`px-3 py-1 rounded-full text-[13px] font-medium ${course.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                    course.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                                        'bg-red-100 text-red-800'
+                                                }`}>
                                                 {course.status}
                                             </span>
                                         </div>

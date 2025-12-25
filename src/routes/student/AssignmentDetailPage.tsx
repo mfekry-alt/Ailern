@@ -75,7 +75,7 @@ Submission Guidelines:
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         setSubmitError('');
-        
+
         if (!file) {
             setSelectedFile(null);
             return;
@@ -185,7 +185,7 @@ Submission Guidelines:
                         <Card variant="elevated">
                             <CardContent className="p-6">
                                 <h2 className="text-[20px] font-bold text-gray-900 mb-4">Assignment Details</h2>
-                                
+
                                 <div className="space-y-4">
                                     <div>
                                         <h3 className="text-[14px] font-semibold text-gray-700 mb-2">Description</h3>
@@ -224,7 +224,7 @@ Submission Guidelines:
                             <Card variant="elevated">
                                 <CardContent className="p-6">
                                     <h2 className="text-[20px] font-bold text-gray-900 mb-4">Submit Your Work</h2>
-                                    
+
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-[14px] font-medium text-gray-700 mb-2">
@@ -269,11 +269,10 @@ Submission Guidelines:
                                         <button
                                             onClick={handleSubmit}
                                             disabled={!selectedFile || uploading}
-                                            className={`w-full font-medium text-[16px] px-6 py-3 rounded-lg transition-colors ${
-                                                !selectedFile || uploading
+                                            className={`w-full font-medium text-[16px] px-6 py-3 rounded-lg transition-colors ${!selectedFile || uploading
                                                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                                     : 'bg-blue-600 hover:bg-blue-700 text-white'
-                                            }`}
+                                                }`}
                                         >
                                             {uploading ? 'Submitting...' : 'Submit Assignment'}
                                         </button>
@@ -320,7 +319,7 @@ Submission Guidelines:
                             <Card variant="elevated">
                                 <CardContent className="p-6">
                                     <h2 className="text-[20px] font-bold text-gray-900 mb-4">Grade & Feedback</h2>
-                                    
+
                                     <div className="space-y-4">
                                         {deadlineStatus && (
                                             <div className={`p-3 rounded-lg border ${deadlineStatus.bgColor} ${deadlineStatus.borderColor}`}>
@@ -370,7 +369,7 @@ Submission Guidelines:
                         <Card variant="elevated">
                             <CardContent className="p-6">
                                 <h3 className="text-[16px] font-bold text-gray-900 mb-4">Assignment Info</h3>
-                                
+
                                 <div className="space-y-4">
                                     <div>
                                         <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-1">
@@ -406,14 +405,13 @@ Submission Guidelines:
                                             <Clock className="w-4 h-4" />
                                             <span>Status</span>
                                         </div>
-                                        <span className={`inline-block px-3 py-1 rounded-full text-[13px] font-medium ${
-                                            assignment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                            assignment.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
-                                            'bg-green-100 text-green-800'
-                                        }`}>
+                                        <span className={`inline-block px-3 py-1 rounded-full text-[13px] font-medium ${assignment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                assignment.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
+                                                    'bg-green-100 text-green-800'
+                                            }`}>
                                             {assignment.status === 'pending' ? 'Pending' :
-                                             assignment.status === 'submitted' ? 'Submitted' :
-                                             'Graded'}
+                                                assignment.status === 'submitted' ? 'Submitted' :
+                                                    'Graded'}
                                         </span>
                                     </div>
                                 </div>
@@ -424,7 +422,7 @@ Submission Guidelines:
                         <Card variant="elevated">
                             <CardContent className="p-6">
                                 <h3 className="text-[16px] font-bold text-gray-900 mb-4">Submission Requirements</h3>
-                                
+
                                 <div className="space-y-3">
                                     <div>
                                         <p className="text-[13px] text-gray-500 mb-1">Allowed File Types</p>

@@ -28,7 +28,7 @@ interface Quiz {
 export const QuizPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    
+
     const [quiz] = useState<Quiz>({
         id: id || '1',
         name: 'Quiz 1: AI Fundamentals',
@@ -303,7 +303,7 @@ Good luck!`,
                                     </p>
                                 </div>
                             </div>
-                            
+
                             {/* Progress bar */}
                             <div className="mt-4">
                                 <div className="flex items-center justify-between text-[13px] text-gray-600 mb-2">
@@ -328,13 +328,12 @@ Good luck!`,
                                     <button
                                         key={q.id}
                                         onClick={() => setCurrentQuestionIndex(index)}
-                                        className={`flex-shrink-0 w-10 h-10 rounded-lg font-semibold text-[14px] transition-all ${
-                                            index === currentQuestionIndex
+                                        className={`flex-shrink-0 w-10 h-10 rounded-lg font-semibold text-[14px] transition-all ${index === currentQuestionIndex
                                                 ? 'bg-blue-600 text-white'
                                                 : answers[q.id] !== undefined
-                                                ? 'bg-green-100 text-green-800 border-2 border-green-300'
-                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
+                                                    ? 'bg-green-100 text-green-800 border-2 border-green-300'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
                                     >
                                         {index + 1}
                                     </button>
@@ -353,7 +352,7 @@ Good luck!`,
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-[12px] font-semibold">
                                                     {currentQuestion.type === 'MCQ' ? 'Multiple Choice' :
-                                                     currentQuestion.type === 'TF' ? 'True/False' : 'Written Answer'}
+                                                        currentQuestion.type === 'TF' ? 'True/False' : 'Written Answer'}
                                                 </span>
                                                 <span className="text-[14px] text-gray-600">
                                                     {currentQuestion.points} {currentQuestion.points === 1 ? 'point' : 'points'}
@@ -371,11 +370,10 @@ Good luck!`,
                                             {currentQuestion.options.map((option, index) => (
                                                 <label
                                                     key={index}
-                                                    className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                                        answers[currentQuestion.id] === option
+                                                    className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${answers[currentQuestion.id] === option
                                                             ? 'border-blue-500 bg-blue-50'
                                                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <input
                                                         type="radio"
@@ -397,11 +395,10 @@ Good luck!`,
                                             {[true, false].map((value) => (
                                                 <label
                                                     key={String(value)}
-                                                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                                        answers[currentQuestion.id] === value
+                                                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${answers[currentQuestion.id] === value
                                                             ? 'border-blue-500 bg-blue-50'
                                                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <input
                                                         type="radio"
@@ -438,11 +435,10 @@ Good luck!`,
                         <button
                             onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
                             disabled={currentQuestionIndex === 0}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-[14px] transition-colors ${
-                                currentQuestionIndex === 0
+                            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-[14px] transition-colors ${currentQuestionIndex === 0
                                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                     : 'bg-gray-600 hover:bg-gray-700 text-white'
-                            }`}
+                                }`}
                         >
                             <ArrowLeft className="w-4 h-4" />
                             Previous
@@ -514,13 +510,13 @@ Good luck!`,
                                                 Written Questions Pending Review
                                             </h3>
                                             <p className="text-[14px] text-yellow-800 leading-relaxed mb-2">
-                                                Your written answers are currently being reviewed by the instructor. 
+                                                Your written answers are currently being reviewed by the instructor.
                                                 Your final score will be updated once the manual grading is complete.
                                             </p>
                                             <div className="flex items-center gap-2 text-[13px] text-yellow-700">
                                                 <FileText className="w-4 h-4" />
                                                 <span className="font-semibold">
-                                                    {quiz.questions.filter(q => q.type === 'Written').length} written question(s) 
+                                                    {quiz.questions.filter(q => q.type === 'Written').length} written question(s)
                                                     worth {quiz.questions.filter(q => q.type === 'Written').reduce((sum, q) => sum + q.points, 0)} points
                                                 </span>
                                             </div>
@@ -532,7 +528,7 @@ Good luck!`,
                             {/* Review Answers */}
                             <div className="space-y-4">
                                 <h2 className="text-[22px] font-bold text-gray-900">Review Your Answers</h2>
-                                
+
                                 {quiz.questions.map((question, index) => {
                                     const userAnswer = answers[question.id];
                                     const isCorrect = question.type !== 'Written' && userAnswer === question.correctAnswer;
@@ -577,15 +573,14 @@ Good luck!`,
                                             {/* User's Answer */}
                                             <div className="mb-3">
                                                 <p className="text-[13px] font-semibold text-gray-700 mb-1">Your Answer:</p>
-                                                <div className={`p-3 rounded-lg ${
-                                                    question.type === 'Written' 
+                                                <div className={`p-3 rounded-lg ${question.type === 'Written'
                                                         ? 'bg-blue-50 border border-blue-200'
-                                                        : isCorrect 
-                                                        ? 'bg-green-50 border border-green-200' 
-                                                        : 'bg-red-50 border border-red-200'
-                                                }`}>
+                                                        : isCorrect
+                                                            ? 'bg-green-50 border border-green-200'
+                                                            : 'bg-red-50 border border-red-200'
+                                                    }`}>
                                                     <p className="text-[14px] text-gray-800">
-                                                        {isAnswered 
+                                                        {isAnswered
                                                             ? String(userAnswer)
                                                             : <span className="text-gray-500 italic">No answer provided</span>
                                                         }

@@ -198,13 +198,13 @@ export const CourseDetailPage = () => {
         // Properly encode each path segment to handle spaces
         const encodedPath = path.split('/').map(segment => encodeURIComponent(segment)).join('/');
         const fullUrl = `${window.location.origin}${encodedPath}`;
-        
+
         // For PDFs and Office files, use Google Docs Viewer to prevent auto-download
         const fmt = format?.toLowerCase();
         if (fmt === 'pdf' || fmt === 'pptx' || fmt === 'docx' || fmt === 'xlsx') {
             return `https://docs.google.com/viewer?url=${encodeURIComponent(fullUrl)}&embedded=true`;
         }
-        
+
         return fullUrl;
     };
 
@@ -654,7 +654,7 @@ export const CourseDetailPage = () => {
                                                         {quiz.score && <p className="text-[14px] text-green-600 font-medium">Score: {quiz.score}</p>}
                                                     </div>
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={() => navigate(`/quiz/${quiz.id}`)}
                                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                                 >
@@ -754,11 +754,11 @@ export const CourseDetailPage = () => {
             </div>
 
             {preview && (
-                <div 
+                <div
                     className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-4"
                     onClick={() => setPreview(null)}
                 >
-                    <div 
+                    <div
                         className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col overflow-hidden"
                         style={{ height: preview.kind === 'video' ? '85vh' : '90vh' }}
                         onClick={(e) => e.stopPropagation()}
