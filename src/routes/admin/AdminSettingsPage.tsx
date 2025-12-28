@@ -156,14 +156,12 @@ export const AdminSettingsPage = () => {
                                     <span className="text-[14px] text-azure-8 dark:text-gray-200">Dark Mode</span>
                                     <button
                                         onClick={toggleDarkMode}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
-                                            isDarkMode ? 'bg-blue-600' : 'bg-gray-300'
-                                        }`}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${isDarkMode ? 'bg-blue-600' : 'bg-gray-300'
+                                            }`}
                                     >
                                         <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                                isDarkMode ? 'translate-x-6' : 'translate-x-1'
-                                            }`}
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'
+                                                }`}
                                         />
                                     </button>
                                 </div>
