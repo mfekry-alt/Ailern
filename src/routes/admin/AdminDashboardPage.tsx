@@ -149,7 +149,7 @@ export const AdminDashboardPage = () => {
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen transition-colors duration-300">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -159,17 +159,17 @@ export const AdminDashboardPage = () => {
                                 v1.0 System Update Live
                             </span>
                         </div>
-                        <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-white">
+                        <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-zinc-100">
                             Manage Education <span className="text-blue-600 dark:text-blue-400">Intelligently.</span>
                         </h1>
-                        <p className="text-[16px] leading-[24px] text-gray-600 dark:text-gray-400 mt-2">
+                        <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400 mt-2">
                             Ailern provides a comprehensive admin dashboard to oversee students, instructors, and course content with real-time analytics and seamless management tools.
                         </p>
                     </div>
                     <div className="flex gap-3">
                         <button
                             onClick={exportDashboardReport}
-                            className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                            className="flex items-center gap-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors cursor-pointer"
                         >
                             <Download className="w-4 h-4" />
                             Export
@@ -190,13 +190,13 @@ export const AdminDashboardPage = () => {
                         const IconComponent = stat.icon;
                         return (
                             <Card key={stat.label} variant="elevated">
-                                <CardContent className="p-6 bg-white dark:bg-gray-800 transition-colors">
+                                <CardContent className="p-6 bg-white dark:bg-zinc-900 transition-colors">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-[14px] font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                            <p className="text-[14px] font-medium text-gray-600 dark:text-zinc-400 mb-1">
                                                 {stat.label}
                                             </p>
-                                            <p className="text-[24px] font-bold text-gray-900 dark:text-white">
+                                            <p className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">
                                                 {stat.value}
                                             </p>
                                             <p className="text-[12px] text-green-600 dark:text-green-400 font-medium">
@@ -217,21 +217,21 @@ export const AdminDashboardPage = () => {
                     {/* System Metrics */}
                     <div className="lg:col-span-2">
                         <Card variant="elevated">
-                            <CardContent className="p-6 bg-white dark:bg-gray-800 transition-colors">
+                            <CardContent className="p-6 bg-white dark:bg-zinc-900 transition-colors">
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
-                                        <h2 className="text-[20px] font-bold text-gray-900 dark:text-white">
+                                        <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">
                                             System overview
                                         </h2>
-                                        <p className="text-[14px] text-gray-600 dark:text-gray-400">Live statistics</p>
+                                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">Live statistics</p>
                                     </div>
                                     <div className="flex gap-3">
-                                        <button className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium text-[14px] cursor-pointer">
+                                        <button className="text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 font-medium text-[14px] cursor-pointer">
                                             Export
                                         </button>
                                         <button
                                             onClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
-                                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium text-[14px] cursor-pointer"
+                                            className="text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 font-medium text-[14px] cursor-pointer"
                                         >
                                             Settings
                                         </button>
@@ -242,14 +242,14 @@ export const AdminDashboardPage = () => {
                                     {systemMetrics.map((metric) => {
                                         const IconComponent = metric.icon;
                                         return (
-                                            <div key={metric.label} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 transition-colors">
+                                            <div key={metric.label} className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-4 transition-colors">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-600 flex items-center justify-center">
+                                                    <div className="w-10 h-10 rounded-lg bg-white dark:bg-zinc-700 flex items-center justify-center">
                                                         <IconComponent className={`w-5 h-5 ${metric.color}`} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-[16px] font-bold text-gray-900 dark:text-white">{metric.value}</p>
-                                                        <p className="text-[12px] text-gray-600 dark:text-gray-400">{metric.label}</p>
+                                                        <p className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">{metric.value}</p>
+                                                        <p className="text-[12px] text-gray-600 dark:text-zinc-400">{metric.label}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -263,9 +263,9 @@ export const AdminDashboardPage = () => {
                     {/* Pending Approvals */}
                     <div className="lg:col-span-1">
                         <Card variant="elevated">
-                            <CardContent className="p-6">
+                            <CardContent className="p-6 bg-white dark:bg-zinc-900 transition-colors">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-[20px] font-bold text-gray-900">
+                                    <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">
                                         Pending Approvals
                                     </h2>
                                     <AlertCircle className="w-5 h-5 text-yellow-500" />
@@ -273,10 +273,10 @@ export const AdminDashboardPage = () => {
 
                                 <div className="space-y-3">
                                     {pendingApprovals.map((approval) => (
-                                        <div key={approval.id} className="bg-gray-50 rounded-lg p-3">
+                                        <div key={approval.id} className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-3">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div>
-                                                    <p className="text-[14px] font-semibold text-gray-900">
+                                                    <p className="text-[14px] font-semibold text-gray-900 dark:text-zinc-100">
                                                         {approval.title}
                                                     </p>
                                                     <p className="text-[12px] text-gray-600">

@@ -161,10 +161,8 @@ export const Header = () => {
 
     return (
         <header
-            className="bg-white/50 backdrop-blur-md border-b sticky top-0 z-50"
+            className="bg-white/60 dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800 sticky top-0 z-50 transition-colors"
             style={{
-                borderBottomColor: '#dcfce7',
-                borderBottomWidth: '1px',
                 paddingTop: '12px',
                 paddingBottom: '13px',
                 paddingLeft: '24px',
@@ -180,7 +178,7 @@ export const Header = () => {
                     <div className="flex items-center justify-center w-[30px] h-[30px] text-[#2563eb] text-[30px]">
                         <span className="material-icons">school</span>
                     </div>
-                    <div className="font-bold text-[20px] leading-[28px]" style={{ color: '#111827' }}>
+                    <div className="font-bold text-[20px] leading-[28px] text-gray-900 dark:text-zinc-100">
                         {APP_NAME}
                     </div>
                 </Link>

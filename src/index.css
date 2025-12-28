@@ -23,10 +23,12 @@ input[type="reset"] {
   cursor: pointer;
 }
 
-/* Dark mode styles */
+/* Dark mode styles - using zinc palette */
 .dark body {
-  background-color: #000000;
-  color: #f8fafc;
+  background-color: #09090b;
+  /* zinc-950 */
+  color: #f4f4f5;
+  /* zinc-100 */
 }
 
 .dark {

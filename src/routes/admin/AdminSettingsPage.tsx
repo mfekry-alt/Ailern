@@ -35,15 +35,15 @@ export const AdminSettingsPage = () => {
     };
 
     return (
-        <div className="p-8 max-w-[1920px] mx-auto dark:bg-background-dark">
+        <div className="p-8 max-w-[1920px] mx-auto dark:bg-zinc-950">
             <div className="flex flex-col gap-8 items-start w-full">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between w-full gap-3">
                     <div>
-                        <h1 className="font-bold text-[36px] leading-[40px] tracking-[-0.9px] text-azure-8 dark:text-gray-100">
+                        <h1 className="font-bold text-[36px] leading-[40px] tracking-[-0.9px] text-azure-8 dark:text-zinc-100">
                             Profile Settings
                         </h1>
-                        <p className="text-[16px] leading-[24px] text-azure-46 dark:text-gray-400 mt-2">
+                        <p className="text-[16px] leading-[24px] text-azure-46 dark:text-zinc-400 mt-2">
                             Manage your admin profile, preferences, and security
                         </p>
                         {statusMessage && (
@@ -63,8 +63,8 @@ export const AdminSettingsPage = () => {
                 {/* Settings Sections */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
                     {/* Profile Information */}
-                    <div className="bg-white dark:bg-gray-800 border border-azure-88 dark:border-gray-700 rounded-lg p-6">
-                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 dark:text-gray-100 mb-4">
+                    <div className="bg-white dark:bg-zinc-900 border border-azure-88 dark:border-zinc-800 rounded-lg p-6">
+                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 dark:text-zinc-100 mb-4">
                             Profile Information
                         </h2>
                         <div className="space-y-4">
@@ -120,8 +120,8 @@ export const AdminSettingsPage = () => {
                     </div>
 
                     {/* Preferences */}
-                    <div className="bg-white dark:bg-gray-800 border border-azure-88 dark:border-gray-700 rounded-lg p-6">
-                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 dark:text-gray-100 mb-4">
+                    <div className="bg-white dark:bg-zinc-900 border border-azure-88 dark:border-zinc-800 rounded-lg p-6">
+                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 dark:text-zinc-100 mb-4">
                             Preferences
                         </h2>
                         <div className="space-y-4">
@@ -152,8 +152,8 @@ export const AdminSettingsPage = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="block text-[14px] font-medium text-azure-8">Display Mode</label>
-                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                    <span className="text-[14px] text-azure-8 dark:text-gray-200">Dark Mode</span>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+                                    <span className="text-[14px] text-azure-8 dark:text-zinc-200">Dark Mode</span>
                                     <button
                                         onClick={toggleDarkMode}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${isDarkMode ? 'bg-blue-600' : 'bg-gray-300'
@@ -191,8 +191,8 @@ export const AdminSettingsPage = () => {
                     </div>
 
                     {/* Security */}
-                    <div className="bg-white dark:bg-gray-800 border border-azure-88 dark:border-gray-700 rounded-lg p-6">
-                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 dark:text-gray-100 mb-4">
+                    <div className="bg-white dark:bg-zinc-900 border border-azure-88 dark:border-zinc-800 rounded-lg p-6">
+                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 dark:text-zinc-100 mb-4">
                             Security
                         </h2>
                         <div className="space-y-4">

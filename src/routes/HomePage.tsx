@@ -18,40 +18,44 @@ import {
     Globe,
     School,
     Bookmark,
+    Moon,
+    Sun,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useDarkMode } from '@/contexts/DarkModeContext';
 
 export const HomePage = () => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { isDarkMode, toggleDarkMode } = useDarkMode();
 
     const toggleFaq = (index: number) => {
         setOpenFaq(openFaq === index ? null : index);
     };
 
     return (
-        <div className="bg-white text-slate-900 dark:bg-black dark:text-white transition-colors duration-300">
+        <div className="bg-white text-slate-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300">
             {/* Navigation */}
-            <nav className="fixed w-full z-50 bg-white/60 dark:bg-black/60 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
+            <nav className="fixed w-full z-50 bg-white/60 dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-20 items-center">
                         <div className="flex items-center gap-2.5">
                             <img src="/logo.svg" alt={`${APP_NAME} logo`} className="w-[150px]" />
                         </div>
                         <div className="hidden md:flex items-center space-x-8">
-                            <a className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#features">
+                            <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#features">
                                 Features
                             </a>
-                            <a className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#about">
+                            <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#about">
                                 About
                             </a>
-                            <a className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#faq">
+                            <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#faq">
                                 FAQ
                             </a>
                         </div>
                         <div className="hidden md:flex items-center space-x-4">
                             <Link to={ROUTES.LOGIN}>
-                                <button className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 border border-slate-200 hover:border-primary hover:bg-green-700 hover:text-white transition-all bg-white cursor-pointer">
+                                <button className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 hover:border-primary hover:bg-green-700 hover:text-white transition-all bg-white dark:bg-zinc-900 cursor-pointer">
                                     Login
                                 </button>
                             </Link>
@@ -513,9 +517,20 @@ export const HomePage = () => {
                         </div>
                     </div>
                     <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500">
-                        <p>© 2025 {APP_NAME} LMS. All rights reserved.</p>
-                        <div className="mt-4 md:mt-0">
-                            Made with <span className="text-red-500">♥</span> for Education
+                        <p>© 2026 {APP_NAME} LMS. All rights reserved.</p>
+                        <div className="flex items-center gap-6 mt-4 md:mt-0">
+                            <button
+                                onClick={toggleDarkMode}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                                aria-label="Toggle dark mode"
+                            >
+                                {isDarkMode ? (
+                                    <><Sun className="w-4 h-4" /> Light Mode</>
+                                ) : (
+                                    <><Moon className="w-4 h-4" /> Dark Mode</>
+                                )}
+                            </button>
+                            <span>Made with <span className="text-red-500">♥</span> for Education</span>
                         </div>
                     </div>
                 </div>
