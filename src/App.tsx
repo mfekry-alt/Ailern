@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { AppProviders } from './app/providers';
 import { AppRouter } from './app/router';
 import { ErrorBoundary } from './app/ErrorBoundary';
@@ -37,6 +38,7 @@ function App() {
         <AppContent />
       </ErrorBoundary>
       <GlobalErrorOverlay />
+      <Analytics />
     </AppProviders>
   );
 }
