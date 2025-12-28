@@ -50,7 +50,6 @@ export const sendMessageToGemini = async (
         contents: [
           ...history,
           {
-            role: 'user',
             parts: [{ text: message }],
           },
         ],
