@@ -404,7 +404,7 @@ export const HomePage = () => {
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                 <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
                     <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to transform <span className="text-green-700 font-bold">your institution?</span></h2>
-                    <p className="text-slate-500 mb-8 text-lg">Join thousands of administrators managing their LMS efficiently with {APP_NAME}.</p>
+                    <p className="text-slate-600 mb-8 text-lg">Join thousands of administrators managing their LMS efficiently with {APP_NAME}.</p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
                         <Link to={ROUTES.LOGIN}>
                             <Button size="lg" className="bg-white text-primary hover:bg-green-700  hover:text-white">
