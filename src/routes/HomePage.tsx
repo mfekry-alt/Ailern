@@ -55,7 +55,7 @@ export const HomePage = () => {
                         </div>
                         <div className="hidden md:flex items-center space-x-4">
                             <Link to={ROUTES.LOGIN}>
-                                <button className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 hover:border-primary hover:bg-green-700 hover:text-white transition-all bg-white dark:bg-zinc-900 cursor-pointer">
+                                <button className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-zinc-100 hover:bg-green-700 hover:text-white transition-all bg-slate-100 dark:bg-zinc-800 cursor-pointer">
                                     Login
                                 </button>
                             </Link>
@@ -78,21 +78,21 @@ export const HomePage = () => {
 
                 {/* Mobile Menu Dropdown */}
                 {isMobileMenuOpen && (
-                    <div className="md:hidden bg-white border-b border-gray-100 px-4 pt-2 pb-4 shadow-lg">
+                    <div className="md:hidden bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 px-4 pt-2 pb-4 shadow-lg">
                         <div className="flex flex-col space-y-3">
                             {['Features', 'About', 'FAQ'].map((item) => (
                                 <a
                                     key={item}
                                     href={`#${item.toLowerCase()}`}
-                                    className="text-base font-medium text-slate-600 hover:text-blue-700 py-2"
+                                    className="text-base font-medium text-slate-600 dark:text-zinc-300 hover:text-blue-700 py-2"
                                     onClick={() => setIsMobileMenuOpen(false)}
                                 >
                                     {item}
                                 </a>
                             ))}
-                            <div className="h-px bg-slate-100 my-2"></div>
+                            <div className="h-px bg-slate-100 dark:bg-zinc-800 my-2"></div>
                             <Link to={ROUTES.LOGIN} onClick={() => setIsMobileMenuOpen(false)}>
-                                <button className="text-center w-full px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 border border-slate-200">
+                                <button className="text-center w-full px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors">
                                     Login
                                 </button>
                             </Link>
@@ -115,9 +115,9 @@ export const HomePage = () => {
                                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
                                 <span className="text-green-700 font-bold">v1.0 System Update Live</span>
                             </div>
-                            <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-slate-900 mb-6 leading-tight">
+                            <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-tight">
                                 Manage Education <br />
-                                <span className="text-blue-700">Intelligently.</span>
+                                <span className="text-blue-700 dark:text-blue-500">Intelligently.</span>
                             </h1>
                             <p className="text-lg text-slate-600 mb-8 leading-relaxed">
                                 {APP_NAME} provides a comprehensive admin dashboard to oversee students, instructors, and course content with real-time analytics and seamless management tools.

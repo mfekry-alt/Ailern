@@ -24,15 +24,15 @@ input[type="reset"] {
 }
 
 /* Dark mode styles - using zinc palette */
-.dark body {
-  background-color: #09090b;
-  /* zinc-950 */
-  color: #f4f4f5;
-  /* zinc-100 */
+html.dark {
+  background-color: #09090b; /* zinc-950 */
+  color: #f4f4f5; /* zinc-100 */
+  color-scheme: dark;
 }
 
-.dark {
-  color-scheme: dark;
+html.dark body {
+  background-color: #09090b; /* zinc-950 */
+  color: #f4f4f5; /* zinc-100 */
 }
 
 /* Beautiful Animations */
