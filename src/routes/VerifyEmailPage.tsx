@@ -82,8 +82,8 @@ export const VerifyEmailPage = () => {
 
                 {status === 'success' && (
                     <div className="space-y-3">
-                        <Link to={ROUTES.SET_PASSWORD}>
-                            <Button fullWidth>Go to Set Password</Button>
+                        <Link to={ROUTES.DASHBOARD}>
+                            <Button fullWidth>Go to Dashboard</Button>
                         </Link>
                         <Link to={ROUTES.LOGIN}>
                             <Button fullWidth variant="outline">

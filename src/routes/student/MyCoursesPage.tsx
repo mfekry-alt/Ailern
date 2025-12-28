@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import dropIcon from '../../../material/drop.svg';
+const dropIcon = '/drop.svg';
 import { ROUTES } from '@/lib/constants';
 
 export const MyCoursesPage = () => {

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useDarkMode } from '@/contexts/DarkModeContext';
 import { ROUTES } from '@/lib/constants';
 
 export const AdminSettingsPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { isDarkMode, toggleDarkMode } = useDarkMode();
     const [statusMessage, setStatusMessage] = useState<string>('');
 
     // Profile state
@@ -33,15 +35,15 @@ export const AdminSettingsPage = () => {
     };
 
     return (
-        <div className="p-8 max-w-[1920px] mx-auto">
+        <div className="p-8 max-w-[1920px] mx-auto dark:bg-background-dark">
             <div className="flex flex-col gap-8 items-start w-full">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between w-full gap-3">
                     <div>
-                        <h1 className="font-bold text-[36px] leading-[40px] tracking-[-0.9px] text-azure-8">
+                        <h1 className="font-bold text-[36px] leading-[40px] tracking-[-0.9px] text-azure-8 dark:text-gray-100">
                             Profile Settings
                         </h1>
-                        <p className="text-[16px] leading-[24px] text-azure-46 mt-2">
+                        <p className="text-[16px] leading-[24px] text-azure-46 dark:text-gray-400 mt-2">
                             Manage your admin profile, preferences, and security
                         </p>
                         {statusMessage && (
@@ -52,7 +54,7 @@ export const AdminSettingsPage = () => {
                     </div>
                     <button
                         onClick={() => navigate(ROUTES.ADMIN)}
-                        className="px-4 py-2 bg-white border border-azure-88 rounded-lg text-azure-8 font-medium hover:bg-gray-50"
+                        className="px-4 py-2 bg-white border border-azure-88 rounded-lg text-azure-8 font-medium hover:bg-gray-50 cursor-pointer"
                     >
                         Back to dashboard
                     </button>
@@ -61,8 +63,8 @@ export const AdminSettingsPage = () => {
                 {/* Settings Sections */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
                     {/* Profile Information */}
-                    <div className="bg-white border border-azure-88 rounded-lg p-6">
-                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 mb-4">
+                    <div className="bg-white dark:bg-gray-800 border border-azure-88 dark:border-gray-700 rounded-lg p-6">
+                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 dark:text-gray-100 mb-4">
                             Profile Information
                         </h2>
                         <div className="space-y-4">
@@ -70,7 +72,7 @@ export const AdminSettingsPage = () => {
                                 <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold">
                                     {firstName?.[0] || 'A'}{lastName?.[0] || ''}
                                 </div>
-                                <button className="px-4 py-2 bg-white border border-azure-88 rounded-lg text-azure-8 font-medium hover:bg-gray-50">
+                                <button className="px-4 py-2 bg-white border border-azure-88 rounded-lg text-azure-8 font-medium hover:bg-gray-50 cursor-pointer">
                                     Upload avatar
                                 </button>
                             </div>
@@ -118,8 +120,8 @@ export const AdminSettingsPage = () => {
                     </div>
 
                     {/* Preferences */}
-                    <div className="bg-white border border-azure-88 rounded-lg p-6">
-                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 mb-4">
+                    <div className="bg-white dark:bg-gray-800 border border-azure-88 dark:border-gray-700 rounded-lg p-6">
+                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 dark:text-gray-100 mb-4">
                             Preferences
                         </h2>
                         <div className="space-y-4">
@@ -149,13 +151,31 @@ export const AdminSettingsPage = () => {
                                 </div>
                             </div>
                             <div className="space-y-2">
+                                <label className="block text-[14px] font-medium text-azure-8">Display Mode</label>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <span className="text-[14px] text-azure-8 dark:text-gray-200">Dark Mode</span>
+                                    <button
+                                        onClick={toggleDarkMode}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                                            isDarkMode ? 'bg-blue-600' : 'bg-gray-300'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                isDarkMode ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
                                 <label className="block text-[14px] font-medium text-azure-8">Notifications</label>
                                 <div className="flex items-center">
                                     <input
                                         type="checkbox"
                                         checked={notifEmail}
                                         onChange={(e) => setNotifEmail(e.target.checked)}
-                                        className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50"
+                                        className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                     />
                                     <span className="ml-2 text-[14px] text-azure-8">Email notifications</span>
                                 </div>
@@ -164,7 +184,7 @@ export const AdminSettingsPage = () => {
                                         type="checkbox"
                                         checked={notifInApp}
                                         onChange={(e) => setNotifInApp(e.target.checked)}
-                                        className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50"
+                                        className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                     />
                                     <span className="ml-2 text-[14px] text-azure-8">In-app notifications</span>
                                 </div>
@@ -173,8 +193,8 @@ export const AdminSettingsPage = () => {
                     </div>
 
                     {/* Security */}
-                    <div className="bg-white border border-azure-88 rounded-lg p-6">
-                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 mb-4">
+                    <div className="bg-white dark:bg-gray-800 border border-azure-88 dark:border-gray-700 rounded-lg p-6">
+                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 dark:text-gray-100 mb-4">
                             Security
                         </h2>
                         <div className="space-y-4">
@@ -185,7 +205,7 @@ export const AdminSettingsPage = () => {
                                         type="checkbox"
                                         checked={mfaEnabled}
                                         onChange={(e) => setMfaEnabled(e.target.checked)}
-                                        className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50"
+                                        className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                     />
                                     <span className="ml-2 text-[14px] text-azure-8">Enable MFA</span>
                                 </div>
@@ -209,7 +229,7 @@ export const AdminSettingsPage = () => {
                                             type="checkbox"
                                             checked={requireMinLength}
                                             onChange={(e) => setRequireMinLength(e.target.checked)}
-                                            className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50"
+                                            className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                         />
                                         <span className="ml-2 text-[14px] text-azure-8">Minimum 8 characters</span>
                                     </div>
@@ -218,7 +238,7 @@ export const AdminSettingsPage = () => {
                                             type="checkbox"
                                             checked={requireUppercase}
                                             onChange={(e) => setRequireUppercase(e.target.checked)}
-                                            className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50"
+                                            className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                         />
                                         <span className="ml-2 text-[14px] text-azure-8">Require uppercase letter</span>
                                     </div>
@@ -228,13 +248,13 @@ export const AdminSettingsPage = () => {
                             <div className="flex gap-3 pt-2">
                                 <button
                                     onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium cursor-pointer"
                                 >
                                     Change Password
                                 </button>
                                 <button
                                     onClick={handleSave}
-                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-azure-8 rounded-md font-medium"
+                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-azure-8 rounded-md font-medium cursor-pointer"
                                 >
                                     Save Security
                                 </button>
@@ -247,7 +267,7 @@ export const AdminSettingsPage = () => {
                 <div className="flex justify-end w-full">
                     <button
                         onClick={handleSave}
-                        className="bg-azure-50 hover:bg-[#0b6dd4] text-white font-medium text-[14px] leading-5 px-6 py-2 rounded-md transition-colors shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
+                        className="bg-azure-50 hover:bg-[#0b6dd4] text-white font-medium text-[14px] leading-5 px-6 py-2 rounded-md transition-colors shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer"
                     >
                         Save Settings
                     </button>

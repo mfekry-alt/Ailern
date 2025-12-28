@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
-import filterIcon from '../../../material/filter.svg';
-import sortIcon from '../../../material/sort.svg';
+const filterIcon = '/filter.svg';
+const sortIcon = '/sort.svg';
 
 export const CoursesPage = () => {
     const navigate = useNavigate();

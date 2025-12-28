@@ -429,34 +429,7 @@ export const ProfilePage = () => {
                         </CardContent>
                     </Card>
 
-                    {/* Change Password Section */}
-                    <Card variant="elevated">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h2 className="text-[20px] font-bold text-gray-900">Change Password</h2>
-                                    <p className="text-[14px] text-gray-600">Update your password regularly to keep your account secure.</p>
-                                </div>
-                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <Lock className="w-5 h-5 text-blue-600" />
-                                </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <button
-                                    onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}
-                                    className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                                >
-                                    Go to Change Password
-                                </button>
-                                <Link
-                                    to={ROUTES.LOGIN}
-                                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-center text-gray-700 hover:bg-gray-50 transition-colors"
-                                >
-                                    Back to Login
-                                </Link>
-                            </div>
-                        </CardContent>
-                    </Card>
+
                 </div>
             </div>
         </div>

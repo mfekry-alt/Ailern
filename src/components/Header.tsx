@@ -161,7 +161,7 @@ export const Header = () => {
 
     return (
         <header
-            className="bg-white border-b sticky top-0 z-50"
+            className="bg-white/50 backdrop-blur-md border-b sticky top-0 z-50"
             style={{
                 borderBottomColor: '#dcfce7',
                 borderBottomWidth: '1px',
