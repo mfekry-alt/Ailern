@@ -22,14 +22,11 @@ interface DarkModeProviderProps {
 
 export const DarkModeProvider: React.FC<DarkModeProviderProps> = ({ children }) => {
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-        // Check storage first (safe wrapper), then system preference
         const saved = storage.get<boolean>('darkMode');
         if (typeof saved === 'boolean') {
             return saved;
         }
-        if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-            return window.matchMedia('(prefers-color-scheme: dark)').matches;
-        }
+        // Default to light mode unless the user explicitly toggles dark mode in settings.
         return false;
     });
 
