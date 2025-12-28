@@ -4,7 +4,8 @@ import './index.css';
 import App from './App.tsx';
 
 async function enableMocking() {
-  if (import.meta.env.MODE !== 'development') return;
+  // Enable MSW in both development and production until real backend is ready
+  if (import.meta.env.MODE === 'test') return;
   const { worker } = await import('./mocks/browser');
   await worker.start();
 }
