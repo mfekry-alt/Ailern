@@ -61,7 +61,7 @@ Submission Guidelines:
 - Submit a single ZIP file containing all source code
 - Include a README.md with instructions to run your code
 - Ensure code compiles without errors`,
-        attachments: ['/test material/testpdf.pdf', '/test material/testslide.pptx'],
+        attachments: ['/testpdf.pdf', '/testslide.pptx'],
         allowedFileTypes: ['PDF', 'DOC', 'DOCX', 'ZIP'],
         maxFileSize: '10 MB',
         // Uncomment below to show submitted/graded state

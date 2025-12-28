@@ -100,7 +100,7 @@ export const InstructorManageCoursePage = () => {
             title: 'Introduction to Programming',
             videoUrl: '/videos/lecture1.mp4',
             materials: [
-                { id: 1, title: 'Lecture Slides', type: 'PDF', url: '/test material/testpdf.pdf' },
+                { id: 1, title: 'Lecture Slides', type: 'PDF', url: '/testpdf.pdf' },
                 { id: 2, title: 'Code Examples', type: 'ZIP', url: '/materials/code1.zip' }
             ],
             expanded: false
@@ -110,14 +110,14 @@ export const InstructorManageCoursePage = () => {
             title: 'Variables and Data Types',
             videoUrl: '/videos/lecture2.mp4',
             materials: [
-                { id: 3, title: 'Lecture Notes', type: 'PDF', url: '/test material/testpdf.pdf' }
+                { id: 3, title: 'Lecture Notes', type: 'PDF', url: '/testpdf.pdf' }
             ],
             expanded: false
         }
     ]);
 
     const [generalMaterials] = useState([
-        { id: 1, title: 'Course Syllabus', type: 'PDF', url: '/test material/testpdf.pdf' },
+        { id: 1, title: 'Course Syllabus', type: 'PDF', url: '/testpdf.pdf' },
         { id: 2, title: 'Textbook', type: 'PDF', url: '/materials/textbook.pdf' },
         { id: 3, title: 'Reference Guide', type: 'DOCX', url: '/materials/guide.docx' }
     ]);

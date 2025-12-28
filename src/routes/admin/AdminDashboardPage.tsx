@@ -149,32 +149,37 @@ export const AdminDashboardPage = () => {
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h1 className="text-[30px] font-bold leading-[36px] text-gray-900">
-                            Admin Dashboard
+                        <div className="mb-3">
+                            <span className="inline-block px-3 py-1 text-[12px] font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 rounded-md border border-teal-200 dark:border-teal-800">
+                                v1.0 System Update Live
+                            </span>
+                        </div>
+                        <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-white">
+                            Manage Education <span className="text-blue-600 dark:text-blue-400">Intelligently.</span>
                         </h1>
-                        <p className="text-[16px] leading-[24px] text-gray-600 mt-1">
-                            System overview and management controls
+                        <p className="text-[16px] leading-[24px] text-gray-600 dark:text-gray-400 mt-2">
+                            Ailern provides a comprehensive admin dashboard to oversee students, instructors, and course content with real-time analytics and seamless management tools.
                         </p>
                     </div>
                     <div className="flex gap-3">
                         <button
                             onClick={exportDashboardReport}
-                            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                            className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors cursor-pointer"
                         >
                             <Download className="w-4 h-4" />
-                            Export Report
+                            Export
                         </button>
                         <button
                             onClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors cursor-pointer"
                         >
                             <Settings className="w-4 h-4" />
-                            System Settings
+                            Settings
                         </button>
                     </div>
                 </div>
@@ -185,17 +190,17 @@ export const AdminDashboardPage = () => {
                         const IconComponent = stat.icon;
                         return (
                             <Card key={stat.label} variant="elevated">
-                                <CardContent className="p-6">
+                                <CardContent className="p-6 bg-white dark:bg-gray-800 transition-colors">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-[14px] font-medium text-gray-600 mb-1">
+                                            <p className="text-[14px] font-medium text-gray-600 dark:text-gray-400 mb-1">
                                                 {stat.label}
                                             </p>
-                                            <p className="text-[24px] font-bold text-gray-900">
+                                            <p className="text-[24px] font-bold text-gray-900 dark:text-white">
                                                 {stat.value}
                                             </p>
-                                            <p className="text-[12px] text-green-600 font-medium">
-                                                {stat.change} from last month
+                                            <p className="text-[12px] text-green-600 dark:text-green-400 font-medium">
+                                                {stat.change}
                                             </p>
                                         </div>
                                         <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
@@ -212,31 +217,39 @@ export const AdminDashboardPage = () => {
                     {/* System Metrics */}
                     <div className="lg:col-span-2">
                         <Card variant="elevated">
-                            <CardContent className="p-6">
+                            <CardContent className="p-6 bg-white dark:bg-gray-800 transition-colors">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-[20px] font-bold text-gray-900">
-                                        System Metrics
-                                    </h2>
-                                    <button
-                                        onClick={() => navigate(ROUTES.ADMIN_REPORTS)}
-                                        className="text-blue-600 hover:text-blue-700 font-medium text-[14px]"
-                                    >
-                                        View Details
-                                    </button>
+                                    <div>
+                                        <h2 className="text-[20px] font-bold text-gray-900 dark:text-white">
+                                            System overview
+                                        </h2>
+                                        <p className="text-[14px] text-gray-600 dark:text-gray-400">Live statistics</p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium text-[14px] cursor-pointer">
+                                            Export
+                                        </button>
+                                        <button
+                                            onClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
+                                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium text-[14px] cursor-pointer"
+                                        >
+                                            Settings
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     {systemMetrics.map((metric) => {
                                         const IconComponent = metric.icon;
                                         return (
-                                            <div key={metric.label} className="bg-gray-50 rounded-lg p-4">
+                                            <div key={metric.label} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 transition-colors">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                                                    <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-600 flex items-center justify-center">
                                                         <IconComponent className={`w-5 h-5 ${metric.color}`} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-[16px] font-bold text-gray-900">{metric.value}</p>
-                                                        <p className="text-[12px] text-gray-600">{metric.label}</p>
+                                                        <p className="text-[16px] font-bold text-gray-900 dark:text-white">{metric.value}</p>
+                                                        <p className="text-[12px] text-gray-600 dark:text-gray-400">{metric.label}</p>
                                                     </div>
                                                 </div>
                                             </div>

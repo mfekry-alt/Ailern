@@ -35,21 +35,21 @@ export const DashboardPage = () => {
             title: 'Modern Literature',
             instructor: 'Dr. Sarah Wilson',
             progress: 80,
-            image: '/test material/testimg.png',
+            image: '/testimg.png',
         },
         {
             id: 2,
             title: 'Calculus II',
             instructor: 'Prof. John Smith',
             progress: 50,
-            image: '/test material/testimg.png',
+            image: '/testimg.png',
         },
         {
             id: 3,
             title: 'World History',
             instructor: 'Dr. Emily Carter',
             progress: 20,
-            image: '/test material/testimg.png',
+            image: '/testimg.png',
         },
     ];
 

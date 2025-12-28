@@ -5,11 +5,13 @@ import { useLogout } from '@/features/auth/api';
 import { ROUTES } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui';
 import { Edit, Save, X, LogOut, Lock, Image as ImageIcon } from 'lucide-react';
+import { useDarkMode } from '@/contexts/DarkModeContext';
 
 export const ProfilePage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const logout = useLogout();
+    const { isDarkMode, toggleDarkMode } = useDarkMode();
     const [isEditingPersonal, setIsEditingPersonal] = useState(false);
     const [isEditingAcademic, setIsEditingAcademic] = useState(false);
     const [emailNotifications, setEmailNotifications] = useState(true);
@@ -404,6 +406,28 @@ export const ProfilePage = () => {
                             </h2>
 
                             <div className="space-y-6">
+                                {/* Dark Mode */}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-[16px] font-medium text-gray-900 mb-1">
+                                            Dark Mode
+                                        </h3>
+                                        <p className="text-[14px] text-gray-600">
+                                            Switch between light and dark theme.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={toggleDarkMode}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${isDarkMode ? 'bg-blue-600' : 'bg-gray-200'
+                                            }`}
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'
+                                                }`}
+                                        />
+                                    </button>
+                                </div>
+
                                 {/* Email Notifications */}
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -416,7 +440,7 @@ export const ProfilePage = () => {
                                     </div>
                                     <button
                                         onClick={() => setEmailNotifications(!emailNotifications)}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${emailNotifications ? 'bg-blue-600' : 'bg-gray-200'
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${emailNotifications ? 'bg-blue-600' : 'bg-gray-200'
                                             }`}
                                     >
                                         <span

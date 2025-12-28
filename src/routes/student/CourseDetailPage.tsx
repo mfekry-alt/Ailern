@@ -7,10 +7,10 @@ type TabType = 'lectures' | 'materials' | 'assignments' | 'quizzes' | 'announcem
 
 const TEST_VIDEO_URL = 'https://drive.google.com/file/d/1T5Gz7wrSii11TkPxHjDBkfKh3ZYuzXpQ/view?usp=sharing';
 const TEST_MATERIALS = {
-    pdf: '/test material/testpdf.pdf',
-    slide: '/test material/testslide.pptx',
-    image: '/test material/testimg.png',
-    audio: '/test material/testvideo.m4a',
+    pdf: '/testpdf.pdf',
+    slide: '/testslide.pptx',
+    image: '/testimg.png',
+    audio: '/testvideo.m4a',
 };
 
 // Mock course database
