@@ -36,7 +36,7 @@ export const HomePage = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-20 items-center">
                         <div className="flex items-center gap-2.5">
-                            <img src="/Logo.svg" alt={`${APP_NAME} logo`} className="w-[150px]" />
+                            <img src="/logo.svg" alt={`${APP_NAME} logo`} className="w-[150px]" />
                         </div>
                         <div className="hidden md:flex items-center space-x-8">
                             <a className="text-sm font-medium text-slate-600 hover:text-blue-700 transition-colors" href="#features">
