@@ -435,7 +435,7 @@ export const HomePage = () => {
                                 </div>
                                 <span className="text-xl font-bold text-white">{APP_NAME}</span>
                             </div>
-                            <p className="text-sm text-slate-400 mb-4">Empowering education through intelligent management systems.</p>
+                            <p className="text-sm text-slate-400 mb-4">Empowering education through iintelligent management systems.</p>
                             <div className="flex space-x-4">
                                 <a className="text-slate-400 hover:text-white transition-colors" href="#">
                                     <Globe className="w-5 h-5" />
