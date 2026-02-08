@@ -5,6 +5,9 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLogin } from '@/features/auth/api';
 import { ROUTES } from '@/lib/constants';
 import { useState } from 'react';
+import { storage } from '@/lib/storage';
+import { STORAGE_KEYS } from '@/lib/constants';
+import type { User } from '@/types';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -42,9 +45,10 @@ export const LoginPage = () => {
         setError('');
         setUnverifiedEmail('');
         try {
-            const result = await login.mutateAsync(data);
-            const redirectPath = from || getRedirectPath(result.user);
-            console.log('Login successful, redirecting to:', redirectPath, 'User roles:', result.user?.roles);
+            await login.mutateAsync(data);
+            const storedUser = storage.get<User>(STORAGE_KEYS.USER);
+            const redirectPath = from || getRedirectPath(storedUser);
+            console.log('Login successful, redirecting to:', redirectPath, 'User roles:', storedUser?.roles);
             navigate(redirectPath, { replace: true });
         } catch (err: any) {
             const apiCode = err.response?.data?.code as string | undefined;

@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { courseService } from '@/api/services';
 
 interface Stat {
     label: string;
@@ -95,50 +97,42 @@ export const AdminDashboardPage = () => {
         navigate(ROUTES.ADMIN_USERS);
     };
 
+    const { data: coursesData } = useQuery({
+        queryKey: ['admin', 'courses', 'stats'],
+        queryFn: () => courseService.getAllCourses({ PageNumber: 1, PageSize: 500 }),
+    });
+
+    const totalCourses = coursesData?.totalResults ?? 0;
+    const pendingCourses =
+        coursesData?.items?.filter((c) => c.courseStatus === 'Pending').length ?? 0;
+
     useEffect(() => {
-        // Simulate API fetch
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                // TODO: Replace with actual API calls
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                setStats([
-                    { label: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100', change: '+0%' },
-                    { label: 'Total Instructors', value: '0', icon: BookOpen, color: 'text-green-600', bgColor: 'bg-green-100', change: '+0%' },
-                    { label: 'Total Courses', value: '0', icon: Award, color: 'text-purple-600', bgColor: 'bg-purple-100', change: '+0%' },
-                    { label: 'Pending Approvals', value: '0', icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100', change: '-0%' },
-                ]);
-
-                setSystemMetrics([
-                    { label: 'Active Users Today', value: '0', icon: TrendingUp, color: 'text-green-600' },
-                    { label: 'Course Completions', value: '0', icon: CheckCircle, color: 'text-blue-600' },
-                    { label: 'Messages Sent', value: '0', icon: MessageSquare, color: 'text-purple-600' },
-                    { label: 'System Uptime', value: '99.9%', icon: BarChart3, color: 'text-green-600' }
-                ]);
-
-                setRecentActivity([
-                    { activity: "User 'Sarah' enrolled in 'Introduction to Programming'", user: 'Sarah', timestamp: '2024-07-26 10:30 AM', type: 'enrollment' },
-                    { activity: "Course 'Advanced Data Science' approved", user: 'Admin', timestamp: '2024-07-25 03:45 PM', type: 'approval' },
-                    { activity: "Instructor 'David' created course 'Machine Learning Fundamentals'", user: 'David', timestamp: '2024-07-24 09:15 AM', type: 'course_creation' },
-                    { activity: "User 'Emily' completed course 'Digital Marketing Essentials'", user: 'Emily', timestamp: '2024-07-23 05:00 PM', type: 'completion' },
-                    { activity: "System backup completed successfully", user: 'System', timestamp: '2024-07-22 02:00 AM', type: 'system' },
-                ]);
-
-                setPendingApprovals([
-                    { id: 1, type: 'Course', title: 'Advanced Machine Learning', instructor: 'Dr. Sarah Wilson', submittedAt: '2024-01-15' },
-                    { id: 2, type: 'User', title: 'New Instructor ', instructor: 'Prof. John Smith', submittedAt: '2024-01-14' },
-                    { id: 3, type: 'Course', title: 'Data Visualization Techniques', instructor: 'Dr. Maria Garcia', submittedAt: '2024-01-13' },
-                ]);
-            } catch (error) {
-                console.error("Failed to fetch admin dashboard data", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchData();
-    }, []);
+        setIsLoading(false);
+        setStats([
+            { label: 'Total Students', value: '—', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100', change: '+0%' },
+            { label: 'Total Instructors', value: '—', icon: BookOpen, color: 'text-green-600', bgColor: 'bg-green-100', change: '+0%' },
+            { label: 'Total Courses', value: String(totalCourses), icon: Award, color: 'text-purple-600', bgColor: 'bg-purple-100', change: '+0%' },
+            { label: 'Pending Approvals', value: String(pendingCourses), icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100', change: '-0%' },
+        ]);
+        setSystemMetrics([
+            { label: 'Active Users Today', value: '—', icon: TrendingUp, color: 'text-green-600' },
+            { label: 'Course Completions', value: '—', icon: CheckCircle, color: 'text-blue-600' },
+            { label: 'Messages Sent', value: '—', icon: MessageSquare, color: 'text-purple-600' },
+            { label: 'System Uptime', value: '99.9%', icon: BarChart3, color: 'text-green-600' }
+        ]);
+        setRecentActivity([
+            { activity: "User 'Sarah' enrolled in 'Introduction to Programming'", user: 'Sarah', timestamp: '2024-07-26 10:30 AM', type: 'enrollment' },
+            { activity: "Course 'Advanced Data Science' approved", user: 'Admin', timestamp: '2024-07-25 03:45 PM', type: 'approval' },
+            { activity: "Instructor 'David' created course 'Machine Learning Fundamentals'", user: 'David', timestamp: '2024-07-24 09:15 AM', type: 'course_creation' },
+            { activity: "User 'Emily' completed course 'Digital Marketing Essentials'", user: 'Emily', timestamp: '2024-07-23 05:00 PM', type: 'completion' },
+            { activity: "System backup completed successfully", user: 'System', timestamp: '2024-07-22 02:00 AM', type: 'system' },
+        ]);
+        setPendingApprovals([
+            { id: 1, type: 'Course', title: 'Advanced Machine Learning', instructor: 'Dr. Sarah Wilson', submittedAt: '2024-01-15' },
+            { id: 2, type: 'User', title: 'New Instructor ', instructor: 'Prof. John Smith', submittedAt: '2024-01-14' },
+            { id: 3, type: 'Course', title: 'Data Visualization Techniques', instructor: 'Dr. Maria Garcia', submittedAt: '2024-01-13' },
+        ]);
+    }, [totalCourses, pendingCourses]);
 
     if (isLoading) {
         return (
@@ -322,35 +316,35 @@ export const AdminDashboardPage = () => {
 
                 {/* Quick Actions */}
                 <Card variant="elevated">
-                    <CardContent className="p-6">
-                        <h2 className="text-[20px] font-bold text-gray-900 mb-6">
+                    <CardContent className="p-6 bg-white dark:bg-zinc-900 transition-colors">
+                        <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100 mb-6">
                             Quick Actions
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <button
                                 onClick={() => navigate(ROUTES.ADMIN_USERS)}
-                                className="flex flex-col items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                className="flex flex-col items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
                             >
                                 <Users className="w-8 h-8 text-blue-600" />
                                 <span className="text-[14px] font-medium text-blue-700">Manage Users</span>
                             </button>
                             <button
                                 onClick={() => navigate(ROUTES.ADMIN_COURSES)}
-                                className="flex flex-col items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                                className="flex flex-col items-center gap-3 p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition-colors"
                             >
                                 <BookOpen className="w-8 h-8 text-green-600" />
                                 <span className="text-[14px] font-medium text-green-700">Manage Courses</span>
                             </button>
                             <button
                                 onClick={() => navigate(ROUTES.ADMIN_REPORTS)}
-                                className="flex flex-col items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                                className="flex flex-col items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition-colors"
                             >
                                 <BarChart3 className="w-8 h-8 text-purple-600" />
                                 <span className="text-[14px] font-medium text-purple-700">View Reports</span>
                             </button>
                             <button
                                 onClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
-                                className="flex flex-col items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                                className="flex flex-col items-center gap-3 p-4 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg transition-colors"
                             >
                                 <Settings className="w-8 h-8 text-orange-600" />
                                 <span className="text-[14px] font-medium text-orange-700">System Settings</span>
@@ -361,40 +355,40 @@ export const AdminDashboardPage = () => {
 
                 {/* Recent Activity */}
                 <Card variant="elevated">
-                    <CardContent className="p-0">
-                        <div className="p-6 border-b border-gray-200">
-                            <h2 className="text-[20px] font-bold text-gray-900">
+                    <CardContent className="p-0 bg-white dark:bg-zinc-900 transition-colors">
+                        <div className="p-6 border-b border-gray-200 dark:border-zinc-800">
+                            <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">
                                 Recent Activity
                             </h2>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-gray-50 dark:bg-zinc-800">
                                     <tr>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
                                             Activity
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
                                             User
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
                                             Type
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
                                             Timestamp
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {recentActivity.map((activity, index) => (
-                                        <tr key={index} className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${index === recentActivity.length - 1 ? 'border-b-0' : ''}`}>
+                                        <tr key={index} className={`border-b border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors ${index === recentActivity.length - 1 ? 'border-b-0' : ''}`}>
                                             <td className="py-4 px-6">
-                                                <p className="text-[14px] text-gray-900">
+                                                <p className="text-[14px] text-gray-900 dark:text-zinc-100">
                                                     {activity.activity}
                                                 </p>
                                             </td>
                                             <td className="py-4 px-6">
-                                                <p className="text-[14px] font-medium text-gray-900">
+                                                <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">
                                                     {activity.user}
                                                 </p>
                                             </td>

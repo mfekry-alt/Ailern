@@ -93,7 +93,7 @@ export const ProfilePage = () => {
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen transition-colors duration-300">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -106,10 +106,10 @@ export const ProfilePage = () => {
                             )}
                         </div>
                         <div className="space-y-1">
-                            <h1 className="text-[30px] font-bold leading-[36px] text-gray-900">
+                            <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-zinc-100">
                                 Profile
                             </h1>
-                            <p className="text-[16px] leading-[24px] text-gray-600">
+                            <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400">
                                 Manage your personal and academic information.
                             </p>
                         </div>
@@ -125,7 +125,7 @@ export const ProfilePage = () => {
                 </div>
 
                 {statusMessage && (
-                    <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-[14px] text-green-800">
+                    <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 px-4 py-3 text-[14px] text-green-800 dark:text-green-200">
                         {statusMessage}
                     </div>
                 )}
@@ -135,7 +135,7 @@ export const ProfilePage = () => {
                     <Card variant="elevated">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-[24px] font-bold text-gray-900">
+                                <h2 className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">
                                     Personal Information
                                 </h2>
                                 <div className="flex gap-2">
@@ -179,10 +179,10 @@ export const ProfilePage = () => {
                                                 type="text"
                                                 value={personalForm.firstName}
                                                 onChange={(e) => handlePersonalChange('firstName', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         ) : (
-                                            <p className="text-[16px] text-gray-900">
+                                            <p className="text-[16px] text-gray-900 dark:text-zinc-100">
                                                 {personalForm.firstName}
                                             </p>
                                         )}
@@ -196,10 +196,10 @@ export const ProfilePage = () => {
                                                 type="text"
                                                 value={personalForm.lastName}
                                                 onChange={(e) => handlePersonalChange('lastName', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         ) : (
-                                            <p className="text-[16px] text-gray-900">
+                                            <p className="text-[16px] text-gray-900 dark:text-zinc-100">
                                                 {personalForm.lastName}
                                             </p>
                                         )}
@@ -213,10 +213,10 @@ export const ProfilePage = () => {
                                                 type="email"
                                                 value={personalForm.email}
                                                 onChange={(e) => handlePersonalChange('email', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         ) : (
-                                            <p className="text-[16px] text-gray-900">
+                                            <p className="text-[16px] text-gray-900 dark:text-zinc-100">
                                                 {personalForm.email}
                                             </p>
                                         )}
@@ -232,7 +232,7 @@ export const ProfilePage = () => {
                                                 value={personalForm.address}
                                                 onChange={(e) => handlePersonalChange('address', e.target.value)}
                                                 rows={3}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         ) : (
                                             <p className="text-[16px] text-gray-900">
@@ -257,7 +257,7 @@ export const ProfilePage = () => {
                                                 type="tel"
                                                 value={personalForm.phoneNumber}
                                                 onChange={(e) => handlePersonalChange('phoneNumber', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         ) : (
                                             <p className="text-[16px] text-gray-900">
@@ -274,7 +274,7 @@ export const ProfilePage = () => {
                     <Card variant="elevated">
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-[24px] font-bold text-gray-900">
+                                <h2 className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">
                                     Academic Information
                                 </h2>
                                 <div className="flex gap-2">
@@ -318,10 +318,10 @@ export const ProfilePage = () => {
                                                 type="text"
                                                 value={academicForm.program}
                                                 onChange={(e) => handleAcademicChange('program', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         ) : (
-                                            <p className="text-[16px] text-gray-900">
+                                            <p className="text-[16px] text-gray-900 dark:text-zinc-100">
                                                 {academicForm.program}
                                             </p>
                                         )}
@@ -335,10 +335,10 @@ export const ProfilePage = () => {
                                                 type="text"
                                                 value={academicForm.expectedGraduationYear}
                                                 onChange={(e) => handleAcademicChange('expectedGraduationYear', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         ) : (
-                                            <p className="text-[16px] text-gray-900">
+                                            <p className="text-[16px] text-gray-900 dark:text-zinc-100">
                                                 {academicForm.expectedGraduationYear}
                                             </p>
                                         )}
@@ -354,10 +354,10 @@ export const ProfilePage = () => {
                                                 type="date"
                                                 value={academicForm.enrollmentDate}
                                                 onChange={(e) => handleAcademicChange('enrollmentDate', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         ) : (
-                                            <p className="text-[16px] text-gray-900">
+                                            <p className="text-[16px] text-gray-900 dark:text-zinc-100">
                                                 {academicForm.enrollmentDate}
                                             </p>
                                         )}
@@ -370,22 +370,22 @@ export const ProfilePage = () => {
                     {/* Security */}
                     <Card variant="elevated">
                         <CardContent className="p-6">
-                            <h2 className="text-[24px] font-bold text-gray-900 mb-6">
+                            <h2 className="text-[24px] font-bold text-gray-900 dark:text-zinc-100 mb-6">
                                 Security
                             </h2>
 
                             <div className="space-y-4">
                                 <Link
                                     to={ROUTES.CHANGE_PASSWORD}
-                                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                                             <Lock className="w-5 h-5 text-blue-600" />
                                         </div>
                                         <div>
-                                            <h3 className="text-[16px] font-medium text-gray-900">Change Password</h3>
-                                            <p className="text-[14px] text-gray-600">Update your password to keep your account secure</p>
+                                            <h3 className="text-[16px] font-medium text-gray-900 dark:text-zinc-100">Change Password</h3>
+                                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">Update your password to keep your account secure</p>
                                         </div>
                                     </div>
                                     <button className="text-gray-400 hover:text-gray-600">
@@ -401,7 +401,7 @@ export const ProfilePage = () => {
                     {/* Preferences */}
                     <Card variant="elevated">
                         <CardContent className="p-6">
-                            <h2 className="text-[24px] font-bold text-gray-900 mb-6">
+                            <h2 className="text-[24px] font-bold text-gray-900 dark:text-zinc-100 mb-6">
                                 Preferences
                             </h2>
 
@@ -409,10 +409,10 @@ export const ProfilePage = () => {
                                 {/* Dark Mode */}
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h3 className="text-[16px] font-medium text-gray-900 mb-1">
+                                        <h3 className="text-[16px] font-medium text-gray-900 dark:text-zinc-100 mb-1">
                                             Dark Mode
                                         </h3>
-                                        <p className="text-[14px] text-gray-600">
+                                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">
                                             Switch between light and dark theme.
                                         </p>
                                     </div>
@@ -431,10 +431,10 @@ export const ProfilePage = () => {
                                 {/* Email Notifications */}
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h3 className="text-[16px] font-medium text-gray-900 mb-1">
+                                        <h3 className="text-[16px] font-medium text-gray-900 dark:text-zinc-100 mb-1">
                                             Email Notifications
                                         </h3>
-                                        <p className="text-[14px] text-gray-600">
+                                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">
                                             Receive updates and reminders via email.
                                         </p>
                                     </div>

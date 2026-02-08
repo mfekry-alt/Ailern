@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { api } from '@/api/client';
-import { ENDPOINTS } from '@/api/endpoints';
 import { ROUTES } from '@/lib/constants';
 import { Button, Card } from '@/components/ui';
+import { authService } from '@/api/services';
 
 type Status = 'idle' | 'loading' | 'success' | 'expired' | 'error';
 
@@ -25,10 +24,9 @@ export const VerifyEmailPage = () => {
             setStatus('loading');
             setMessage('');
             try {
-                const response = await api.post(ENDPOINTS.AUTH.VERIFY_EMAIL, { token });
-                const apiMessage = (response.data as any)?.message;
+                await authService.confirmEmail({ Token: token, Email: email });
                 setStatus('success');
-                setMessage(apiMessage || 'Your email has been verified successfully.');
+                setMessage('Your email has been verified successfully.');
             } catch (err: any) {
                 const apiMessage = err?.response?.data?.message as string | undefined;
                 const code = err?.response?.data?.code as string | undefined;
@@ -49,10 +47,9 @@ export const VerifyEmailPage = () => {
         setStatus('loading');
         setMessage('');
         try {
-            const response = await api.post(ENDPOINTS.AUTH.VERIFY_EMAIL, { email, resend: true });
-            const apiMessage = (response.data as any)?.message;
+            await authService.resendConfirmationEmail({ email });
             setStatus('success');
-            setMessage(apiMessage || 'If an account exists with this email, a verification link has been sent.');
+            setMessage('If an account exists with this email, a verification link has been sent.');
         } catch (err: any) {
             const apiMessage = err?.response?.data?.message as string | undefined;
             setStatus('error');

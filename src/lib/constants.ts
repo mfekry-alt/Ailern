@@ -1,5 +1,5 @@
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Ailern';
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_URL = import.meta.env.VITE_API_URL || 'https://ailern.runasp.net/api';
 
 export const ROLES = {
     ADMIN: 'Admin',
@@ -77,7 +77,7 @@ export const QUERY_KEYS = {
 
 export const STORAGE_KEYS = {
     ACCESS_TOKEN: 'access_token',
-    CSRF_TOKEN: 'csrf_token',
+    REFRESH_TOKEN: 'refresh_token',
     USER: 'user',
 } as const;
 

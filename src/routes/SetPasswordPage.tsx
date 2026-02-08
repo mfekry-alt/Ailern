@@ -22,6 +22,7 @@ type SetPasswordFormData = z.infer<typeof setPasswordSchema>;
 export const SetPasswordPage = () => {
     const [searchParams] = useSearchParams();
     const token = searchParams.get('token') || '';
+    const email = searchParams.get('email') || '';
 
     const navigate = useNavigate();
     const resetPassword = useResetPassword();
@@ -38,7 +39,7 @@ export const SetPasswordPage = () => {
     const onSubmit = async (data: SetPasswordFormData) => {
         setError('');
         try {
-            await resetPassword.mutateAsync({ token, password: data.password });
+            await resetPassword.mutateAsync({ token, password: data.password, email });
             navigate(ROUTES.LOGIN, { replace: true });
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to set password. Please try again.');

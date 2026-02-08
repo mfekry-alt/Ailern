@@ -1,71 +1,75 @@
 export const ENDPOINTS = {
-    // Auth
+    // Auth endpoints (based on API: /api/Auth/*)
     AUTH: {
-        LOGIN: '/auth/login',
-        REGISTER: '/auth/register',
-        LOGOUT: '/auth/logout',
-        REFRESH: '/auth/refresh',
-        FORGOT_PASSWORD: '/auth/forgot-password',
-        RESET_PASSWORD: '/auth/reset-password',
-        VERIFY_EMAIL: '/auth/verify-email',
-        ME: '/auth/me',
+        LOGIN: '/Auth/login',
+        REFRESH: '/Auth/refresh-token',
+        REVOKE_TOKEN: '/Auth/revoke-token',
+        CONFIRM_EMAIL: '/Auth/confirm-email',
+        RESEND_CONFIRMATION_EMAIL: '/Auth/resend-confirmation-email',
+        SEND_PASSWORD_RESET_EMAIL: '/Auth/send-password-reset-email',
+        CHANGE_PASSWORD: '/Auth/change-password',
     },
 
-    // Users
+    // Admins endpoints (based on API: /api/Auth/admin/*)
+    ADMINS: {
+        REGISTER: '/Auth/admin/register',
+    },
+
+    // Instructors endpoints (based on API: /api/Auth/instructor/*)
+    INSTRUCTORS: {
+        REGISTER: '/Auth/instructor/register',
+    },
+
+    // Students endpoints (based on API: /api/Auth/students/* and /api/Users/students/*)
+    STUDENTS: {
+        REGISTER: '/Auth/students/register',
+        MY_COURSES: '/Users/students/my-courses',
+    },
+
+    // Users endpoints (based on API: /api/Users/*)
     USERS: {
-        LIST: '/users',
-        GET: (id: string) => `/users/${id}`,
-        CREATE: '/users',
-        UPDATE: (id: string) => `/users/${id}`,
-        DELETE: (id: string) => `/users/${id}`,
+        GET: (id: number) => `/Users/${id}`,
+        ADD_ROLE: (id: number) => `/Users/${id}/roles`,
+        REMOVE_ROLE: (id: number) => `/Users/${id}/roles`,
+        BY_ROLE: (roleId: number) => `/Users/roles/${roleId}`,
     },
 
-    // Courses
+    // Courses endpoints (based on API: /api/Courses/*)
     COURSES: {
-        LIST: '/courses',
-        GET: (id: string) => `/courses/${id}`,
-        CREATE: '/courses',
-        UPDATE: (id: string) => `/courses/${id}`,
-        DELETE: (id: string) => `/courses/${id}`,
-        MODULES: (id: string) => `/courses/${id}/modules`,
+        LIST: '/Courses',
+        GET: (id: number) => `/Courses/${id}`,
+        CREATE: '/Courses',
+        UPDATE: (id: number) => `/Courses/${id}`,
+        DELETE: (id: number) => `/Courses/${id}`,
+        REJECT: (id: number) => `/Courses/${id}/reject`,
+        ENROLL: (id: number) => `/Courses/${id}/enroll`,
+        AVAILABLE_COURSES: '/Courses/available-courses',
+        ENROLLMENT_REQUESTS: (id: number) => `/Courses/${id}/enrollment-requests`,
+        APPROVE_ENROLLMENT: (id: number, studentId: number) => `/Courses/${id}/enrollments/${studentId}/approve`,
+        REJECT_ENROLLMENT: (id: number, studentId: number) => `/Courses/${id}/enrollments/${studentId}/reject`,
+        DELETE_ENROLLMENT: (id: number, studentId: number) => `/Courses/${id}/enrollments/${studentId}`,
+        STUDENTS: (id: number) => `/Courses/${id}/students`,
     },
 
-    // Modules
-    MODULES: {
-        GET: (id: string) => `/modules/${id}`,
-        CREATE: '/modules',
-        UPDATE: (id: string) => `/modules/${id}`,
-        DELETE: (id: string) => `/modules/${id}`,
-        LESSONS: (id: string) => `/modules/${id}/lessons`,
+    // Assignments endpoints (based on API: /api/Assignments/* and /api/Courses/*/Assignments)
+    ASSIGNMENTS: {
+        CREATE: '/Assignments',
+        UPDATE: (id: number) => `/Assignments/${id}`,
+        DELETE: (id: number) => `/Assignments/${id}`,
+        GET: (id: number) => `/Assignments/${id}`,
+        CONFIRM_UPLOAD: '/Assignments/confirm-upload',
+        DELETE_FILE: (assignmentId: number, fileId: number) => `/Assignments/${assignmentId}/files/${fileId}`,
+        COURSE_ASSIGNMENTS_INSTRUCTOR: (courseId: number) => `/Courses/${courseId}/instructors/Assignments`,
+        COURSE_ASSIGNMENTS_STUDENT: (courseId: number) => `/Courses/${courseId}/students/Assignments`,
     },
 
-    // Lessons
-    LESSONS: {
-        GET: (id: string) => `/lessons/${id}`,
-        CREATE: '/lessons',
-        UPDATE: (id: string) => `/lessons/${id}`,
-        DELETE: (id: string) => `/lessons/${id}`,
-        PROGRESS: (id: string) => `/lessons/${id}/progress`,
-    },
-
-    // Enrollments
-    ENROLLMENTS: {
-        LIST: '/enrollments',
-        GET: (id: string) => `/enrollments/${id}`,
-        ENROLL: '/enrollments',
-        UNENROLL: (id: string) => `/enrollments/${id}`,
-        MY_COURSES: '/enrollments/my-courses',
-    },
-
-    // Quizzes
-    QUIZZES: {
-        LIST: '/quizzes',
-        GET: (id: string) => `/quizzes/${id}`,
-        CREATE: '/quizzes',
-        UPDATE: (id: string) => `/quizzes/${id}`,
-        DELETE: (id: string) => `/quizzes/${id}`,
-        SUBMIT: (id: string) => `/quizzes/${id}/submit`,
-        SUBMISSIONS: (id: string) => `/quizzes/${id}/submissions`,
+    // Assignment Submissions endpoints (based on API: /api/Assignments/Submissions/*)
+    SUBMISSIONS: {
+        CREATE: '/Assignments/Submissions',
+        CONFIRM_UPLOAD: (id: number) => `/Assignments/Submissions/${id}/confirm-upload`,
+        DELETE: (id: number) => `/Assignments/Submissions/${id}`,
+        GET_BY_ASSIGNMENT: (assignmentId: number) => `/Assignments/${assignmentId}/Submissions`,
+        GET_FILES: (assignmentId: number, submissionId: number) => `/Assignments/${assignmentId}/Submissions/${submissionId}/files`,
     },
 } as const;
 

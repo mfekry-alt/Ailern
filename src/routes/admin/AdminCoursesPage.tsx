@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui';
-import { Search, Eye, CheckCircle, XCircle, Filter, Download, BookOpen, Users, Calendar, TrendingUp } from 'lucide-react';
+import { Search, Eye, CheckCircle, XCircle, Filter, Download, BookOpen, Users, Calendar, TrendingUp, Loader2 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
+import { courseService } from '@/api/services';
+import { handleApiError } from '@/api/client';
 
 type CourseRow = {
     id: number;
@@ -27,114 +30,41 @@ type CourseRow = {
 
 export const AdminCoursesPage = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [selectedCourse, setSelectedCourse] = useState<CourseRow | null>(null);
     const [statusMessage, setStatusMessage] = useState<string>('');
     const [reviewerNotes, setReviewerNotes] = useState<string>('');
 
-    const [courses, setCourses] = useState<CourseRow[]>([
-        {
-            id: 1,
-            title: 'Introduction to Computer Science',
-            courseId: 'CS101',
-            instructor: 'Dr. Emily Carter',
-            students: 45,
-            status: 'Published',
-            createdDate: 'Jan 15, 2024',
-            lastUpdated: 'Mar 10, 2024',
-            rating: 4.8,
-            modules: 12,
-            category: 'Computer Science',
-            description: 'Foundational course covering programming basics, problem solving, and computing concepts.',
-            prerequisites: ['None'],
-            whatYouWillLearn: ['Programming fundamentals', 'Problem-solving patterns', 'Basic algorithms'],
-            materialsCount: 16,
-            lecturesPreview: ['Intro to Computing', 'Variables & Types', 'Control Flow'],
-            assignmentsCount: 4,
-            quizzesCount: 2
-        },
-        {
-            id: 2,
-            title: 'Data Structures and Algorithms',
-            courseId: 'CS202',
-            instructor: 'Prof. Michael Brown',
-            students: 38,
-            status: 'Draft',
-            createdDate: 'Jan 20, 2024',
-            lastUpdated: 'Mar 5, 2024',
-            rating: 4.6,
-            modules: 15,
-            category: 'Computer Science',
-            description: 'Covers arrays, linked lists, stacks, queues, trees, graphs, and algorithm analysis.',
-            prerequisites: ['CS101'],
-            whatYouWillLearn: ['Time/space complexity', 'Common data structures', 'Sorting and searching'],
-            materialsCount: 22,
-            lecturesPreview: ['Complexity Analysis', 'Arrays vs Linked Lists', 'Tree Traversals'],
-            assignmentsCount: 5,
-            quizzesCount: 3
-        },
-        {
-            id: 3,
-            title: 'Linear Algebra',
-            courseId: 'MA203',
-            instructor: 'Dr. Sarah Johnson',
-            students: 52,
-            status: 'Published',
-            createdDate: 'Jan 25, 2024',
-            lastUpdated: 'Mar 8, 2024',
-            rating: 4.7,
-            modules: 10,
-            category: 'Mathematics',
-            description: 'Vectors, matrices, eigenvalues, and linear transformations for applied math and ML.',
-            prerequisites: ['Calculus I'],
-            whatYouWillLearn: ['Matrix algebra', 'Vector spaces', 'Eigen decomposition'],
-            materialsCount: 14,
-            lecturesPreview: ['Vectors & Spaces', 'Matrix Operations', 'Eigenvalues'],
-            assignmentsCount: 3,
-            quizzesCount: 2
-        },
-        {
-            id: 4,
-            title: 'Classical Mechanics',
-            courseId: 'PHY105',
-            instructor: 'Prof. David Wilson',
-            students: 28,
-            status: 'Pending Review',
-            createdDate: 'Feb 1, 2024',
-            lastUpdated: 'Mar 12, 2024',
-            rating: 4.5,
-            modules: 8,
-            category: 'Physics',
-            description: 'Motion, forces, energy, and momentum with problem-solving sessions.',
-            prerequisites: ['Physics basics', 'Calculus I'],
-            whatYouWillLearn: ['Kinematics', 'Newtonian mechanics', 'Work & energy'],
-            materialsCount: 12,
-            lecturesPreview: ['Kinematics', 'Dynamics', 'Energy Conservation'],
-            assignmentsCount: 4,
-            quizzesCount: 2
-        },
-        {
-            id: 5,
-            title: 'Introduction to Psychology',
-            courseId: 'PSY101',
-            instructor: 'Dr. Lisa Chen',
-            students: 67,
-            status: 'Published',
-            createdDate: 'Feb 5, 2024',
-            lastUpdated: 'Mar 15, 2024',
-            rating: 4.9,
-            modules: 14,
-            category: 'Psychology',
-            description: 'Survey of major psychology topics including cognition, development, and behavior.',
-            prerequisites: ['None'],
-            whatYouWillLearn: ['Research methods', 'Cognitive processes', 'Behavioral theories'],
-            materialsCount: 18,
-            lecturesPreview: ['Intro to Psych', 'Cognition', 'Development'],
-            assignmentsCount: 4,
-            quizzesCount: 3
-        }
-    ]);
+    const { data: paginated, isLoading, error } = useQuery({
+        queryKey: ['admin', 'courses'],
+        queryFn: () => courseService.getAllCourses({ PageNumber: 1, PageSize: 100 }),
+    });
+
+    const courses = useMemo<CourseRow[]>(() => {
+        const items = paginated?.items ?? [];
+        return items.map((c) => ({
+            id: c.id,
+            title: c.name,
+            courseId: c.code,
+            instructor: '—',
+            students: 0,
+            status: c.courseStatus || 'Pending',
+            createdDate: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—',
+            lastUpdated: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—',
+            rating: 0,
+            modules: 0,
+            category: '—',
+            description: '',
+            prerequisites: [],
+            whatYouWillLearn: [],
+            materialsCount: 0,
+            lecturesPreview: [],
+            assignmentsCount: 0,
+            quizzesCount: 0,
+        }));
+    }, [paginated?.items]);
 
     const filteredCourses = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
@@ -144,7 +74,9 @@ export const AdminCoursesPage = () => {
                 c.title.toLowerCase().includes(q) ||
                 c.instructor.toLowerCase().includes(q) ||
                 c.courseId.toLowerCase().includes(q);
-            const statusMatch = selectedStatus === 'all' || c.status === selectedStatus;
+            const statusMatch =
+                selectedStatus === 'all' ||
+                c.status.toLowerCase() === selectedStatus.toLowerCase();
             return searchMatch && statusMatch;
         });
     }, [courses, searchQuery, selectedStatus]);
@@ -168,14 +100,19 @@ export const AdminCoursesPage = () => {
     };
 
     const approveCourse = (id: number) => {
-        setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'Published' } : c)));
+        queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] });
         setStatusMessage(`Course approved${reviewerNotes ? ` — Notes: ${reviewerNotes}` : '.'}`);
         setReviewerNotes('');
     };
 
-    const rejectCourse = (id: number) => {
-        setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'Rejected' } : c)));
-        setStatusMessage(`Course rejected${reviewerNotes ? ` — Notes: ${reviewerNotes}` : '.'}`);
+    const rejectCourse = async (id: number) => {
+        try {
+            await courseService.rejectCourse(id, { reason: reviewerNotes || 'Rejected by admin' });
+            queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] });
+            setStatusMessage(`Course rejected${reviewerNotes ? ` — Notes: ${reviewerNotes}` : '.'}`);
+        } catch {
+            setStatusMessage('Failed to reject course.');
+        }
         setReviewerNotes('');
     };
 
@@ -200,6 +137,28 @@ export const AdminCoursesPage = () => {
         { label: 'Pending Review', value: '15', icon: Calendar, color: 'text-yellow-600' },
         { label: 'Total Students', value: '5,250', icon: Users, color: 'text-purple-600' }
     ];
+
+    if (isLoading) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto flex items-center justify-center min-h-[50vh]" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+                <div className="text-center">
+                    <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading courses...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+                <div className="text-center py-12">
+                    <p className="text-red-600 mb-4">{handleApiError(error).message}</p>
+                    <p className="text-gray-600">Could not load courses. Please try again later.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>

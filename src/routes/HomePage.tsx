@@ -149,72 +149,72 @@ export const HomePage = () => {
                         <div className="relative lg:ml-10">
                             <div className="absolute -top-10 -right-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl"></div>
                             <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-purple-400/20 rounded-full blur-3xl"></div>
-                            <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 transform  transition-transform duration-500 ease-out">
-                                <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
+                            <div className="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-6 transform  transition-transform duration-500 ease-out">
+                                <div className="flex justify-between items-center mb-8 border-b border-slate-100 dark:border-zinc-800 pb-4">
                                     <div>
-                                        <h3 className="text-xl font-bold text-slate-900">System overview</h3>
-                                        <p className="text-xs text-slate-500">Live staticts</p>
+                                        <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100">System overview</h3>
+                                        <p className="text-xs text-slate-500 dark:text-zinc-400">Live staticts</p>
                                     </div>
                                     <div className="flex gap-2">
-                                        <span className="px-3 py-1 bg-blue-50 text-primary text-xs font-medium rounded-lg">Export</span>
+                                        <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/40 text-primary text-xs font-medium rounded-lg">Export</span>
                                         <span className="px-3 py-1 bg-primary text-white text-xs font-medium rounded-lg">Settings</span>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mb-6">
-                                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50">
+                                    <div className="p-4 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800">
                                         <div className="flex justify-between items-start mb-2">
-                                            <span className="text-xs text-slate-500 font-medium">Total Students</span>
-                                            <div className="p-1.5 bg-blue-100 rounded-lg">
+                                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium">Total Students</span>
+                                            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
                                                 <Users className="text-primary w-4 h-4" />
                                             </div>
                                         </div>
-                                        <div className="text-2xl font-bold text-slate-900">0</div>
-                                        <div className="text-xs text-green-500 font-medium mt-1">+0% growth</div>
+                                        <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                        <div className="text-xs text-green-500 dark:text-green-400 font-medium mt-1">+0% growth</div>
                                     </div>
-                                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50">
+                                    <div className="p-4 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800">
                                         <div className="flex justify-between items-start mb-2">
-                                            <span className="text-xs text-slate-500 font-medium">Active Courses</span>
-                                            <div className="p-1.5 bg-purple-100 rounded-lg">
+                                            <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium">Active Courses</span>
+                                            <div className="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
                                                 <Bookmark className="text-purple-600 w-4 h-4" />
                                             </div>
                                         </div>
-                                        <div className="text-2xl font-bold text-slate-900">0</div>
-                                        <div className="text-xs text-green-500 font-medium mt-1">+0% growth</div>
+                                        <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                        <div className="text-xs text-green-500 dark:text-green-400 font-medium mt-1">+0% growth</div>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-white">
+                                    <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-blue-100 text-primary flex items-center justify-center text-xs font-bold">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-primary flex items-center justify-center text-xs font-bold">
                                                 JD
                                             </div>
                                             <div>
-                                                <div className="text-xs font-bold text-slate-900">Machine Learning</div>
-                                                <div className="text-[10px] text-slate-500">Dr. Sarah Wilson</div>
+                                                <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Machine Learning</div>
+                                                <div className="text-[10px] text-slate-500 dark:text-zinc-400">Dr. Sarah Wilson</div>
                                             </div>
                                         </div>
-                                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Approved</span>
+                                        <span className="text-[10px] bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">Approved</span>
                                     </div>
-                                    <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-white opacity-60">
+                                    <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 opacity-60">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold">
+                                            <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-600 flex items-center justify-center text-xs font-bold">
                                                 JS
                                             </div>
                                             <div>
-                                                <div className="text-xs font-bold text-slate-900">Data Structures</div>
-                                                <div className="text-[10px] text-slate-500">Prof. John Smith</div>
+                                                <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Data Structures</div>
+                                                <div className="text-[10px] text-slate-500 dark:text-zinc-400">Prof. John Smith</div>
                                             </div>
                                         </div>
-                                        <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Pending</span>
+                                        <span className="text-[10px] bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded-full">Pending</span>
                                     </div>
                                 </div>
-                                <div className="absolute -right-6 bottom-10 bg-white p-3 rounded-xl shadow-xl border border-slate-100 flex items-center gap-3 animate-bounce duration-[3000ms]">
-                                    <div className="p-2 bg-green-100 rounded-full">
+                                <div className="absolute -right-6 bottom-10 bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 flex items-center gap-3 animate-bounce duration-[3000ms]">
+                                    <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-full">
                                         <CheckCircle2 className="text-green-600 w-5 h-5" />
                                     </div>
                                     <div>
-                                        <div className="text-xs font-bold text-slate-900">System Healthy</div>
-                                        <div className="text-[10px] text-slate-500">99.9% Uptime</div>
+                                        <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">System Healthy</div>
+                                        <div className="text-[10px] text-slate-500 dark:text-zinc-400">99.9% Uptime</div>
                                     </div>
                                 </div>
                             </div>
@@ -224,14 +224,14 @@ export const HomePage = () => {
             </section>
 
             {/* Features Section */}
-            <section className="py-20 bg-white" id="features">
+            <section className="py-20 bg-white dark:bg-zinc-950 transition-colors" id="features">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto mb-16">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-4">Powerful <span className="text-blue-700 font-bold">Features</span> for Modern Education</h2>
-                        <p className="text-slate-600">Experience a unified platform designed to streamline administrative tasks and enhance the learning experience.</p>
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-zinc-100 mb-4">Powerful <span className="text-blue-700 dark:text-blue-400 font-bold">Features</span> for Modern Education</h2>
+                        <p className="text-slate-600 dark:text-zinc-400">Experience a unified platform designed to streamline administrative tasks and enhance the learning experience.</p>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition-shadow group">
+                        <div className="bg-slate-50 dark:bg-zinc-900 rounded-2xl p-6 border border-slate-100 dark:border-zinc-800 hover:shadow-lg transition-shadow group">
                             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <Users className="text-primary w-6 h-6" />
                             </div>
@@ -242,7 +242,7 @@ export const HomePage = () => {
                                 <ArrowRight className="w-4 h-4 ml-1" />
                             </div>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition-shadow group">
+                        <div className="bg-slate-50 dark:bg-zinc-900 rounded-2xl p-6 border border-slate-100 dark:border-zinc-800 hover:shadow-lg transition-shadow group">
                             <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <School className="text-emerald-600 w-6 h-6" />
                             </div>
@@ -253,7 +253,7 @@ export const HomePage = () => {
                                 <ArrowRight className="w-4 h-4 ml-1" />
                             </div>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition-shadow group">
+                        <div className="bg-slate-50 dark:bg-zinc-900 rounded-2xl p-6 border border-slate-100 dark:border-zinc-800 hover:shadow-lg transition-shadow group">
                             <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <BookOpen className="text-purple-600 w-6 h-6" />
                             </div>
@@ -264,7 +264,7 @@ export const HomePage = () => {
                                 <ArrowRight className="w-4 h-4 ml-1" />
                             </div>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition-shadow group">
+                        <div className="bg-slate-50 dark:bg-zinc-900 rounded-2xl p-6 border border-slate-100 dark:border-zinc-800 hover:shadow-lg transition-shadow group">
                             <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <Clock className="text-amber-500 w-6 h-6" />
                             </div>
@@ -280,81 +280,81 @@ export const HomePage = () => {
             </section>
 
             {/* About Section */}
-            <section className="py-20 bg-background-light overflow-hidden" id="about">
+            <section className="py-20 bg-background-light dark:bg-zinc-950 overflow-hidden transition-colors" id="about">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid lg:grid-cols-2 gap-16 items-center">
                         <div className="relative order-2 lg:order-1">
                             <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-20 blur-lg"></div>
-                            <div className="relative bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
+                            <div className="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-xl p-8 border border-slate-100 dark:border-zinc-800">
                                 <div className="flex justify-between items-center mb-8">
-                                    <h3 className="text-xl font-bold text-slate-900">System Metrics</h3>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100">System Metrics</h3>
                                     <a className="text-sm text-primary font-medium hover:underline" href="#">
                                         View Details
                                     </a>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div className="bg-slate-50 p-4 rounded-xl flex items-start gap-4">
+                                    <div className="bg-slate-50 dark:bg-zinc-800 p-4 rounded-xl flex items-start gap-4">
                                         <div className="p-2 bg-green-50 rounded-lg">
                                             <TrendingUp className="text-green-500 w-5 h-5" />
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-900">0</div>
-                                            <div className="text-xs text-slate-500">Active Users Today</div>
+                                            <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                            <div className="text-xs text-slate-500 dark:text-zinc-400">Active Users Today</div>
                                         </div>
                                     </div>
-                                    <div className="bg-slate-50 p-4 rounded-xl flex items-start gap-4">
+                                    <div className="bg-slate-50 dark:bg-zinc-800 p-4 rounded-xl flex items-start gap-4">
                                         <div className="p-2 bg-blue-50 rounded-lg">
                                             <CheckCircle2 className="text-primary w-5 h-5" />
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-900">0</div>
-                                            <div className="text-xs text-slate-500">Course Completions</div>
+                                            <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                            <div className="text-xs text-slate-500 dark:text-zinc-400">Course Completions</div>
                                         </div>
                                     </div>
-                                    <div className="bg-slate-50 p-4 rounded-xl flex items-start gap-4">
+                                    <div className="bg-slate-50 dark:bg-zinc-800 p-4 rounded-xl flex items-start gap-4">
                                         <div className="p-2 bg-purple-50 rounded-lg">
                                             <MessageSquare className="text-purple-500 w-5 h-5" />
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-900">0</div>
-                                            <div className="text-xs text-slate-500">Messages Sent</div>
+                                            <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                            <div className="text-xs text-slate-500 dark:text-zinc-400">Messages Sent</div>
                                         </div>
                                     </div>
-                                    <div className="bg-slate-50 p-4 rounded-xl flex items-start gap-4">
+                                    <div className="bg-slate-50 dark:bg-zinc-800 p-4 rounded-xl flex items-start gap-4">
                                         <div className="p-2 bg-green-50 rounded-lg">
                                             <BarChart3 className="text-green-500 w-5 h-5" />
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-900">99.9%</div>
-                                            <div className="text-xs text-slate-500">System Uptime</div>
+                                            <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">99.9%</div>
+                                            <div className="text-xs text-slate-500 dark:text-zinc-400">System Uptime</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div className="order-1 lg:order-2">
-                            <h2 className="text-3xl font-bold text-slate-900 mb-6"><span className="text-green-700 font-bold">About</span> {APP_NAME} Platform</h2>
-                            <p className="text-slate-600 mb-6 leading-relaxed">
+                            <h2 className="text-3xl font-bold text-slate-900 dark:text-zinc-100 mb-6"><span className="text-green-700 dark:text-green-400 font-bold">About</span> {APP_NAME} Platform</h2>
+                            <p className="text-slate-600 dark:text-zinc-400 mb-6 leading-relaxed">
                                 Built for speed and reliability, {APP_NAME} offers administrators a crystal-clear view of their educational ecosystem. Our platform isn't just about data entry; it's about actionable insights.
                             </p>
-                            <p className="text-slate-600 mb-8 leading-relaxed">
+                            <p className="text-slate-600 dark:text-zinc-400 mb-8 leading-relaxed">
                                 From monitoring system health to approving the next groundbreaking course in Machine Learning, {APP_NAME} puts control back in your hands with a clean, distraction-free interface.
                             </p>
                             <ul className="space-y-4 mb-8">
                                 <li className="flex items-center gap-3">
                                     <Check className="text-green-500 w-5 h-5" />
-                                    <span className="text-slate-700">Centralized User Management</span>
+                                    <span className="text-slate-700 dark:text-zinc-200">Centralized User Management</span>
                                 </li>
                                 <li className="flex items-center gap-3">
                                     <Check className="text-green-500 w-5 h-5" />
-                                    <span className="text-slate-700">Detailed Reporting & Exports</span>
+                                    <span className="text-slate-700 dark:text-zinc-200">Detailed Reporting & Exports</span>
                                 </li>
                                 <li className="flex items-center gap-3">
                                     <Check className="text-green-500 w-5 h-5" />
-                                    <span className="text-slate-700">Customizable Admin Permissions</span>
+                                    <span className="text-slate-700 dark:text-zinc-200">Customizable Admin Permissions</span>
                                 </li>
                             </ul>
-                            <button className="text-primary font-semibold hover:text-blue-700 flex items-center gap-2 group">
+                            <button className="text-primary dark:text-blue-400 font-semibold hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-2 group">
                                 Learn more about our mission
                                 <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                             </button>
@@ -364,11 +364,11 @@ export const HomePage = () => {
             </section>
 
             {/* FAQ Section */}
-            <section className="py-20 bg-white border-t border-slate-100" id="faq">
+            <section className="py-20 bg-white dark:bg-zinc-950 border-t border-slate-100 dark:border-zinc-800 transition-colors" id="faq">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-4">Frequently Asked <span className="text-blue-700 font-bold">Questions</span></h2>
-                        <p className="text-slate-500">Everything you need to know about the {APP_NAME} ecosystem.</p>
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-zinc-100 mb-4">Frequently Asked <span className="text-blue-700 dark:text-blue-400 font-bold">Questions</span></h2>
+                        <p className="text-slate-500 dark:text-zinc-400">Everything you need to know about the {APP_NAME} ecosystem.</p>
                     </div>
                     <div className="space-y-4">
                         {[
@@ -387,15 +387,15 @@ export const HomePage = () => {
                         ].map((faq, index) => (
                             <div
                                 key={index}
-                                className="bg-slate-50 rounded-xl p-4 cursor-pointer border border-transparent hover:border-slate-200 transition-colors"
+                                className="bg-slate-50 dark:bg-zinc-900 rounded-xl p-4 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 transition-colors"
                                 onClick={() => toggleFaq(index)}
                             >
-                                <div className="flex items-center justify-between font-medium text-slate-900">
+                                <div className="flex items-center justify-between font-medium text-slate-900 dark:text-zinc-100">
                                     <span>{faq.question}</span>
                                     <ChevronDown className={`text-slate-400 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
                                 </div>
                                 {openFaq === index && (
-                                    <div className="mt-4 text-slate-600 text-sm leading-relaxed">{faq.answer}</div>
+                                    <div className="mt-4 text-slate-600 dark:text-zinc-400 text-sm leading-relaxed">{faq.answer}</div>
                                 )}
                             </div>
                         ))}

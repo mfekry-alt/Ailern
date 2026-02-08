@@ -11,7 +11,8 @@ import {
     Calendar,
     User,
     Star,
-    Eye
+    Eye,
+    X
 } from 'lucide-react';
 
 interface Assignment {
@@ -97,7 +98,7 @@ export const AssignmentsPage = () => {
 
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [submittingId, setSubmittingId] = useState<string | null>(null);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [submitNotes, setSubmitNotes] = useState<string>('');
     const [submitError, setSubmitError] = useState<string>('');
     const [progress, setProgress] = useState<number>(0);
@@ -128,7 +129,7 @@ export const AssignmentsPage = () => {
 
     const openSubmitModal = (assignment: Assignment) => {
         setCurrentAssignment(assignment);
-        setSelectedFile(null);
+        setSelectedFiles([]);
         setSubmitNotes('');
         setSubmitError('');
         setProgress(0);
@@ -139,33 +140,52 @@ export const AssignmentsPage = () => {
         if (submittingId) return; // prevent closing during submit
         setShowSubmitModal(false);
         setCurrentAssignment(null);
-        setSelectedFile(null);
+        setSelectedFiles([]);
         setSubmitNotes('');
         setSubmitError('');
         setProgress(0);
     };
 
-    const onFileSelected = (file: File | null) => {
+    const onFilesSelected = (newFiles: FileList | null) => {
         setSubmitError('');
-        setSelectedFile(file);
-        if (!file || !currentAssignment) return;
-        const ext = file.name.split('.').pop()?.toLowerCase();
-        if (allowedExtensions.length && (!ext || !allowedExtensions.includes(ext))) {
-            setSubmitError(`Invalid file type. Allowed: ${allowedExtensions.join(', ').toUpperCase()}`);
-            setSelectedFile(null);
-            return;
+        if (!newFiles || newFiles.length === 0 || !currentAssignment) return;
+        
+        const filesArray = Array.from(newFiles);
+        const validFiles: File[] = [];
+        const errors: string[] = [];
+        
+        for (const file of filesArray) {
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            if (allowedExtensions.length && (!ext || !allowedExtensions.includes(ext))) {
+                errors.push(`${file.name}: Invalid file type`);
+                continue;
+            }
+            if (file.size > maxBytes) {
+                errors.push(`${file.name}: File too large (Max: ${currentAssignment.maxFileSize})`);
+                continue;
+            }
+            validFiles.push(file);
         }
-        if (file.size > maxBytes) {
-            setSubmitError(`File too large. Max: ${currentAssignment.maxFileSize}`);
-            setSelectedFile(null);
+        
+        if (errors.length > 0) {
+            setSubmitError(errors.join(', '));
         }
+        
+        if (validFiles.length > 0) {
+            setSelectedFiles([...selectedFiles, ...validFiles]);
+        }
+    };
+    
+    const removeFile = (index: number) => {
+        setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+        setSubmitError('');
     };
 
     const submitAssignment = async () => {
         if (!currentAssignment) return;
         setSubmitError('');
-        if (!selectedFile) {
-            setSubmitError('Please select a file to submit.');
+        if (selectedFiles.length === 0) {
+            setSubmitError('Please select at least one file to submit.');
             return;
         }
         setSubmittingId(currentAssignment.id);
@@ -500,7 +520,9 @@ export const AssignmentsPage = () => {
                 submitting={!!submittingId}
                 progress={progress}
                 error={submitError}
-                onFileChange={onFileSelected}
+                onFilesChange={onFilesSelected}
+                selectedFiles={selectedFiles}
+                onRemoveFile={removeFile}
                 notes={submitNotes}
                 setNotes={setSubmitNotes}
                 onSubmit={submitAssignment}
@@ -518,7 +540,9 @@ export const SubmissionModal = ({
     submitting,
     progress,
     error,
-    onFileChange,
+    onFilesChange,
+    selectedFiles,
+    onRemoveFile,
     notes,
     setNotes,
     onSubmit,
@@ -529,12 +553,21 @@ export const SubmissionModal = ({
     submitting: boolean;
     progress: number;
     error: string;
-    onFileChange: (file: File | null) => void;
+    onFilesChange: (files: FileList | null) => void;
+    selectedFiles: File[];
+    onRemoveFile: (index: number) => void;
     notes: string;
     setNotes: (v: string) => void;
     onSubmit: () => void;
 }) => {
     if (!open || !assignment) return null;
+    
+    const formatFileSize = (bytes: number) => {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    };
+    
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -544,18 +577,50 @@ export const SubmissionModal = ({
                     <p className="text-[14px] text-gray-600 mt-1">{assignment.title}</p>
                 </div>
                 <div className="p-6 space-y-4">
-                    <div className="space-y-1">
-                        <label className="text-[14px] font-medium text-gray-900">File</label>
-                        <input
-                            type="file"
-                            onChange={(e) => onFileChange(e.target.files?.[0] || null)}
-                            className="w-full"
-                            accept={assignment.allowedFileTypes?.map((t) => `.${t.toLowerCase()}`).join(',')}
-                        />
+                    <div className="space-y-2">
+                        <label className="text-[14px] font-medium text-gray-900">Upload Files</label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-500 transition-colors">
+                            <input
+                                type="file"
+                                multiple
+                                onChange={(e) => onFilesChange(e.target.files)}
+                                className="w-full"
+                                accept={assignment.allowedFileTypes?.map((t) => `.${t.toLowerCase()}`).join(',')}
+                                disabled={submitting}
+                            />
+                        </div>
                         <p className="text-[12px] text-gray-600">
-                            Allowed: {assignment.allowedFileTypes?.join(', ') || 'Any'} • Max size: {assignment.maxFileSize || '—'}
+                            Allowed: {assignment.allowedFileTypes?.join(', ') || 'Any'} • Max size per file: {assignment.maxFileSize || '—'}
                         </p>
                     </div>
+                    
+                    {/* Selected Files List */}
+                    {selectedFiles.length > 0 && (
+                        <div className="space-y-2">
+                            <label className="text-[14px] font-medium text-gray-900">Selected Files ({selectedFiles.length})</label>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {selectedFiles.map((file, index) => (
+                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-[13px] font-medium text-gray-900 truncate">{file.name}</p>
+                                                <p className="text-[11px] text-gray-500">{formatFileSize(file.size)}</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => onRemoveFile(index)}
+                                            disabled={submitting}
+                                            className="ml-2 p-1 hover:bg-red-100 rounded text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Remove file"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                     <div className="space-y-1">
                         <label className="text-[14px] font-medium text-gray-900">Notes (optional)</label>
                         <textarea

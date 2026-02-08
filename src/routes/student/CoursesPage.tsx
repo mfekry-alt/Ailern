@@ -1,10 +1,26 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
+import { courseService } from '@/api/services';
+import { handleApiError } from '@/api/client';
 const filterIcon = '/filter.svg';
 const sortIcon = '/sort.svg';
+
+const GRADIENTS = [
+    'from-teal-400 to-teal-600',
+    'from-green-400 to-green-600',
+    'from-green-500 to-green-700',
+    'from-blue-400 to-blue-600',
+    'from-orange-400 to-orange-600',
+    'from-green-600 to-green-800',
+    'from-purple-400 to-purple-600',
+    'from-pink-400 to-pink-600',
+    'from-indigo-400 to-indigo-600',
+    'from-cyan-400 to-cyan-600',
+];
 
 export const CoursesPage = () => {
     const navigate = useNavigate();
@@ -23,131 +39,37 @@ export const CoursesPage = () => {
     const sortRef = useRef<HTMLDivElement>(null);
     const instructorRef = useRef<HTMLDivElement>(null);
 
-    const allCourses = [
-        {
-            id: 1,
-            title: 'Introduction to Artificial Intelligence',
-            description: 'Explore the basics of AI, including problem-solving, knowledge representation, and machine learning.',
-            instructor: 'Dr. Alan Turing',
-            duration: '12 Weeks',
-            status: 'open',
-            gradient: 'from-teal-400 to-teal-600',
-            lectureCount: 24,
-            assignmentCount: 8,
-            quizCount: 6
-        },
-        {
-            id: 2,
-            title: 'Advanced Data Science',
-            description: 'Dive into advanced data analysis, statistical modeling, and big data processing techniques.',
-            instructor: 'Dr. Ada Lovelace',
-            duration: '10 Weeks',
-            status: 'pending',
-            gradient: 'from-green-400 to-green-600',
-            lectureCount: 20,
-            assignmentCount: 5,
-            quizCount: 4
-        },
-        {
-            id: 3,
-            title: 'Machine Learning Fundamentals',
-            description: 'Learn the core principles of machine learning, algorithms, and model evaluation.',
-            instructor: 'Dr. Geoffrey Hinton',
-            duration: '8 Weeks',
-            status: 'enrolled',
-            gradient: 'from-green-500 to-green-700',
-            lectureCount: 16,
-            assignmentCount: 6,
-            quizCount: 3
-        },
-        {
-            id: 4,
-            title: 'Deep Learning Applications',
-            description: 'Apply deep learning techniques to real-world problems, including neural networks and convolutional networks.',
-            instructor: 'Dr. Yann LeCun',
-            duration: '14 Weeks',
-            status: 'open',
-            gradient: 'from-blue-400 to-blue-600',
-            lectureCount: 28,
-            assignmentCount: 10,
-            quizCount: 7
-        },
-        {
-            id: 5,
-            title: 'Natural Language Processing',
-            description: 'Understand the fundamentals of NLP, text processing, and language modeling.',
-            instructor: 'Dr. Yoshua Bengio',
-            duration: '10 Weeks',
-            status: 'open',
-            gradient: 'from-orange-400 to-orange-600',
-            lectureCount: 20,
-            assignmentCount: 7,
-            quizCount: 5
-        },
-        {
-            id: 6,
-            title: 'Computer Vision & Image Recognition',
-            description: 'Discover computer vision techniques, image processing, and object recognition algorithms.',
-            instructor: 'Dr. Fei-Fei Li',
-            duration: '12 Weeks',
-            status: 'closed',
-            gradient: 'from-green-600 to-green-800',
-            lectureCount: 24,
-            assignmentCount: 8,
-            quizCount: 6
-        },
-        {
-            id: 7,
-            title: 'Neural Networks & Deep Learning',
-            description: 'Comprehensive course on neural network architectures and deep learning frameworks.',
-            instructor: 'Dr. Andrew Ng',
-            duration: '12 Weeks',
-            status: 'open',
-            gradient: 'from-purple-400 to-purple-600',
-            lectureCount: 24,
-            assignmentCount: 9,
-            quizCount: 6
-        },
-        {
-            id: 8,
-            title: 'Reinforcement Learning',
-            description: 'Learn about RL algorithms, Q-learning, and policy gradient methods.',
-            instructor: 'Dr. David Silver',
-            duration: '10 Weeks',
-            status: 'open',
-            gradient: 'from-pink-400 to-pink-600',
-            lectureCount: 20,
-            assignmentCount: 6,
-            quizCount: 5
-        },
-        {
-            id: 9,
-            title: 'Robotics & AI',
-            description: 'Explore the intersection of robotics and artificial intelligence.',
-            instructor: 'Dr. Rodney Brooks',
-            duration: '14 Weeks',
-            status: 'open',
-            gradient: 'from-indigo-400 to-indigo-600',
-            lectureCount: 28,
-            assignmentCount: 11,
-            quizCount: 8
-        },
-        {
-            id: 10,
-            title: 'AI Ethics & Society',
-            description: 'Examine the ethical implications and societal impacts of AI technologies.',
-            instructor: 'Dr. Timnit Gebru',
-            duration: '8 Weeks',
-            status: 'open',
-            gradient: 'from-cyan-400 to-cyan-600',
-            lectureCount: 16,
-            assignmentCount: 4,
-            quizCount: 3
-        }
-    ];
+    const { data: paginated, isLoading, error } = useQuery({
+        queryKey: ['courses', 'available', { PageNumber: currentPage, PageSize: coursesPerPage }],
+        queryFn: () =>
+            courseService.getAvailableCourses({
+                PageNumber: currentPage,
+                PageSize: coursesPerPage,
+            }),
+    });
 
-    // Get unique instructors (after courses are defined)
-    const instructors = Array.from(new Set(allCourses.map((c) => c.instructor)));
+    const apiItems = paginated?.items ?? [];
+    const allCourses = useMemo(
+        () =>
+            apiItems.map((c, i) => ({
+                id: c.id,
+                title: c.name || c.code,
+                description: '',
+                instructor: c.instructorName || 'Instructor',
+                duration: '',
+                status: 'open' as const,
+                gradient: GRADIENTS[i % GRADIENTS.length],
+                lectureCount: 0,
+                assignmentCount: 0,
+                quizCount: 0,
+            })),
+        [apiItems]
+    );
+
+    const instructors = useMemo(
+        () => Array.from(new Set(allCourses.map((c) => c.instructor))),
+        [allCourses]
+    );
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -210,6 +132,28 @@ export const CoursesPage = () => {
     useEffect(() => {
         setCurrentPage(1);
     }, [filterByStatus, filterByInstructor, searchQuery, sortBy]);
+
+    if (isLoading) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto flex items-center justify-center min-h-[50vh]" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+                <div className="text-center">
+                    <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading available courses...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+                <div className="text-center py-12">
+                    <p className="text-red-600 mb-4">{handleApiError(error).message}</p>
+                    <p className="text-gray-600">Could not load courses. Please try again later.</p>
+                </div>
+            </div>
+        );
+    }
 
     const getStatusBadge = (status: string) => {
         // Status badge only shows Open or Closed (spec 2.1)

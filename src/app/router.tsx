@@ -11,6 +11,7 @@ import { InstructorLayout } from './layouts/InstructorLayout';
 // Public pages
 import { HomePage } from '@/routes/HomePage';
 import { LoginPage } from '@/routes/LoginPage';
+import { RegisterPage } from '@/routes/RegisterPage';
 import { ForgotPasswordPage } from '@/routes/ForgotPasswordPage';
 import { VerifyEmailPage } from '@/routes/VerifyEmailPage';
 import { SetPasswordPage } from '@/routes/SetPasswordPage';
@@ -71,7 +72,7 @@ export const AppRouter = () => {
                 }
             >
                 <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-                <Route path={ROUTES.REGISTER} element={<Navigate to={ROUTES.LOGIN} replace />} />
+                <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
                 <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
                 <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
                 <Route path={ROUTES.SET_PASSWORD} element={<SetPasswordPage />} />

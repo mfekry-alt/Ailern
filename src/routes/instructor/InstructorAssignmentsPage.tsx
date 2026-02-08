@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui';
-import { ROUTES } from '@/lib/constants';
+import { ROUTES, QUERY_KEYS } from '@/lib/constants';
 import {
     Plus,
     Edit,
@@ -14,10 +15,21 @@ import {
     CheckCircle,
     AlertCircle,
     Star,
-    Calendar
+    Calendar,
+    Loader2
 } from 'lucide-react';
+import {
+    getInstructorAssignments,
+    deleteAssignment,
+    getAssignmentSubmissions,
+    gradeSubmission,
+    type GetAllAssignmentsDto,
+    type GetAllAssignmentSubmissionsDto,
+} from '@/api/services/assignment.service';
+import { handleApiError } from '@/api/client';
 
-interface Assignment {
+// Helper function to map API assignment to UI format
+const mapAssignmentToUI = (assignment: GetAllAssignmentsDto): {
     id: string;
     title: string;
     course: string;
@@ -29,99 +41,117 @@ interface Assignment {
     description: string;
     attachments: string[];
     createdAt: string;
-}
-
-interface Submission {
-    id: string;
-    studentName: string;
-    studentEmail: string;
-    submittedAt: string;
-    status: 'submitted' | 'graded' | 'late';
-    grade?: number;
-    feedback?: string;
-    attachments: string[];
-}
+} => {
+    return {
+        id: assignment.id.toString(),
+        title: assignment.title,
+        course: assignment.courseName 
+            ? `${assignment.courseCode || ''} - ${assignment.courseName}`.trim()
+            : `Course ${assignment.courseId}`,
+        dueDate: assignment.dueDate,
+        totalPoints: assignment.totalPoints,
+        submissions: assignment.submissionsCount || 0,
+        graded: assignment.gradedCount || 0,
+        status: assignment.status === 'Draft' ? 'draft' : 
+                assignment.status === 'Published' ? 'published' : 'closed',
+        description: assignment.description,
+        attachments: assignment.attachments || [],
+        createdAt: assignment.createdAt,
+    };
+};
 
 export const InstructorAssignmentsPage = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [selectedCourse, setSelectedCourse] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
-    const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+    const [selectedAssignment, setSelectedAssignment] = useState<ReturnType<typeof mapAssignmentToUI> | null>(null);
+    const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null);
 
-    const [assignments, setAssignments] = useState<Assignment[]>([
-        {
-            id: '1',
-            title: 'Programming Assignment 1: Basic Algorithms',
-            course: 'CS101 - Introduction to Programming',
-            dueDate: '2024-01-15',
-            totalPoints: 100,
-            submissions: 45,
-            graded: 42,
-            status: 'published',
-            description: 'Implement basic sorting algorithms including bubble sort, selection sort, and insertion sort.',
-            attachments: ['assignment1.pdf', 'rubric.pdf'],
-            createdAt: '2024-01-01'
+    // Fetch assignments using React Query
+    const {
+        data: assignmentsData,
+        isLoading,
+        error,
+    } = useQuery({
+        queryKey: QUERY_KEYS.INSTRUCTOR_ASSIGNMENTS,
+        queryFn: async () => {
+            const response = await getInstructorAssignments();
+            // Handle pagination result or array
+            if (Array.isArray(response)) {
+                return response;
+            } else {
+                return response.items;
+            }
         },
-        {
-            id: '2',
-            title: 'Data Structures Lab: Linked Lists',
-            course: 'CS202 - Data Structures',
-            dueDate: '2024-01-20',
-            totalPoints: 150,
-            submissions: 38,
-            graded: 35,
-            status: 'published',
-            description: 'Create a comprehensive linked list implementation with all basic operations.',
-            attachments: ['lab2.pdf'],
-            createdAt: '2024-01-05'
-        },
-        {
-            id: '3',
-            title: 'Linear Algebra Problem Set 3',
-            course: 'MA203 - Linear Algebra',
-            dueDate: '2024-01-18',
-            totalPoints: 80,
-            submissions: 0,
-            graded: 0,
-            status: 'draft',
-            description: 'Solve problems related to eigenvalues, eigenvectors, and diagonalization.',
-            attachments: ['ps3.pdf'],
-            createdAt: '2024-01-10'
-        }
-    ]);
+    });
 
-    const [submissions, setSubmissions] = useState<Submission[]>([
-        {
-            id: '1',
-            studentName: 'John Doe',
-            studentEmail: 'john.doe@university.edu',
-            submittedAt: '2024-01-14T10:30:00Z',
-            status: 'graded',
-            grade: 95,
-            feedback: 'Excellent implementation! Your code is well-documented and efficient.',
-            attachments: ['solution.py', 'analysis.pdf']
-        },
-        {
-            id: '2',
-            studentName: 'Sarah Johnson',
-            studentEmail: 'sarah.johnson@university.edu',
-            submittedAt: '2024-01-15T09:15:00Z',
-            status: 'graded',
-            grade: 88,
-            feedback: 'Good work! Consider optimizing the bubble sort algorithm.',
-            attachments: ['assignment1.py']
-        },
-        {
-            id: '3',
-            studentName: 'Mike Wilson',
-            studentEmail: 'mike.wilson@university.edu',
-            submittedAt: '2024-01-16T14:20:00Z',
-            status: 'submitted',
-            attachments: ['solution.py']
+    // Fetch submissions for selected assignment
+    const {
+        data: submissionsData,
+        isLoading: isLoadingSubmissions,
+    } = useQuery({
+        queryKey: QUERY_KEYS.ASSIGNMENT_SUBMISSIONS(selectedAssignmentId || 0),
+        queryFn: () => getAssignmentSubmissions(selectedAssignmentId!),
+        enabled: !!selectedAssignmentId,
+    });
+
+    // Map API data to UI format
+    const assignments = useMemo(() => {
+        if (!assignmentsData) return [];
+        return assignmentsData.map(mapAssignmentToUI);
+    }, [assignmentsData]);
+
+    // Map submissions to UI format
+    const submissions = useMemo(() => {
+        if (!submissionsData) return [];
+        if (Array.isArray(submissionsData)) {
+            return submissionsData.map((sub: GetAllAssignmentSubmissionsDto) => ({
+                id: sub.id.toString(),
+                studentName: sub.studentName || 'Unknown',
+                studentEmail: sub.studentEmail || '',
+                submittedAt: sub.submittedAt,
+                status: sub.status.toLowerCase() as 'submitted' | 'graded' | 'late',
+                grade: sub.grade,
+                attachments: [],
+            }));
+        } else {
+            return submissionsData.items.map((sub: GetAllAssignmentSubmissionsDto) => ({
+                id: sub.id.toString(),
+                studentName: sub.studentName || 'Unknown',
+                studentEmail: sub.studentEmail || '',
+                submittedAt: sub.submittedAt,
+                status: sub.status.toLowerCase() as 'submitted' | 'graded' | 'late',
+                grade: sub.grade,
+                attachments: [],
+            }));
         }
-    ]);
+    }, [submissionsData]);
+
+    // Delete assignment mutation
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => deleteAssignment(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.INSTRUCTOR_ASSIGNMENTS });
+        },
+    });
+
+    // Grade submission mutation
+    const gradeMutation = useMutation({
+        mutationFn: ({ assignmentId, submissionId, grade, feedback }: {
+            assignmentId: number;
+            submissionId: number;
+            grade: number;
+            feedback?: string;
+        }) => gradeSubmission(assignmentId, submissionId, { grade, feedback }),
+        onSuccess: () => {
+            if (selectedAssignmentId) {
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ASSIGNMENT_SUBMISSIONS(selectedAssignmentId) });
+            }
+        },
+    });
 
     const courseOptions = useMemo(
         () => [
@@ -136,6 +166,21 @@ export const InstructorAssignmentsPage = () => {
         if (!editingAssignmentId) return null;
         return assignments.find((a) => a.id === editingAssignmentId) ?? null;
     }, [assignments, editingAssignmentId]);
+
+    const handleViewSubmissions = (assignment: ReturnType<typeof mapAssignmentToUI>) => {
+        setSelectedAssignment(assignment);
+        setSelectedAssignmentId(parseInt(assignment.id));
+    };
+
+    const handleDeleteAssignment = async (id: string) => {
+        if (window.confirm('Are you sure you want to delete this assignment?')) {
+            deleteMutation.mutate(parseInt(id));
+        }
+    };
+
+    const handleGradeSubmission = (assignmentId: number, submissionId: number, grade: number, feedback?: string) => {
+        gradeMutation.mutate({ assignmentId, submissionId, grade, feedback });
+    };
 
     const [assignmentForm, setAssignmentForm] = useState({
         title: '',
@@ -166,7 +211,7 @@ export const InstructorAssignmentsPage = () => {
         URL.revokeObjectURL(url);
     };
 
-    const exportAssignment = (assignment: Assignment) => {
+    const exportAssignment = (assignment: ReturnType<typeof mapAssignmentToUI>) => {
         const rows = [
             ['id', 'title', 'course', 'dueDate', 'totalPoints', 'submissions', 'graded', 'status', 'createdAt'],
             [
@@ -188,61 +233,14 @@ export const InstructorAssignmentsPage = () => {
     };
 
     const handleSaveAssignment = () => {
-        if (!assignmentForm.title.trim()) return;
-
+        // Navigate to create/edit page - actual save will happen there
         if (editingAssignmentId) {
-            setAssignments((prev) =>
-                prev.map((a) =>
-                    a.id === editingAssignmentId
-                        ? {
-                            ...a,
-                            title: assignmentForm.title.trim(),
-                            course: assignmentForm.course,
-                            dueDate: assignmentForm.dueDate,
-                            totalPoints: assignmentForm.totalPoints,
-                            status: assignmentForm.status,
-                            description: assignmentForm.description,
-                        }
-                        : a
-                )
-            );
+            navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT.replace(':id', editingAssignmentId));
         } else {
-            const id = String(Date.now());
-            setAssignments((prev) => [
-                {
-                    id,
-                    title: assignmentForm.title.trim(),
-                    course: assignmentForm.course,
-                    dueDate: assignmentForm.dueDate,
-                    totalPoints: assignmentForm.totalPoints,
-                    submissions: 0,
-                    graded: 0,
-                    status: assignmentForm.status,
-                    description: assignmentForm.description,
-                    attachments: [],
-                    createdAt: new Date().toISOString().slice(0, 10),
-                },
-                ...prev,
-            ]);
+            navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE);
         }
-
         setShowCreateModal(false);
         setEditingAssignmentId(null);
-    };
-
-    const gradeSubmission = (submissionId: string) => {
-        setSubmissions((prev) =>
-            prev.map((s) => {
-                if (s.id !== submissionId) return s;
-                if (s.status === 'graded') return s;
-                return {
-                    ...s,
-                    status: 'graded',
-                    grade: 100,
-                    feedback: 'Graded.',
-                };
-            })
-        );
     };
 
     const getStatusBadge = (status: string) => {
@@ -283,6 +281,37 @@ export const InstructorAssignmentsPage = () => {
         { label: 'Total Submissions', value: assignments.reduce((sum, a) => sum + a.submissions, 0), icon: Upload, color: 'text-purple-600' },
         { label: 'Pending Grading', value: assignments.reduce((sum, a) => sum + (a.submissions - a.graded), 0), icon: Clock, color: 'text-yellow-600' }
     ];
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading assignments...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 min-h-screen">
+                <div className="text-center py-12">
+                    <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+                    <h3 className="text-[20px] font-semibold text-gray-900 mb-2">Failed to load assignments</h3>
+                    <p className="text-gray-600 mb-4">{handleApiError(error).message}</p>
+                    <button
+                        onClick={() => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.INSTRUCTOR_ASSIGNMENTS })}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 min-h-screen">
@@ -525,7 +554,20 @@ export const InstructorAssignmentsPage = () => {
 
                                                         <div className="flex gap-2">
                                                             <button
-                                                                onClick={() => gradeSubmission(submission.id)}
+                                                                onClick={() => {
+                                                        if (selectedAssignmentId) {
+                                                            const grade = prompt('Enter grade (0-100):');
+                                                            if (grade && !isNaN(parseFloat(grade))) {
+                                                                const feedback = prompt('Enter feedback (optional):') || undefined;
+                                                                handleGradeSubmission(
+                                                                    selectedAssignmentId,
+                                                                    parseInt(submission.id),
+                                                                    parseFloat(grade),
+                                                                    feedback
+                                                                );
+                                                            }
+                                                        }
+                                                    }}
                                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] px-3 py-2 rounded-lg transition-colors"
                                                             >
                                                                 Grade

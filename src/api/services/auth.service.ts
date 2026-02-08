@@ -1,0 +1,206 @@
+/**
+ * Authentication Service
+ * Handles all authentication-related API calls
+ */
+
+import { api, setAccessToken } from '../client';
+import { ENDPOINTS } from '../endpoints';
+import { storage } from '@/lib/storage';
+import { STORAGE_KEYS } from '@/lib/constants';
+import type {
+    UserLoginByEmailAndPasswordCommand,
+    GetTokenResponseDto,
+    GetRefreshTokenCommand,
+    RevokeRefreshTokenCommand,
+    ResendEmailConfirmationCommand,
+    SendPasswordResetEmailCommand,
+    UserPasswordResetCommand,
+    EmailConfirmationParams,
+    CreateStudentCommand,
+    CreateInstructorCommand,
+    CreateAdminCommand,
+    ApiResponse,
+} from '@/types/api.types';
+
+/**
+ * Login with email and password
+ * @param credentials - Email and password
+ * @returns Token response with access token, refresh token, and user info
+ */
+export const login = async (
+    credentials: UserLoginByEmailAndPasswordCommand
+): Promise<GetTokenResponseDto> => {
+    const response = await api.post<ApiResponse<GetTokenResponseDto>>(
+        ENDPOINTS.AUTH.LOGIN,
+        credentials
+    );
+    
+    const tokenData = response.data.data!;
+    
+    // Store tokens
+    setAccessToken(tokenData.accessToken);
+    storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+    storage.set(STORAGE_KEYS.USER, {
+        userName: tokenData.userName,
+        email: tokenData.email,
+        role: tokenData.role,
+    });
+    
+    return tokenData;
+};
+
+/**
+ * Refresh the access token using refresh token
+ * @param command - Refresh token command
+ * @returns New token response
+ */
+export const refreshToken = async (
+    command: GetRefreshTokenCommand
+): Promise<GetTokenResponseDto> => {
+    const response = await api.post<ApiResponse<GetTokenResponseDto>>(
+        ENDPOINTS.AUTH.REFRESH,
+        command
+    );
+    
+    const tokenData = response.data.data!;
+    
+    // Update stored tokens
+    setAccessToken(tokenData.accessToken);
+    storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+    
+    return tokenData;
+};
+
+/**
+ * Register a new student
+ * @param command - Student registration data
+ * @returns Token response
+ */
+export const registerStudent = async (
+    command: CreateStudentCommand
+): Promise<GetTokenResponseDto> => {
+    const response = await api.post<ApiResponse<GetTokenResponseDto>>(
+        ENDPOINTS.STUDENTS.REGISTER,
+        command
+    );
+    
+    const tokenData = response.data.data!;
+    
+    // Store tokens
+    setAccessToken(tokenData.accessToken);
+    storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+    storage.set(STORAGE_KEYS.USER, {
+        userName: tokenData.userName,
+        email: tokenData.email,
+        role: tokenData.role,
+    });
+    
+    return tokenData;
+};
+
+/**
+ * Register a new instructor
+ * @param command - Instructor registration data
+ * @returns Token response
+ */
+export const registerInstructor = async (
+    command: CreateInstructorCommand
+): Promise<GetTokenResponseDto> => {
+    const response = await api.post<ApiResponse<GetTokenResponseDto>>(
+        ENDPOINTS.INSTRUCTORS.REGISTER,
+        command
+    );
+    
+    const tokenData = response.data.data!;
+    
+    // Store tokens
+    setAccessToken(tokenData.accessToken);
+    storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+    storage.set(STORAGE_KEYS.USER, {
+        userName: tokenData.userName,
+        email: tokenData.email,
+        role: tokenData.role,
+    });
+    
+    return tokenData;
+};
+
+/**
+ * Register a new admin
+ * @param command - Admin registration data
+ * @returns Token response
+ */
+export const registerAdmin = async (
+    command: CreateAdminCommand
+): Promise<GetTokenResponseDto> => {
+    const response = await api.post<ApiResponse<GetTokenResponseDto>>(
+        ENDPOINTS.ADMINS.REGISTER,
+        command
+    );
+    
+    const tokenData = response.data.data!;
+    
+    // Store tokens
+    setAccessToken(tokenData.accessToken);
+    storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+    storage.set(STORAGE_KEYS.USER, {
+        userName: tokenData.userName,
+        email: tokenData.email,
+        role: tokenData.role,
+    });
+    
+    return tokenData;
+};
+
+/**
+ * Revoke a refresh token
+ * @param command - Revoke token command
+ */
+export const revokeToken = async (command: RevokeRefreshTokenCommand): Promise<void> => {
+    await api.put<ApiResponse>(ENDPOINTS.AUTH.REVOKE_TOKEN, command);
+};
+
+/**
+ * Confirm email address
+ * @param params - Token and email
+ */
+export const confirmEmail = async (params: EmailConfirmationParams): Promise<void> => {
+    await api.get<ApiResponse>(ENDPOINTS.AUTH.CONFIRM_EMAIL, { params });
+};
+
+/**
+ * Resend confirmation email
+ * @param command - Email to resend confirmation to
+ */
+export const resendConfirmationEmail = async (
+    command: ResendEmailConfirmationCommand
+): Promise<void> => {
+    await api.post<ApiResponse>(ENDPOINTS.AUTH.RESEND_CONFIRMATION_EMAIL, command);
+};
+
+/**
+ * Send password reset email
+ * @param command - Email to send reset link to
+ */
+export const sendPasswordResetEmail = async (
+    command: SendPasswordResetEmailCommand
+): Promise<void> => {
+    await api.post<ApiResponse>(ENDPOINTS.AUTH.SEND_PASSWORD_RESET_EMAIL, command);
+};
+
+/**
+ * Change/reset password
+ * @param command - Password reset command with token
+ */
+export const changePassword = async (command: UserPasswordResetCommand): Promise<void> => {
+    await api.post<ApiResponse>(ENDPOINTS.AUTH.CHANGE_PASSWORD, command);
+};
+
+/**
+ * Logout user (clears local storage)
+ */
+export const logout = (): void => {
+    setAccessToken(null);
+    storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
+    storage.remove(STORAGE_KEYS.USER);
+};

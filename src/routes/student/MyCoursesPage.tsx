@@ -1,10 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
 const dropIcon = '/drop.svg';
 import { ROUTES } from '@/lib/constants';
+import { userService } from '@/api/services';
+import { handleApiError } from '@/api/client';
+
+const GRADIENTS = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+];
 
 export const MyCoursesPage = () => {
     const { user } = useAuth();
@@ -20,6 +32,24 @@ export const MyCoursesPage = () => {
 
     const filterRef = useRef<HTMLDivElement>(null);
     const sortRef = useRef<HTMLDivElement>(null);
+
+    const { data: apiCourses = [], isLoading, error } = useQuery({
+        queryKey: ['student', 'my-courses'],
+        queryFn: () => userService.getStudentCourses(),
+    });
+
+    const courses = useMemo(() => {
+        return apiCourses.map((c, i) => ({
+            id: c.id,
+            title: c.name || c.code,
+            instructor: c.instructorName || 'Instructor',
+            progress: 0,
+            status: 'In Progress',
+            statusColor: 'text-gray-600',
+            progressColor: 'bg-blue-600',
+            backgroundImage: GRADIENTS[i % GRADIENTS.length],
+        }));
+    }, [apiCourses]);
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -43,69 +73,6 @@ export const MyCoursesPage = () => {
         const q = params.get('search') || '';
         setSearchQuery(q);
     }, [location.search]);
-
-    const courses = [
-        {
-            id: 1,
-            title: 'Introduction to Computer Science',
-            instructor: 'Dr. Alan Turing',
-            progress: 75,
-            status: 'In Progress',
-            statusColor: 'text-gray-600',
-            progressColor: 'bg-blue-600',
-            backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-        },
-        {
-            id: 2,
-            title: 'Calculus I',
-            instructor: 'Dr. Isaac Newton',
-            progress: 100,
-            status: '100% Complete',
-            statusColor: 'text-green-600',
-            progressColor: 'bg-teal-500',
-            backgroundImage: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
-        },
-        {
-            id: 3,
-            title: 'Linear Algebra',
-            instructor: 'Dr. Olga Taussky-Todd',
-            progress: 45,
-            status: 'In Progress',
-            statusColor: 'text-gray-600',
-            progressColor: 'bg-blue-600',
-            backgroundImage: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
-        },
-        {
-            id: 4,
-            title: 'Probability and Statistics',
-            instructor: 'Dr. C. R. Rao',
-            progress: 100,
-            status: '100% Complete',
-            statusColor: 'text-green-600',
-            progressColor: 'bg-teal-500',
-            backgroundImage: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
-        },
-        {
-            id: 5,
-            title: 'Discrete Mathematics',
-            instructor: 'Dr. László Lovász',
-            progress: 20,
-            status: 'In Progress',
-            statusColor: 'text-gray-600',
-            progressColor: 'bg-blue-600',
-            backgroundImage: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
-        },
-        {
-            id: 6,
-            title: 'Data Structures and Algorithms',
-            instructor: 'Dr. Donald Knuth',
-            progress: 90,
-            status: 'In Progress',
-            statusColor: 'text-gray-600',
-            progressColor: 'bg-blue-600',
-            backgroundImage: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
-        }
-    ];
 
     // Filter courses
     const filteredCourses = courses.filter(course => {
@@ -155,6 +122,28 @@ export const MyCoursesPage = () => {
     useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery, filterOption, sortOption, viewMode]);
+
+    if (isLoading) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto flex items-center justify-center min-h-[50vh]" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+                <div className="text-center">
+                    <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading your courses...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+                <div className="text-center py-12">
+                    <p className="text-red-600 mb-4">{handleApiError(error).message}</p>
+                    <p className="text-gray-600">Could not load your courses. Please try again later.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>

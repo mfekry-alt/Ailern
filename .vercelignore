@@ -1,8 +1,10 @@
 # Ignore git submodules warning
+
 .gitmodules
 .git/modules
 
 # Development files
+
 node_modules
 .env.local
 .env.development.local
@@ -10,20 +12,24 @@ node_modules
 .env.production.local
 
 # IDE
+
 .vscode
 .idea
-*.swp
-*.swo
+_.swp
+_.swo
 
 # OS
+
 .DS_Store
 Thumbs.db
 
 # Build artifacts
+
 dist
 build
-*.log
+\*.log
 
 # Test files
+
 coverage
 test material

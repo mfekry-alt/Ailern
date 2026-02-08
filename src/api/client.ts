@@ -78,22 +78,18 @@ api.interceptors.response.use(
         isRefreshing = true;
 
         try {
-            const csrfToken = storage.get<string>(STORAGE_KEYS.CSRF_TOKEN);
             const response = await api.post(
-                '/auth/refresh',
-                {},
+                '/Auth/refresh-token',
                 {
-                    headers: {
-                        'X-CSRF-Token': csrfToken || '',
-                    },
-                }
+                    refreshToken: storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN),
+                },
             );
 
-            const { accessToken: newAccessToken, csrfToken: newCsrfToken } = response.data;
+            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
             setAccessToken(newAccessToken);
 
-            if (newCsrfToken) {
-                storage.set(STORAGE_KEYS.CSRF_TOKEN, newCsrfToken);
+            if (newRefreshToken) {
+                storage.set(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
             }
 
             processQueue();
@@ -102,7 +98,7 @@ api.interceptors.response.use(
             processQueue(refreshError);
             setAccessToken(null);
             storage.remove(STORAGE_KEYS.USER);
-            storage.remove(STORAGE_KEYS.CSRF_TOKEN);
+            storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
 
             // Redirect to login
             if (typeof window !== 'undefined') {

@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Minimize2, Maximize2 } from 'lucide-react';
-import { sendMessageToGemini, type ChatMessage } from '@/lib/gemini';
+import { sendMessageToProxy } from '@/lib/aiProxy';
 import { cn } from '@/lib/utils';
+
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: Date;
+}
 
 export const AIBot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -39,7 +45,7 @@ export const AIBot = () => {
         setIsLoading(true);
 
         try {
-            const response = await sendMessageToGemini(inputMessage, messages);
+            const response = await sendMessageToProxy(inputMessage, messages);
             const assistantMessage: ChatMessage = {
                 role: 'assistant',
                 content: response,
