@@ -33,3 +33,6 @@ build
 
 coverage
 test material
+
+# Example files (not part of build)
+src/examples

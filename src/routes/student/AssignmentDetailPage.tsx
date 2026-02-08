@@ -6,7 +6,11 @@ import {
     FileText,
     AlertCircle,
     ArrowLeft,
-    Loader2
+    Loader2,
+    Calendar,
+    User,
+    Star,
+    Clock
 } from 'lucide-react';
 import { getAssignment } from '@/api/services/assignment.service';
 import { QUERY_KEYS } from '@/lib/constants';
@@ -41,8 +45,21 @@ export const AssignmentDetailPage = () => {
             dueDate: assignment.dueDate,
             instructions: assignment.instructions,
             files: assignment.files || [],
+            status: 'pending', // Default status
+            points: 100, // Default points
+            allowedFileTypes: ['pdf', 'doc', 'docx', 'txt'], // Default allowed types
+            maxFileSize: '10 MB', // Default max size
         };
     }, [assignment]);
+
+    // Calculate if assignment is due soon (within 48 hours)
+    const isDueSoon = useMemo(() => {
+        if (!assignmentUI) return false;
+        const dueDate = new Date(assignmentUI.dueDate);
+        const now = new Date();
+        const hoursUntilDue = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+        return hoursUntilDue > 0 && hoursUntilDue <= 48;
+    }, [assignmentUI]);
 
     // Loading state
     if (isLoading) {

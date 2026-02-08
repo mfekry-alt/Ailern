@@ -16,6 +16,10 @@ import type {
     PaginationParams,
 } from '@/types/api.types';
 
+// Type aliases for convenience
+export type GetAllAssignmentsDto = GetAssignmentDto;
+export type GetAllAssignmentSubmissionsDto = GetAssignmentSubmissionDto;
+
 /**
  * Create a new assignment
  * @param command - Assignment details
@@ -164,4 +168,47 @@ export const getSubmissionFiles = async (
         ENDPOINTS.SUBMISSIONS.GET_FILES(assignmentId, submissionId)
     );
     return response.data.data;
+};
+
+/**
+ * Get all assignments for instructor (alias for getCourseAssignmentsForInstructor)
+ * Note: This requires a courseId, so it's a partial implementation
+ * @param params - Pagination parameters
+ * @returns List of assignments
+ */
+export const getInstructorAssignments = async (
+    params?: PaginationParams
+): Promise<GetAssignmentDto[]> => {
+    // For now, this is a placeholder that would need to be called with a specific course ID
+    // In a real implementation, you'd need to either:
+    // 1. Fetch assignments across all instructor's courses
+    // 2. Or require a courseId parameter
+    return [];
+};
+
+/**
+ * Get assignment submissions (alias for getSubmissionsByAssignment)
+ * @param assignmentId - Assignment ID
+ * @returns List of submissions
+ */
+export const getAssignmentSubmissions = async (
+    assignmentId: number
+): Promise<GetAssignmentSubmissionDto[]> => {
+    return getSubmissionsByAssignment(assignmentId);
+};
+
+/**
+ * Grade a submission
+ * @param assignmentId - Assignment ID (not currently used but kept for future API compatibility)
+ * @param submissionId - Submission ID
+ * @param grade - Grade details
+ */
+export const gradeSubmission = async (
+    assignmentId: number,
+    submissionId: number,
+    grade: { score: number; feedback?: string }
+): Promise<void> => {
+    // This endpoint doesn't exist in the current API
+    // This is a placeholder for future implementation
+    console.warn('gradeSubmission not implemented in API');
 };

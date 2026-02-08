@@ -8,6 +8,7 @@ export const ENDPOINTS = {
         RESEND_CONFIRMATION_EMAIL: '/Auth/resend-confirmation-email',
         SEND_PASSWORD_RESET_EMAIL: '/Auth/send-password-reset-email',
         CHANGE_PASSWORD: '/Auth/change-password',
+        REGISTER: '/Auth/students/register', // Default registration endpoint (student)
     },
 
     // Admins endpoints (based on API: /api/Auth/admin/*)

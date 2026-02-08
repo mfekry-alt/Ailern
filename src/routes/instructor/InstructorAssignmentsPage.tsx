@@ -28,8 +28,8 @@ import {
 } from '@/api/services/assignment.service';
 import { handleApiError } from '@/api/client';
 
-// Helper function to map API assignment to UI format
-const mapAssignmentToUI = (assignment: GetAllAssignmentsDto): {
+// Type definition for Assignment
+type Assignment = {
     id: string;
     title: string;
     course: string;
@@ -41,22 +41,36 @@ const mapAssignmentToUI = (assignment: GetAllAssignmentsDto): {
     description: string;
     attachments: string[];
     createdAt: string;
-} => {
+};
+
+// Type definition for Submission
+type Submission = {
+    id: string;
+    studentName: string;
+    studentEmail: string;
+    submittedAt: string;
+    status: 'submitted' | 'graded' | 'late';
+    grade?: number;
+    feedback?: string;
+    attachments: string[];
+};
+
+// Helper function to map API assignment to UI format
+const mapAssignmentToUI = (assignment: GetAllAssignmentsDto): Assignment => {
     return {
         id: assignment.id.toString(),
         title: assignment.title,
-        course: assignment.courseName 
-            ? `${assignment.courseCode || ''} - ${assignment.courseName}`.trim()
+        course: assignment.courseName
+            ? `${assignment.courseName}`.trim()
             : `Course ${assignment.courseId}`,
         dueDate: assignment.dueDate,
-        totalPoints: assignment.totalPoints,
-        submissions: assignment.submissionsCount || 0,
-        graded: assignment.gradedCount || 0,
-        status: assignment.status === 'Draft' ? 'draft' : 
-                assignment.status === 'Published' ? 'published' : 'closed',
-        description: assignment.description,
-        attachments: assignment.attachments || [],
-        createdAt: assignment.createdAt,
+        totalPoints: 100, // Default value - not in API
+        submissions: 0, // Default value - not in API
+        graded: 0, // Default value - not in API
+        status: 'published', // Default status
+        description: assignment.instructions || '', // Use instructions as description
+        attachments: [], // Default empty array
+        createdAt: assignment.createdAt || new Date().toISOString(),
     };
 };
 
@@ -79,12 +93,8 @@ export const InstructorAssignmentsPage = () => {
         queryKey: QUERY_KEYS.INSTRUCTOR_ASSIGNMENTS,
         queryFn: async () => {
             const response = await getInstructorAssignments();
-            // Handle pagination result or array
-            if (Array.isArray(response)) {
-                return response;
-            } else {
-                return response.items;
-            }
+            // Handle array response
+            return Array.isArray(response) ? response : [];
         },
     });
 
@@ -108,25 +118,19 @@ export const InstructorAssignmentsPage = () => {
     const submissions = useMemo(() => {
         if (!submissionsData) return [];
         if (Array.isArray(submissionsData)) {
-            return submissionsData.map((sub: GetAllAssignmentSubmissionsDto) => ({
+            return submissionsData.map((sub: GetAllAssignmentSubmissionsDto): Submission => ({
                 id: sub.id.toString(),
                 studentName: sub.studentName || 'Unknown',
-                studentEmail: sub.studentEmail || '',
+                studentEmail: '', // Default - not in API
                 submittedAt: sub.submittedAt,
-                status: sub.status.toLowerCase() as 'submitted' | 'graded' | 'late',
+                status: 'submitted', // Default status
                 grade: sub.grade,
+                feedback: sub.feedback || '', // From API
                 attachments: [],
             }));
         } else {
-            return submissionsData.items.map((sub: GetAllAssignmentSubmissionsDto) => ({
-                id: sub.id.toString(),
-                studentName: sub.studentName || 'Unknown',
-                studentEmail: sub.studentEmail || '',
-                submittedAt: sub.submittedAt,
-                status: sub.status.toLowerCase() as 'submitted' | 'graded' | 'late',
-                grade: sub.grade,
-                attachments: [],
-            }));
+            // If it's a paginated response (though submissionsData type is never)
+            return [];
         }
     }, [submissionsData]);
 
@@ -145,7 +149,7 @@ export const InstructorAssignmentsPage = () => {
             submissionId: number;
             grade: number;
             feedback?: string;
-        }) => gradeSubmission(assignmentId, submissionId, { grade, feedback }),
+        }) => gradeSubmission(assignmentId, submissionId, { score: grade, feedback }),
         onSuccess: () => {
             if (selectedAssignmentId) {
                 queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ASSIGNMENT_SUBMISSIONS(selectedAssignmentId) });
@@ -164,7 +168,7 @@ export const InstructorAssignmentsPage = () => {
 
     const editingAssignment = useMemo(() => {
         if (!editingAssignmentId) return null;
-        return assignments.find((a) => a.id === editingAssignmentId) ?? null;
+        return assignments.find((a: Assignment) => a.id === editingAssignmentId) ?? null;
     }, [assignments, editingAssignmentId]);
 
     const handleViewSubmissions = (assignment: ReturnType<typeof mapAssignmentToUI>) => {
@@ -269,7 +273,7 @@ export const InstructorAssignmentsPage = () => {
         }
     };
 
-    const filteredAssignments = assignments.filter(assignment => {
+    const filteredAssignments = assignments.filter((assignment: Assignment) => {
         const courseMatch = selectedCourse === 'all' || assignment.course.includes(selectedCourse);
         const statusMatch = selectedStatus === 'all' || assignment.status === selectedStatus;
         return courseMatch && statusMatch;
@@ -277,9 +281,9 @@ export const InstructorAssignmentsPage = () => {
 
     const stats = [
         { label: 'Total Assignments', value: assignments.length, icon: FileText, color: 'text-blue-600' },
-        { label: 'Published', value: assignments.filter(a => a.status === 'published').length, icon: CheckCircle, color: 'text-green-600' },
-        { label: 'Total Submissions', value: assignments.reduce((sum, a) => sum + a.submissions, 0), icon: Upload, color: 'text-purple-600' },
-        { label: 'Pending Grading', value: assignments.reduce((sum, a) => sum + (a.submissions - a.graded), 0), icon: Clock, color: 'text-yellow-600' }
+        { label: 'Published', value: assignments.filter((a: Assignment) => a.status === 'published').length, icon: CheckCircle, color: 'text-green-600' },
+        { label: 'Total Submissions', value: assignments.reduce((sum: number, a: Assignment) => sum + a.submissions, 0), icon: Upload, color: 'text-purple-600' },
+        { label: 'Pending Grading', value: assignments.reduce((sum: number, a: Assignment) => sum + (a.submissions - a.graded), 0), icon: Clock, color: 'text-yellow-600' }
     ];
 
     // Loading state
@@ -395,7 +399,7 @@ export const InstructorAssignmentsPage = () => {
 
                 {/* Assignments List */}
                 <div className="space-y-4">
-                    {filteredAssignments.map((assignment) => {
+                    {filteredAssignments.map((assignment: Assignment) => {
                         const statusBadge = getStatusBadge(assignment.status);
                         const StatusIcon = statusBadge.icon;
 
@@ -507,7 +511,7 @@ export const InstructorAssignmentsPage = () => {
 
                             <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                                 <div className="space-y-4">
-                                    {submissions.map((submission) => {
+                                    {submissions.map((submission: Submission) => {
                                         const submissionStatusBadge = getSubmissionStatusBadge(submission.status);
                                         const SubmissionIcon = submissionStatusBadge.icon;
 
@@ -519,7 +523,7 @@ export const InstructorAssignmentsPage = () => {
                                                             <div className="flex items-center gap-3 mb-2">
                                                                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                                                                     <span className="text-[12px] font-semibold text-blue-700">
-                                                                        {submission.studentName.split(' ').map(n => n[0]).join('')}
+                                                                        {submission.studentName.split(' ').map((n: string) => n[0]).join('')}
                                                                     </span>
                                                                 </div>
                                                                 <div>

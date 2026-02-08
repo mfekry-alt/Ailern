@@ -73,11 +73,16 @@ export const QUERY_KEYS = {
     QUIZ: (id: string) => ['quiz', id],
     USERS: ['users'],
     USER: (id: string) => ['user', id],
+    ASSIGNMENTS: ['assignments'],
+    ASSIGNMENT: (id: number) => ['assignment', id],
+    INSTRUCTOR_ASSIGNMENTS: ['instructor-assignments'],
+    ASSIGNMENT_SUBMISSIONS: (assignmentId: number) => ['assignment-submissions', assignmentId],
 } as const;
 
 export const STORAGE_KEYS = {
     ACCESS_TOKEN: 'access_token',
     REFRESH_TOKEN: 'refresh_token',
     USER: 'user',
+    CSRF_TOKEN: 'csrf_token',
 } as const;
 
