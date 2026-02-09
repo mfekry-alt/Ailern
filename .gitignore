@@ -35,6 +35,7 @@ coverage
 # Documentation files (keep README.md only)
 /*_*.md
 /API*.md
+!API_TESTING_GUIDE.md
 /GETTING_STARTED.md
 /IMPLEMENTATION_SUMMARY.md
 /MIGRATION_EXECUTION_SUMMARY.md
@@ -44,3 +45,6 @@ coverage
 /QUICK_START_TEST_GUIDE.md
 /REQUIREMENTS_CHECKLIST.md
 /VERCEL_ENV_SETUP.md
+
+# Temporary Claude files
+tmpclaude-*

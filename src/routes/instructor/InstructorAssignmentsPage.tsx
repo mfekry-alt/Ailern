@@ -559,19 +559,19 @@ export const InstructorAssignmentsPage = () => {
                                                         <div className="flex gap-2">
                                                             <button
                                                                 onClick={() => {
-                                                        if (selectedAssignmentId) {
-                                                            const grade = prompt('Enter grade (0-100):');
-                                                            if (grade && !isNaN(parseFloat(grade))) {
-                                                                const feedback = prompt('Enter feedback (optional):') || undefined;
-                                                                handleGradeSubmission(
-                                                                    selectedAssignmentId,
-                                                                    parseInt(submission.id),
-                                                                    parseFloat(grade),
-                                                                    feedback
-                                                                );
-                                                            }
-                                                        }
-                                                    }}
+                                                                    if (selectedAssignmentId) {
+                                                                        const grade = prompt('Enter grade (0-100):');
+                                                                        if (grade && !isNaN(parseFloat(grade))) {
+                                                                            const feedback = prompt('Enter feedback (optional):') || undefined;
+                                                                            handleGradeSubmission(
+                                                                                selectedAssignmentId,
+                                                                                parseInt(submission.id),
+                                                                                parseFloat(grade),
+                                                                                feedback
+                                                                            );
+                                                                        }
+                                                                    }
+                                                                }}
                                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] px-3 py-2 rounded-lg transition-colors"
                                                             >
                                                                 Grade

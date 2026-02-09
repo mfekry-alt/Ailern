@@ -26,8 +26,9 @@ export const LoginPage = () => {
 
     // Redirect based on user role after login - all roles go to their dashboard
     const getRedirectPath = (user: any) => {
-        if (user?.roles?.includes('Admin')) return ROUTES.ADMIN;
-        if (user?.roles?.includes('Instructor')) return ROUTES.INSTRUCTOR;
+        const userRole = user?.role || user?.roles?.[0];
+        if (userRole === 'Admin') return ROUTES.ADMIN;
+        if (userRole === 'Instructor') return ROUTES.INSTRUCTOR;
         return ROUTES.DASHBOARD;
     };
 
