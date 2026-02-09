@@ -3,17 +3,22 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
 
-// Enable mocking for development and testing
-async function enableMocking() {
-  if (import.meta.env.MODE === 'test') return;
-  const { worker } = await import('./mocks/browser');
-  await worker.start({
-    onUnhandledRequest: 'bypass', // Allow unhandled requests to pass through
-  });
-  console.log('🔶 Mock Service Worker enabled');
-}
+// Mocking disabled for backend integration
+// async function enableMocking() {
+//   if (import.meta.env.MODE === 'test') return;
+//   const { worker } = await import('./mocks/browser');
+//   await worker.start({
+//     onUnhandledRequest: 'bypass',
+//   });
+//   console.log('🔶 Mock Service Worker enabled');
+// }
 
-enableMocking().then(() => {
+// enableMocking().then(() => {
+//   renderApp();
+// });
+
+// Direct render without mocking
+function renderApp() {
   try {
     const rootElement = document.getElementById('root');
     if (!rootElement) throw new Error('Root element not found');
@@ -30,4 +35,6 @@ enableMocking().then(() => {
       <pre>${error instanceof Error ? error.message : String(error)}</pre>
     </div>`;
   }
-});
+}
+
+renderApp();

@@ -417,10 +417,10 @@ export const InstructorAssignmentsPage = () => {
                                                 </div>
                                             </div>
 
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
-                                    <Calendar className="w-4 h-4" />
-                                    <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                                    <Calendar className="w-4 h-4" />
+                                                    <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-[14px] text-gray-600">
                                                     <Users className="w-4 h-4" />

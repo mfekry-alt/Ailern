@@ -77,8 +77,8 @@ export const InstructorAssignmentCreatePage = () => {
 
                             {statusMessage && (
                                 <div className={`p-4 rounded-lg ${statusMessage.includes('success')
-                                        ? 'bg-green-50 border border-green-200 text-green-800'
-                                        : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
+                                    ? 'bg-green-50 border border-green-200 text-green-800'
+                                    : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
                                     }`}>
                                     <p className="text-sm">{statusMessage}</p>
                                 </div>
@@ -129,7 +129,7 @@ export const InstructorAssignmentCreatePage = () => {
                                 />
                             </div>
 
-                            {/* Due Date and Points */}
+                            {/* Due Date and File Settings */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-[14px] font-medium text-gray-700 mb-2">
@@ -143,112 +143,113 @@ export const InstructorAssignmentCreatePage = () => {
                                     />
                                 </div>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">
-                                        Allowed File Types
-                                    </label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {fileTypeOptions.map((type) => (
-                                            <button
-                                                key={type}
-                                                type="button"
-                                                onClick={() => toggleFileType(type)}
-                                                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${formData.allowedFileTypes.includes(type)
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                            Allowed File Types
+                                        </label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {fileTypeOptions.map((type) => (
+                                                <button
+                                                    key={type}
+                                                    type="button"
+                                                    onClick={() => toggleFileType(type)}
+                                                    className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${formData.allowedFileTypes.includes(type)
                                                         ? 'bg-blue-600 text-white'
                                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                    }`}
-                                            >
-                                                {type}
-                                            </button>
-                                        ))}
+                                                        }`}
+                                                >
+                                                    {type}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                            Maximum File Size
+                                        </label>
+                                        <select
+                                            value={formData.maxFileSize}
+                                            onChange={(e) => setFormData({ ...formData, maxFileSize: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
+                                        >
+                                            <option value="">No limit</option>
+                                            <option value="5">5 MB</option>
+                                            <option value="10">10 MB</option>
+                                            <option value="20">20 MB</option>
+                                            <option value="50">50 MB</option>
+                                            <option value="100">100 MB</option>
+                                        </select>
                                     </div>
                                 </div>
 
+                                {/* Attachments */}
                                 <div>
                                     <label className="block text-[14px] font-medium text-gray-700 mb-2">
-                                        Maximum File Size
+                                        Attachments (Optional)
                                     </label>
-                                    <select
-                                        value={formData.maxFileSize}
-                                        onChange={(e) => setFormData({ ...formData, maxFileSize: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
-                                    >
-                                        <option value="">No limit</option>
-                                        <option value="5">5 MB</option>
-                                        <option value="10">10 MB</option>
-                                        <option value="20">20 MB</option>
-                                        <option value="50">50 MB</option>
-                                        <option value="100">100 MB</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Attachments */}
-                            <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">
-                                    Attachments (Optional)
-                                </label>
-                                <div className="space-y-3">
-                                    <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
-                                        <Upload className="w-5 h-5 text-gray-600" />
-                                        <span className="text-[14px] font-medium text-gray-700">Upload Files</span>
-                                        <input
-                                            type="file"
-                                            multiple
-                                            onChange={handleFileUpload}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                    {attachments.length > 0 && (
-                                        <div className="space-y-2">
-                                            {attachments.map((file, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <FileText className="w-4 h-4 text-gray-600" />
-                                                        <span className="text-[14px] text-gray-900">{file.name}</span>
-                                                        <span className="text-[12px] text-gray-500">
-                                                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                                                        </span>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => removeAttachment(index)}
-                                                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    <div className="space-y-3">
+                                        <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                                            <Upload className="w-5 h-5 text-gray-600" />
+                                            <span className="text-[14px] font-medium text-gray-700">Upload Files</span>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                onChange={handleFileUpload}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        {attachments.length > 0 && (
+                                            <div className="space-y-2">
+                                                {attachments.map((file, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
                                                     >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                                        <div className="flex items-center gap-2">
+                                                            <FileText className="w-4 h-4 text-gray-600" />
+                                                            <span className="text-[14px] text-gray-900">{file.name}</span>
+                                                            <span className="text-[12px] text-gray-500">
+                                                                ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => removeAttachment(index)}
+                                                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Action Buttons */}
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                                <button
-                                    onClick={() => handleSave(true)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] rounded-lg transition-colors"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    Save Draft
-                                </button>
-                                <div className="flex gap-3">
+                                {/* Action Buttons */}
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                                     <button
-                                        onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENTS)}
-                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] rounded-lg transition-colors"
+                                        onClick={() => handleSave(true)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] rounded-lg transition-colors"
                                     >
-                                        Cancel
+                                        <Save className="w-4 h-4" />
+                                        Save Draft
                                     </button>
-                                    <button
-                                        onClick={() => handleSave(false)}
-                                        className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium text-[14px] rounded-lg transition-colors"
-                                    >
-                                        Publish
-                                    </button>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENTS)}
+                                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] rounded-lg transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => handleSave(false)}
+                                            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium text-[14px] rounded-lg transition-colors"
+                                        >
+                                            Publish
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

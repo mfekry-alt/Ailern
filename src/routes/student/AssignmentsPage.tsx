@@ -149,11 +149,11 @@ export const AssignmentsPage = () => {
     const onFilesSelected = (newFiles: FileList | null) => {
         setSubmitError('');
         if (!newFiles || newFiles.length === 0 || !currentAssignment) return;
-        
+
         const filesArray = Array.from(newFiles);
         const validFiles: File[] = [];
         const errors: string[] = [];
-        
+
         for (const file of filesArray) {
             const ext = file.name.split('.').pop()?.toLowerCase();
             if (allowedExtensions.length && (!ext || !allowedExtensions.includes(ext))) {
@@ -166,16 +166,16 @@ export const AssignmentsPage = () => {
             }
             validFiles.push(file);
         }
-        
+
         if (errors.length > 0) {
             setSubmitError(errors.join(', '));
         }
-        
+
         if (validFiles.length > 0) {
             setSelectedFiles([...selectedFiles, ...validFiles]);
         }
     };
-    
+
     const removeFile = (index: number) => {
         setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
         setSubmitError('');
@@ -382,105 +382,106 @@ export const AssignmentsPage = () => {
                                                 </div>
 
 
-                                            <p className="text-[14px] text-gray-700 mb-3">
-                                                {assignment.description}
-                                            </p>
+                                                <p className="text-[14px] text-gray-700 mb-3">
+                                                    {assignment.description}
+                                                </p>
 
-                                            {/* Attachments */}
-                                            {assignment.attachments.length > 0 && (
-                                                <div className="mb-3">
-                                                    <p className="text-[12px] font-medium text-gray-600 mb-2">Attachments:</p>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {assignment.attachments.map((attachment, index) => (
-                                                            <button
-                                                                key={index}
-                                                                className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-[12px] text-gray-700 transition-colors"
-                                                            >
-                                                                <Download className="w-3 h-3" />
-                                                                {attachment}
-                                                            </button>
-                                                        ))}
+                                                {/* Attachments */}
+                                                {assignment.attachments.length > 0 && (
+                                                    <div className="mb-3">
+                                                        <p className="text-[12px] font-medium text-gray-600 mb-2">Attachments:</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {assignment.attachments.map((attachment, index) => (
+                                                                <button
+                                                                    key={index}
+                                                                    className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-[12px] text-gray-700 transition-colors"
+                                                                >
+                                                                    <Download className="w-3 h-3" />
+                                                                    {attachment}
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
 
-                                            {/* File Restrictions */}
-                                            {(assignment.allowedFileTypes || assignment.maxFileSize) && (
-                                                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                                    <p className="text-[12px] font-medium text-gray-700 mb-2">Submission Requirements:</p>
-                                                    <div className="flex flex-wrap gap-4 text-[12px] text-gray-600">
-                                                        {assignment.allowedFileTypes && (
-                                                            <span>
-                                                                <span className="font-medium">Allowed types:</span> {assignment.allowedFileTypes.join(', ')}
-                                                            </span>
-                                                        )}
-                                                        {assignment.maxFileSize && (
-                                                            <span>
-                                                                <span className="font-medium">Max size:</span> {assignment.maxFileSize}
-                                                            </span>
-                                                        )}
+                                                {/* File Restrictions */}
+                                                {(assignment.allowedFileTypes || assignment.maxFileSize) && (
+                                                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                        <p className="text-[12px] font-medium text-gray-700 mb-2">Submission Requirements:</p>
+                                                        <div className="flex flex-wrap gap-4 text-[12px] text-gray-600">
+                                                            {assignment.allowedFileTypes && (
+                                                                <span>
+                                                                    <span className="font-medium">Allowed types:</span> {assignment.allowedFileTypes.join(', ')}
+                                                                </span>
+                                                            )}
+                                                            {assignment.maxFileSize && (
+                                                                <span>
+                                                                    <span className="font-medium">Max size:</span> {assignment.maxFileSize}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
 
-                                            {/* Deadline Status */}
-                                            {assignment.submittedAt && (() => {
-                                                const deadlineStatus = getDeadlineStatus(assignment);
-                                                if (!deadlineStatus) return null;
-                                                return (
-                                                    <div className={`mt-3 p-3 rounded-lg border ${deadlineStatus.bgColor} ${deadlineStatus.borderColor}`}>
-                                                        <p className={`text-[12px] font-medium ${deadlineStatus.color}`}>
-                                                            {deadlineStatus.text}
-                                                        </p>
-                                                        <p className="text-[11px] text-gray-600 mt-1">
-                                                            Submitted: {new Date(assignment.submittedAt).toLocaleString()}
-                                                        </p>
+                                                {/* Deadline Status */}
+                                                {assignment.submittedAt && (() => {
+                                                    const deadlineStatus = getDeadlineStatus(assignment);
+                                                    if (!deadlineStatus) return null;
+                                                    return (
+                                                        <div className={`mt-3 p-3 rounded-lg border ${deadlineStatus.bgColor} ${deadlineStatus.borderColor}`}>
+                                                            <p className={`text-[12px] font-medium ${deadlineStatus.color}`}>
+                                                                {deadlineStatus.text}
+                                                            </p>
+                                                            <p className="text-[11px] text-gray-600 mt-1">
+                                                                Submitted: {new Date(assignment.submittedAt).toLocaleString()}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })()}
+
+                                                {/* Feedback */}
+                                                {assignment.feedback && (
+                                                    <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                                                        <p className="text-[12px] font-medium text-blue-800 mb-1">Instructor Feedback:</p>
+                                                        <p className="text-[14px] text-blue-700">{assignment.feedback}</p>
                                                     </div>
-                                                );
-                                            })()}
+                                                )}
+                                            </div>
 
-                                            {/* Feedback */}
-                                            {assignment.feedback && (
-                                                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                                                    <p className="text-[12px] font-medium text-blue-800 mb-1">Instructor Feedback:</p>
-                                                    <p className="text-[14px] text-blue-700">{assignment.feedback}</p>
-                                                </div>
-                                            )}
-                                        </div>
+                                            {/* Actions */}
+                                            <div className="flex flex-col gap-2 lg:min-w-[200px]">
+                                                {assignment.status === 'pending' && (
+                                                    <button
+                                                        onClick={() => openSubmitModal(assignment)}
+                                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                                                    >
+                                                        Submit Assignment
+                                                    </button>
+                                                )}
+                                                {assignment.status === 'submitted' && (
+                                                    <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
+                                                        View Submission
+                                                    </button>
+                                                )}
+                                                {assignment.status === 'graded' && (
+                                                    <button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
+                                                        View Grade
+                                                    </button>
+                                                )}
+                                                {assignment.status === 'late' && (
+                                                    <button
+                                                        onClick={() => openSubmitModal(assignment)}
+                                                        className="w-full bg-red-600 hover:bg-red-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                                                    >
+                                                        Submit Late
+                                                    </button>
+                                                )}
 
-                                        {/* Actions */}
-                                        <div className="flex flex-col gap-2 lg:min-w-[200px]">
-                                            {assignment.status === 'pending' && (
-                                                <button
-                                                    onClick={() => openSubmitModal(assignment)}
-                                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
-                                                >
-                                                    Submit Assignment
+                                                <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                                    <Eye className="w-4 h-4" />
+                                                    View Details
                                                 </button>
-                                            )}
-                                            {assignment.status === 'submitted' && (
-                                                <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
-                                                    View Submission
-                                                </button>
-                                            )}
-                                            {assignment.status === 'graded' && (
-                                                <button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
-                                                    View Grade
-                                                </button>
-                                            )}
-                                            {assignment.status === 'late' && (
-                                                <button
-                                                    onClick={() => openSubmitModal(assignment)}
-                                                    className="w-full bg-red-600 hover:bg-red-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
-                                                >
-                                                    Submit Late
-                                                </button>
-                                            )}
-
-                                            <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
-                                                <Eye className="w-4 h-4" />
-                                                View Details
-                                            </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -549,13 +550,13 @@ export const SubmissionModal = ({
     onSubmit: () => void;
 }) => {
     if (!open || !assignment) return null;
-    
+
     const formatFileSize = (bytes: number) => {
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     };
-    
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -581,7 +582,7 @@ export const SubmissionModal = ({
                             Allowed: {assignment.allowedFileTypes?.join(', ') || 'Any'} • Max size per file: {assignment.maxFileSize || '—'}
                         </p>
                     </div>
-                    
+
                     {/* Selected Files List */}
                     {selectedFiles.length > 0 && (
                         <div className="space-y-2">

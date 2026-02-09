@@ -1,8 +1,9 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useDarkMode } from '@/contexts/DarkModeContext';
 import { ROUTES, APP_NAME } from '@/lib/constants';
-import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle } from 'lucide-react';
+import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Sun, Moon } from 'lucide-react';
 
 interface NavLink {
     label: string;
@@ -13,6 +14,7 @@ export const Header = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { isDarkMode, toggleDarkMode } = useDarkMode();
     const isGuest = !user;
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -251,7 +253,7 @@ export const Header = () => {
                             <div className="relative" ref={notificationsRef}>
                                 <button
                                     onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                                    className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+                                    className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                                 >
                                     <Bell className="w-6 h-6" style={{ color: '#868e96' }} />
                                     {unreadCount > 0 && (
@@ -330,6 +332,19 @@ export const Header = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Dark Mode Toggle */}
+                            <button
+                                onClick={toggleDarkMode}
+                                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                                aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                            >
+                                {isDarkMode ? (
+                                    <Sun className="w-5 h-5 text-yellow-500" />
+                                ) : (
+                                    <Moon className="w-5 h-5 text-gray-600" />
+                                )}
+                            </button>
 
                             {/* User Avatar */}
                             <button

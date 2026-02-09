@@ -3,17 +3,20 @@
 ## ✅ What Was Done
 
 ### 1. **Enabled Mock Service Worker (MSW)**
+
 - Updated `src/main.tsx` to enable MSW for development testing
 - MSW will intercept API calls and provide mock responses
 - Console log confirms: "🔵 Mock Service Worker enabled"
 
 ### 2. **Updated Mock Handlers with Your Credentials**
+
 - Updated `src/mocks/handlers.ts` to accept your login credentials:
   - **Admin**: `admin@gmail.com` / `P@ssw0rd!`
   - **Instructor**: `instructor@gmail.com` / `P@ssw0rd!`
   - **Student**: `student@gmail.com` / `P@ssw0rd!`
 
 ### 3. **Fixed API Endpoint Paths**
+
 - Changed from lowercase `/auth/login` to `/Auth/login` (capital A)
 - All endpoints now match the real Swagger API specification
 - Updated paths:
@@ -29,6 +32,7 @@
   - `/Courses` (all course endpoints)
 
 ### 4. **Fixed Response Format**
+
 - Updated mock responses to match the API contract:
   ```json
   {
@@ -44,6 +48,7 @@
   ```
 
 ### 5. **Updated LoginPage Role Handling**
+
 - Fixed role redirect logic to handle both `role` (string) and `roles` (array)
 - Properly redirects:
   - Admin → `/admin`
@@ -51,13 +56,13 @@
   - Student → `/dashboard`
 
 ### 6. **Added Comprehensive Mock Data**
+
 - **Authentication Endpoints**:
   - Login (all roles)
   - Registration (Student, Instructor, Admin)
   - Password reset
   - Email confirmation
   - Token refresh
-  
 - **Course Endpoints**:
   - Get all courses
   - Get course by ID
@@ -70,6 +75,7 @@
 ### 7. **Created Testing Tools**
 
 #### A. **Test API HTML Page** (`test-api.html`)
+
 - Beautiful visual interface to test all endpoints
 - Click-to-test buttons for each endpoint
 - Real-time success/failure indicators
@@ -77,6 +83,7 @@
 - Can be opened directly in browser
 
 #### B. **Test Script** (`src/test-endpoints.ts`)
+
 - Automated test runner
 - Console-based testing
 - Detailed results table
@@ -88,6 +95,7 @@
 ### Method 1: Use the Application (Recommended)
 
 1. **Start the Development Server**:
+
    ```powershell
    npm run dev
    ```
@@ -99,11 +107,11 @@
    **Admin**:
    - Email: `admin@gmail.com`
    - Password: `P@ssw0rd!`
-   
+
    **Instructor**:
    - Email: `instructor@gmail.com`
    - Password: `P@ssw0rd!`
-   
+
    **Student**:
    - Email: `student@gmail.com`
    - Password: `P@ssw0rd!`
@@ -140,6 +148,7 @@
 3. **Go to Console Tab**
 
 4. **Run Test Commands**:
+
    ```javascript
    // Test admin login
    fetch('/api/Auth/login', {
@@ -147,12 +156,16 @@
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify({
        email: 'admin@gmail.com',
-       password: 'P@ssw0rd!'
-     })
-   }).then(r => r.json()).then(console.log)
-   
+       password: 'P@ssw0rd!',
+     }),
+   })
+     .then((r) => r.json())
+     .then(console.log);
+
    // Test get courses
-   fetch('/api/Courses').then(r => r.json()).then(console.log)
+   fetch('/api/Courses')
+     .then((r) => r.json())
+     .then(console.log);
    ```
 
 ---
@@ -160,6 +173,7 @@
 ## 📋 Endpoint Checklist
 
 ### ✅ Authentication Endpoints
+
 - [x] `POST /Auth/login` - Login with email/password
 - [x] `POST /Auth/refresh-token` - Refresh access token
 - [x] `POST /Auth/send-password-reset-email` - Request password reset
@@ -171,6 +185,7 @@
 - [x] `POST /Auth/admin/register` - Register new admin
 
 ### ✅ Course Endpoints
+
 - [x] `GET /Courses` - Get all courses (paginated)
 - [x] `GET /Courses/:id` - Get course by ID
 - [x] `POST /Courses` - Create new course
@@ -184,22 +199,29 @@
 ## 🔧 Troubleshooting
 
 ### Issue: "Cannot login"
+
 **Solution**: Make sure MSW is enabled (check console for "🔵 Mock Service Worker enabled")
 
 ### Issue: "404 Not Found"
+
 **Solution**: Endpoint paths are case-sensitive. Use `/Auth` not `/auth`
 
 ### Issue: "CORS Error"
+
 **Solution**: MSW should handle this. Make sure the dev server is running.
 
 ### Issue: "Network Error"
-**Solution**: 
+
+**Solution**:
+
 1. Check if dev server is running (`npm run dev`)
 2. Clear browser cache and reload
 3. Check browser console for errors
 
 ### Issue: "Mock Service Worker not registering"
+
 **Solution**:
+
 1. Delete browser cache
 2. Check if `public/mockServiceWorker.js` exists
 3. Run `npx msw init public/` if needed
@@ -208,7 +230,7 @@
 
 ## 📝 Notes
 
-1. **Mock vs Real API**: 
+1. **Mock vs Real API**:
    - Currently using MSW (Mock Service Worker) for testing
    - To use real API, comment out MSW initialization in `src/main.tsx`
    - Real API URL: `https://ailern.runasp.net/api`
@@ -258,6 +280,7 @@ If you encounter any issues:
 ## 🎉 Success Criteria
 
 Your login should now work with:
+
 - ✅ `admin@gmail.com` / `P@ssw0rd!`
 - ✅ `instructor@gmail.com` / `P@ssw0rd!`
 - ✅ `student@gmail.com` / `P@ssw0rd!`
