@@ -34,7 +34,6 @@ type Assignment = {
     title: string;
     course: string;
     dueDate: string;
-    totalPoints: number;
     submissions: number;
     graded: number;
     status: 'draft' | 'published' | 'closed';
@@ -64,7 +63,6 @@ const mapAssignmentToUI = (assignment: GetAllAssignmentsDto): Assignment => {
             ? `${assignment.courseName}`.trim()
             : `Course ${assignment.courseId}`,
         dueDate: assignment.dueDate,
-        totalPoints: 100, // Default value - not in API
         submissions: 0, // Default value - not in API
         graded: 0, // Default value - not in API
         status: 'published', // Default status
@@ -190,7 +188,6 @@ export const InstructorAssignmentsPage = () => {
         title: '',
         course: 'CS101 - Introduction to Programming',
         dueDate: '',
-        totalPoints: 100,
         status: 'draft' as Assignment['status'],
         description: '',
     });
@@ -217,13 +214,12 @@ export const InstructorAssignmentsPage = () => {
 
     const exportAssignment = (assignment: ReturnType<typeof mapAssignmentToUI>) => {
         const rows = [
-            ['id', 'title', 'course', 'dueDate', 'totalPoints', 'submissions', 'graded', 'status', 'createdAt'],
+            ['id', 'title', 'course', 'dueDate', 'submissions', 'graded', 'status', 'createdAt'],
             [
                 assignment.id,
                 assignment.title,
                 assignment.course,
                 assignment.dueDate,
-                String(assignment.totalPoints),
                 String(assignment.submissions),
                 String(assignment.graded),
                 assignment.status,

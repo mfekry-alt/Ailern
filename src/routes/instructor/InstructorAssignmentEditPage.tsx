@@ -15,7 +15,6 @@ export const InstructorAssignmentEditPage = () => {
         description: '',
         course: '',
         dueDate: '',
-        totalPoints: 100,
         allowedFileTypes: [] as string[],
         maxFileSize: '',
         status: 'draft' as 'draft' | 'published',
@@ -29,7 +28,6 @@ export const InstructorAssignmentEditPage = () => {
             description: 'Implement basic sorting algorithms including bubble sort, selection sort, and insertion sort.',
             course: 'CS101 - Introduction to Programming',
             dueDate: '2024-01-15T23:59',
-            totalPoints: 100,
             allowedFileTypes: ['PDF', 'DOC', 'DOCX', 'ZIP'],
             maxFileSize: '10',
             status: 'published',
@@ -156,21 +154,7 @@ export const InstructorAssignmentEditPage = () => {
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">
-                                        Total Points <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={formData.totalPoints}
-                                        onChange={(e) => setFormData({ ...formData, totalPoints: parseInt(e.target.value) || 100 })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
-                                    />
-                                </div>
-                            </div>
 
-                            {/* Status */}
                             <div>
                                 <label className="block text-[14px] font-medium text-gray-700 mb-2">
                                     Status
