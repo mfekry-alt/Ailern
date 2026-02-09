@@ -421,14 +421,10 @@ export const InstructorAssignmentsPage = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
-                                                    <Calendar className="w-4 h-4" />
-                                                    <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
-                                                    <Star className="w-4 h-4" />
-                                                    <span>{assignment.totalPoints} points</span>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                    <Calendar className="w-4 h-4" />
+                                    <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-[14px] text-gray-600">
                                                     <Users className="w-4 h-4" />
@@ -642,30 +638,14 @@ export const InstructorAssignmentsPage = () => {
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Due Date</label>
-                                    <input
-                                        type="date"
-                                        value={assignmentForm.dueDate}
-                                        onChange={(e) => setAssignmentForm((p) => ({ ...p, dueDate: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Points</label>
-                                    <input
-                                        type="number"
-                                        value={assignmentForm.totalPoints}
-                                        onChange={(e) =>
-                                            setAssignmentForm((p) => ({
-                                                ...p,
-                                                totalPoints: Number.isFinite(Number(e.target.value)) ? Number(e.target.value) : 0,
-                                            }))
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
+                            <div>
+                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Due Date</label>
+                                <input
+                                    type="date"
+                                    value={assignmentForm.dueDate}
+                                    onChange={(e) => setAssignmentForm((p) => ({ ...p, dueDate: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
                             </div>
 
                             <div>

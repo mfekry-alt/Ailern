@@ -380,19 +380,7 @@ export const AssignmentsPage = () => {
                                                     <Calendar className="w-4 h-4" />
                                                     <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
-                                                    <Star className="w-4 h-4" />
-                                                    <span>{assignment.points} points</span>
-                                                </div>
-                                                {assignment.grade && (
-                                                    <div className="flex items-center gap-2 text-[14px]">
-                                                        <CheckCircle className="w-4 h-4 text-green-600" />
-                                                        <span className={`font-semibold ${getGradeColor(assignment.grade)}`}>
-                                                            Grade: {assignment.grade}%
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
+
 
                                             <p className="text-[14px] text-gray-700 mb-3">
                                                 {assignment.description}

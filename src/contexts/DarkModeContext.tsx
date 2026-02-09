@@ -21,12 +21,14 @@ interface DarkModeProviderProps {
 }
 
 export const DarkModeProvider: React.FC<DarkModeProviderProps> = ({ children }) => {
+    // Always start with light mode (false). Dark mode only activates when user clicks toggle.
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
         const saved = storage.get<boolean>('darkMode');
-        if (typeof saved === 'boolean') {
-            return saved;
+        // Only use saved preference if it exists and user had previously enabled dark mode
+        if (saved === true) {
+            return true;
         }
-        // Default to light mode unless the user explicitly toggles dark mode in settings.
+        // Default to light mode
         return false;
     });
 
