@@ -1,8 +1,11 @@
+import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
-import { Edit2, Trash2, Plus, Users, Calendar, BookOpen } from 'lucide-react';
-import { useState } from 'react';
+import { Edit2, Trash2, Plus, Users, Calendar, BookOpen, Loader2 } from 'lucide-react';
+import { useInstructorCourses, useDeleteCourse } from '@/features/courses/api';
+import type { GetAllCoursesDto } from '@/types/api.types';
 
+// --- Interfaces ---
 interface Course {
     id: string;
     title: string;
@@ -18,102 +21,112 @@ interface Course {
     modules: number;
 }
 
+// --- Helper: Map API status to UI status ---
+const getStatusConfig = (apiStatus: string): Pick<Course, 'status' | 'statusColor' | 'statusBg' | 'primaryAction' | 'secondaryAction'> => {
+    switch (apiStatus) {
+        case 'Approved':
+            return {
+                status: 'Published',
+                statusColor: '#166534',
+                statusBg: '#dcfce7',
+                primaryAction: 'View Analytics',
+                secondaryAction: 'Edit Content',
+            };
+        case 'Rejected':
+        case 'Pending':
+            return {
+                status: apiStatus === 'Pending' ? 'Pending Approval' : 'Draft',
+                statusColor: apiStatus === 'Pending' ? '#1e40af' : '#854d0e',
+                statusBg: apiStatus === 'Pending' ? '#dbeafe' : '#fef9c3',
+                primaryAction: apiStatus === 'Pending' ? undefined : 'Continue Editing',
+                secondaryAction: apiStatus === 'Pending' ? 'View Status' : undefined,
+            };
+        default:
+            return {
+                status: 'Draft',
+                statusColor: '#854d0e',
+                statusBg: '#fef9c3',
+                primaryAction: 'Continue Editing',
+            };
+    }
+};
+
+// --- Helper: Map API DTO to UI Course ---
+const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
+    const statusConfig = getStatusConfig(dto.courseStatus);
+    return {
+        id: dto.id.toString(),
+        title: dto.name,
+        courseId: dto.code,
+        instructor: `Instructor #${dto.instructorId}`,
+        students: 0,
+        startDate: new Date(dto.createdAt).toLocaleDateString(),
+        modules: 0,
+        ...statusConfig,
+    };
+};
+
 export const InstructorCoursesPage = () => {
     const navigate = useNavigate();
-    const [courses, setCourses] = useState<Course[]>([
-        {
-            id: '1',
-            title: 'CS101 - Introduction to Programming',
-            courseId: 'CS101',
-            instructor: 'Dr. Emily Carter',
-            status: 'Draft',
-            statusColor: '#854d0e',
-            statusBg: '#fef9c3',
-            secondaryAction: 'Submit for Approval',
-            primaryAction: 'Open Course',
-            students: 45,
-            startDate: 'Jan 15, 2024',
-            modules: 12
-        },
-        {
-            id: '2',
-            title: 'CS202 - Data Structures',
-            courseId: 'CS202',
-            instructor: 'Dr. Emily Carter',
-            status: 'Published',
-            statusColor: '#166534',
-            statusBg: '#dcfce7',
-            primaryAction: 'Open Course',
-            students: 38,
-            startDate: 'Jan 20, 2024',
-            modules: 15
-        },
-        {
-            id: '3',
-            title: 'MA203 - Linear Algebra',
-            courseId: 'MA203',
-            instructor: 'Dr. Emily Carter',
-            status: 'Pending Approval',
-            statusColor: '#6b21a8',
-            statusBg: '#f0f1f4',
-            primaryAction: 'Open Course',
-            students: 52,
-            startDate: 'Jan 25, 2024',
-            modules: 10
-        },
-        {
-            id: '4',
-            title: 'PHY105 - Classical Mechanics',
-            courseId: 'PHY105',
-            instructor: 'Dr. Emily Carter',
-            status: 'Pending Approval',
-            statusColor: '#6b21a8',
-            statusBg: '#f0f1f4',
-            primaryAction: 'Open Course',
-            students: 28,
-            startDate: 'Feb 1, 2024',
-            modules: 8
-        },
-    ]);
 
-    const deleteCourse = (id: string) => {
-        setCourses((prev) => prev.filter((c) => c.id !== id));
+    // Fetch courses from API
+    const { data: coursesData, isLoading, error } = useInstructorCourses();
+    const deleteCourseMutation = useDeleteCourse();
+
+    // Map API data to UI format
+    const courses = useMemo(() => {
+        if (!coursesData?.items) return [];
+        return coursesData.items.map(mapCourseToUI);
+    }, [coursesData]);
+
+    const handleDeleteCourse = (id: string) => {
+        if (window.confirm('Are you sure you want to delete this course?')) {
+            deleteCourseMutation.mutate(parseInt(id));
+        }
     };
 
     const runSecondaryAction = (course: Course) => {
-        setCourses((prev) =>
-            prev.map((c) => {
-                if (c.id !== course.id) return c;
-
-                if (c.status === 'Draft') {
-                    return {
-                        ...c,
-                        status: 'Pending Approval',
-                        statusColor: '#6b21a8',
-                        statusBg: '#f0f1f4',
-                        secondaryAction: undefined,
-                    };
-                }
-
-                return c;
-            })
-        );
+        // Navigate to edit page for draft courses
+        if (course.status === 'Draft') {
+            navigate(ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id));
+        }
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        // FIXED: Removed inline style, added min-h-screen and dark mode classes
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 transition-colors duration-300">
+
+            {/* Loading State */}
+            {isLoading && (
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                    <span className="ml-3 text-gray-600 dark:text-zinc-400 text-[16px]">Loading courses...</span>
+                </div>
+            )}
+
+            {/* Error State */}
+            {error && (
+                <div className="p-4 mb-6 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                    <p className="text-sm text-red-800 dark:text-red-300">Failed to load courses. Please try again later.</p>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
-                    <h1 className="text-[36px] font-bold text-gray-900">My Courses</h1>
-                    <p className="text-[18px] text-gray-600 mt-1">Manage your courses and content</p>
+                    {/* Added dark:text classes */}
+                    <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">My Courses</h1>
+                    <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">Manage your courses and content</p>
                 </div>
-                <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
-                    <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[16px] px-6 py-3 rounded-lg transition-colors shadow-sm">
-                        <Plus className="w-5 h-5" />
-                        Create New Course
-                    </button>
-                </Link>
+
+                <div className="flex items-center gap-3">
+                    <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
+                        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[16px] px-6 py-3 rounded-lg transition-colors shadow-sm">
+                            <Plus className="w-5 h-5" />
+                            Create New Course
+                        </button>
+                    </Link>
+                </div>
             </div>
 
             {/* Courses Grid */}
@@ -121,16 +134,17 @@ export const InstructorCoursesPage = () => {
                 {courses.map((course) => (
                     <div
                         key={course.id}
-                        className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                        // Added dark mode background and border
+                        className="bg-white dark:bg-zinc-900 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 overflow-hidden hover:shadow-md transition-shadow"
                     >
                         {/* Course Header */}
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-[20px] font-bold text-gray-900 leading-tight flex-1">
+                                <h3 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100 leading-tight flex-1">
                                     {course.title}
                                 </h3>
                                 <div
-                                    className="px-3 py-1 rounded-full flex-shrink-0 ml-2"
+                                    className="px-3 py-1 rounded-full shrink-0 ml-2"
                                     style={{ backgroundColor: course.statusBg }}
                                 >
                                     <span
@@ -143,57 +157,57 @@ export const InstructorCoursesPage = () => {
                             </div>
 
                             <div className="space-y-2 mb-4">
-                                <p className="text-[14px] text-gray-600">
-                                    <span className="font-medium">Course ID:</span> {course.courseId}
+                                <p className="text-[14px] text-gray-600 dark:text-zinc-400">
+                                    <span className="font-medium text-gray-900 dark:text-zinc-200">Course ID:</span> {course.courseId}
                                 </p>
-                                <p className="text-[14px] text-gray-600">
-                                    <span className="font-medium">Instructor:</span> {course.instructor}
+                                <p className="text-[14px] text-gray-600 dark:text-zinc-400">
+                                    <span className="font-medium text-gray-900 dark:text-zinc-200">Instructor:</span> {course.instructor}
                                 </p>
                             </div>
 
                             {/* Course Stats */}
-                            <div className="grid grid-cols-3 gap-4 py-4 border-t border-gray-100">
+                            <div className="grid grid-cols-3 gap-4 py-4 border-t border-gray-100 dark:border-zinc-800">
                                 <div className="text-center">
                                     <div className="flex items-center justify-center mb-1">
-                                        <Users className="w-4 h-4 text-gray-500 mr-1" />
-                                        <span className="text-[16px] font-bold text-gray-900">{course.students}</span>
+                                        <Users className="w-4 h-4 text-gray-500 dark:text-zinc-500 mr-1" />
+                                        <span className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">{course.students}</span>
                                     </div>
-                                    <p className="text-[12px] text-gray-600">Students</p>
+                                    <p className="text-[12px] text-gray-600 dark:text-zinc-500">Students</p>
                                 </div>
                                 <div className="text-center">
                                     <div className="flex items-center justify-center mb-1">
-                                        <Calendar className="w-4 h-4 text-gray-500 mr-1" />
-                                        <span className="text-[16px] font-bold text-gray-900">{course.startDate.split(',')[0]}</span>
+                                        <Calendar className="w-4 h-4 text-gray-500 dark:text-zinc-500 mr-1" />
+                                        <span className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">{course.startDate.split(',')[0]}</span>
                                     </div>
-                                    <p className="text-[12px] text-gray-600">Start Date</p>
+                                    <p className="text-[12px] text-gray-600 dark:text-zinc-500">Start Date</p>
                                 </div>
                                 <div className="text-center">
                                     <div className="flex items-center justify-center mb-1">
-                                        <BookOpen className="w-4 h-4 text-gray-500 mr-1" />
-                                        <span className="text-[16px] font-bold text-gray-900">{course.modules}</span>
+                                        <BookOpen className="w-4 h-4 text-gray-500 dark:text-zinc-500 mr-1" />
+                                        <span className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">{course.modules}</span>
                                     </div>
-                                    <p className="text-[12px] text-gray-600">Modules</p>
+                                    <p className="text-[12px] text-gray-600 dark:text-zinc-500">Modules</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Actions Footer */}
-                        <div className="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                        <div className="bg-gray-50 dark:bg-zinc-950 px-6 py-4 flex justify-between items-center border-t border-gray-100 dark:border-zinc-800">
                             {/* Icon Actions */}
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => navigate(ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id))}
-                                    className="p-2 hover:bg-gray-200 rounded-md transition-colors"
+                                    className="p-2 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-md transition-colors"
                                     title="Edit Course"
                                 >
-                                    <Edit2 className="w-5 h-5 text-gray-600" />
+                                    <Edit2 className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
                                 </button>
                                 <button
-                                    onClick={() => deleteCourse(course.id)}
-                                    className="p-2 hover:bg-gray-200 rounded-md transition-colors"
+                                    onClick={() => handleDeleteCourse(course.id)}
+                                    className="p-2 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-md transition-colors"
                                     title="Delete Course"
                                 >
-                                    <Trash2 className="w-5 h-5 text-gray-600" />
+                                    <Trash2 className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
                                 </button>
                             </div>
 
@@ -202,20 +216,15 @@ export const InstructorCoursesPage = () => {
                                 {course.secondaryAction && (
                                     <button
                                         onClick={() => runSecondaryAction(course)}
-                                        className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-md transition-colors"
+                                        className="bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-medium text-[14px] px-4 py-2 rounded-md transition-colors"
                                     >
                                         {course.secondaryAction}
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => navigate(ROUTES.INSTRUCTOR_MANAGE_COURSE.replace(':id', course.id))}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-md transition-colors"
-                                >
-                                    Manage
-                                </button>
+
                                 {course.primaryAction && (
                                     <Link to={`/instructor/courses/${course.id}/content`}>
-                                        <button className="bg-gray-600 hover:bg-gray-700 text-white font-medium text-[14px] px-4 py-2 rounded-md transition-colors">
+                                        <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-md transition-colors">
                                             {course.primaryAction}
                                         </button>
                                     </Link>
@@ -229,11 +238,11 @@ export const InstructorCoursesPage = () => {
             {/* Empty State */}
             {courses.length === 0 && (
                 <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <BookOpen className="w-8 h-8 text-gray-400" />
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BookOpen className="w-8 h-8 text-gray-400 dark:text-zinc-600" />
                     </div>
-                    <h3 className="text-[20px] font-semibold text-gray-900 mb-2">No courses yet</h3>
-                    <p className="text-gray-600 mb-6">Create your first course to get started</p>
+                    <h3 className="text-[20px] font-semibold text-gray-900 dark:text-zinc-100 mb-2">No courses yet</h3>
+                    <p className="text-gray-600 dark:text-zinc-400 mb-6">Create your first course to get started</p>
                     <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
                         <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors">
                             Create Course
@@ -244,4 +253,3 @@ export const InstructorCoursesPage = () => {
         </div>
     );
 };
-

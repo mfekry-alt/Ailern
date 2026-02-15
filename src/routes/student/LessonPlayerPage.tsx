@@ -8,50 +8,9 @@ export const LessonPlayerPage = () => {
     const { courseId, lessonId } = useParams();
     const navigate = useNavigate();
 
-    const [resources, setResources] = useState([
-        {
-            id: 1,
-            title: 'Machine Learning Basics - PDF',
-            type: 'PDF',
-            size: '2.3 MB',
-            downloaded: true
-        },
-        {
-            id: 2,
-            title: 'Algorithm Comparison Chart',
-            type: 'Image',
-            size: '1.1 MB',
-            downloaded: false
-        },
-        {
-            id: 3,
-            title: 'Practice Exercises',
-            type: 'Document',
-            size: '856 KB',
-            downloaded: true
-        }
-    ]);
+    const [resources, setResources] = useState<{ id: number; title: string; type: string; size: string; downloaded: boolean }[]>([]);
 
-    const [notes, setNotes] = useState([
-        {
-            id: 1,
-            timestamp: '05:30',
-            content: 'Important: Supervised learning requires labeled training data',
-            type: 'note' as const
-        },
-        {
-            id: 2,
-            timestamp: '12:45',
-            content: 'Key difference between classification and regression',
-            type: 'highlight' as const
-        },
-        {
-            id: 3,
-            timestamp: '28:15',
-            content: 'Clustering algorithms group similar data points together',
-            type: 'note' as const
-        }
-    ]);
+    const [notes, setNotes] = useState<{ id: number; timestamp: string; content: string; type: 'note' | 'highlight' }[]>([]);
 
     const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
     const [noteForm, setNoteForm] = useState({
@@ -146,16 +105,16 @@ Let's start with supervised learning...`,
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-[36px] font-bold text-gray-900">{lesson.title}</h1>
-                        <p className="text-[18px] text-gray-600 mt-1">{lesson.description}</p>
+                        <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">{lesson.title}</h1>
+                        <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">{lesson.description}</p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 text-gray-600">
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-zinc-400">
                             <Clock className="w-5 h-5" />
                             <span className="text-[16px]">{lesson.duration}</span>
                         </div>
@@ -228,17 +187,17 @@ Let's start with supervised learning...`,
                         {/* Resources */}
                         <Card variant="elevated">
                             <CardHeader>
-                                <h2 className="text-[20px] font-bold text-gray-900">Resources</h2>
+                                <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">Resources</h2>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
                                     {lesson.resources.map((resource) => (
-                                        <div key={resource.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                                        <div key={resource.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-zinc-700 rounded-lg">
                                             <div className="flex items-center gap-3">
-                                                <BookOpen className="w-5 h-5 text-gray-600" />
+                                                <BookOpen className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
                                                 <div>
-                                                    <p className="text-[14px] font-medium text-gray-900">{resource.title}</p>
-                                                    <p className="text-[12px] text-gray-600">{resource.type} • {resource.size}</p>
+                                                    <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">{resource.title}</p>
+                                                    <p className="text-[12px] text-gray-600 dark:text-zinc-400">{resource.type} • {resource.size}</p>
                                                 </div>
                                             </div>
                                             <Button
@@ -257,12 +216,12 @@ Let's start with supervised learning...`,
                         {/* Notes */}
                         <Card variant="elevated">
                             <CardHeader>
-                                <h2 className="text-[20px] font-bold text-gray-900">My Notes</h2>
+                                <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">My Notes</h2>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
                                     {lesson.notes.map((note) => (
-                                        <div key={note.id} className="p-3 border border-gray-200 rounded-lg">
+                                        <div key={note.id} className="p-3 border border-gray-200 dark:border-zinc-700 rounded-lg">
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="text-[12px] text-blue-600 font-medium">{note.timestamp}</span>
                                                 <span className={`text-[12px] px-2 py-1 rounded-full ${note.type === 'highlight' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
@@ -270,7 +229,7 @@ Let's start with supervised learning...`,
                                                     {note.type}
                                                 </span>
                                             </div>
-                                            <p className="text-[14px] text-gray-700">{note.content}</p>
+                                            <p className="text-[14px] text-gray-700 dark:text-zinc-300">{note.content}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -291,7 +250,7 @@ Let's start with supervised learning...`,
                         {/* Related Lessons */}
                         <Card variant="elevated">
                             <CardHeader>
-                                <h2 className="text-[20px] font-bold text-gray-900">Related Lessons</h2>
+                                <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">Related Lessons</h2>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
@@ -299,17 +258,17 @@ Let's start with supervised learning...`,
                                         <div
                                             key={relatedLesson.id}
                                             onClick={() => goToLesson(String(relatedLesson.id))}
-                                            className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                                            className="flex items-center justify-between p-3 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer"
                                         >
                                             <div className="flex items-center gap-3">
                                                 {relatedLesson.completed ? (
                                                     <CheckCircle className="w-5 h-5 text-green-600" />
                                                 ) : (
-                                                    <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+                                                    <div className="w-5 h-5 border-2 border-gray-300 dark:border-zinc-600 rounded-full"></div>
                                                 )}
                                                 <div>
-                                                    <p className="text-[14px] font-medium text-gray-900">{relatedLesson.title}</p>
-                                                    <p className="text-[12px] text-gray-600">{relatedLesson.duration}</p>
+                                                    <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">{relatedLesson.title}</p>
+                                                    <p className="text-[12px] text-gray-600 dark:text-zinc-400">{relatedLesson.duration}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -323,11 +282,11 @@ Let's start with supervised learning...`,
                 {/* Transcript */}
                 <Card variant="elevated">
                     <CardHeader>
-                        <h2 className="text-[24px] font-bold text-gray-900">Transcript</h2>
+                        <h2 className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">Transcript</h2>
                     </CardHeader>
                     <CardContent>
-                        <div className="bg-gray-50 p-6 rounded-lg">
-                            <p className="text-[16px] text-gray-700 whitespace-pre-line leading-relaxed">
+                        <div className="bg-gray-50 dark:bg-zinc-800 p-6 rounded-lg">
+                            <p className="text-[16px] text-gray-700 dark:text-zinc-300 whitespace-pre-line leading-relaxed">
                                 {lesson.transcript}
                             </p>
                         </div>
@@ -337,15 +296,15 @@ Let's start with supervised learning...`,
 
             {isNoteModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-lg w-full overflow-hidden">
-                        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                    <div className="bg-white dark:bg-zinc-900 rounded-lg max-w-lg w-full overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                             <div>
-                                <h2 className="text-[18px] font-bold text-gray-900">Add Note</h2>
-                                <p className="text-[14px] text-gray-600">Save a note for this lesson.</p>
+                                <h2 className="text-[18px] font-bold text-gray-900 dark:text-zinc-100">Add Note</h2>
+                                <p className="text-[14px] text-gray-600 dark:text-zinc-400">Save a note for this lesson.</p>
                             </div>
                             <button
                                 onClick={() => setIsNoteModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -356,19 +315,19 @@ Let's start with supervised learning...`,
                         <div className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Timestamp</label>
+                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Timestamp</label>
                                     <input
                                         value={noteForm.timestamp}
                                         onChange={(e) => setNoteForm((p) => ({ ...p, timestamp: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Type</label>
+                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Type</label>
                                     <select
                                         value={noteForm.type}
                                         onChange={(e) => setNoteForm((p) => ({ ...p, type: e.target.value as any }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                     >
                                         <option value="note">Note</option>
                                         <option value="highlight">Highlight</option>
@@ -377,19 +336,19 @@ Let's start with supervised learning...`,
                             </div>
 
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Content</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Content</label>
                                 <textarea
                                     rows={4}
                                     value={noteForm.content}
                                     onChange={(e) => setNoteForm((p) => ({ ...p, content: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
 
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setIsNoteModalOpen(false)}
-                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors"
+                                    className="flex-1 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium px-4 py-2 rounded-lg transition-colors"
                                 >
                                     Cancel
                                 </button>

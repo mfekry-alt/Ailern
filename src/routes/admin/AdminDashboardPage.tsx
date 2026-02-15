@@ -120,18 +120,8 @@ export const AdminDashboardPage = () => {
             { label: 'Messages Sent', value: '—', icon: MessageSquare, color: 'text-purple-600' },
             { label: 'System Uptime', value: '99.9%', icon: BarChart3, color: 'text-green-600' }
         ]);
-        setRecentActivity([
-            { activity: "User 'Sarah' enrolled in 'Introduction to Programming'", user: 'Sarah', timestamp: '2024-07-26 10:30 AM', type: 'enrollment' },
-            { activity: "Course 'Advanced Data Science' approved", user: 'Admin', timestamp: '2024-07-25 03:45 PM', type: 'approval' },
-            { activity: "Instructor 'David' created course 'Machine Learning Fundamentals'", user: 'David', timestamp: '2024-07-24 09:15 AM', type: 'course_creation' },
-            { activity: "User 'Emily' completed course 'Digital Marketing Essentials'", user: 'Emily', timestamp: '2024-07-23 05:00 PM', type: 'completion' },
-            { activity: "System backup completed successfully", user: 'System', timestamp: '2024-07-22 02:00 AM', type: 'system' },
-        ]);
-        setPendingApprovals([
-            { id: 1, type: 'Course', title: 'Advanced Machine Learning', instructor: 'Dr. Sarah Wilson', submittedAt: '2024-01-15' },
-            { id: 2, type: 'User', title: 'New Instructor ', instructor: 'Prof. John Smith', submittedAt: '2024-01-14' },
-            { id: 3, type: 'Course', title: 'Data Visualization Techniques', instructor: 'Dr. Maria Garcia', submittedAt: '2024-01-13' },
-        ]);
+        setRecentActivity([]);
+        setPendingApprovals([]);
     }, [totalCourses, pendingCourses]);
 
     if (isLoading) {
@@ -149,12 +139,12 @@ export const AdminDashboardPage = () => {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <div className="mb-3">
-                            <span className="inline-block px-3 py-1 text-[12px] font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 rounded-md border border-teal-200 dark:border-teal-800">
+                            <span className="inline-block px-3 py-1 text-[12px] font-medium text-teal-600 bg-teal-50 rounded-md border border-teal-200">
                                 v1.0 System Update Live
                             </span>
                         </div>
                         <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-zinc-100">
-                            Manage Education <span className="text-blue-600 dark:text-blue-400">Intelligently.</span>
+                            Manage Education <span className="text-blue-600">Intelligently.</span>
                         </h1>
                         <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400 mt-2">
                             Ailern provides a comprehensive admin dashboard to oversee students, instructors, and course content with real-time analytics and seamless management tools.
@@ -193,7 +183,7 @@ export const AdminDashboardPage = () => {
                                             <p className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">
                                                 {stat.value}
                                             </p>
-                                            <p className="text-[12px] text-green-600 dark:text-green-400 font-medium">
+                                            <p className="text-[12px] text-green-600 font-medium">
                                                 {stat.change}
                                             </p>
                                         </div>
@@ -273,7 +263,7 @@ export const AdminDashboardPage = () => {
                                                     <p className="text-[14px] font-semibold text-gray-900 dark:text-zinc-100">
                                                         {approval.title}
                                                     </p>
-                                                    <p className="text-[12px] text-gray-600">
+                                                    <p className="text-[12px] text-gray-600 dark:text-zinc-400">
                                                         {approval.instructor}
                                                     </p>
                                                 </div>
@@ -294,7 +284,7 @@ export const AdminDashboardPage = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handleReview(approval)}
-                                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-1.5 rounded-lg transition-colors"
+                                                    className="flex-1 bg-gray-100 dark:bg-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-300 font-medium text-[12px] px-3 py-1.5 rounded-lg transition-colors"
                                                 >
                                                     Review
                                                 </button>
@@ -323,28 +313,28 @@ export const AdminDashboardPage = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <button
                                 onClick={() => navigate(ROUTES.ADMIN_USERS)}
-                                className="flex flex-col items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                                className="flex flex-col items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                             >
                                 <Users className="w-8 h-8 text-blue-600" />
                                 <span className="text-[14px] font-medium text-blue-700">Manage Users</span>
                             </button>
                             <button
                                 onClick={() => navigate(ROUTES.ADMIN_COURSES)}
-                                className="flex flex-col items-center gap-3 p-4 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition-colors"
+                                className="flex flex-col items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                             >
                                 <BookOpen className="w-8 h-8 text-green-600" />
                                 <span className="text-[14px] font-medium text-green-700">Manage Courses</span>
                             </button>
                             <button
                                 onClick={() => navigate(ROUTES.ADMIN_REPORTS)}
-                                className="flex flex-col items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition-colors"
+                                className="flex flex-col items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
                             >
                                 <BarChart3 className="w-8 h-8 text-purple-600" />
                                 <span className="text-[14px] font-medium text-purple-700">View Reports</span>
                             </button>
                             <button
                                 onClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
-                                className="flex flex-col items-center gap-3 p-4 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg transition-colors"
+                                className="flex flex-col items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                             >
                                 <Settings className="w-8 h-8 text-orange-600" />
                                 <span className="text-[14px] font-medium text-orange-700">System Settings</span>
@@ -356,7 +346,7 @@ export const AdminDashboardPage = () => {
                 {/* Recent Activity */}
                 <Card variant="elevated">
                     <CardContent className="p-0 bg-white dark:bg-zinc-900 transition-colors">
-                        <div className="p-6 border-b border-gray-200 dark:border-zinc-800">
+                        <div className="p-6 border-b border-gray-200 dark:border-zinc-700">
                             <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">
                                 Recent Activity
                             </h2>
@@ -365,23 +355,23 @@ export const AdminDashboardPage = () => {
                             <table className="w-full">
                                 <thead className="bg-gray-50 dark:bg-zinc-800">
                                     <tr>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             Activity
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             User
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             Type
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             Timestamp
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {recentActivity.map((activity, index) => (
-                                        <tr key={index} className={`border-b border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors ${index === recentActivity.length - 1 ? 'border-b-0' : ''}`}>
+                                        <tr key={index} className={`border-b border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors ${index === recentActivity.length - 1 ? 'border-b-0' : ''}`}>
                                             <td className="py-4 px-6">
                                                 <p className="text-[14px] text-gray-900 dark:text-zinc-100">
                                                     {activity.activity}
@@ -403,7 +393,7 @@ export const AdminDashboardPage = () => {
                                                 </span>
                                             </td>
                                             <td className="py-4 px-6">
-                                                <p className="text-[14px] text-gray-600">
+                                                <p className="text-[14px] text-gray-600 dark:text-zinc-400">
                                                     {activity.timestamp}
                                                 </p>
                                             </td>

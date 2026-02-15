@@ -13,63 +13,7 @@ export const AdminUsersPage = () => {
 
     const [statusMessage, setStatusMessage] = useState<string>('');
 
-    const [users, setUsers] = useState([
-        {
-            id: 1,
-            name: 'John Doe',
-            email: 'john.doe@university.edu',
-            role: 'Student',
-            status: 'Active',
-            joinedDate: 'Jan 15, 2024',
-            lastActive: '2 hours ago',
-            courses: 3,
-            avatar: 'JD'
-        },
-        {
-            id: 2,
-            name: 'Dr. Emily Carter',
-            email: 'emily.carter@university.edu',
-            role: 'Instructor',
-            status: 'Active',
-            joinedDate: 'Dec 20, 2023',
-            lastActive: '1 day ago',
-            courses: 5,
-            avatar: 'EC'
-        },
-        {
-            id: 3,
-            name: 'Sarah Johnson',
-            email: 'sarah.johnson@university.edu',
-            role: 'Student',
-            status: 'Inactive',
-            joinedDate: 'Feb 10, 2024',
-            lastActive: '1 week ago',
-            courses: 2,
-            avatar: 'SJ'
-        },
-        {
-            id: 4,
-            name: 'Prof. Michael Brown',
-            email: 'michael.brown@university.edu',
-            role: 'Instructor',
-            status: 'Active',
-            joinedDate: 'Nov 5, 2023',
-            lastActive: '3 hours ago',
-            courses: 7,
-            avatar: 'MB'
-        },
-        {
-            id: 5,
-            name: 'Lisa Wang',
-            email: 'lisa.wang@university.edu',
-            role: 'Student',
-            status: 'Active',
-            joinedDate: 'Mar 1, 2024',
-            lastActive: '30 minutes ago',
-            courses: 4,
-            avatar: 'LW'
-        }
-    ]);
+    const [users, setUsers] = useState<{ id: number; name: string; email: string; role: string; status: string; joinedDate: string; lastActive: string; courses: number; avatar: string }[]>([]);
 
     const [userForm, setUserForm] = useState({
         name: '',
@@ -229,13 +173,13 @@ export const AdminUsersPage = () => {
     ];
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                     <div>
-                        <h1 className="text-[36px] font-bold text-gray-900">User Management</h1>
-                        <p className="text-[18px] text-gray-600 mt-1">Manage platform users and their roles</p>
+                        <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">User Management</h1>
+                        <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">Manage platform users and their roles</p>
                     </div>
                     <div className="flex gap-3">
                         <Button variant="outline" onClick={exportUsers}>
@@ -263,12 +207,12 @@ export const AdminUsersPage = () => {
                             <Card key={stat.label} variant="elevated">
                                 <CardContent className="p-4">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center`}>
+                                        <div className={`w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center`}>
                                             <Icon className={`w-5 h-5 ${stat.color}`} />
                                         </div>
                                         <div>
-                                            <p className="text-[20px] font-bold text-gray-900">{stat.value}</p>
-                                            <p className="text-[14px] text-gray-600">{stat.label}</p>
+                                            <p className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">{stat.value}</p>
+                                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">{stat.label}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -288,14 +232,14 @@ export const AdminUsersPage = () => {
                                     placeholder="Search users by name or email..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
                             <div className="flex gap-2">
                                 <select
                                     value={selectedRole}
                                     onChange={(e) => setSelectedRole(e.target.value)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="all">All Roles</option>
                                     <option value="Student">Students</option>
@@ -305,13 +249,13 @@ export const AdminUsersPage = () => {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setSelectedRole('Student')}
-                                        className={`px-4 py-2 border rounded-lg text-[14px] font-medium transition-colors ${selectedRole === 'Student' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                        className={`px-4 py-2 border rounded-lg text-[14px] font-medium transition-colors ${selectedRole === 'Student' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700'}`}
                                     >
                                         Students
                                     </button>
                                     <button
                                         onClick={() => setSelectedRole('Instructor')}
-                                        className={`px-4 py-2 border rounded-lg text-[14px] font-medium transition-colors ${selectedRole === 'Instructor' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                                        className={`px-4 py-2 border rounded-lg text-[14px] font-medium transition-colors ${selectedRole === 'Instructor' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700'}`}
                                     >
                                         Instructors
                                     </button>
@@ -320,7 +264,7 @@ export const AdminUsersPage = () => {
                                     onClick={() => setOnlyActive((v) => !v)}
                                     className={`px-4 py-2 border rounded-lg text-[14px] font-medium transition-colors ${onlyActive
                                         ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        : 'bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700'
                                         }`}
                                 >
                                     Active Only
@@ -339,42 +283,42 @@ export const AdminUsersPage = () => {
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-gray-50 dark:bg-zinc-800">
                                     <tr>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             User
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             Role
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             Status
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             Joined
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             Last Active
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             Courses
                                         </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 uppercase tracking-wide">
+                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-300 uppercase tracking-wide">
                                             Actions
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredUsers.map((user, index) => (
-                                        <tr key={user.id} className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${index === filteredUsers.length - 1 ? 'border-b-0' : ''}`}>
+                                        <tr key={user.id} className={`border-b border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors ${index === filteredUsers.length - 1 ? 'border-b-0' : ''}`}>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                                                         <span className="text-[14px] font-semibold text-blue-700">{user.avatar}</span>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[16px] font-medium text-gray-900">{user.name}</p>
-                                                        <p className="text-[14px] text-gray-600">{user.email}</p>
+                                                        <p className="text-[16px] font-medium text-gray-900 dark:text-zinc-100">{user.name}</p>
+                                                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">{user.email}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -388,39 +332,39 @@ export const AdminUsersPage = () => {
                                                     {user.status}
                                                 </span>
                                             </td>
-                                            <td className="py-4 px-6 text-[14px] text-gray-600">{user.joinedDate}</td>
-                                            <td className="py-4 px-6 text-[14px] text-gray-600">{user.lastActive}</td>
-                                            <td className="py-4 px-6 text-[14px] text-gray-600">{user.courses}</td>
+                                            <td className="py-4 px-6 text-[14px] text-gray-600 dark:text-zinc-400">{user.joinedDate}</td>
+                                            <td className="py-4 px-6 text-[14px] text-gray-600 dark:text-zinc-400">{user.lastActive}</td>
+                                            <td className="py-4 px-6 text-[14px] text-gray-600 dark:text-zinc-400">{user.courses}</td>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => openEditUser(user)}
-                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
                                                     >
                                                         <Edit className="w-4 h-4 text-gray-600" />
                                                     </button>
                                                     <button
                                                         onClick={() => cycleRole(user.id)}
-                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
                                                     >
                                                         <Shield className="w-4 h-4 text-gray-600" />
                                                     </button>
                                                     <button
                                                         onClick={() => toggleActive(user.id)}
-                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
                                                     >
                                                         <MoreVertical className="w-4 h-4 text-gray-600" />
                                                     </button>
                                                     <button
                                                         onClick={() => deleteUser(user.id)}
-                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
                                                         title="Delete"
                                                     >
                                                         <Trash2 className="w-4 h-4 text-red-600" />
                                                     </button>
                                                     <button
                                                         onClick={() => navigate(ROUTES.ADMIN_USER_EDIT.replace(':id', String(user.id)))}
-                                                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
                                                         title="Edit Page"
                                                     >
                                                         <Edit className="w-4 h-4 text-blue-600" />
@@ -438,24 +382,24 @@ export const AdminUsersPage = () => {
                 {/* Empty State */}
                 {filteredUsers.length === 0 && (
                     <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
                             <User className="w-8 h-8 text-gray-400" />
                         </div>
-                        <h3 className="text-[20px] font-semibold text-gray-900 mb-2">No users found</h3>
-                        <p className="text-gray-600 mb-6">Try adjusting your search criteria</p>
+                        <h3 className="text-[20px] font-semibold text-gray-900 dark:text-zinc-100 mb-2">No users found</h3>
+                        <p className="text-gray-600 dark:text-zinc-400 mb-6">Try adjusting your search criteria</p>
                     </div>
                 )}
             </div>
 
             {editingUserId !== null && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-lg w-full overflow-hidden">
-                        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                    <div className="bg-white dark:bg-zinc-900 rounded-lg max-w-lg w-full overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                             <div>
-                                <h2 className="text-[18px] font-bold text-gray-900">
+                                <h2 className="text-[18px] font-bold text-gray-900 dark:text-zinc-100">
                                     Edit User
                                 </h2>
-                                <p className="text-[14px] text-gray-600">Update user details and role.</p>
+                                <p className="text-[14px] text-gray-600 dark:text-zinc-400">Update user details and role.</p>
                             </div>
                             <button
                                 onClick={() => {
@@ -471,30 +415,30 @@ export const AdminUsersPage = () => {
 
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Name</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Name</label>
                                 <input
                                     value={userForm.name}
                                     onChange={(e) => setUserForm((p) => ({ ...p, name: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Email</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Email</label>
                                 <input
                                     type="email"
                                     value={userForm.email}
                                     onChange={(e) => setUserForm((p) => ({ ...p, email: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Role</label>
+                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Role</label>
                                     <select
                                         value={userForm.role}
                                         onChange={(e) => setUserForm((p) => ({ ...p, role: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                     >
                                         <option value="Student">Student</option>
                                         <option value="Instructor">Instructor</option>
@@ -502,11 +446,11 @@ export const AdminUsersPage = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">Status</label>
+                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Status</label>
                                     <select
                                         value={userForm.status}
                                         onChange={(e) => setUserForm((p) => ({ ...p, status: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                     >
                                         <option value="Active">Active</option>
                                         <option value="Inactive">Inactive</option>
@@ -516,12 +460,12 @@ export const AdminUsersPage = () => {
                             </div>
 
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Courses</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Courses</label>
                                 <input
                                     type="number"
                                     value={userForm.courses}
                                     onChange={(e) => setUserForm((p) => ({ ...p, courses: Number(e.target.value) }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
 
@@ -530,7 +474,7 @@ export const AdminUsersPage = () => {
                                     onClick={() => {
                                         setEditingUserId(null);
                                     }}
-                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors"
+                                    className="flex-1 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium px-4 py-2 rounded-lg transition-colors"
                                 >
                                     Cancel
                                 </button>

@@ -271,41 +271,41 @@ export const InstructorCourseEditContentPage = () => {
     const renderContent = () => {
         if (activeTab === 'Overview') {
             return (
-                <div className="bg-white rounded-b-lg border border-gray-200 border-t-0 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
                     <div className="grid md:grid-cols-2 gap-6 p-6">
                         <div className="space-y-4">
-                            <h3 className="text-xl font-semibold text-gray-900">Course overview</h3>
-                            <p className="text-gray-700 leading-relaxed">
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Course overview</h3>
+                            <p className="text-gray-700 dark:text-zinc-300 leading-relaxed">
                                 Students explore foundational psychological theories, research methods, and cognitive processes. The course combines short lectures with practice activities and weekly reflections to reinforce learning.
                             </p>
-                            <ul className="list-disc list-inside text-gray-700 space-y-2">
+                            <ul className="list-disc list-inside text-gray-700 dark:text-zinc-300 space-y-2">
                                 <li>Weekly lectures with downloadable slides and readings</li>
                                 <li>Two major assignments and three graded quizzes</li>
                                 <li>Built-in announcements and enrollment approvals</li>
                             </ul>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="rounded-lg border border-gray-200 p-4">
-                                <p className="text-sm text-gray-600">Completion rate</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">76%</p>
+                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
+                                <p className="text-sm text-gray-600 dark:text-zinc-400">Completion rate</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100 mt-1">76%</p>
                                 <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
                                     <CheckCircle className="w-4 h-4" /> Up 4% this week
                                 </p>
                             </div>
-                            <div className="rounded-lg border border-gray-200 p-4">
-                                <p className="text-sm text-gray-600">Average grade</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">B+</p>
-                                <p className="text-sm text-gray-600 mt-1">Based on 3 graded items</p>
+                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
+                                <p className="text-sm text-gray-600 dark:text-zinc-400">Average grade</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100 mt-1">B+</p>
+                                <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">Based on 3 graded items</p>
                             </div>
-                            <div className="rounded-lg border border-gray-200 p-4">
-                                <p className="text-sm text-gray-600">Active students</p>
-                                <p className="text-3xl font-bold text-gray-900 mt-1">38</p>
+                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
+                                <p className="text-sm text-gray-600 dark:text-zinc-400">Active students</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100 mt-1">38</p>
                                 <p className="text-sm text-blue-600 mt-1">7 pending enrollments</p>
                             </div>
-                            <div className="rounded-lg border border-gray-200 p-4">
-                                <p className="text-sm text-gray-600">Upcoming due dates</p>
-                                <p className="text-lg font-semibold text-gray-900 mt-1">Quiz 2 • Feb 28</p>
-                                <p className="text-sm text-gray-600">Assignment 2 • Mar 05</p>
+                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
+                                <p className="text-sm text-gray-600 dark:text-zinc-400">Upcoming due dates</p>
+                                <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mt-1">Quiz 2 • Feb 28</p>
+                                <p className="text-sm text-gray-600 dark:text-zinc-400">Assignment 2 • Mar 05</p>
                             </div>
                         </div>
                     </div>
@@ -315,28 +315,28 @@ export const InstructorCourseEditContentPage = () => {
 
         if (activeTab === 'Lectures & Materials') {
             return (
-                <div className="bg-white rounded-b-lg border border-gray-200 border-t-0 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
                     <div className="p-6 space-y-6">
                         <div className="space-y-4">
-                            <h3 className="text-xl font-semibold text-gray-900">Lectures</h3>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Lectures</h3>
                             {/* Add lecture form */}
                             <div className="grid sm:grid-cols-4 gap-3 items-end">
-                                <input value={newLecture.title} onChange={(e) => setNewLecture({ ...newLecture, title: e.target.value })} placeholder="Title" className="border border-gray-300 rounded-lg px-3 py-2" />
-                                <input value={newLecture.week} onChange={(e) => setNewLecture({ ...newLecture, week: e.target.value })} placeholder="Week" className="border border-gray-300 rounded-lg px-3 py-2" />
-                                <input value={newLecture.length} onChange={(e) => setNewLecture({ ...newLecture, length: e.target.value })} placeholder="Length (mm:ss)" className="border border-gray-300 rounded-lg px-3 py-2" />
+                                <input value={newLecture.title} onChange={(e) => setNewLecture({ ...newLecture, title: e.target.value })} placeholder="Title" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
+                                <input value={newLecture.week} onChange={(e) => setNewLecture({ ...newLecture, week: e.target.value })} placeholder="Week" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
+                                <input value={newLecture.length} onChange={(e) => setNewLecture({ ...newLecture, length: e.target.value })} placeholder="Length (mm:ss)" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
                                 <div className="flex gap-2">
-                                    <input value={newLecture.video} onChange={(e) => setNewLecture({ ...newLecture, video: e.target.value })} placeholder="Video filename.mp4" className="flex-1 border border-gray-300 rounded-lg px-3 py-2" />
+                                    <input value={newLecture.video} onChange={(e) => setNewLecture({ ...newLecture, video: e.target.value })} placeholder="Video filename.mp4" className="flex-1 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
                                     <button onClick={addLecture} className="px-3 py-2 bg-blue-600 text-white rounded-lg">Add Lecture</button>
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 {lectures.map((lecture) => (
-                                    <div key={lecture.id} className="border border-gray-200 rounded-lg p-4">
+                                    <div key={lecture.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <p className="text-sm text-gray-600">{lecture.week}</p>
-                                                <h4 className="text-lg font-semibold text-gray-900">{lecture.title}</h4>
-                                                <p className="text-sm text-gray-600">Video • {lecture.length}</p>
+                                                <p className="text-sm text-gray-600 dark:text-zinc-400">{lecture.week}</p>
+                                                <h4 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{lecture.title}</h4>
+                                                <p className="text-sm text-gray-600 dark:text-zinc-400">Video • {lecture.length}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <button className="text-blue-600 text-sm font-medium flex items-center gap-1">
@@ -350,16 +350,16 @@ export const InstructorCourseEditContentPage = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className="mt-3 flex items-center gap-2 text-sm text-gray-700">
+                                        <div className="mt-3 flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
                                             <Video className="w-4 h-4 text-red-500" /> {lecture.video}
                                         </div>
                                         <div className="mt-4 grid sm:grid-cols-2 gap-2">
                                             {lecture.resources.map((res) => (
-                                                <div key={res.id} className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                                                <div key={res.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-md px-3 py-2">
                                                     {getTypeIcon(res.type)}
                                                     <div>
-                                                        <p className="font-medium text-gray-900">{res.name}</p>
-                                                        <p className="text-gray-600">{res.type} • {res.size}</p>
+                                                        <p className="font-medium text-gray-900 dark:text-zinc-100">{res.name}</p>
+                                                        <p className="text-gray-600 dark:text-zinc-400">{res.type} • {res.size}</p>
                                                     </div>
                                                     <button onClick={() => deleteLectureMaterial(lecture.id, res.id)} className="ml-auto text-red-600 text-xs">Delete</button>
                                                 </div>
@@ -368,16 +368,16 @@ export const InstructorCourseEditContentPage = () => {
                                         {/* Add material to lecture */}
                                         {addMaterialForLectureId === lecture.id ? (
                                             <div className="mt-3 grid sm:grid-cols-4 gap-2 items-end">
-                                                <input value={newLectureMaterial.name} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, name: e.target.value })} placeholder="Material name" className="border border-gray-300 rounded-lg px-3 py-2" />
-                                                <select value={newLectureMaterial.type} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, type: e.target.value })} className="border border-gray-300 rounded-lg px-3 py-2">
+                                                <input value={newLectureMaterial.name} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, name: e.target.value })} placeholder="Material name" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
+                                                <select value={newLectureMaterial.type} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, type: e.target.value })} className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100">
                                                     <option>PDF</option>
                                                     <option>PPT</option>
                                                     <option>DOC</option>
                                                 </select>
-                                                <input value={newLectureMaterial.size} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, size: e.target.value })} placeholder="Size (e.g., 1.2 MB)" className="border border-gray-300 rounded-lg px-3 py-2" />
+                                                <input value={newLectureMaterial.size} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, size: e.target.value })} placeholder="Size (e.g., 1.2 MB)" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
                                                 <div className="flex gap-2">
                                                     <button onClick={() => addMaterialToLecture(lecture.id)} className="px-3 py-2 bg-blue-600 text-white rounded-lg">Add</button>
-                                                    <button onClick={() => { setAddMaterialForLectureId(null); setNewLectureMaterial({ name: '', type: 'PDF', size: '' }); }} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg">Cancel</button>
+                                                    <button onClick={() => { setAddMaterialForLectureId(null); setNewLectureMaterial({ name: '', type: 'PDF', size: '' }); }} className="px-3 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-lg">Cancel</button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -392,27 +392,27 @@ export const InstructorCourseEditContentPage = () => {
 
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-semibold text-gray-900">General materials</h3>
+                                <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">General materials</h3>
                                 <button onClick={addGeneralMaterial} className="flex items-center gap-2 text-sm font-medium text-blue-600">
                                     <Plus className="w-4 h-4" /> Add material
                                 </button>
                             </div>
                             <div className="grid sm:grid-cols-3 gap-3">
-                                <input value={newGeneralMaterial.name} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, name: e.target.value })} placeholder="Material name" className="border border-gray-300 rounded-lg px-3 py-2" />
-                                <select value={newGeneralMaterial.type} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, type: e.target.value })} className="border border-gray-300 rounded-lg px-3 py-2">
+                                <input value={newGeneralMaterial.name} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, name: e.target.value })} placeholder="Material name" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
+                                <select value={newGeneralMaterial.type} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, type: e.target.value })} className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100">
                                     <option>PDF</option>
                                     <option>PPT</option>
                                     <option>DOC</option>
                                 </select>
-                                <input value={newGeneralMaterial.size} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, size: e.target.value })} placeholder="Size (e.g., 1.0 MB)" className="border border-gray-300 rounded-lg px-3 py-2" />
+                                <input value={newGeneralMaterial.size} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, size: e.target.value })} placeholder="Size (e.g., 1.0 MB)" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
                             </div>
                             <div className="grid md:grid-cols-3 gap-3">
                                 {generalMaterials.map((mat) => (
-                                    <div key={mat.id} className="border border-gray-200 rounded-lg p-4 flex items-start gap-3">
+                                    <div key={mat.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex items-start gap-3">
                                         {getTypeIcon(mat.type)}
                                         <div className="flex-1">
-                                            <p className="font-semibold text-gray-900">{mat.name}</p>
-                                            <p className="text-sm text-gray-600">{mat.type} • {mat.size}</p>
+                                            <p className="font-semibold text-gray-900 dark:text-zinc-100">{mat.name}</p>
+                                            <p className="text-sm text-gray-600 dark:text-zinc-400">{mat.type} • {mat.size}</p>
                                             <div className="mt-2 flex items-center gap-2">
                                                 {getStatusBadge(mat.status)}
                                                 <button className="text-sm text-blue-600 flex items-center gap-1">
@@ -434,19 +434,19 @@ export const InstructorCourseEditContentPage = () => {
 
         if (activeTab === 'Assignments') {
             return (
-                <div className="bg-white rounded-b-lg border border-gray-200 border-t-0 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
                     <div className="p-6 space-y-4">
                         {courseAssignments.map((assignment) => (
-                            <div key={assignment.id} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+                            <div key={assignment.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex flex-col gap-3">
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                                     <div>
-                                        <p className="text-sm text-gray-600">Due {assignment.due}</p>
-                                        <h4 className="text-lg font-semibold text-gray-900">{assignment.title}</h4>
-                                        <p className="text-sm text-gray-600">Weight {assignment.weight} • Attempts {assignment.attempts}</p>
+                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Due {assignment.due}</p>
+                                        <h4 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{assignment.title}</h4>
+                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Weight {assignment.weight} • Attempts {assignment.attempts}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {getStatusBadge(assignment.status)}
-                                        <span className="text-sm text-gray-600">{assignment.submissions} submissions</span>
+                                        <span className="text-sm text-gray-600 dark:text-zinc-400">{assignment.submissions} submissions</span>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
@@ -465,7 +465,7 @@ export const InstructorCourseEditContentPage = () => {
                                 </div>
                             </div>
                         ))}
-                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE)} className="w-full border border-dashed border-gray-300 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2">
+                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE)} className="w-full border border-dashed border-gray-300 dark:border-zinc-700 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-zinc-800">
                             <Plus className="w-4 h-4" /> New assignment
                         </button>
                     </div>
@@ -475,16 +475,16 @@ export const InstructorCourseEditContentPage = () => {
 
         if (activeTab === 'Quizzes') {
             return (
-                <div className="bg-white rounded-b-lg border border-gray-200 border-t-0 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
                     <div className="p-6 space-y-4">
                         {courseQuizzes.map((quiz) => (
-                            <div key={quiz.id} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-2">
+                            <div key={quiz.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex flex-col gap-2">
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                                     <div>
-                                        <h4 className="text-lg font-semibold text-gray-900">{quiz.title}</h4>
-                                        <p className="text-sm text-gray-600">Attempts {quiz.attempts} • Time limit {quiz.timeLimit}</p>
-                                        <p className="text-sm text-gray-600">Release: {quiz.release}</p>
-                                        <p className="text-sm text-gray-600">Submissions: {quiz.submissions}</p>
+                                        <h4 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{quiz.title}</h4>
+                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Attempts {quiz.attempts} • Time limit {quiz.timeLimit}</p>
+                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Release: {quiz.release}</p>
+                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Submissions: {quiz.submissions}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {getStatusBadge(quiz.status)}
@@ -498,7 +498,7 @@ export const InstructorCourseEditContentPage = () => {
                                 </div>
                             </div>
                         ))}
-                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE)} className="w-full border border-dashed border-gray-300 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2">
+                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE)} className="w-full border border-dashed border-gray-300 dark:border-zinc-700 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-zinc-800">
                             <Plus className="w-4 h-4" /> Create quiz
                         </button>
                     </div>
@@ -508,24 +508,24 @@ export const InstructorCourseEditContentPage = () => {
 
         if (activeTab === 'Announcements') {
             return (
-                <div className="bg-white rounded-b-lg border border-gray-200 border-t-0 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
                     <div className="p-6 space-y-6">
                         <div className="space-y-4">
-                            <h3 className="text-xl font-semibold text-gray-900">Post an announcement</h3>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Post an announcement</h3>
                             <input
                                 value={announcementTitle}
                                 onChange={(e) => setAnnouncementTitle(e.target.value)}
                                 placeholder="Title"
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                             />
                             <textarea
                                 value={announcementBody}
                                 onChange={(e) => setAnnouncementBody(e.target.value)}
                                 placeholder="Write your announcement..."
                                 rows={4}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                             />
-                            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                            <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
                                 <input
                                     type="checkbox"
                                     checked={announcementPinned}
@@ -535,7 +535,7 @@ export const InstructorCourseEditContentPage = () => {
                                 Pin announcement
                             </label>
                             <div className="flex items-center gap-3">
-                                <label className="text-sm text-gray-700">Attachment (optional)</label>
+                                <label className="text-sm text-gray-700 dark:text-zinc-300">Attachment (optional)</label>
                                 <input type="file" onChange={(e) => setAnnouncementAttachment(e.target.files?.[0] || null)} className="text-sm" />
                             </div>
                             <div className="flex items-center gap-3">
@@ -545,14 +545,14 @@ export const InstructorCourseEditContentPage = () => {
                                 >
                                     Post announcement
                                 </button>
-                                <button className="text-gray-700 font-medium">Cancel</button>
+                                <button className="text-gray-700 dark:text-zinc-300 font-medium">Cancel</button>
                             </div>
                         </div>
 
                         <div className="space-y-3">
-                            <h3 className="text-lg font-semibold text-gray-900">Recent announcements</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Recent announcements</h3>
                             {announcements.map((item) => (
-                                <div key={item.id} className="border border-gray-200 rounded-lg p-4 flex items-start gap-3">
+                                <div key={item.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex items-start gap-3">
                                     {item.pinned ? (
                                         <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5" />
                                     ) : (
@@ -560,10 +560,10 @@ export const InstructorCourseEditContentPage = () => {
                                     )}
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-gray-900">{item.title}</p>
+                                            <p className="font-semibold text-gray-900 dark:text-zinc-100">{item.title}</p>
                                             {item.pinned && <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Pinned</span>}
                                         </div>
-                                        <p className="text-sm text-gray-600">{item.date} {item.attachmentName && `• Attachment: ${item.attachmentName}`}</p>
+                                        <p className="text-sm text-gray-600 dark:text-zinc-400">{item.date} {item.attachmentName && `• Attachment: ${item.attachmentName}`}</p>
                                     </div>
                                     <button onClick={() => togglePinAnnouncement(item.id)} className="text-sm text-blue-600 flex items-center gap-1 mr-2">
                                         <Edit className="w-4 h-4" /> {item.pinned ? 'Unpin' : 'Pin'}
@@ -581,34 +581,34 @@ export const InstructorCourseEditContentPage = () => {
 
         if (activeTab === 'Students & Progress') {
             return (
-                <div className="bg-white rounded-b-lg border border-gray-200 border-t-0 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
                     <div className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-semibold text-gray-900">Progress overview</h3>
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Progress overview</h3>
                             <button onClick={downloadStudentCSV} className="flex items-center gap-2 text-sm font-medium text-blue-600">
                                 <Download className="w-4 h-4" /> Export CSV
                             </button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-50">
+                                <thead className="bg-gray-50 dark:bg-zinc-800">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Student</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Progress</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Assignments</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Quizzes</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Last active</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Student</th>
+                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Progress</th>
+                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Assignments</th>
+                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Quizzes</th>
+                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Last active</th>
+                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {students.map((student) => (
-                                        <tr key={student.id} className="border-b border-gray-200">
-                                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{student.name}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-700">{student.progress}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-700">{student.assignments}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-700">{student.quizzes}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-700">{student.lastActive}</td>
+                                        <tr key={student.id} className="border-b border-gray-200 dark:border-zinc-700">
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-zinc-100">{student.name}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">{student.progress}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">{student.assignments}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">{student.quizzes}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">{student.lastActive}</td>
                                             <td className="px-4 py-3 text-sm">
                                                 <button className="text-blue-600 font-medium flex items-center gap-1">
                                                     <Eye className="w-4 h-4" /> View
@@ -625,13 +625,13 @@ export const InstructorCourseEditContentPage = () => {
         }
 
         return (
-            <div className="bg-white rounded-b-lg border border-gray-200 border-t-0 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
                 <div className="p-6 space-y-4">
                     {/* Filters */}
                     <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
                         <div className="flex items-center gap-2">
-                            <label className="text-sm text-gray-700">Status</label>
-                            <select value={enrollFilterStatus} onChange={(e) => { setEnrollFilterStatus(e.target.value as any); setEnrollPage(1); }} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <label className="text-sm text-gray-700 dark:text-zinc-300">Status</label>
+                            <select value={enrollFilterStatus} onChange={(e) => { setEnrollFilterStatus(e.target.value as any); setEnrollPage(1); }} className="px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100">
                                 <option value="all">All</option>
                                 <option value="Pending">Pending</option>
                                 <option value="Approved">Approved</option>
@@ -639,19 +639,19 @@ export const InstructorCourseEditContentPage = () => {
                             </select>
                         </div>
                         <div className="flex-1">
-                            <input value={enrollSearch} onChange={(e) => { setEnrollSearch(e.target.value); setEnrollPage(1); }} placeholder="Search student name..." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                            <input value={enrollSearch} onChange={(e) => { setEnrollSearch(e.target.value); setEnrollPage(1); }} placeholder="Search student name..." className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
                         </div>
                     </div>
                     {pagedEnrollments.map((req) => (
-                        <div key={req.id} className="border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div key={req.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div className="flex items-start gap-3">
                                 <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-700 font-semibold">
                                     {req.name.charAt(0)}
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-gray-900">{req.name}</p>
-                                    <p className="text-sm text-gray-600">{req.email}</p>
-                                    <p className="text-sm text-gray-600">Requested {req.requestedAt}</p>
+                                    <p className="font-semibold text-gray-900 dark:text-zinc-100">{req.name}</p>
+                                    <p className="text-sm text-gray-600 dark:text-zinc-400">{req.email}</p>
+                                    <p className="text-sm text-gray-600 dark:text-zinc-400">Requested {req.requestedAt}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -669,13 +669,13 @@ export const InstructorCourseEditContentPage = () => {
                     ))}
                     {/* Pagination */}
                     <div className="flex items-center justify-between pt-2">
-                        <div className="text-sm text-gray-600">Page {enrollPage} of {totalEnrollPages}</div>
+                        <div className="text-sm text-gray-600 dark:text-zinc-400">Page {enrollPage} of {totalEnrollPages}</div>
                         <div className="flex gap-2">
-                            <button onClick={() => setEnrollPage(Math.max(1, enrollPage - 1))} disabled={enrollPage === 1} className="px-3 py-1 border border-gray-300 rounded-lg text-sm disabled:opacity-50">Previous</button>
+                            <button onClick={() => setEnrollPage(Math.max(1, enrollPage - 1))} disabled={enrollPage === 1} className="px-3 py-1 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm disabled:opacity-50 text-gray-900 dark:text-zinc-100">Previous</button>
                             {Array.from({ length: totalEnrollPages }, (_, i) => i + 1).map((p) => (
-                                <button key={p} onClick={() => setEnrollPage(p)} className={`px-3 py-1 rounded-lg text-sm ${p === enrollPage ? 'bg-blue-600 text-white' : 'border border-gray-300'}`}>{p}</button>
+                                <button key={p} onClick={() => setEnrollPage(p)} className={`px-3 py-1 rounded-lg text-sm ${p === enrollPage ? 'bg-blue-600 text-white' : 'border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100'}`}>{p}</button>
                             ))}
-                            <button onClick={() => setEnrollPage(Math.min(totalEnrollPages, enrollPage + 1))} disabled={enrollPage === totalEnrollPages} className="px-3 py-1 border border-gray-300 rounded-lg text-sm disabled:opacity-50">Next</button>
+                            <button onClick={() => setEnrollPage(Math.min(totalEnrollPages, enrollPage + 1))} disabled={enrollPage === totalEnrollPages} className="px-3 py-1 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm disabled:opacity-50 text-gray-900 dark:text-zinc-100">Next</button>
                         </div>
                     </div>
                 </div>
@@ -684,15 +684,15 @@ export const InstructorCourseEditContentPage = () => {
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
                 <div>
-                    <h1 className="text-[36px] font-bold text-gray-900">Introduction to Psychology</h1>
-                    <p className="text-[18px] text-gray-600 mt-1">PSYCH 101 - Spring 2024</p>
+                    <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">Introduction to Psychology</h1>
+                    <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">PSYCH 101 - Spring 2024</p>
                 </div>
                 <div className="flex gap-3">
-                    <button className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium text-[16px] px-6 py-3 rounded-lg transition-colors">
+                    <button className="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[16px] px-6 py-3 rounded-lg transition-colors">
                         <Upload className="w-5 h-5" />
                         Upload Content
                     </button>
@@ -708,14 +708,14 @@ export const InstructorCourseEditContentPage = () => {
                 {courseStats.map((stat) => {
                     const Icon = stat.icon;
                     return (
-                        <div key={stat.label} className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div key={stat.label} className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-200 dark:border-zinc-700">
                             <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center`}>
+                                <div className={`w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center`}>
                                     <Icon className={`w-5 h-5 ${stat.color}`} />
                                 </div>
                                 <div>
-                                    <p className="text-[20px] font-bold text-gray-900">{stat.value}</p>
-                                    <p className="text-[14px] text-gray-600">{stat.label}</p>
+                                    <p className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">{stat.value}</p>
+                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400">{stat.label}</p>
                                 </div>
                             </div>
                         </div>
@@ -724,7 +724,7 @@ export const InstructorCourseEditContentPage = () => {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="bg-white rounded-t-lg border border-gray-200">
+            <div className="bg-white dark:bg-zinc-900 rounded-t-lg border border-gray-200 dark:border-zinc-700">
                 <div className="flex px-6">
                     {tabs.map((tab) => (
                         <button
@@ -732,7 +732,7 @@ export const InstructorCourseEditContentPage = () => {
                             onClick={() => setActiveTab(tab)}
                             className={`px-6 py-4 text-[16px] font-medium transition-colors border-b-2 ${activeTab === tab
                                 ? 'text-blue-600 border-blue-600'
-                                : 'text-gray-600 border-transparent hover:text-blue-600 hover:border-gray-300'
+                                : 'text-gray-600 dark:text-zinc-400 border-transparent hover:text-blue-600 hover:border-gray-300'
                                 }`}
                         >
                             {tab}

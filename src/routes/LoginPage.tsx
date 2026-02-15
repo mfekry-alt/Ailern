@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { storage } from '@/lib/storage';
 import { STORAGE_KEYS } from '@/lib/constants';
 import type { User } from '@/types';
+import { Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -23,6 +24,7 @@ export const LoginPage = () => {
     const login = useLogin();
     const [error, setError] = useState<string>('');
     const [unverifiedEmail, setUnverifiedEmail] = useState<string>('');
+    const [showPassword, setShowPassword] = useState(false);
 
     // Redirect based on user role after login - all roles go to their dashboard
     const getRedirectPath = (user: any) => {
@@ -63,20 +65,20 @@ export const LoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-8 py-12" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="min-h-screen flex items-center justify-center px-8 py-12 bg-gray-50 dark:bg-zinc-950">
             <div className="w-full max-w-[448px]">
-                <div className="bg-white rounded-xl px-8 pt-8 pb-12" style={{ boxShadow: '0px 10px 25px -5px rgba(0,0,0,0.05), 0px 10px 10px -5px rgba(0,0,0,0.05)' }}>
+                <div className="bg-white dark:bg-zinc-900 rounded-xl px-8 pt-8 pb-12 shadow-figma dark:shadow-lg dark:border dark:border-zinc-800">
                     {/* Heading */}
                     <div className="text-center mb-8">
-                        <h1 className="font-bold text-[30px] leading-[37.5px] tracking-[-0.75px]" style={{ color: '#111318' }}>
+                        <h1 className="font-bold text-[30px] leading-[37.5px] tracking-[-0.75px] text-gray-900 dark:text-zinc-100">
                             Login
                         </h1>
                     </div>
 
                     {/* Error Message */}
                     {error && (
-                        <div className="mb-6 p-4 rounded-md border" style={{ backgroundColor: '#fee2e2', borderColor: '#fecaca' }}>
-                            <p className="text-sm" style={{ color: '#991b1b' }}>{error}</p>
+                        <div className="mb-6 p-4 rounded-md border bg-red-100 border-red-200 dark:bg-red-900/20 dark:border-red-800">
+                            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
                         </div>
                     )}
 
@@ -117,20 +119,36 @@ export const LoginPage = () => {
                             <input
                                 type="email"
                                 placeholder="Enter your email"
-                                className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
                                 {...register('email')}
                             />
                             {errors.email && (
                                 <p className="text-sm" style={{ color: '#dc2626' }}>{errors.email.message}</p>
                             )}
 
-                            {/* Password Input */}
-                            <input
-                                type="password"
-                                placeholder="Enter your password"
-                                className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
-                                {...register('password')}
-                            />
+                            {/* Password Input with show/hide toggle */}
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="Enter your password"
+                                    className="w-full px-[13px] py-[15px] pr-12 text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
+                                    {...register('password')}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 transition-colors"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    <span className="relative inline-block">
+                                        {showPassword ? (
+                                            <EyeOff className="w-5 h-5 transition-all duration-300 ease-out opacity-90" />
+                                        ) : (
+                                            <Eye className="w-5 h-5 transition-all duration-300 ease-out opacity-100" />
+                                        )}
+                                    </span>
+                                </button>
+                            </div>
                             {errors.password && (
                                 <p className="text-sm" style={{ color: '#dc2626' }}>{errors.password.message}</p>
                             )}
@@ -145,7 +163,7 @@ export const LoginPage = () => {
                                 style={{ borderColor: '#dbe0e6', accentColor: '#0d7ff2' }}
                                 {...register('rememberMe')}
                             />
-                            <label htmlFor="rememberMe" className="ml-2 text-[14px] leading-5" style={{ color: '#60758a' }}>
+                            <label htmlFor="rememberMe" className="ml-2 text-[14px] leading-5 text-gray-500 dark:text-zinc-400">
                                 Remember me
                             </label>
                         </div>

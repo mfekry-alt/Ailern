@@ -64,10 +64,10 @@ export const AssignmentDetailPage = () => {
     // Loading state
     if (isLoading) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto flex items-center justify-center min-h-screen">
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto flex items-center justify-center min-h-screen bg-gray-50 dark:bg-zinc-950">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-gray-600">Loading assignment...</p>
+                    <p className="text-gray-600 dark:text-zinc-400">Loading assignment...</p>
                 </div>
             </div>
         );
@@ -76,11 +76,11 @@ export const AssignmentDetailPage = () => {
     // Error state
     if (error || !assignmentUI) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto">
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
                 <div className="text-center py-12">
                     <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-                    <h3 className="text-[20px] font-semibold text-gray-900 mb-2">Failed to load assignment</h3>
-                    <p className="text-gray-600 mb-4">{error ? handleApiError(error).message : 'Assignment not found'}</p>
+                    <h3 className="text-[20px] font-semibold text-gray-900 dark:text-zinc-100 mb-2">Failed to load assignment</h3>
+                    <p className="text-gray-600 dark:text-zinc-400 mb-4">{error ? handleApiError(error).message : 'Assignment not found'}</p>
                     <button
                         onClick={() => navigate(-1)}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
@@ -93,7 +93,7 @@ export const AssignmentDetailPage = () => {
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="mb-6">
@@ -104,8 +104,8 @@ export const AssignmentDetailPage = () => {
                         <ArrowLeft className="w-4 h-4" />
                         Back to Assignments
                     </button>
-                    <h1 className="text-[32px] font-bold text-gray-900 mb-2">{assignmentUI.title}</h1>
-                    <p className="text-[16px] text-gray-600">{assignmentUI.course}</p>
+                    <h1 className="text-[32px] font-bold text-gray-900 dark:text-zinc-100 mb-2">{assignmentUI.title}</h1>
+                    <p className="text-[16px] text-gray-600 dark:text-zinc-400">{assignmentUI.course}</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -114,29 +114,29 @@ export const AssignmentDetailPage = () => {
                         {/* Assignment Details */}
                         <Card variant="elevated">
                             <CardContent className="p-6">
-                                <h2 className="text-[20px] font-bold text-gray-900 mb-4">Assignment Details</h2>
+                                <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100 mb-4">Assignment Details</h2>
 
                                 <div className="space-y-4">
                                     <div>
-                                        <h3 className="text-[14px] font-semibold text-gray-700 mb-2">Description</h3>
-                                        <p className="text-[14px] text-gray-700 whitespace-pre-line leading-relaxed">
+                                        <h3 className="text-[14px] font-semibold text-gray-700 dark:text-zinc-300 mb-2">Description</h3>
+                                        <p className="text-[14px] text-gray-700 dark:text-zinc-300 whitespace-pre-line leading-relaxed">
                                             {assignmentUI.instructions}
                                         </p>
                                     </div>
 
                                     {assignmentUI.files.length > 0 && (
                                         <div>
-                                            <h3 className="text-[14px] font-semibold text-gray-700 mb-2">Attachments</h3>
+                                            <h3 className="text-[14px] font-semibold text-gray-700 dark:text-zinc-300 mb-2">Attachments</h3>
                                             <div className="space-y-2">
                                                 {assignmentUI.files.map((attachment, index) => (
                                                     <a
                                                         key={index}
                                                         href="#"
                                                         download
-                                                        className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+                                                        className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg border border-gray-200 dark:border-zinc-700 transition-colors"
                                                     >
-                                                        <FileText className="w-4 h-4 text-gray-600" />
-                                                        <span className="text-[14px] text-gray-700 flex-1">
+                                                        <FileText className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
+                                                        <span className="text-[14px] text-gray-700 dark:text-zinc-300 flex-1">
                                                             {attachment.fileName}
                                                         </span>
                                                     </a>
@@ -154,15 +154,15 @@ export const AssignmentDetailPage = () => {
                         {/* Assignment Info */}
                         <Card variant="elevated">
                             <CardContent className="p-6">
-                                <h2 className="text-[18px] font-bold text-gray-900 mb-4">Information</h2>
+                                <h2 className="text-[18px] font-bold text-gray-900 dark:text-zinc-100 mb-4">Information</h2>
 
                                 <div className="space-y-4">
                                     <div>
-                                        <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-1">
+                                        <div className="flex items-center gap-2 text-[13px] text-gray-500 dark:text-zinc-500 mb-1">
                                             <Calendar className="w-4 h-4" />
                                             <span>Due Date</span>
                                         </div>
-                                        <p className={`text-[14px] font-semibold ${isDueSoon && assignmentUI.status === 'pending' ? 'text-red-600' : 'text-gray-900'}`}>
+                                        <p className={`text-[14px] font-semibold ${isDueSoon && assignmentUI.status === 'pending' ? 'text-red-600' : 'text-gray-900 dark:text-zinc-100'}`}>
                                             {new Date(assignmentUI.dueDate).toLocaleString()}
                                         </p>
                                         {isDueSoon && assignmentUI.status === 'pending' && (
@@ -171,23 +171,23 @@ export const AssignmentDetailPage = () => {
                                     </div>
 
                                     <div>
-                                        <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-1">
+                                        <div className="flex items-center gap-2 text-[13px] text-gray-500 dark:text-zinc-500 mb-1">
                                             <User className="w-4 h-4" />
                                             <span>Instructor</span>
                                         </div>
-                                        <p className="text-[14px] font-semibold text-gray-900">{assignmentUI.instructor}</p>
+                                        <p className="text-[14px] font-semibold text-gray-900 dark:text-zinc-100">{assignmentUI.instructor}</p>
                                     </div>
 
                                     <div>
-                                        <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-1">
+                                        <div className="flex items-center gap-2 text-[13px] text-gray-500 dark:text-zinc-500 mb-1">
                                             <Star className="w-4 h-4" />
                                             <span>Points</span>
                                         </div>
-                                        <p className="text-[14px] font-semibold text-gray-900">{assignmentUI.points} points</p>
+                                        <p className="text-[14px] font-semibold text-gray-900 dark:text-zinc-100">{assignmentUI.points} points</p>
                                     </div>
 
                                     <div>
-                                        <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-1">
+                                        <div className="flex items-center gap-2 text-[13px] text-gray-500 dark:text-zinc-500 mb-1">
                                             <Clock className="w-4 h-4" />
                                             <span>Status</span>
                                         </div>
@@ -207,11 +207,11 @@ export const AssignmentDetailPage = () => {
                         {/* Submission Requirements */}
                         <Card variant="elevated">
                             <CardContent className="p-6">
-                                <h3 className="text-[16px] font-bold text-gray-900 mb-4">Submission Requirements</h3>
+                                <h3 className="text-[16px] font-bold text-gray-900 dark:text-zinc-100 mb-4">Submission Requirements</h3>
 
                                 <div className="space-y-3">
                                     <div>
-                                        <p className="text-[13px] text-gray-500 mb-1">Allowed File Types</p>
+                                        <p className="text-[13px] text-gray-500 dark:text-zinc-500 mb-1">Allowed File Types</p>
                                         <div className="flex flex-wrap gap-2">
                                             {assignmentUI.allowedFileTypes.map((type) => (
                                                 <span
@@ -224,8 +224,8 @@ export const AssignmentDetailPage = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <p className="text-[13px] text-gray-500 mb-1">Maximum File Size</p>
-                                        <p className="text-[14px] font-semibold text-gray-900">{assignmentUI.maxFileSize}</p>
+                                        <p className="text-[13px] text-gray-500 dark:text-zinc-500 mb-1">Maximum File Size</p>
+                                        <p className="text-[14px] font-semibold text-gray-900 dark:text-zinc-100">{assignmentUI.maxFileSize}</p>
                                     </div>
                                 </div>
                             </CardContent>

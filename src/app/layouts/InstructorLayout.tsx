@@ -3,7 +3,7 @@ import { Header } from '@/components/Header';
 
 export const InstructorLayout = () => {
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-zinc-950 transition-colors">
+        <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 transition-colors">
             <Header />
             <main>
                 <Outlet />

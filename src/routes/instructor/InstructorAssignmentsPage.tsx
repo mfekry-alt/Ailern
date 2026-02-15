@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui/Card';
 import { ROUTES, QUERY_KEYS } from '@/lib/constants';
 import {
     Plus,
@@ -65,7 +65,7 @@ const mapAssignmentToUI = (assignment: GetAllAssignmentsDto): Assignment => {
         dueDate: assignment.dueDate,
         submissions: 0, // Default value - not in API
         graded: 0, // Default value - not in API
-        status: 'published', // Default status
+        status: assignment.isPublished ? 'published' : 'draft',
         description: assignment.instructions || '', // Use instructions as description
         attachments: [], // Default empty array
         createdAt: assignment.createdAt || new Date().toISOString(),
@@ -285,10 +285,10 @@ export const InstructorAssignmentsPage = () => {
     // Loading state
     if (isLoading) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 min-h-screen flex items-center justify-center">
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-gray-600">Loading assignments...</p>
+                    <p className="text-gray-600 dark:text-zinc-400">Loading assignments...</p>
                 </div>
             </div>
         );
@@ -297,11 +297,11 @@ export const InstructorAssignmentsPage = () => {
     // Error state
     if (error) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 min-h-screen">
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
                 <div className="text-center py-12">
                     <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-                    <h3 className="text-[20px] font-semibold text-gray-900 mb-2">Failed to load assignments</h3>
-                    <p className="text-gray-600 mb-4">{handleApiError(error).message}</p>
+                    <h3 className="text-[20px] font-semibold text-gray-900 dark:text-zinc-100 mb-2">Failed to load assignments</h3>
+                    <p className="text-gray-600 dark:text-zinc-400 mb-4">{handleApiError(error).message}</p>
                     <button
                         onClick={() => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.INSTRUCTOR_ASSIGNMENTS })}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
@@ -314,15 +314,15 @@ export const InstructorAssignmentsPage = () => {
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h1 className="text-[30px] font-bold leading-[36px] text-gray-900">
+                        <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-zinc-100">
                             Assignment Management
                         </h1>
-                        <p className="text-[16px] leading-[24px] text-gray-600 mt-1">
+                        <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400 mt-1">
                             Create and manage assignments for your courses
                         </p>
                     </div>
@@ -344,14 +344,14 @@ export const InstructorAssignmentsPage = () => {
                                 <CardContent className="p-6">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-[14px] font-medium text-gray-600 mb-1">
+                                            <p className="text-[14px] font-medium text-gray-600 dark:text-zinc-400 mb-1">
                                                 {stat.label}
                                             </p>
-                                            <p className="text-[24px] font-bold text-gray-900">
+                                            <p className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">
                                                 {stat.value}
                                             </p>
                                         </div>
-                                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                                        <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
                                             <IconComponent className={`w-6 h-6 ${stat.color}`} />
                                         </div>
                                     </div>
@@ -369,7 +369,7 @@ export const InstructorAssignmentsPage = () => {
                                 <select
                                     value={selectedCourse}
                                     onChange={(e) => setSelectedCourse(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="all">All Courses</option>
                                     <option value="CS101">CS101 - Introduction to Programming</option>
@@ -381,7 +381,7 @@ export const InstructorAssignmentsPage = () => {
                                 <select
                                     value={selectedStatus}
                                     onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="all">All Status</option>
                                     <option value="draft">Draft</option>
@@ -406,7 +406,7 @@ export const InstructorAssignmentsPage = () => {
                                         {/* Assignment Info */}
                                         <div className="flex-1">
                                             <div className="flex items-start justify-between mb-3">
-                                                <h3 className="text-[18px] font-bold text-gray-900 flex-1">
+                                                <h3 className="text-[18px] font-bold text-gray-900 dark:text-zinc-100 flex-1">
                                                     {assignment.title}
                                                 </h3>
                                                 <div className="flex items-center gap-2 ml-4">
@@ -418,27 +418,27 @@ export const InstructorAssignmentsPage = () => {
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                     <Calendar className="w-4 h-4" />
                                                     <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                     <Users className="w-4 h-4" />
                                                     <span>{assignment.submissions} submissions</span>
                                                 </div>
                                             </div>
 
-                                            <p className="text-[14px] text-gray-700 mb-3">
+                                            <p className="text-[14px] text-gray-700 dark:text-zinc-300 mb-3">
                                                 {assignment.description}
                                             </p>
 
                                             {/* Progress Bar */}
                                             <div className="mb-3">
-                                                <div className="flex justify-between text-[12px] text-gray-600 mb-1">
+                                                <div className="flex justify-between text-[12px] text-gray-600 dark:text-zinc-400 mb-1">
                                                     <span>Grading Progress</span>
                                                     <span>{assignment.graded}/{assignment.submissions}</span>
                                                 </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2">
                                                     <div
                                                         className="bg-blue-600 h-2 rounded-full"
                                                         style={{ width: `${assignment.submissions > 0 ? (assignment.graded / assignment.submissions) * 100 : 0}%` }}
@@ -460,14 +460,14 @@ export const InstructorAssignmentsPage = () => {
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => openEdit(assignment)}
-                                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1"
+                                                    className="flex-1 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1"
                                                 >
                                                     <Edit className="w-3 h-3" />
                                                     Edit
                                                 </button>
                                                 <button
                                                     onClick={() => exportAssignment(assignment)}
-                                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1"
+                                                    className="flex-1 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors flex items-center justify-center gap-1"
                                                 >
                                                     <Download className="w-3 h-3" />
                                                     Export
@@ -484,15 +484,15 @@ export const InstructorAssignmentsPage = () => {
                 {/* Submissions Modal */}
                 {selectedAssignment && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-                            <div className="p-6 border-b border-gray-200">
+                        <div className="bg-white dark:bg-zinc-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                            <div className="p-6 border-b border-gray-200 dark:border-zinc-700">
                                 <div className="flex justify-between items-center">
-                                    <h2 className="text-[20px] font-bold text-gray-900">
+                                    <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">
                                         Submissions for {selectedAssignment.title}
                                     </h2>
                                     <button
                                         onClick={() => setSelectedAssignment(null)}
-                                        className="text-gray-400 hover:text-gray-600"
+                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300"
                                     >
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -519,10 +519,10 @@ export const InstructorAssignmentsPage = () => {
                                                                     </span>
                                                                 </div>
                                                                 <div>
-                                                                    <p className="text-[14px] font-medium text-gray-900">
+                                                                    <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">
                                                                         {submission.studentName}
                                                                     </p>
-                                                                    <p className="text-[12px] text-gray-600">
+                                                                    <p className="text-[12px] text-gray-600 dark:text-zinc-400">
                                                                         {submission.studentEmail}
                                                                     </p>
                                                                 </div>
@@ -532,7 +532,7 @@ export const InstructorAssignmentsPage = () => {
                                                                 </span>
                                                             </div>
 
-                                                            <div className="flex items-center gap-4 text-[12px] text-gray-600 mb-2">
+                                                            <div className="flex items-center gap-4 text-[12px] text-gray-600 dark:text-zinc-400 mb-2">
                                                                 <span>Submitted: {new Date(submission.submittedAt).toLocaleString()}</span>
                                                                 {submission.grade && (
                                                                     <span className="font-semibold text-green-600">
@@ -542,7 +542,7 @@ export const InstructorAssignmentsPage = () => {
                                                             </div>
 
                                                             {submission.feedback && (
-                                                                <p className="text-[12px] text-gray-700 bg-gray-50 p-2 rounded">
+                                                                <p className="text-[12px] text-gray-700 dark:text-zinc-300 bg-gray-50 dark:bg-zinc-800 p-2 rounded">
                                                                     Feedback: {submission.feedback}
                                                                 </p>
                                                             )}
@@ -570,7 +570,7 @@ export const InstructorAssignmentsPage = () => {
                                                             </button>
                                                             <button
                                                                 onClick={() => downloadText(`submission-${submission.id}.txt`, submission.attachments.join('\n') || 'No attachments')}
-                                                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors"
+                                                                className="bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[12px] px-3 py-2 rounded-lg transition-colors"
                                                             >
                                                                 Download
                                                             </button>
@@ -589,11 +589,11 @@ export const InstructorAssignmentsPage = () => {
                 {/* Empty State */}
                 {filteredAssignments.length === 0 && (
                     <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
                             <FileText className="w-8 h-8 text-gray-400" />
                         </div>
-                        <h3 className="text-[20px] font-semibold text-gray-900 mb-2">No assignments found</h3>
-                        <p className="text-gray-600 mb-6">Create your first assignment to get started</p>
+                        <h3 className="text-[20px] font-semibold text-gray-900 dark:text-zinc-100 mb-2">No assignments found</h3>
+                        <p className="text-gray-600 dark:text-zinc-400 mb-6">Create your first assignment to get started</p>
                         <button
                             onClick={openCreate}
                             className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
@@ -606,25 +606,25 @@ export const InstructorAssignmentsPage = () => {
             {/* Create Assignment Modal Placeholder */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                        <h2 className="text-xl font-bold mb-4">{editingAssignment ? 'Edit Assignment' : 'Create Assignment'}</h2>
+                    <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-md w-full">
+                        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-zinc-100">{editingAssignment ? 'Edit Assignment' : 'Create Assignment'}</h2>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Title</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Title</label>
                                 <input
                                     value={assignmentForm.title}
                                     onChange={(e) => setAssignmentForm((p) => ({ ...p, title: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Course</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Course</label>
                                 <select
                                     value={assignmentForm.course}
                                     onChange={(e) => setAssignmentForm((p) => ({ ...p, course: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     {courseOptions.map((c) => (
                                         <option key={c} value={c}>
@@ -635,23 +635,23 @@ export const InstructorAssignmentsPage = () => {
                             </div>
 
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Due Date</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Due Date</label>
                                 <input
                                     type="date"
                                     value={assignmentForm.dueDate}
                                     onChange={(e) => setAssignmentForm((p) => ({ ...p, dueDate: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Status</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Status</label>
                                 <select
                                     value={assignmentForm.status}
                                     onChange={(e) =>
                                         setAssignmentForm((p) => ({ ...p, status: e.target.value as Assignment['status'] }))
                                     }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="draft">Draft</option>
                                     <option value="published">Published</option>
@@ -660,12 +660,12 @@ export const InstructorAssignmentsPage = () => {
                             </div>
 
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Description</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Description</label>
                                 <textarea
                                     rows={3}
                                     value={assignmentForm.description}
                                     onChange={(e) => setAssignmentForm((p) => ({ ...p, description: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
                         </div>
@@ -676,7 +676,7 @@ export const InstructorAssignmentsPage = () => {
                                     setShowCreateModal(false);
                                     setEditingAssignmentId(null);
                                 }}
-                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors"
+                                className="flex-1 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium px-4 py-2 rounded-lg transition-colors"
                             >
                                 Cancel
                             </button>

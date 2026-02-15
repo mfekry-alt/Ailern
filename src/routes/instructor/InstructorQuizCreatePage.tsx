@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui/Card';
 import { ArrowLeft, Save } from 'lucide-react';
 
 export const InstructorQuizCreatePage = () => {
@@ -45,7 +45,7 @@ export const InstructorQuizCreatePage = () => {
     // Page 1: Settings
     if (step === 1) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
                 <div className="max-w-4xl mx-auto">
                     <Card variant="elevated">
                         <CardContent className="p-6">
@@ -53,12 +53,12 @@ export const InstructorQuizCreatePage = () => {
                                 {/* Header */}
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h1 className="text-[30px] font-bold text-gray-900 mb-2">Create New Quiz</h1>
-                                        <p className="text-[16px] text-gray-600">Step 1 of 2: Quiz Settings</p>
+                                        <h1 className="text-[30px] font-bold text-gray-900 dark:text-zinc-100 mb-2">Create New Quiz</h1>
+                                        <p className="text-[16px] text-gray-600 dark:text-zinc-400">Step 1 of 2: Quiz Settings</p>
                                     </div>
                                     <button
                                         onClick={handleBack}
-                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors"
                                     >
                                         <ArrowLeft className="w-4 h-4" />
                                         Back
@@ -73,7 +73,7 @@ export const InstructorQuizCreatePage = () => {
 
                                 {/* Quiz Title */}
                                 <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                         Quiz Title <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -81,13 +81,13 @@ export const InstructorQuizCreatePage = () => {
                                         placeholder="e.g., Midterm Exam - Chapter 1-5"
                                         value={quizSettings.title}
                                         onChange={(e) => setQuizSettings({ ...quizSettings, title: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                     />
                                 </div>
 
                                 {/* Description */}
                                 <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                         Description
                                     </label>
                                     <textarea
@@ -95,14 +95,14 @@ export const InstructorQuizCreatePage = () => {
                                         placeholder="Provide instructions and information about this quiz..."
                                         value={quizSettings.description}
                                         onChange={(e) => setQuizSettings({ ...quizSettings, description: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] resize-none"
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] resize-none bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                     />
                                 </div>
 
                                 {/* Duration and Attempts */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Duration (minutes) <span className="text-red-500">*</span>
                                         </label>
                                         <input
@@ -110,11 +110,11 @@ export const InstructorQuizCreatePage = () => {
                                             min="1"
                                             value={quizSettings.duration}
                                             onChange={(e) => setQuizSettings({ ...quizSettings, duration: parseInt(e.target.value) || 30 })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Attempts Allowed <span className="text-red-500">*</span>
                                         </label>
                                         <input
@@ -122,18 +122,18 @@ export const InstructorQuizCreatePage = () => {
                                             min="1"
                                             value={quizSettings.attemptsAllowed}
                                             onChange={(e) => setQuizSettings({ ...quizSettings, attemptsAllowed: parseInt(e.target.value) || 1 })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Publish Options */}
                                 <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 mb-3">
+                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-3">
                                         Publish Options
                                     </label>
                                     <div className="space-y-3">
-                                        <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50">
+                                        <label className="flex items-center gap-3 p-3 border-2 dark:border-zinc-700 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800">
                                             <input
                                                 type="radio"
                                                 name="publishOption"
@@ -143,12 +143,12 @@ export const InstructorQuizCreatePage = () => {
                                                 className="w-4 h-4 text-blue-600"
                                             />
                                             <div className="flex-1">
-                                                <div className="font-medium text-[14px] text-gray-900">Save as Draft</div>
-                                                <div className="text-[12px] text-gray-600">Quiz will not be visible to students</div>
+                                                <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">Save as Draft</div>
+                                                <div className="text-[12px] text-gray-600 dark:text-zinc-400">Quiz will not be visible to students</div>
                                             </div>
                                         </label>
 
-                                        <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50">
+                                        <label className="flex items-center gap-3 p-3 border-2 dark:border-zinc-700 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800">
                                             <input
                                                 type="radio"
                                                 name="publishOption"
@@ -158,12 +158,12 @@ export const InstructorQuizCreatePage = () => {
                                                 className="w-4 h-4 text-blue-600"
                                             />
                                             <div className="flex-1">
-                                                <div className="font-medium text-[14px] text-gray-900">Publish Immediately</div>
-                                                <div className="text-[12px] text-gray-600">Quiz will be available to students right away</div>
+                                                <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">Publish Immediately</div>
+                                                <div className="text-[12px] text-gray-600 dark:text-zinc-400">Quiz will be available to students right away</div>
                                             </div>
                                         </label>
 
-                                        <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50">
+                                        <label className="flex items-center gap-3 p-3 border-2 dark:border-zinc-700 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800">
                                             <input
                                                 type="radio"
                                                 name="publishOption"
@@ -173,8 +173,8 @@ export const InstructorQuizCreatePage = () => {
                                                 className="w-4 h-4 text-blue-600"
                                             />
                                             <div className="flex-1">
-                                                <div className="font-medium text-[14px] text-gray-900">Schedule</div>
-                                                <div className="text-[12px] text-gray-600">Set start and end dates for the quiz</div>
+                                                <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">Schedule</div>
+                                                <div className="text-[12px] text-gray-600 dark:text-zinc-400">Set start and end dates for the quiz</div>
                                             </div>
                                         </label>
                                     </div>
@@ -182,37 +182,37 @@ export const InstructorQuizCreatePage = () => {
 
                                 {/* Schedule Dates */}
                                 {quizSettings.publishOption === 'scheduled' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                                         <div>
-                                            <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                                 Start Date & Time
                                             </label>
                                             <input
                                                 type="datetime-local"
                                                 value={quizSettings.scheduledStart}
                                                 onChange={(e) => setQuizSettings({ ...quizSettings, scheduledStart: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                                 End Date & Time
                                             </label>
                                             <input
                                                 type="datetime-local"
                                                 value={quizSettings.scheduledEnd}
                                                 onChange={(e) => setQuizSettings({ ...quizSettings, scheduledEnd: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                             />
                                         </div>
                                     </div>
                                 )}
 
                                 {/* Action Buttons */}
-                                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-700">
                                     <button
                                         onClick={handleSaveDraft}
-                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] rounded-lg transition-colors"
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors"
                                     >
                                         <Save className="w-4 h-4" />
                                         Save Draft
@@ -235,12 +235,12 @@ export const InstructorQuizCreatePage = () => {
     // Page 2: Question Builder will be in a separate component
     // For now, redirect to a placeholder or show message
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             <div className="max-w-4xl mx-auto">
                 <Card variant="elevated">
                     <CardContent className="p-6">
-                        <p className="text-center text-gray-600">Question Builder will be implemented next...</p>
-                        <button onClick={() => setStep(1)} className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                        <p className="text-center text-gray-600 dark:text-zinc-400">Question Builder will be implemented next...</p>
+                        <button onClick={() => setStep(1)} className="mt-4 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-zinc-100 rounded-lg">
                             Back to Settings
                         </button>
                     </CardContent>

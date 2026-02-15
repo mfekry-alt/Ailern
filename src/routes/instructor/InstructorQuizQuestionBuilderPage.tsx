@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui/Card';
 import { ArrowLeft, Plus, Trash2, Save, CheckCircle2 } from 'lucide-react';
 
 type QuestionType = 'MCQ' | 'TF' | 'Written';
@@ -20,7 +20,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [statusMessage, setStatusMessage] = useState<string>('');
-    
+
     // Get quiz settings from previous step (in real app, this would come from state/API)
     const quizSettings = location.state?.quizSettings || {
         title: 'New Quiz',
@@ -133,7 +133,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             <div className="max-w-5xl mx-auto">
                 <Card variant="elevated">
                     <CardContent className="p-6">
@@ -141,14 +141,14 @@ export const InstructorQuizQuestionBuilderPage = () => {
                             {/* Header */}
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h1 className="text-[30px] font-bold text-gray-900 mb-2">Question Builder</h1>
-                                    <p className="text-[16px] text-gray-600">
+                                    <h1 className="text-[30px] font-bold text-gray-900 dark:text-zinc-100 mb-2">Question Builder</h1>
+                                    <p className="text-[16px] text-gray-600 dark:text-zinc-400">
                                         Step 2 of 2: Add questions to "{quizSettings.title}"
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => navigate(-1)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors"
                                 >
                                     <ArrowLeft className="w-4 h-4" />
                                     Back
@@ -156,11 +156,10 @@ export const InstructorQuizQuestionBuilderPage = () => {
                             </div>
 
                             {statusMessage && (
-                                <div className={`p-4 rounded-lg ${
-                                    statusMessage.includes('success') || statusMessage.includes('saved')
-                                        ? 'bg-green-50 border border-green-200 text-green-800'
-                                        : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
-                                }`}>
+                                <div className={`p-4 rounded-lg ${statusMessage.includes('success') || statusMessage.includes('saved')
+                                    ? 'bg-green-50 border border-green-200 text-green-800'
+                                    : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
+                                    }`}>
                                     <p className="text-sm">{statusMessage}</p>
                                 </div>
                             )}
@@ -168,9 +167,9 @@ export const InstructorQuizQuestionBuilderPage = () => {
                             {/* Questions List */}
                             <div className="space-y-6">
                                 {questions.map((question, index) => (
-                                    <div key={question.id} className="p-6 border border-gray-200 rounded-lg bg-white">
+                                    <div key={question.id} className="p-6 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900">
                                         <div className="flex items-start justify-between mb-4">
-                                            <h3 className="text-[18px] font-semibold text-gray-900">
+                                            <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">
                                                 Question {index + 1}
                                             </h3>
                                             {questions.length > 1 && (
@@ -185,7 +184,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                                         {/* Question Type */}
                                         <div className="mb-4">
-                                            <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                                 Question Type
                                             </label>
                                             <select
@@ -197,7 +196,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                                         correctAnswer: e.target.value === 'TF' ? true : undefined,
                                                     })
                                                 }
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                             >
                                                 <option value="MCQ">Multiple Choice (MCQ)</option>
                                                 <option value="TF">True/False</option>
@@ -207,7 +206,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                                         {/* Question Text */}
                                         <div className="mb-4">
-                                            <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                                 Question Text <span className="text-red-500">*</span>
                                             </label>
                                             <textarea
@@ -215,13 +214,13 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                                 placeholder="Enter your question here..."
                                                 value={question.text}
                                                 onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] resize-none"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] resize-none bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                             />
                                         </div>
 
                                         {/* Points */}
                                         <div className="mb-4">
-                                            <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                                 Points <span className="text-red-500">*</span>
                                             </label>
                                             <input
@@ -231,7 +230,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                                 onChange={(e) =>
                                                     updateQuestion(question.id, { points: parseInt(e.target.value) || 1 })
                                                 }
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                             />
                                         </div>
 
@@ -239,7 +238,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                         {question.type === 'MCQ' && (
                                             <div className="mb-4">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <label className="block text-[14px] font-medium text-gray-700">
+                                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300">
                                                         Options <span className="text-red-500">*</span>
                                                     </label>
                                                     <button
@@ -264,7 +263,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                                                 placeholder={`Option ${optIndex + 1}`}
                                                                 value={option}
                                                                 onChange={(e) => updateOption(question.id, optIndex, e.target.value)}
-                                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px]"
+                                                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                                             />
                                                             {question.options && question.options.length > 2 && (
                                                                 <button
@@ -283,18 +282,17 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                         {/* True/False Options */}
                                         {question.type === 'TF' && (
                                             <div className="mb-4">
-                                                <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                                     Correct Answer <span className="text-red-500">*</span>
                                                 </label>
                                                 <div className="space-y-2">
                                                     {[true, false].map((value) => (
                                                         <label
                                                             key={String(value)}
-                                                            className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                                                                question.correctAnswer === value
-                                                                    ? 'border-blue-500 bg-blue-50'
-                                                                    : 'border-gray-200 hover:border-gray-300'
-                                                            }`}
+                                                            className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${question.correctAnswer === value
+                                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                                : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600'
+                                                                }`}
                                                         >
                                                             <input
                                                                 type="radio"
@@ -303,7 +301,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                                                 onChange={() => updateQuestion(question.id, { correctAnswer: value })}
                                                                 className="w-4 h-4 text-blue-600"
                                                             />
-                                                            <span className="text-[14px] text-gray-900">{value ? 'True' : 'False'}</span>
+                                                            <span className="text-[14px] text-gray-900 dark:text-zinc-100">{value ? 'True' : 'False'}</span>
                                                         </label>
                                                     ))}
                                                 </div>
@@ -321,7 +319,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                                         {/* Explanation (Optional) */}
                                         <div>
-                                            <label className="block text-[14px] font-medium text-gray-700 mb-2">
+                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                                 Explanation (Optional)
                                             </label>
                                             <textarea
@@ -329,7 +327,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                                 placeholder="Provide an explanation for the correct answer..."
                                                 value={question.explanation || ''}
                                                 onChange={(e) => updateQuestion(question.id, { explanation: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] resize-none"
+                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] resize-none bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                             />
                                         </div>
                                     </div>
@@ -339,17 +337,17 @@ export const InstructorQuizQuestionBuilderPage = () => {
                             {/* Add Question Button */}
                             <button
                                 onClick={addQuestion}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-[14px] font-medium text-gray-700"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors text-[14px] font-medium text-gray-700 dark:text-zinc-300"
                             >
                                 <Plus className="w-5 h-5" />
                                 Add More Questions
                             </button>
 
                             {/* Action Buttons */}
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                            <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-700">
                                 <button
                                     onClick={() => handleSaveQuiz(false)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors"
                                 >
                                     <Save className="w-4 h-4" />
                                     Save Draft
@@ -357,7 +355,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => navigate(-1)}
-                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] rounded-lg transition-colors"
+                                        className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors"
                                     >
                                         Back
                                     </button>

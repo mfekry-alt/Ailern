@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui/Card';
 import { ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
 const dropIcon = '/drop.svg';
 import { ROUTES } from '@/lib/constants';
@@ -125,10 +125,10 @@ export const MyCoursesPage = () => {
 
     if (isLoading) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto flex items-center justify-center min-h-[50vh]" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto flex items-center justify-center min-h-[50vh] bg-gray-50 dark:bg-zinc-950">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-gray-600">Loading your courses...</p>
+                    <p className="text-gray-600 dark:text-zinc-400">Loading your courses...</p>
                 </div>
             </div>
         );
@@ -136,24 +136,24 @@ export const MyCoursesPage = () => {
 
     if (error) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
                 <div className="text-center py-12">
-                    <p className="text-red-600 mb-4">{handleApiError(error).message}</p>
-                    <p className="text-gray-600">Could not load your courses. Please try again later.</p>
+                    <p className="text-red-600 dark:text-red-400 mb-4">{handleApiError(error).message}</p>
+                    <p className="text-gray-600 dark:text-zinc-400">Could not load your courses. Please try again later.</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="space-y-1 animate-fade-in">
-                    <h1 className="text-[30px] font-bold leading-[36px] text-gray-900">
+                    <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-zinc-100">
                         Hi, {user?.firstName || 'Student'}!
                     </h1>
-                    <p className="text-[16px] leading-[24px] text-gray-600">
+                    <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400">
                         Course overview.
                     </p>
                 </div>
@@ -170,14 +170,7 @@ export const MyCoursesPage = () => {
                                     placeholder="Search courses..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    style={{
-                                        width: '256px',
-                                        padding: '11px 17px 11px 41px',
-                                        borderRadius: '6px',
-                                        border: '1px solid #D1D5DB',
-                                        background: '#FFF'
-                                    }}
+                                    className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-[256px] py-[11px] px-[17px] pl-[41px] rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
                                 />
                             </div>
 
@@ -189,30 +182,19 @@ export const MyCoursesPage = () => {
                                             setShowFilterDropdown(!showFilterDropdown);
                                             setShowSortDropdown(false);
                                         }}
-                                        className="bg-white hover:bg-gray-50 text-gray-700 font-medium text-[14px] transition-colors"
-                                        style={{
-                                            width: '137px',
-                                            height: '42px',
-                                            padding: '9px 17px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            flexShrink: 0,
-                                            borderRadius: '6px',
-                                            border: '1px solid var(--grey-46, #6b7280)'
-                                        }}
+                                        className="bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-medium text-[14px] transition-colors w-[137px] h-[42px] px-[17px] py-[9px] flex items-center justify-between shrink-0 rounded-md border border-gray-500 dark:border-zinc-600"
                                     >
                                         <span>{filterOption}</span>
                                         <img src={dropIcon} alt="dropdown" className="w-5 h-5" />
                                     </button>
                                     {showFilterDropdown && (
-                                        <div className="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[200px] animate-dropdown">
+                                        <div className="absolute top-full left-0 mt-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[200px] animate-dropdown">
                                             <button
                                                 onClick={() => {
                                                     setFilterOption('All');
                                                     setShowFilterDropdown(false);
                                                 }}
-                                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm ${filterOption === 'All' ? 'bg-blue-50' : ''
+                                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm ${filterOption === 'All' ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                                                     }`}
                                             >
                                                 All
@@ -222,7 +204,7 @@ export const MyCoursesPage = () => {
                                                     setFilterOption('In Progress');
                                                     setShowFilterDropdown(false);
                                                 }}
-                                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm ${filterOption === 'In Progress' ? 'bg-blue-50' : ''
+                                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm ${filterOption === 'In Progress' ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                                                     }`}
                                             >
                                                 In Progress
@@ -232,7 +214,7 @@ export const MyCoursesPage = () => {
                                                     setFilterOption('Completed');
                                                     setShowFilterDropdown(false);
                                                 }}
-                                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm ${filterOption === 'Completed' ? 'bg-blue-50' : ''
+                                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm ${filterOption === 'Completed' ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                                                     }`}
                                             >
                                                 Completed
@@ -242,7 +224,7 @@ export const MyCoursesPage = () => {
                                                     setFilterOption('Not Started');
                                                     setShowFilterDropdown(false);
                                                 }}
-                                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm ${filterOption === 'Not Started' ? 'bg-blue-50' : ''
+                                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm ${filterOption === 'Not Started' ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                                                     }`}
                                             >
                                                 Not Started
@@ -257,30 +239,19 @@ export const MyCoursesPage = () => {
                                             setShowSortDropdown(!showSortDropdown);
                                             setShowFilterDropdown(false);
                                         }}
-                                        className="bg-white hover:bg-gray-50 text-gray-700 font-medium text-[14px] transition-colors"
-                                        style={{
-                                            width: '137px',
-                                            height: '42px',
-                                            padding: '9px 17px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            flexShrink: 0,
-                                            borderRadius: '6px',
-                                            border: '1px solid var(--grey-46, #6b7280)'
-                                        }}
+                                        className="bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-medium text-[14px] transition-colors w-[137px] h-[42px] px-[17px] py-[9px] flex items-center justify-between shrink-0 rounded-md border border-gray-500 dark:border-zinc-600"
                                     >
                                         <span>Sort by</span>
                                         <img src={dropIcon} alt="dropdown" className="w-5 h-5" />
                                     </button>
                                     {showSortDropdown && (
-                                        <div className="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[200px] animate-dropdown">
+                                        <div className="absolute top-full left-0 mt-2 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[200px] animate-dropdown">
                                             <button
                                                 onClick={() => {
                                                     setSortOption('title-asc');
                                                     setShowSortDropdown(false);
                                                 }}
-                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
+                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm"
                                             >
                                                 Title (A-Z)
                                             </button>
@@ -289,7 +260,7 @@ export const MyCoursesPage = () => {
                                                     setSortOption('title-desc');
                                                     setShowSortDropdown(false);
                                                 }}
-                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
+                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm"
                                             >
                                                 Title (Z-A)
                                             </button>
@@ -298,7 +269,7 @@ export const MyCoursesPage = () => {
                                                     setSortOption('progress-desc');
                                                     setShowSortDropdown(false);
                                                 }}
-                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
+                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm"
                                             >
                                                 Progress (High to Low)
                                             </button>
@@ -307,7 +278,7 @@ export const MyCoursesPage = () => {
                                                     setSortOption('progress-asc');
                                                     setShowSortDropdown(false);
                                                 }}
-                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
+                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm"
                                             >
                                                 Progress (Low to High)
                                             </button>
@@ -316,7 +287,7 @@ export const MyCoursesPage = () => {
                                                     setSortOption('instructor-asc');
                                                     setShowSortDropdown(false);
                                                 }}
-                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700 text-sm"
+                                                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm"
                                             >
                                                 Instructor (A-Z)
                                             </button>
@@ -325,12 +296,12 @@ export const MyCoursesPage = () => {
                                 </div>
 
                                 {/* View Toggle */}
-                                <div className="flex bg-gray-100 rounded-lg p-1">
+                                <div className="flex bg-gray-100 dark:bg-zinc-800 rounded-lg p-1">
                                     <button
                                         onClick={() => setViewMode('grid')}
                                         className={`p-2 rounded-md transition-colors ${viewMode === 'grid'
-                                            ? 'bg-white shadow-sm text-blue-600'
-                                            : 'text-gray-600 hover:text-gray-800'
+                                            ? 'bg-white dark:bg-zinc-700 shadow-sm text-blue-600'
+                                            : 'text-gray-600 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'
                                             }`}
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,8 +311,8 @@ export const MyCoursesPage = () => {
                                     <button
                                         onClick={() => setViewMode('list')}
                                         className={`p-2 rounded-md transition-colors ${viewMode === 'list'
-                                            ? 'bg-white shadow-sm text-blue-600'
-                                            : 'text-gray-600 hover:text-gray-800'
+                                            ? 'bg-white dark:bg-zinc-700 shadow-sm text-blue-600'
+                                            : 'text-gray-600 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'
                                             }`}
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -370,7 +341,7 @@ export const MyCoursesPage = () => {
                                     }
                                 }
                             })}
-                            className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl transition-all card-hover animate-scale-up cursor-pointer"
+                            className="bg-white dark:bg-zinc-900 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-800 overflow-hidden hover:shadow-xl transition-all card-hover animate-scale-up cursor-pointer"
                             style={{ animationDelay: `${(index % 3) * 0.1}s` }}
                         >
                             <div className="relative">
@@ -378,20 +349,20 @@ export const MyCoursesPage = () => {
                                     className="aspect-video rounded-t-lg relative"
                                     style={{ background: course.backgroundImage }}
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent"></div>
                                 </div>
                             </div>
                             <div className="p-4">
-                                <h3 className="text-[18px] font-bold text-gray-900 mb-1 leading-[28px]">
+                                <h3 className="text-[18px] font-bold text-gray-900 dark:text-zinc-100 mb-1 leading-[28px]">
                                     {course.title}
                                 </h3>
-                                <p className="text-[14px] leading-[20px] text-gray-600 mb-3">
+                                <p className="text-[14px] leading-[20px] text-gray-600 dark:text-zinc-400 mb-3">
                                     {course.instructor}
                                 </p>
 
                                 {/* Progress Bar */}
                                 <div className="mb-2">
-                                    <div className="bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-gray-200 dark:bg-zinc-700 h-1.5 rounded-full overflow-hidden">
                                         <div
                                             className={`h-full rounded-full ${course.progressColor}`}
                                             style={{ width: `${course.progress}%` }}
@@ -410,7 +381,7 @@ export const MyCoursesPage = () => {
                 {/* Empty State */}
                 {sortedCourses.length === 0 && (
                     <div className="text-center py-12">
-                        <p className="text-gray-600">
+                        <p className="text-gray-600 dark:text-zinc-400">
                             No courses found matching your search criteria.
                         </p>
                     </div>
@@ -422,9 +393,9 @@ export const MyCoursesPage = () => {
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1}
-                            className={`p-2 rounded-md transition-colors ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
+                            className={`p-2 rounded-md transition-colors ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
                         >
-                            <ChevronLeft className="w-5 h-5 text-gray-600" />
+                            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
                         </button>
 
                         {/* Show page numbers */}
@@ -441,7 +412,7 @@ export const MyCoursesPage = () => {
                                         onClick={() => setCurrentPage(page)}
                                         className={`px-4 py-2 rounded-md font-medium transition-colors ${currentPage === page
                                             ? 'bg-blue-600 text-white'
-                                            : 'text-gray-600 hover:bg-gray-100'
+                                            : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
                                             }`}
                                     >
                                         {page}
@@ -452,7 +423,7 @@ export const MyCoursesPage = () => {
                                 page === currentPage + 2
                             ) {
                                 return (
-                                    <span key={page} className="px-4 py-2 text-gray-600">
+                                    <span key={page} className="px-4 py-2 text-gray-600 dark:text-zinc-400">
                                         ...
                                     </span>
                                 );
@@ -463,9 +434,9 @@ export const MyCoursesPage = () => {
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                             disabled={currentPage === totalPages}
-                            className={`p-2 rounded-md transition-colors ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
+                            className={`p-2 rounded-md transition-colors ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-zinc-800'}`}
                         >
-                            <ChevronRight className="w-5 h-5 text-gray-600" />
+                            <ChevronRight className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
                         </button>
                     </div>
                 )}

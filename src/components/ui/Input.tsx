@@ -16,7 +16,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 {label && (
                     <label
                         htmlFor={inputId}
-                        className="block text-sm font-medium text-secondary-700 mb-1.5"
+                        className="block text-sm font-medium text-secondary-700 dark:text-zinc-300 mb-1.5"
                     >
                         {label}
                         {props.required && <span className="text-danger-600 ml-1">*</span>}
@@ -26,11 +26,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                     ref={ref}
                     id={inputId}
                     className={cn(
-                        'block w-full rounded-lg border-secondary-300 shadow-sm',
+                        'block w-full rounded-lg border-secondary-300 dark:border-zinc-700 shadow-sm',
                         'focus:border-primary-500 focus:ring-primary-500',
                         'disabled:bg-secondary-50 disabled:text-secondary-500 disabled:cursor-not-allowed',
-                        'placeholder:text-secondary-400',
-                        'text-secondary-900',
+                        'placeholder:text-secondary-400 dark:placeholder:text-zinc-500',
+                        'text-secondary-900 dark:text-zinc-100 dark:bg-zinc-900',
                         error && 'border-danger-500 focus:border-danger-500 focus:ring-danger-500',
                         className
                     )}
@@ -39,12 +39,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                     {...props}
                 />
                 {error && (
-                    <p id={`${inputId}-error`} className="mt-1.5 text-sm text-danger-600">
+                    <p id={`${inputId}-error`} className="mt-1.5 text-sm text-danger-600 dark:text-danger-500">
                         {error}
                     </p>
                 )}
                 {helperText && !error && (
-                    <p id={`${inputId}-helper`} className="mt-1.5 text-sm text-secondary-500">
+                    <p id={`${inputId}-helper`} className="mt-1.5 text-sm text-secondary-500 dark:text-zinc-400">
                         {helperText}
                     </p>
                 )}

@@ -21,26 +21,68 @@ import {
     Moon,
     Sun,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDarkMode } from '@/contexts/DarkModeContext';
+
+// --- Animated Words List ---
+const ANIMATED_WORDS = ['Intelligently.', 'Securely.', 'Reliably.'];
 
 export const HomePage = () => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { isDarkMode, toggleDarkMode } = useDarkMode();
 
+    // --- Typewriter Effect State ---
+    const [text, setText] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [loopNum, setLoopNum] = useState(0);
+    const [typingSpeed, setTypingSpeed] = useState(150);
+
+    // --- Typewriter Effect Logic ---
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const i = loopNum % ANIMATED_WORDS.length;
+            const fullText = ANIMATED_WORDS[i];
+
+            if (isDeleting) {
+                // Deleting text
+                setText(fullText.substring(0, text.length - 1));
+                setTypingSpeed(50); // Faster deletion speed
+            } else {
+                // Typing text
+                setText(fullText.substring(0, text.length + 1));
+                setTypingSpeed(100); // Normal typing speed
+            }
+
+            // Word is fully typed out -> Pause, then start deleting
+            if (!isDeleting && text === fullText) {
+                setTypingSpeed(2500); // Wait 2.5 seconds before deleting
+                setIsDeleting(true);
+            }
+            // Word is fully deleted -> Move to next word, pause, start typing
+            else if (isDeleting && text === '') {
+                setIsDeleting(false);
+                setLoopNum(loopNum + 1);
+                setTypingSpeed(500); // Wait 0.5 seconds before typing next word
+            }
+        }, typingSpeed);
+
+        return () => clearTimeout(timer);
+    }, [text, isDeleting, loopNum, typingSpeed]);
+
     const toggleFaq = (index: number) => {
         setOpenFaq(openFaq === index ? null : index);
     };
 
     return (
-        <div className="bg-white text-slate-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300">
+        <div className="bg-white text-white-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-300">
             {/* Navigation */}
             <nav className="fixed w-full z-50 bg-white/60 dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-20 items-center">
                         <div className="flex items-center gap-2.5">
-                            <img src="/logo.svg" alt={`${APP_NAME} logo`} className="w-[150px]" />
+                            <img src="/school.svg" alt={`${APP_NAME} logo`} className="w-[30px]" />
+                            <span className="text-xl font-bold text-gray-900 dark:text-white">{APP_NAME}</span>
                         </div>
                         <div className="hidden md:flex items-center space-x-8">
                             <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#features">
@@ -115,10 +157,16 @@ export const HomePage = () => {
                                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
                                 <span className="text-green-700 font-bold">v1.0 System Update Live</span>
                             </div>
-                            <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-slate-900 dark:text-white mb-6 leading-tight">
+
+                            {/* --- Typewriter Applied Here --- */}
+                            <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white-900 dark:text-white mb-6 leading-tight h-[90px] lg:h-[144px]">
                                 Manage Education <br />
-                                <span className="text-blue-700 dark:text-blue-500">Intelligently.</span>
+                                <span className="text-blue-700 dark:text-blue-500 inline-flex items-center">
+                                    {text}
+                                    <span className="w-1 md:w-1.5 h-[1em] bg-blue-700 dark:bg-blue-500 animate-pulse ml-1 inline-block rounded-sm"></span>
+                                </span>
                             </h1>
+
                             <p className="text-lg text-slate-600 mb-8 leading-relaxed">
                                 {APP_NAME} provides a comprehensive admin dashboard to oversee students, instructors, and course content with real-time analytics and seamless management tools.
                             </p>
@@ -139,7 +187,7 @@ export const HomePage = () => {
                                         className="w-8 h-8 rounded-full border-2 border-white"
                                         src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5dmtBZRb66qucKu029iPsuOYaj91I6UOFOaRS6h3NW-DmQaudAItmvPNE0lgmcq5YI4G_41m1QyGgajpngdhg353w_Y4_Sv5MQjxSqJhVQhXDETJ-ZgQbLhgxtXIscU0NXWEG4Il_NcM_mdflm66TiyIL_mygUYze8mFGpRYiNX9AWX04e85zdWFUP_kg8JM0KPHYDtk7DbMHUPrzuOXOHTbO_rJ1PFYOpZ3T1vN3UVwToMkqC-N318EUiVlIjSupdqYaLAVM4-M"
                                     />
-                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-xs font-bold">
+                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-xs font-bold text-gray-800">
                                         +2k
                                     </div>
                                 </div>
@@ -152,7 +200,7 @@ export const HomePage = () => {
                             <div className="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-6 transform  transition-transform duration-500 ease-out">
                                 <div className="flex justify-between items-center mb-8 border-b border-slate-100 dark:border-zinc-800 pb-4">
                                     <div>
-                                        <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100">System overview</h3>
+                                        <h3 className="text-xl font-bold text-white-900 dark:text-zinc-100">System overview</h3>
                                         <p className="text-xs text-slate-500 dark:text-zinc-400">Live staticts</p>
                                     </div>
                                     <div className="flex gap-2">
@@ -168,7 +216,7 @@ export const HomePage = () => {
                                                 <Users className="text-primary w-4 h-4" />
                                             </div>
                                         </div>
-                                        <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                        <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">0</div>
                                         <div className="text-xs text-green-500 dark:text-green-400 font-medium mt-1">+0% growth</div>
                                     </div>
                                     <div className="p-4 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800">
@@ -178,7 +226,7 @@ export const HomePage = () => {
                                                 <Bookmark className="text-purple-600 w-4 h-4" />
                                             </div>
                                         </div>
-                                        <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                        <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">0</div>
                                         <div className="text-xs text-green-500 dark:text-green-400 font-medium mt-1">+0% growth</div>
                                     </div>
                                 </div>
@@ -189,7 +237,7 @@ export const HomePage = () => {
                                                 JD
                                             </div>
                                             <div>
-                                                <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Machine Learning</div>
+                                                <div className="text-xs font-bold text-white-900 dark:text-zinc-100">Machine Learning</div>
                                                 <div className="text-[10px] text-slate-500 dark:text-zinc-400">Dr. Sarah Wilson</div>
                                             </div>
                                         </div>
@@ -201,19 +249,19 @@ export const HomePage = () => {
                                                 JS
                                             </div>
                                             <div>
-                                                <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">Data Structures</div>
+                                                <div className="text-xs font-bold text-white-900 dark:text-zinc-100">Data Structures</div>
                                                 <div className="text-[10px] text-slate-500 dark:text-zinc-400">Prof. John Smith</div>
                                             </div>
                                         </div>
                                         <span className="text-[10px] bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded-full">Pending</span>
                                     </div>
                                 </div>
-                                <div className="absolute -right-6 bottom-10 bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 flex items-center gap-3 animate-bounce duration-[3000ms]">
+                                <div className="absolute -right-6 bottom-10 bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 flex items-center gap-3 animate-bounce duration-3000">
                                     <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-full">
                                         <CheckCircle2 className="text-green-600 w-5 h-5" />
                                     </div>
                                     <div>
-                                        <div className="text-xs font-bold text-slate-900 dark:text-zinc-100">System Healthy</div>
+                                        <div className="text-xs font-bold text-white-900 dark:text-zinc-100">System Healthy</div>
                                         <div className="text-[10px] text-slate-500 dark:text-zinc-400">99.9% Uptime</div>
                                     </div>
                                 </div>
@@ -227,7 +275,7 @@ export const HomePage = () => {
             <section className="py-20 bg-white dark:bg-zinc-950 transition-colors" id="features">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto mb-16">
-                        <h2 className="text-3xl font-bold text-slate-900 dark:text-zinc-100 mb-4">Powerful <span className="text-blue-700 dark:text-blue-400 font-bold">Features</span> for Modern Education</h2>
+                        <h2 className="text-3xl font-bold text-white-900 dark:text-zinc-100 mb-4">Powerful <span className="text-blue-700 dark:text-blue-400 font-bold">Features</span> for Modern Education</h2>
                         <p className="text-slate-600 dark:text-zinc-400">Experience a unified platform designed to streamline administrative tasks and enhance the learning experience.</p>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -235,9 +283,9 @@ export const HomePage = () => {
                             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <Users className="text-primary w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900 mb-2">Student Analytics</h3>
-                            <p className="text-sm text-slate-600">Track enrollment, attendance, and performance metrics in real-time.</p>
-                            <div className="mt-4 pt-4 border-t border-slate-200 flex items-center text-primary text-sm font-medium">
+                            <h3 className="text-lg font-bold text-white-900 dark:text-white mb-2">Student Analytics</h3>
+                            <p className="text-sm text-slate-600 dark:text-zinc-400">Track enrollment, attendance, and performance metrics in real-time.</p>
+                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-zinc-800 flex items-center text-primary text-sm font-medium">
                                 <span>View Stats</span>
                                 <ArrowRight className="w-4 h-4 ml-1" />
                             </div>
@@ -246,9 +294,9 @@ export const HomePage = () => {
                             <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <School className="text-emerald-600 w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900 mb-2">Instructor Portal</h3>
-                            <p className="text-sm text-slate-600">Manage faculty applications, course assignments, and schedules easily.</p>
-                            <div className="mt-4 pt-4 border-t border-slate-200 flex items-center text-emerald-600 text-sm font-medium">
+                            <h3 className="text-lg font-bold text-white-900 dark:text-white mb-2">Instructor Portal</h3>
+                            <p className="text-sm text-slate-600 dark:text-zinc-400">Manage faculty applications, course assignments, and schedules easily.</p>
+                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-zinc-800 flex items-center text-emerald-600 text-sm font-medium">
                                 <span>Manage Staff</span>
                                 <ArrowRight className="w-4 h-4 ml-1" />
                             </div>
@@ -257,9 +305,9 @@ export const HomePage = () => {
                             <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <BookOpen className="text-purple-600 w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900 mb-2">Course Builder</h3>
-                            <p className="text-sm text-slate-600">Intuitive tools to create, approve, and organize curriculum content.</p>
-                            <div className="mt-4 pt-4 border-t border-slate-200 flex items-center text-purple-600 text-sm font-medium">
+                            <h3 className="text-lg font-bold text-white-900 dark:text-white mb-2">Course Builder</h3>
+                            <p className="text-sm text-slate-600 dark:text-zinc-400">Intuitive tools to create, approve, and organize curriculum content.</p>
+                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-zinc-800 flex items-center text-purple-600 text-sm font-medium">
                                 <span>Create Course</span>
                                 <ArrowRight className="w-4 h-4 ml-1" />
                             </div>
@@ -268,9 +316,9 @@ export const HomePage = () => {
                             <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <Clock className="text-amber-500 w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900 mb-2">Smart Approvals</h3>
-                            <p className="text-sm text-slate-600">Automated workflows for pending course and instructor approvals.</p>
-                            <div className="mt-4 pt-4 border-t border-slate-200 flex items-center text-amber-600 text-sm font-medium">
+                            <h3 className="text-lg font-bold text-white-900 dark:text-white mb-2">Smart Approvals</h3>
+                            <p className="text-sm text-slate-600 dark:text-zinc-400">Automated workflows for pending course and instructor approvals.</p>
+                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-zinc-800 flex items-center text-amber-600 text-sm font-medium">
                                 <span>Review Queue</span>
                                 <ArrowRight className="w-4 h-4 ml-1" />
                             </div>
@@ -284,10 +332,10 @@ export const HomePage = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid lg:grid-cols-2 gap-16 items-center">
                         <div className="relative order-2 lg:order-1">
-                            <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-20 blur-lg"></div>
+                            <div className="absolute -inset-4 bg-linear-to-r from-blue-500 to-purple-600 rounded-2xl opacity-20 blur-lg"></div>
                             <div className="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-xl p-8 border border-slate-100 dark:border-zinc-800">
                                 <div className="flex justify-between items-center mb-8">
-                                    <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100">System Metrics</h3>
+                                    <h3 className="text-xl font-bold text-white-900 dark:text-zinc-100">System Metrics</h3>
                                     <a className="text-sm text-primary font-medium hover:underline" href="#">
                                         View Details
                                     </a>
@@ -298,7 +346,7 @@ export const HomePage = () => {
                                             <TrendingUp className="text-green-500 w-5 h-5" />
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                            <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">0</div>
                                             <div className="text-xs text-slate-500 dark:text-zinc-400">Active Users Today</div>
                                         </div>
                                     </div>
@@ -307,7 +355,7 @@ export const HomePage = () => {
                                             <CheckCircle2 className="text-primary w-5 h-5" />
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                            <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">0</div>
                                             <div className="text-xs text-slate-500 dark:text-zinc-400">Course Completions</div>
                                         </div>
                                     </div>
@@ -316,7 +364,7 @@ export const HomePage = () => {
                                             <MessageSquare className="text-purple-500 w-5 h-5" />
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">0</div>
+                                            <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">0</div>
                                             <div className="text-xs text-slate-500 dark:text-zinc-400">Messages Sent</div>
                                         </div>
                                     </div>
@@ -325,7 +373,7 @@ export const HomePage = () => {
                                             <BarChart3 className="text-green-500 w-5 h-5" />
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100">99.9%</div>
+                                            <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">99.9%</div>
                                             <div className="text-xs text-slate-500 dark:text-zinc-400">System Uptime</div>
                                         </div>
                                     </div>
@@ -333,7 +381,7 @@ export const HomePage = () => {
                             </div>
                         </div>
                         <div className="order-1 lg:order-2">
-                            <h2 className="text-3xl font-bold text-slate-900 dark:text-zinc-100 mb-6"><span className="text-green-700 dark:text-green-400 font-bold">About</span> {APP_NAME} Platform</h2>
+                            <h2 className="text-3xl font-bold text-white-900 dark:text-zinc-100 mb-6"><span className="text-green-700 dark:text-green-400 font-bold">About</span> {APP_NAME} Platform</h2>
                             <p className="text-slate-600 dark:text-zinc-400 mb-6 leading-relaxed">
                                 Built for speed and reliability, {APP_NAME} offers administrators a crystal-clear view of their educational ecosystem. Our platform isn't just about data entry; it's about actionable insights.
                             </p>
@@ -367,7 +415,7 @@ export const HomePage = () => {
             <section className="py-20 bg-white dark:bg-zinc-950 border-t border-slate-100 dark:border-zinc-800 transition-colors" id="faq">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-slate-900 dark:text-zinc-100 mb-4">Frequently Asked <span className="text-blue-700 dark:text-blue-400 font-bold">Questions</span></h2>
+                        <h2 className="text-3xl font-bold text-white-900 dark:text-zinc-100 mb-4">Frequently Asked <span className="text-blue-700 dark:text-blue-400 font-bold">Questions</span></h2>
                         <p className="text-slate-500 dark:text-zinc-400">Everything you need to know about the {APP_NAME} ecosystem.</p>
                     </div>
                     <div className="space-y-4">
@@ -390,7 +438,7 @@ export const HomePage = () => {
                                 className="bg-slate-50 dark:bg-zinc-900 rounded-xl p-4 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-zinc-800 transition-colors"
                                 onClick={() => toggleFaq(index)}
                             >
-                                <div className="flex items-center justify-between font-medium text-slate-900 dark:text-zinc-100">
+                                <div className="flex items-center justify-between font-medium text-white-900 dark:text-zinc-100">
                                     <span>{faq.question}</span>
                                     <ChevronDown className={`text-slate-400 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
                                 </div>
@@ -404,19 +452,19 @@ export const HomePage = () => {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 bg-blue-300 relative overflow-hidden">
+            <section className="py-20 bg-blue-300 relative overflow-hidden dark:bg-blue-900">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                 <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to transform <span className="text-green-700 font-bold">your institution?</span></h2>
-                    <p className="text-slate-500 mb-8 text-lg">Join thousands of administrators managing their LMS efficiently with {APP_NAME}.</p>
+                    <h2 className="text-3xl md:text-4xl  font-bold mb-6 text-gray-900 dark:text-white">Ready to transform <span className="text-green-700 dark:text-green-400 font-bold">your institution?</span></h2>
+                    <p className="text-slate-700 dark:text-zinc-300 mb-8 text-lg">Join thousands of administrators managing their LMS efficiently with {APP_NAME}.</p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
                         <Link to={ROUTES.LOGIN}>
-                            <Button size="lg" className="bg-white text-primary hover:bg-green-700  hover:text-white">
+                            <Button size="lg" className=" text-white bg-green-700 hover:bg-green-800 hover:text-white">
                                 Login
                             </Button>
                         </Link>
                         <Link to={ROUTES.LOGIN}>
-                            <Button size="lg" variant="outline" className="bg-blue-700 text-white  hover:bg-blue-800">
+                            <Button size="lg" variant="outline" className="bg-blue-700 text-white border-none hover:bg-blue-800">
                                 Contact Us
                             </Button>
                         </Link>
@@ -435,7 +483,7 @@ export const HomePage = () => {
                                 </div>
                                 <span className="text-xl font-bold text-white">{APP_NAME}</span>
                             </div>
-                            <p className="text-sm text-slate-400 mb-4">Empowering education through iintelligent management systems.</p>
+                            <p className="text-sm text-slate-400 mb-4">Empowering education through intelligent management systems.</p>
                             <div className="flex space-x-4">
                                 <a className="text-slate-400 hover:text-white transition-colors" href="#">
                                     <Globe className="w-5 h-5" />
@@ -449,22 +497,22 @@ export const HomePage = () => {
                             <h4 className="text-white font-semibold mb-4">Platform</h4>
                             <ul className="space-y-2 text-sm">
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         Dashboard
                                     </a>
                                 </li>
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         Instructors
                                     </a>
                                 </li>
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         Student Analytics
                                     </a>
                                 </li>
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         System Status
                                     </a>
                                 </li>
@@ -474,22 +522,22 @@ export const HomePage = () => {
                             <h4 className="text-white font-semibold mb-4">Support</h4>
                             <ul className="space-y-2 text-sm">
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         Help Center
                                     </a>
                                 </li>
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         Documentation
                                     </a>
                                 </li>
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         API Reference
                                     </a>
                                 </li>
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         Community
                                     </a>
                                 </li>
@@ -499,17 +547,17 @@ export const HomePage = () => {
                             <h4 className="text-white font-semibold mb-4">Legal</h4>
                             <ul className="space-y-2 text-sm">
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         Privacy Policy
                                     </a>
                                 </li>
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         Terms of Service
                                     </a>
                                 </li>
                                 <li>
-                                    <a className="hover:text-primary transition-colors" href="#">
+                                    <a className="hover:text-blue-300 transition-colors" href="#">
                                         Cookie Policy
                                     </a>
                                 </li>
@@ -517,19 +565,8 @@ export const HomePage = () => {
                         </div>
                     </div>
                     <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500">
-                        <p>© 2026 {APP_NAME} LMS. All rights reserved.</p>
+                        <p> 2026 {APP_NAME} LMS. All rights reserved.</p>
                         <div className="flex items-center gap-6 mt-4 md:mt-0">
-                            <button
-                                onClick={toggleDarkMode}
-                                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                                aria-label="Toggle dark mode"
-                            >
-                                {isDarkMode ? (
-                                    <><Sun className="w-4 h-4" /> Light Mode</>
-                                ) : (
-                                    <><Moon className="w-4 h-4" /> Dark Mode</>
-                                )}
-                            </button>
                             <span>Made with <span className="text-red-500">♥</span> for Education</span>
                         </div>
                     </div>

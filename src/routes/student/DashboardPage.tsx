@@ -5,108 +5,23 @@ import { Calendar, BookOpen, Bell } from 'lucide-react';
 export const DashboardPage = () => {
     const { user } = useAuth();
 
-    const upcomingDeadlines = [
-        {
-            id: 1,
-            title: 'Essay on Modern Literature',
-            dueDate: 'Oct 26, 11:59 PM',
-            status: 'In Progress',
-            statusColor: 'bg-yellow-100 text-yellow-800'
-        },
-        {
-            id: 2,
-            title: 'Math Quiz 2',
-            dueDate: 'Oct 27, 11:59 PM',
-            status: 'Not Started',
-            statusColor: 'bg-red-100 text-red-800'
-        },
-        {
-            id: 3,
-            title: 'History Presentation',
-            dueDate: 'Oct 29, 11:59 PM',
-            status: 'Not Started',
-            statusColor: 'bg-red-100 text-red-800'
-        }
-    ];
+    const upcomingDeadlines: { id: number; title: string; dueDate: string; status: string; statusColor: string }[] = [];
 
-    const recentCourses = [
-        {
-            id: 1,
-            title: 'Modern Literature',
-            instructor: 'Dr. Sarah Wilson',
-            progress: 80,
-            image: '/testimg.png',
-        },
-        {
-            id: 2,
-            title: 'Calculus II',
-            instructor: 'Prof. John Smith',
-            progress: 50,
-            image: '/testimg.png',
-        },
-        {
-            id: 3,
-            title: 'World History',
-            instructor: 'Dr. Emily Carter',
-            progress: 20,
-            image: '/testimg.png',
-        },
-    ];
+    const recentCourses: { id: number; title: string; instructor: string; progress: number; image: string }[] = [];
 
-    const notifications = [
-        {
-            id: 1,
-            title: 'New material added to Calculus II',
-            date: 'Oct 25, 2024',
-            icon: BookOpen
-        },
-        {
-            id: 2,
-            title: 'Quiz 1 for World History is now available',
-            date: 'Oct 24, 2024',
-            icon: Calendar
-        },
-        {
-            id: 3,
-            title: 'Announcement: Essay on Modern Literature',
-            date: 'Oct 23, 2024',
-            icon: Bell
-        }
-    ];
+    const notifications: { id: number; title: string; date: string; icon: any }[] = [];
 
-    const enrollmentRequests = [
-        {
-            id: 1,
-            course: 'Data Structures',
-            instructor: 'Prof. Alan Turing',
-            status: 'Pending',
-            statusColor: 'bg-yellow-100 text-yellow-800',
-        },
-        {
-            id: 2,
-            course: 'Physics I',
-            instructor: 'Dr. Marie Curie',
-            status: 'Approved',
-            statusColor: 'bg-green-100 text-green-800',
-        },
-        {
-            id: 3,
-            course: 'Art History',
-            instructor: 'Dr. Leonardo Rossi',
-            status: 'Rejected',
-            statusColor: 'bg-red-100 text-red-800',
-        },
-    ];
+    const enrollmentRequests: { id: number; course: string; instructor: string; status: string; statusColor: string }[] = [];
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
             <div className="space-y-8">
                 {/* Header */}
                 <div>
-                    <h1 className="font-bold text-[30px] leading-[36px] text-gray-900">
+                    <h1 className="font-bold text-[30px] leading-[36px] text-gray-900 dark:text-zinc-100">
                         Hi, {user?.firstName || 'Mazen'}!
                     </h1>
-                    <p className="text-[16px] leading-[24px] text-gray-600 mt-1">
+                    <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400 mt-1">
                         Here's what's happening with your courses today.
                     </p>
                 </div>
@@ -117,17 +32,19 @@ export const DashboardPage = () => {
                         {/* Upcoming Deadlines */}
                         <Card variant="elevated">
                             <CardContent className="p-6">
-                                <h2 className="font-bold text-[20px] leading-[28px] text-gray-900 mb-6">
+                                <h2 className="font-bold text-[20px] leading-[28px] text-gray-900 dark:text-zinc-100 mb-6">
                                     Upcoming Deadlines
                                 </h2>
                                 <div className="space-y-6">
-                                    {upcomingDeadlines.map((deadline) => (
+                                    {upcomingDeadlines.length === 0 ? (
+                                        <p className="text-[14px] text-gray-500 dark:text-zinc-500 text-center py-4">No upcoming deadlines</p>
+                                    ) : upcomingDeadlines.map((deadline) => (
                                         <div key={deadline.id} className="flex items-center justify-between">
                                             <div className="flex-1">
-                                                <h3 className="font-semibold text-[16px] leading-[24px] text-gray-900">
+                                                <h3 className="font-semibold text-[16px] leading-[24px] text-gray-900 dark:text-zinc-100">
                                                     {deadline.title}
                                                 </h3>
-                                                <p className="text-[14px] leading-[20px] text-gray-600">
+                                                <p className="text-[14px] leading-[20px] text-gray-600 dark:text-zinc-400">
                                                     Due: {deadline.dueDate}
                                                 </p>
                                             </div>
@@ -142,31 +59,34 @@ export const DashboardPage = () => {
 
                         {/* Recent Courses */}
                         <div>
-                            <h2 className="font-bold text-[20px] leading-[28px] text-gray-900 mb-4">
+                            <h2 className="font-bold text-[20px] leading-[28px] text-gray-900 dark:text-zinc-100 mb-4">
                                 Enrolled Courses
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {recentCourses.length === 0 && (
+                                    <p className="text-[14px] text-gray-500 dark:text-zinc-500 col-span-3 text-center py-4">No enrolled courses</p>
+                                )}
                                 {recentCourses.map((course) => (
                                     <Card key={course.id} variant="elevated">
                                         <CardContent className="p-0">
-                                            <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
+                                            <div className="aspect-video bg-gray-200 dark:bg-zinc-700 rounded-t-lg overflow-hidden">
                                                 <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
                                             </div>
                                             <div className="p-4">
-                                                <h3 className="font-semibold text-[16px] leading-[24px] text-gray-900">
+                                                <h3 className="font-semibold text-[16px] leading-[24px] text-gray-900 dark:text-zinc-100">
                                                     {course.title}
                                                 </h3>
-                                                <p className="text-[14px] leading-[20px] text-gray-600 mb-2">
+                                                <p className="text-[14px] leading-[20px] text-gray-600 dark:text-zinc-400 mb-2">
                                                     Instructor: {course.instructor}
                                                 </p>
                                                 <div className="flex items-center gap-2">
-                                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                                    <div className="flex-1 bg-gray-200 dark:bg-zinc-700 rounded-full h-2">
                                                         <div
                                                             className="bg-blue-600 h-2 rounded-full"
                                                             style={{ width: `${course.progress}%` }}
                                                         ></div>
                                                     </div>
-                                                    <span className="text-[14px] font-medium text-gray-600">
+                                                    <span className="text-[14px] font-medium text-gray-600 dark:text-zinc-400">
                                                         {course.progress}%
                                                     </span>
                                                 </div>
@@ -182,22 +102,25 @@ export const DashboardPage = () => {
                     <div className="w-full lg:w-[405px]">
                         <Card variant="elevated">
                             <CardContent className="p-6">
-                                <h2 className="font-bold text-[20px] leading-[28px] text-gray-900 mb-6">
+                                <h2 className="font-bold text-[20px] leading-[28px] text-gray-900 dark:text-zinc-100 mb-6">
                                     Notifications
                                 </h2>
                                 <div className="space-y-6">
+                                    {notifications.length === 0 && (
+                                        <p className="text-[14px] text-gray-500 dark:text-zinc-500 text-center py-4">No notifications</p>
+                                    )}
                                     {notifications.map((notification) => {
                                         const Icon = notification.icon;
                                         return (
                                             <div key={notification.id} className="flex gap-4">
-                                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
                                                     <Icon className="w-5 h-5 text-green-600" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="font-medium text-[16px] leading-[24px] text-gray-900">
+                                                    <p className="font-medium text-[16px] leading-[24px] text-gray-900 dark:text-zinc-100">
                                                         {notification.title}
                                                     </p>
-                                                    <p className="text-[14px] leading-[20px] text-gray-600">
+                                                    <p className="text-[14px] leading-[20px] text-gray-600 dark:text-zinc-400">
                                                         {notification.date}
                                                     </p>
                                                 </div>
@@ -210,17 +133,20 @@ export const DashboardPage = () => {
 
                         <Card variant="elevated" className="mt-6">
                             <CardContent className="p-6">
-                                <h2 className="font-bold text-[20px] leading-[28px] text-gray-900 mb-6">
+                                <h2 className="font-bold text-[20px] leading-[28px] text-gray-900 dark:text-zinc-100 mb-6">
                                     Enrollment Requests
                                 </h2>
                                 <div className="space-y-4">
+                                    {enrollmentRequests.length === 0 && (
+                                        <p className="text-[14px] text-gray-500 dark:text-zinc-500 text-center py-4">No enrollment requests</p>
+                                    )}
                                     {enrollmentRequests.map((request) => (
                                         <div key={request.id} className="flex items-start justify-between gap-3">
                                             <div className="flex-1">
-                                                <p className="font-medium text-[16px] leading-[24px] text-gray-900">
+                                                <p className="font-medium text-[16px] leading-[24px] text-gray-900 dark:text-zinc-100">
                                                     {request.course}
                                                 </p>
-                                                <p className="text-[14px] leading-[20px] text-gray-600">
+                                                <p className="text-[14px] leading-[20px] text-gray-600 dark:text-zinc-400">
                                                     Instructor: {request.instructor}
                                                 </p>
                                             </div>

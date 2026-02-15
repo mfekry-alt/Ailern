@@ -25,56 +25,7 @@ export const AdminCourseApprovalPage = () => {
     const [selectedCourse, setSelectedCourse] = useState<CourseForApproval | null>(null);
     const [reviewNotes, setReviewNotes] = useState('');
 
-    const [courses, setCourses] = useState<CourseForApproval[]>([
-        {
-            id: '1',
-            title: 'Advanced Machine Learning',
-            courseCode: 'CS401',
-            category: 'Computer Science',
-            description: 'Deep dive into advanced ML algorithms including neural networks, deep learning, and reinforcement learning.',
-            prerequisites: 'Basic knowledge of Python, Linear Algebra, and Statistics',
-            whatYouWillLearn: 'Neural Networks, Deep Learning, CNN, RNN, Reinforcement Learning, Model Optimization',
-            materialsCount: 25,
-            lecturesCount: 40,
-            assignmentsCount: 8,
-            quizzesCount: 12,
-            instructorName: 'Dr. Emily Carter',
-            dateCreated: '2024-12-15',
-            status: 'Pending'
-        },
-        {
-            id: '2',
-            title: 'Web Development Bootcamp',
-            courseCode: 'WEB101',
-            category: 'Web Development',
-            description: 'Complete web development course covering HTML, CSS, JavaScript, React, Node.js, and MongoDB.',
-            prerequisites: 'Basic computer skills',
-            whatYouWillLearn: 'HTML5, CSS3, JavaScript ES6+, React, Node.js, Express, MongoDB, REST APIs',
-            materialsCount: 30,
-            lecturesCount: 50,
-            assignmentsCount: 10,
-            quizzesCount: 15,
-            instructorName: 'Prof. John Smith',
-            dateCreated: '2024-12-18',
-            status: 'Pending'
-        },
-        {
-            id: '3',
-            title: 'Data Science Fundamentals',
-            courseCode: 'DS201',
-            category: 'Data Science',
-            description: 'Introduction to data science including data analysis, visualization, and machine learning basics.',
-            prerequisites: 'Basic programming knowledge',
-            whatYouWillLearn: 'Python, Pandas, NumPy, Matplotlib, Seaborn, Scikit-learn, Data Visualization',
-            materialsCount: 20,
-            lecturesCount: 35,
-            assignmentsCount: 6,
-            quizzesCount: 10,
-            instructorName: 'Dr. Sarah Wilson',
-            dateCreated: '2024-12-10',
-            status: 'Approved'
-        }
-    ]);
+    const [courses, setCourses] = useState<CourseForApproval[]>([]);
 
     const handleApprove = (id: string) => {
         setCourses(prev => prev.map(c => c.id === id ? { ...c, status: 'Approved' } : c));
@@ -101,12 +52,12 @@ export const AdminCourseApprovalPage = () => {
     });
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             <div className="space-y-6">
                 {/* Header */}
                 <div>
-                    <h1 className="text-[36px] font-bold text-gray-900">Course Approval</h1>
-                    <p className="text-[18px] text-gray-600 mt-1">Review and approve courses submitted by instructors</p>
+                    <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">Course Approval</h1>
+                    <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">Review and approve courses submitted by instructors</p>
                 </div>
 
                 {/* Filters */}
@@ -120,13 +71,13 @@ export const AdminCourseApprovalPage = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search by title, code, or instructor"
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
                             <select
                                 value={selectedStatus}
                                 onChange={(e) => setSelectedStatus(e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                             >
                                 <option value="All">All Status</option>
                                 <option value="Pending">Pending</option>
@@ -147,8 +98,8 @@ export const AdminCourseApprovalPage = () => {
                                     <div className="flex-1">
                                         <div className="flex items-start justify-between mb-3">
                                             <div>
-                                                <h3 className="text-[20px] font-bold text-gray-900">{course.title}</h3>
-                                                <p className="text-[14px] text-gray-600 mt-1">
+                                                <h3 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">{course.title}</h3>
+                                                <p className="text-[14px] text-gray-600 dark:text-zinc-400 mt-1">
                                                     {course.courseCode} • {course.category}
                                                 </p>
                                             </div>
@@ -161,11 +112,11 @@ export const AdminCourseApprovalPage = () => {
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4 mb-4">
-                                            <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                            <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                 <User className="w-4 h-4" />
                                                 <span>Instructor: {course.instructorName}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                            <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                 <Calendar className="w-4 h-4" />
                                                 <span>Submitted: {new Date(course.dateCreated).toLocaleDateString()}</span>
                                             </div>
@@ -226,29 +177,29 @@ export const AdminCourseApprovalPage = () => {
 
                                 {/* Expanded Details */}
                                 {selectedCourse?.id === course.id && (
-                                    <div className="mt-6 pt-6 border-t border-gray-200 space-y-4">
+                                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-zinc-700 space-y-4">
                                         <div>
-                                            <h4 className="text-[14px] font-semibold text-gray-700 mb-2">Description</h4>
-                                            <p className="text-[14px] text-gray-600">{course.description}</p>
+                                            <h4 className="text-[14px] font-semibold text-gray-700 dark:text-zinc-300 mb-2">Description</h4>
+                                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">{course.description}</p>
                                         </div>
                                         <div>
-                                            <h4 className="text-[14px] font-semibold text-gray-700 mb-2">Prerequisites</h4>
-                                            <p className="text-[14px] text-gray-600">{course.prerequisites}</p>
+                                            <h4 className="text-[14px] font-semibold text-gray-700 dark:text-zinc-300 mb-2">Prerequisites</h4>
+                                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">{course.prerequisites}</p>
                                         </div>
                                         <div>
-                                            <h4 className="text-[14px] font-semibold text-gray-700 mb-2">What You Will Learn</h4>
-                                            <p className="text-[14px] text-gray-600">{course.whatYouWillLearn}</p>
+                                            <h4 className="text-[14px] font-semibold text-gray-700 dark:text-zinc-300 mb-2">What You Will Learn</h4>
+                                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">{course.whatYouWillLearn}</p>
                                         </div>
 
                                         {course.status === 'Pending' && (
-                                            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                                <h4 className="text-[14px] font-semibold text-gray-700 mb-2">Reviewer Notes (Required for Rejection)</h4>
+                                            <div className="mt-6 p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+                                                <h4 className="text-[14px] font-semibold text-gray-700 dark:text-zinc-300 mb-2">Reviewer Notes (Required for Rejection)</h4>
                                                 <textarea
                                                     value={reviewNotes}
                                                     onChange={(e) => setReviewNotes(e.target.value)}
                                                     placeholder="Provide feedback or reasons for rejection..."
                                                     rows={4}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100"
                                                 />
                                                 <div className="flex gap-3 mt-3">
                                                     <button
@@ -270,7 +221,7 @@ export const AdminCourseApprovalPage = () => {
                                                             setSelectedCourse(null);
                                                             setReviewNotes('');
                                                         }}
-                                                        className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium"
+                                                        className="px-6 py-2 bg-gray-200 dark:bg-zinc-700 hover:bg-gray-300 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-300 rounded-lg font-medium"
                                                     >
                                                         Cancel
                                                     </button>
@@ -288,8 +239,8 @@ export const AdminCourseApprovalPage = () => {
                     <Card variant="elevated">
                         <CardContent className="p-12 text-center">
                             <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-[16px] text-gray-600">No courses found</p>
-                            <p className="text-[14px] text-gray-500 mt-1">Try adjusting your filters</p>
+                            <p className="text-[16px] text-gray-600 dark:text-zinc-400">No courses found</p>
+                            <p className="text-[14px] text-gray-500 dark:text-zinc-500 mt-1">Try adjusting your filters</p>
                         </CardContent>
                     </Card>
                 )}

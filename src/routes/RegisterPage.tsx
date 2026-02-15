@@ -68,21 +68,15 @@ export const RegisterPage = () => {
 
     return (
         <div
-            className="min-h-screen flex items-center justify-center px-8 py-12"
-            style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}
+            className="min-h-screen flex items-center justify-center px-8 py-12 bg-gray-50 dark:bg-zinc-950"
         >
             <div className="w-full max-w-[448px]">
                 <div
-                    className="bg-white rounded-xl px-8 pt-8 pb-12"
-                    style={{
-                        boxShadow:
-                            '0px 10px 25px -5px rgba(0,0,0,0.05), 0px 10px 10px -5px rgba(0,0,0,0.05)',
-                    }}
+                    className="bg-white dark:bg-zinc-900 rounded-xl px-8 pt-8 pb-12 shadow-figma dark:shadow-lg dark:border dark:border-zinc-800"
                 >
                     <div className="text-center mb-8">
                         <h1
-                            className="font-bold text-[30px] leading-[37.5px] tracking-[-0.75px]"
-                            style={{ color: '#111318' }}
+                            className="font-bold text-[30px] leading-[37.5px] tracking-[-0.75px] text-gray-900 dark:text-zinc-100"
                         >
                             Create Account
                         </h1>
@@ -90,10 +84,9 @@ export const RegisterPage = () => {
 
                     {error && (
                         <div
-                            className="mb-6 p-4 rounded-md border"
-                            style={{ backgroundColor: '#fee2e2', borderColor: '#fecaca' }}
+                            className="mb-6 p-4 rounded-md border bg-red-100 border-red-200 dark:bg-red-900/20 dark:border-red-800"
                         >
-                            <p className="text-sm" style={{ color: '#991b1b' }}>
+                            <p className="text-sm text-red-800 dark:text-red-300">
                                 {error}
                             </p>
                         </div>
@@ -102,7 +95,7 @@ export const RegisterPage = () => {
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <div className="space-y-4">
                             <select
-                                className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
                                 {...register('userType')}
                             >
                                 <option value="student">Student</option>
@@ -114,11 +107,11 @@ export const RegisterPage = () => {
                                 <div>
                                     <input
                                         placeholder="First name"
-                                        className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                                        className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
                                         {...register('firstName')}
                                     />
                                     {errors.firstName && (
-                                        <p className="text-sm" style={{ color: '#dc2626' }}>
+                                        <p className="text-sm text-red-600 dark:text-red-400">
                                             {errors.firstName.message}
                                         </p>
                                     )}
@@ -126,11 +119,11 @@ export const RegisterPage = () => {
                                 <div>
                                     <input
                                         placeholder="Last name"
-                                        className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                                        className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
                                         {...register('lastName')}
                                     />
                                     {errors.lastName && (
-                                        <p className="text-sm" style={{ color: '#dc2626' }}>
+                                        <p className="text-sm text-red-600 dark:text-red-400">
                                             {errors.lastName.message}
                                         </p>
                                     )}
@@ -140,11 +133,11 @@ export const RegisterPage = () => {
                             <input
                                 type="email"
                                 placeholder="Email"
-                                className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
                                 {...register('email')}
                             />
                             {errors.email && (
-                                <p className="text-sm" style={{ color: '#dc2626' }}>
+                                <p className="text-sm text-red-600 dark:text-red-400">
                                     {errors.email.message}
                                 </p>
                             )}
@@ -153,11 +146,11 @@ export const RegisterPage = () => {
                                 <>
                                     <input
                                         placeholder="Student ID"
-                                        className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                                        className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
                                         {...register('studentId')}
                                     />
                                     {errors.studentId && (
-                                        <p className="text-sm" style={{ color: '#dc2626' }}>
+                                        <p className="text-sm text-red-600 dark:text-red-400">
                                             {errors.studentId.message}
                                         </p>
                                     )}
@@ -166,18 +159,18 @@ export const RegisterPage = () => {
 
                             <input
                                 placeholder="Phone number (optional)"
-                                className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
                                 {...register('phoneNumber')}
                             />
 
                             <input
                                 type="password"
                                 placeholder="Password"
-                                className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
                                 {...register('password')}
                             />
                             {errors.password && (
-                                <p className="text-sm" style={{ color: '#dc2626' }}>
+                                <p className="text-sm text-red-600 dark:text-red-400">
                                     {errors.password.message}
                                 </p>
                             )}
@@ -185,11 +178,11 @@ export const RegisterPage = () => {
                             <input
                                 type="password"
                                 placeholder="Confirm password"
-                                className="w-full px-[13px] py-[15px] text-[14px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 placeholder:text-gray-400 dark:placeholder:text-zinc-500 transition-all"
                                 {...register('confirmPassword')}
                             />
                             {errors.confirmPassword && (
-                                <p className="text-sm" style={{ color: '#dc2626' }}>
+                                <p className="text-sm text-red-600 dark:text-red-400">
                                     {errors.confirmPassword.message}
                                 </p>
                             )}

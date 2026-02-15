@@ -74,8 +74,8 @@ export const VerifyEmailPage = () => {
     return (
         <Card variant="elevated" padding="lg">
             <div className="text-center">
-                <h1 className="text-2xl font-bold text-secondary-900 mb-2">{title}</h1>
-                <p className="text-secondary-600 mb-6">{description}</p>
+                <h1 className="text-2xl font-bold text-secondary-900 dark:text-zinc-100 mb-2">{title}</h1>
+                <p className="text-secondary-600 dark:text-zinc-400 mb-6">{description}</p>
 
                 {status === 'success' && (
                     <div className="space-y-3">

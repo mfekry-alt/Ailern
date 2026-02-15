@@ -56,8 +56,8 @@ export const ForgotPasswordPage = () => {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success-100 text-success-600 mb-4">
                         <CheckCircle className="w-8 h-8" />
                     </div>
-                    <h1 className="text-2xl font-bold text-secondary-900 mb-2">Check your email</h1>
-                    <p className="text-secondary-600 mb-6">
+                    <h1 className="text-2xl font-bold text-secondary-900 dark:text-zinc-100 mb-2">Check your email</h1>
+                    <p className="text-secondary-600 dark:text-zinc-400 mb-6">
                         If an account exists with this email, a reset link has been sent. Follow the instructions in that email to
                         set a new password and then log in to your dashboard.
                     </p>
@@ -72,21 +72,21 @@ export const ForgotPasswordPage = () => {
     return (
         <Card variant="elevated" padding="lg">
             <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-secondary-900 mb-2">Forgot Password</h1>
-                <p className="text-secondary-600">
+                <h1 className="text-3xl font-bold text-secondary-900 dark:text-zinc-100 mb-2">Forgot Password</h1>
+                <p className="text-secondary-600 dark:text-zinc-400">
                     Enter your email to receive a reset link.
                 </p>
             </div>
 
             {error && (
-                <div className="mb-6 p-4 bg-danger-50 border border-danger-200 rounded-lg">
-                    <p className="text-sm text-danger-700">{error}</p>
+                <div className="mb-6 p-4 bg-danger-50 dark:bg-red-900/20 border border-danger-200 dark:border-red-800 rounded-lg">
+                    <p className="text-sm text-danger-700 dark:text-red-300">{error}</p>
                 </div>
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <Input
-                    className="w-full px-[13px] py-[11px] text-[15px] bg-white border border-[#dbe0e6] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d7ff2]/10 focus:border-[#0d7ff2] text-[#6b7280] transition-all"
+                    className="w-full px-[13px] py-[11px] text-[15px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 transition-all"
                     label="Email address"
                     type="email"
                     placeholder="you@example.com"
@@ -99,7 +99,7 @@ export const ForgotPasswordPage = () => {
                 </Button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-secondary-600">
+            <p className="mt-6 text-center text-sm text-secondary-600 dark:text-zinc-400">
                 Remember your password?{' '}
                 <Link to={ROUTES.LOGIN} className="text-primary-600 hover:text-primary-700 font-medium">
                     Sign in

@@ -90,9 +90,14 @@ export const getCourseAssignmentsForInstructor = async (
     courseId: number,
     params?: PaginationParams
 ): Promise<GetAssignmentDto[]> => {
+    const defaultParams: PaginationParams = {
+        PageNumber: 1,
+        PageSize: 50,
+        ...params,
+    };
     const response = await api.get<ApiResponse<GetAssignmentDto[]>>(
         ENDPOINTS.ASSIGNMENTS.COURSE_ASSIGNMENTS_INSTRUCTOR(courseId),
-        { params }
+        { params: defaultParams }
     );
     return response.data.data!;
 };
@@ -107,9 +112,14 @@ export const getCourseAssignmentsForStudent = async (
     courseId: number,
     params?: PaginationParams
 ): Promise<GetAssignmentDto[]> => {
+    const defaultParams: PaginationParams = {
+        PageNumber: 1,
+        PageSize: 50,
+        ...params,
+    };
     const response = await api.get<ApiResponse<GetAssignmentDto[]>>(
         ENDPOINTS.ASSIGNMENTS.COURSE_ASSIGNMENTS_STUDENT(courseId),
-        { params }
+        { params: defaultParams }
     );
     return response.data.data!;
 };
@@ -171,19 +181,28 @@ export const getSubmissionFiles = async (
 };
 
 /**
- * Get all assignments for instructor (alias for getCourseAssignmentsForInstructor)
- * Note: This requires a courseId, so it's a partial implementation
+ * Get all assignments for instructor across all their courses
+ * Fetches courses first, then aggregates assignments from each course
  * @param params - Pagination parameters
  * @returns List of assignments
  */
 export const getInstructorAssignments = async (
     params?: PaginationParams
 ): Promise<GetAssignmentDto[]> => {
-    // For now, this is a placeholder that would need to be called with a specific course ID
-    // In a real implementation, you'd need to either:
-    // 1. Fetch assignments across all instructor's courses
-    // 2. Or require a courseId parameter
-    return [];
+    // Import getAllCourses dynamically to use its fallback logic
+    const { getAllCourses } = await import('./course.service');
+    const coursesData = await getAllCourses({ PageSize: 100 });
+
+    const courses = coursesData.items || [];
+    if (courses.length === 0) return [];
+
+    // Fetch assignments for each course in parallel
+    const assignmentPromises = courses.map((course) =>
+        getCourseAssignmentsForInstructor(course.id, params).catch(() => [] as GetAssignmentDto[])
+    );
+
+    const allAssignments = await Promise.all(assignmentPromises);
+    return allAssignments.flat();
 };
 
 /**

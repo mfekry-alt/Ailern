@@ -25,16 +25,16 @@ export const AdminUserEditPage = () => {
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             <div className="max-w-2xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-[30px] font-bold text-gray-900">Edit User</h1>
-                        <p className="text-[16px] text-gray-600">Update user details (ID: {id})</p>
+                        <h1 className="text-[30px] font-bold text-gray-900 dark:text-zinc-100">Edit User</h1>
+                        <p className="text-[16px] text-gray-600 dark:text-zinc-400">Update user details (ID: {id})</p>
                     </div>
                     <button
                         onClick={() => navigate(ROUTES.ADMIN_USERS)}
-                        className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-800 font-medium hover:bg-gray-50"
+                        className="px-4 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg text-gray-800 dark:text-zinc-100 font-medium hover:bg-gray-50 dark:hover:bg-zinc-700"
                     >
                         Back to Users
                     </button>
@@ -49,29 +49,29 @@ export const AdminUserEditPage = () => {
                 <Card variant="elevated">
                     <CardContent className="p-6 space-y-4">
                         <div>
-                            <label className="block text-[14px] font-medium text-gray-700 mb-2">Name</label>
+                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Name</label>
                             <input
                                 value={form.name}
                                 onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                             />
                         </div>
                         <div>
-                            <label className="block text-[14px] font-medium text-gray-700 mb-2">Email</label>
+                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Email</label>
                             <input
                                 type="email"
                                 value={form.email}
                                 onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Role</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Role</label>
                                 <select
                                     value={form.role}
                                     onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="Student">Student</option>
                                     <option value="Instructor">Instructor</option>
@@ -79,11 +79,11 @@ export const AdminUserEditPage = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Status</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Status</label>
                                 <select
                                     value={form.status}
                                     onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="Active">Active</option>
                                     <option value="Restricted">Restricted</option>
@@ -93,7 +93,7 @@ export const AdminUserEditPage = () => {
                         <div className="flex gap-3 pt-2">
                             <button
                                 onClick={() => navigate(ROUTES.ADMIN_USERS)}
-                                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors"
+                                className="flex-1 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium px-4 py-2 rounded-lg transition-colors"
                             >
                                 Cancel
                             </button>

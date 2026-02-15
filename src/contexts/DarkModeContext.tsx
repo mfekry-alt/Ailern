@@ -21,31 +21,14 @@ interface DarkModeProviderProps {
 }
 
 export const DarkModeProvider: React.FC<DarkModeProviderProps> = ({ children }) => {
-    // Always start with light mode (false). Dark mode only activates when user clicks toggle.
+    // Default to light mode. Dark mode activates when user clicks toggle.
     const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
         const saved = storage.get<boolean>('darkMode');
-        // Only use saved preference if it exists and user had previously enabled dark mode
-        if (saved === true) {
-            return true;
-        }
-        // Default to light mode
-        return false;
+        return saved === true;
     });
 
-    // Initialize document class on mount
     useEffect(() => {
-        if (isDarkMode) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, []);
-
-    useEffect(() => {
-        // Persist when dark mode changes (safe wrapper)
         storage.set('darkMode', isDarkMode);
-
-        // Update document class for Tailwind dark mode
         if (isDarkMode) {
             document.documentElement.classList.add('dark');
         } else {

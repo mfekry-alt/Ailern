@@ -99,7 +99,7 @@ async function runTests() {
         `${invalidLogin.status === 'FAIL' && invalidLogin.statusCode === 401 ? '✅' : '❌'} Invalid Login: ${invalidLogin.message}`
     );
 
-    let accessToken = adminLogin.data?.data?.accessToken || '';
+    const accessToken = adminLogin.data?.data?.accessToken || '';
 
     // Test 5: Get Courses
     console.log('5️⃣  Testing Get Courses...');

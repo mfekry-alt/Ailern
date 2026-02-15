@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDarkMode } from '@/contexts/DarkModeContext';
 import { ROUTES, APP_NAME } from '@/lib/constants';
 import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Sun, Moon } from 'lucide-react';
+import { api } from '@/api/client';
 
 interface NavLink {
     label: string;
@@ -18,6 +19,11 @@ export const Header = () => {
     const isGuest = !user;
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<{ id: string; name: string; code: string }[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSearchResults, setShowSearchResults] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const notificationsRef = useRef<HTMLDivElement>(null);
 
     const [notifications, setNotifications] = useState([
@@ -107,14 +113,59 @@ export const Header = () => {
         );
     };
 
+    const searchCourses = useCallback(async (query: string) => {
+        if (!query.trim()) {
+            setSearchResults([]);
+            setShowSearchResults(false);
+            return;
+        }
+        setIsSearching(true);
+        setShowSearchResults(true);
+        try {
+            const res = await api.get('/Courses', { params: { search: query.trim() } });
+            const courses = res.data?.data || res.data || [];
+            setSearchResults(
+                courses.slice(0, 8).map((c: any) => ({
+                    id: c.id,
+                    name: c.name || c.title || 'Untitled',
+                    code: c.code || '',
+                }))
+            );
+        } catch {
+            setSearchResults([]);
+        } finally {
+            setIsSearching(false);
+        }
+    }, []);
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(() => searchCourses(value), 300);
+    };
+
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        if (searchQuery.trim()) {
-            // Navigate to my courses page with search query
-            navigate(`${ROUTES.MY_COURSES}?search=${encodeURIComponent(searchQuery.trim())}`);
-            setSearchQuery('');
-        }
+        searchCourses(searchQuery);
     };
+
+    const handleSearchResultClick = (courseId: string) => {
+        setSearchQuery('');
+        setSearchResults([]);
+        setShowSearchResults(false);
+        navigate(`${ROUTES.COURSES}/${courseId}`);
+    };
+
+    // Close search dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutsideSearch = (event: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setShowSearchResults(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutsideSearch);
+        return () => document.removeEventListener('mousedown', handleClickOutsideSearch);
+    }, []);
 
     const handleProfileClick = () => {
         navigate(ROUTES.PROFILE);
@@ -190,7 +241,7 @@ export const Header = () => {
                     {!isGuest &&
                         navLinks.map((link) => {
                             const isActive = location.pathname === link.path ||
-                                (link.path !== '/' && location.pathname.startsWith(link.path));
+                                (link.path !== getDashboardRoute() && location.pathname.startsWith(link.path));
                             return (
                                 <Link
                                     key={link.path}
@@ -228,25 +279,50 @@ export const Header = () => {
                     ) : (
                         <>
                             {/* Search */}
-                            <div className="relative w-[256px]">
+                            <div className="relative w-[256px]" ref={searchRef}>
                                 <form onSubmit={handleSearch}>
                                     <div
-                                        className="flex items-center h-[40px] px-3 rounded-full relative"
-                                        style={{ backgroundColor: '#f0f1f4' }}
+                                        className="flex items-center h-[40px] px-3 rounded-full relative bg-gray-100 dark:bg-zinc-800"
                                     >
                                         <div className="absolute left-[12px] top-[10px] w-[20px] h-[20px]">
-                                            <Search className="w-[20px] h-[20px]" style={{ color: '#60758a' }} />
+                                            <Search className="w-[20px] h-[20px] text-gray-500 dark:text-zinc-400" />
                                         </div>
                                         <input
                                             type="text"
                                             placeholder="Search Courses..."
                                             value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="bg-transparent border-none outline-none text-[16px] w-full pl-[40px] pr-[31px]"
-                                            style={{ color: '#60758a' }}
+                                            onChange={(e) => handleSearchChange(e.target.value)}
+                                            onFocus={() => { if (searchResults.length > 0) setShowSearchResults(true); }}
+                                            className="bg-transparent border-none outline-none text-[16px] w-full pl-[40px] pr-[31px] text-gray-500 dark:text-zinc-400 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
                                         />
                                     </div>
                                 </form>
+
+                                {/* Search Results Dropdown */}
+                                {showSearchResults && (
+                                    <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-zinc-900 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 z-50 overflow-hidden">
+                                        {isSearching ? (
+                                            <div className="px-4 py-3 text-center text-[14px] text-gray-500 dark:text-zinc-400">Searching...</div>
+                                        ) : searchResults.length === 0 ? (
+                                            <div className="px-4 py-3 text-center text-[14px] text-gray-500 dark:text-zinc-400">No courses found</div>
+                                        ) : (
+                                            <ul className="max-h-[280px] overflow-auto">
+                                                {searchResults.map((course) => (
+                                                    <li
+                                                        key={course.id}
+                                                        onClick={() => handleSearchResultClick(course.id)}
+                                                        className="px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
+                                                    >
+                                                        <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 truncate">{course.name}</p>
+                                                        {course.code && (
+                                                            <p className="text-[12px] text-gray-500 dark:text-zinc-400">{course.code}</p>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Notification Bell */}
@@ -255,7 +331,7 @@ export const Header = () => {
                                     onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                                     className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                                 >
-                                    <Bell className="w-6 h-6" style={{ color: '#868e96' }} />
+                                    <Bell className="w-6 h-6 text-gray-500 dark:text-zinc-400" />
                                     {unreadCount > 0 && (
                                         <span
                                             className="absolute top-[4px] right-[4px] w-[10px] h-[10px] rounded-full border-2 border-white"
@@ -266,10 +342,10 @@ export const Header = () => {
 
                                 {/* Notifications Dropdown */}
                                 {isNotificationsOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                                    <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-zinc-900 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 z-50">
                                         {/* Header */}
-                                        <div className="border-b border-gray-200 h-[57px] flex items-center justify-between px-4">
-                                            <h3 className="text-[18px] font-medium text-gray-900">
+                                        <div className="border-b border-gray-200 dark:border-zinc-700 h-[57px] flex items-center justify-between px-4">
+                                            <h3 className="text-[18px] font-medium text-gray-900 dark:text-zinc-100">
                                                 Notifications
                                             </h3>
                                             <button
@@ -288,29 +364,29 @@ export const Header = () => {
                                                     <div
                                                         key={notification.id}
                                                         onClick={() => markNotificationAsRead(notification.id)}
-                                                        className={`border-b border-gray-200 last:border-b-0 cursor-pointer hover:bg-gray-100 transition-colors ${notification.isRead ? 'bg-gray-50' : 'bg-blue-50'
+                                                        className={`border-b border-gray-200 dark:border-zinc-700 last:border-b-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors ${notification.isRead ? 'bg-gray-50 dark:bg-zinc-900' : 'bg-blue-50 dark:bg-blue-900/20'
                                                             }`}
                                                     >
                                                         <div className="p-4">
                                                             <div className="flex gap-4 items-start">
                                                                 {/* Icon */}
-                                                                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${notification.iconBg} flex-shrink-0`}>
+                                                                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${notification.iconBg} shrink-0`}>
                                                                     <IconComponent className={`w-6 h-6 ${notification.iconColor}`} />
                                                                 </div>
 
                                                                 {/* Content */}
                                                                 <div className="flex-1 min-w-0">
-                                                                    <p className="text-[14px] font-medium text-gray-900 leading-[20px] mb-1">
+                                                                    <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 leading-[20px] mb-1">
                                                                         {notification.title}
                                                                     </p>
-                                                                    <p className="text-[14px] text-gray-600 leading-[20px]">
+                                                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400 leading-[20px]">
                                                                         {notification.time}
                                                                     </p>
                                                                 </div>
 
                                                                 {/* Unread Indicator */}
                                                                 {!notification.isRead && (
-                                                                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full flex-shrink-0 mt-2"></div>
+                                                                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full shrink-0 mt-2"></div>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -320,7 +396,7 @@ export const Header = () => {
                                         </div>
 
                                         {/* Footer */}
-                                        <div className="bg-gray-50 border-t border-gray-200 h-[45px] flex items-center justify-center">
+                                        <div className="bg-gray-50 dark:bg-zinc-800 border-t border-gray-200 dark:border-zinc-700 h-[45px] flex items-center justify-center">
                                             <Link
                                                 to={ROUTES.NOTIFICATIONS}
                                                 className="text-[14px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
@@ -349,7 +425,7 @@ export const Header = () => {
                             {/* User Avatar */}
                             <button
                                 onClick={handleProfileClick}
-                                className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold hover:from-blue-600 hover:to-blue-700 transition-colors cursor-pointer"
+                                className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold hover:from-blue-600 hover:to-blue-700 transition-colors cursor-pointer"
                             >
                                 {user?.firstName?.[0]}{user?.lastName?.[0]}
                             </button>

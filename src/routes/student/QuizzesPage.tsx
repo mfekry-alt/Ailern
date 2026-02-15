@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Clock, CheckCircle2, XCircle, AlertCircle, Play, FileText, HelpCircle } from 'lucide-react';
 
 interface Quiz {
@@ -24,64 +24,7 @@ export const QuizzesPage = () => {
     const [selectedCourse, setSelectedCourse] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
 
-    const [quizzes] = useState<Quiz[]>([
-        {
-            id: '1',
-            title: 'Quiz 1: AI Fundamentals',
-            course: 'CS101 - Introduction to Programming',
-            instructor: 'Dr. Emily Carter',
-            duration: 30,
-            totalQuestions: 6,
-            totalPoints: 36,
-            attemptsAllowed: 3,
-            attemptsUsed: 0,
-            dueDate: '2024-12-30T23:59:59',
-            status: 'not_started'
-        },
-        {
-            id: '2',
-            title: 'Quiz 2: Data Structures Basics',
-            course: 'CS202 - Data Structures',
-            instructor: 'Prof. Michael Brown',
-            duration: 45,
-            totalQuestions: 10,
-            totalPoints: 50,
-            attemptsAllowed: 2,
-            attemptsUsed: 1,
-            dueDate: '2024-12-28T23:59:59',
-            status: 'completed',
-            score: 42,
-            lastAttempt: '2024-12-25T14:30:00'
-        },
-        {
-            id: '3',
-            title: 'Mid-Term Quiz: Linear Algebra',
-            course: 'MA203 - Linear Algebra',
-            instructor: 'Dr. Sarah Wilson',
-            duration: 60,
-            totalQuestions: 15,
-            totalPoints: 75,
-            attemptsAllowed: 1,
-            attemptsUsed: 0,
-            dueDate: '2025-01-05T23:59:59',
-            status: 'not_started'
-        },
-        {
-            id: '4',
-            title: 'Quiz 3: Mechanics Principles',
-            course: 'PHY105 - Classical Mechanics',
-            instructor: 'Dr. James Lee',
-            duration: 40,
-            totalQuestions: 8,
-            totalPoints: 40,
-            attemptsAllowed: 3,
-            attemptsUsed: 2,
-            dueDate: '2024-12-27T23:59:59',
-            status: 'completed',
-            score: 35,
-            lastAttempt: '2024-12-26T10:15:00'
-        }
-    ]);
+    const [quizzes] = useState<Quiz[]>([]);
 
     const getStatusBadge = (quiz: Quiz) => {
         if (quiz.status === 'completed') {
@@ -130,12 +73,12 @@ export const QuizzesPage = () => {
     ];
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
             <div className="space-y-6">
                 {/* Header */}
                 <div>
-                    <h1 className="text-[36px] font-bold text-gray-900">Quizzes</h1>
-                    <p className="text-[18px] text-gray-600 mt-1">View and take your course quizzes</p>
+                    <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">Quizzes</h1>
+                    <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">View and take your course quizzes</p>
                 </div>
 
                 {/* Stats */}
@@ -143,7 +86,7 @@ export const QuizzesPage = () => {
                     {stats.map((stat, index) => (
                         <Card key={index} variant="elevated">
                             <CardContent className="p-5">
-                                <p className="text-[14px] text-gray-600 mb-1">{stat.label}</p>
+                                <p className="text-[14px] text-gray-600 dark:text-zinc-400 mb-1">{stat.label}</p>
                                 <p className={`text-[28px] font-bold ${stat.color}`}>{stat.value}</p>
                             </CardContent>
                         </Card>
@@ -155,11 +98,11 @@ export const QuizzesPage = () => {
                     <CardContent className="p-4">
                         <div className="flex flex-wrap gap-4">
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Course</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Course</label>
                                 <select
                                     value={selectedCourse}
                                     onChange={(e) => setSelectedCourse(e.target.value)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="all">All Courses</option>
                                     <option value="CS101">CS101 - Introduction to Programming</option>
@@ -169,11 +112,11 @@ export const QuizzesPage = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 mb-2">Status</label>
+                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Status</label>
                                 <select
                                     value={selectedStatus}
                                     onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="all">All Statuses</option>
                                     <option value="not_started">Not Started</option>
@@ -198,11 +141,11 @@ export const QuizzesPage = () => {
                                         <div className="flex-1">
                                             <div className="flex items-start justify-between mb-3">
                                                 <div className="flex-1">
-                                                    <h3 className="text-[20px] font-bold text-gray-900 mb-1">
+                                                    <h3 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100 mb-1">
                                                         {quiz.title}
                                                     </h3>
-                                                    <p className="text-[14px] text-gray-600">{quiz.course}</p>
-                                                    <p className="text-[13px] text-gray-500">Instructor: {quiz.instructor}</p>
+                                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400">{quiz.course}</p>
+                                                    <p className="text-[13px] text-gray-500 dark:text-zinc-500">Instructor: {quiz.instructor}</p>
                                                 </div>
                                                 <span className={`flex items-center gap-1 px-3 py-1 rounded-full text-[13px] font-medium ${statusBadge.className}`}>
                                                     <StatusIcon className="w-3 h-3" />
@@ -211,19 +154,19 @@ export const QuizzesPage = () => {
                                             </div>
 
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                     <Clock className="w-4 h-4" />
                                                     <span>{quiz.duration} min</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                     <HelpCircle className="w-4 h-4" />
                                                     <span>{quiz.totalQuestions} questions</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                     <FileText className="w-4 h-4" />
                                                     <span>{quiz.totalPoints} points</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                     <Play className="w-4 h-4" />
                                                     <span>{quiz.attemptsUsed} / {quiz.attemptsAllowed} attempts</span>
                                                 </div>
@@ -231,14 +174,14 @@ export const QuizzesPage = () => {
 
                                             <div className="flex items-center gap-4 text-[13px]">
                                                 <div>
-                                                    <span className="text-gray-600">Due: </span>
-                                                    <span className="font-medium text-gray-900">
+                                                    <span className="text-gray-600 dark:text-zinc-400">Due: </span>
+                                                    <span className="font-medium text-gray-900 dark:text-zinc-100">
                                                         {new Date(quiz.dueDate).toLocaleString()}
                                                     </span>
                                                 </div>
                                                 {quiz.score !== undefined && (
                                                     <div>
-                                                        <span className="text-gray-600">Last Score: </span>
+                                                        <span className="text-gray-600 dark:text-zinc-400">Last Score: </span>
                                                         <span className="font-semibold text-blue-600">
                                                             {quiz.score} / {quiz.totalPoints} ({Math.round((quiz.score / quiz.totalPoints) * 100)}%)
                                                         </span>
@@ -247,7 +190,7 @@ export const QuizzesPage = () => {
                                             </div>
 
                                             {quiz.lastAttempt && (
-                                                <div className="mt-2 text-[12px] text-gray-500">
+                                                <div className="mt-2 text-[12px] text-gray-500 dark:text-zinc-500">
                                                     Last attempt: {new Date(quiz.lastAttempt).toLocaleString()}
                                                 </div>
                                             )}
@@ -266,15 +209,15 @@ export const QuizzesPage = () => {
                                                     {quiz.status === 'completed' && (
                                                         <button
                                                             onClick={() => handleStartQuiz(quiz.id)}
-                                                            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                                                            className="w-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
                                                         >
                                                             View Results
                                                         </button>
                                                     )}
                                                 </>
                                             ) : (
-                                                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                                                    <p className="text-[13px] text-gray-600">
+                                                <div className="p-3 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg text-center">
+                                                    <p className="text-[13px] text-gray-600 dark:text-zinc-400">
                                                         {quiz.attemptsUsed >= quiz.attemptsAllowed
                                                             ? 'No attempts remaining'
                                                             : 'Quiz closed'}
@@ -293,8 +236,8 @@ export const QuizzesPage = () => {
                     <Card variant="elevated">
                         <CardContent className="p-12 text-center">
                             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-[16px] text-gray-600">No quizzes found</p>
-                            <p className="text-[14px] text-gray-500 mt-1">Try adjusting your filters</p>
+                            <p className="text-[16px] text-gray-600 dark:text-zinc-400">No quizzes found</p>
+                            <p className="text-[14px] text-gray-500 dark:text-zinc-500 mt-1">Try adjusting your filters</p>
                         </CardContent>
                     </Card>
                 )}

@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
-
+import { useState, useMemo, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui';
+import { QUERY_KEYS } from '@/lib/constants';
 import {
     FileText,
     Upload,
@@ -12,8 +13,12 @@ import {
     User,
     Star,
     Eye,
-    X
+    X,
+    Loader2
 } from 'lucide-react';
+import { getMyStudentCourses } from '@/api/services/student.service';
+import { getCourseAssignmentsForStudent } from '@/api/services/assignment.service';
+import type { GetAssignmentDto } from '@/types/api.types';
 
 interface Assignment {
     id: string;
@@ -32,69 +37,69 @@ interface Assignment {
     submittedAt?: string;
 }
 
+const mapApiToAssignment = (dto: GetAssignmentDto): Assignment => {
+    const now = new Date();
+    const due = new Date(dto.dueDate);
+    let status: Assignment['status'] = 'pending';
+    if (due < now) status = 'late';
+
+    return {
+        id: dto.id.toString(),
+        title: dto.title,
+        course: dto.courseName ? `${dto.courseName}` : `Course ${dto.courseId}`,
+        instructor: dto.instructorName || 'Instructor',
+        dueDate: dto.dueDate,
+        status,
+        points: 0,
+        description: dto.instructions || '',
+        attachments: dto.files?.map(f => f.fileName) || [],
+        allowedFileTypes: ['PDF', 'DOC', 'DOCX', 'ZIP'],
+        maxFileSize: '10 MB',
+    };
+};
+
 export const AssignmentsPage = () => {
     const [selectedCourse, setSelectedCourse] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
 
-    const [assignments, setAssignments] = useState<Assignment[]>([
-        {
-            id: '1',
-            title: 'Programming Assignment 1: Basic Algorithms',
-            course: 'CS101 - Introduction to Programming',
-            instructor: 'Dr. Emily Carter',
-            dueDate: '2024-01-15',
-            status: 'graded',
-            points: 100,
-            description: 'Implement basic sorting algorithms including bubble sort, selection sort, and insertion sort. Include time complexity analysis.',
-            attachments: ['assignment1.pdf', 'rubric.pdf'],
-            allowedFileTypes: ['PDF', 'DOC', 'DOCX', 'ZIP'],
-            maxFileSize: '10 MB',
-            grade: 95,
-            feedback: 'Excellent implementation! Your code is well-documented and efficient. Consider optimizing the bubble sort algorithm.',
-            submittedAt: '2024-01-14T10:30:00Z'
+    // Fetch student's enrolled courses
+    const { data: enrolledCourses = [] } = useQuery({
+        queryKey: ['student-courses'],
+        queryFn: () => getMyStudentCourses(),
+    });
+
+    // Fetch assignments for all enrolled courses
+    const { data: allAssignments = [], isLoading, error } = useQuery({
+        queryKey: [QUERY_KEYS.ASSIGNMENTS, enrolledCourses.map(c => c.id)],
+        queryFn: async () => {
+            if (enrolledCourses.length === 0) return [];
+            const results = await Promise.allSettled(
+                enrolledCourses.map(course => getCourseAssignmentsForStudent(course.id))
+            );
+            const combined: GetAssignmentDto[] = [];
+            for (const result of results) {
+                if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+                    combined.push(...result.value);
+                }
+            }
+            return combined;
         },
-        {
-            id: '2',
-            title: 'Data Structures Lab: Linked Lists',
-            course: 'CS202 - Data Structures',
-            instructor: 'Prof. Michael Brown',
-            dueDate: '2024-01-20',
-            status: 'submitted',
-            points: 150,
-            description: 'Create a comprehensive linked list implementation with all basic operations.',
-            attachments: ['lab2.pdf'],
-            allowedFileTypes: ['PDF', 'ZIP'],
-            maxFileSize: '15 MB',
-            submittedAt: '2024-01-19T15:45:00Z'
-        },
-        {
-            id: '3',
-            title: 'Linear Algebra Problem Set 3',
-            course: 'MA203 - Linear Algebra',
-            instructor: 'Dr. Sarah Wilson',
-            dueDate: '2024-01-18',
-            status: 'pending',
-            points: 80,
-            description: 'Solve problems related to eigenvalues, eigenvectors, and diagonalization.',
-            attachments: ['ps3.pdf'],
-            allowedFileTypes: ['PDF', 'DOC', 'DOCX'],
-            maxFileSize: '5 MB'
-        },
-        {
-            id: '4',
-            title: 'Physics Lab Report: Mechanics',
-            course: 'PHY105 - Classical Mechanics',
-            instructor: 'Dr. James Lee',
-            dueDate: '2024-01-12',
-            status: 'late',
-            points: 120,
-            description: 'Write a comprehensive lab report on projectile motion experiments.',
-            attachments: ['lab_report_template.pdf'],
-            allowedFileTypes: ['PDF', 'DOC', 'DOCX'],
-            maxFileSize: '20 MB',
-            submittedAt: '2024-01-13T08:00:00Z'
-        }
-    ]);
+        enabled: enrolledCourses.length > 0,
+    });
+
+    const mappedAssignments = useMemo(() => allAssignments.map(mapApiToAssignment), [allAssignments]);
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
+
+    // Sync API data into local state (for submit status updates)
+    useEffect(() => {
+        setAssignments(mappedAssignments);
+    }, [mappedAssignments]);
+
+    // Derive unique course names for filter dropdown
+    const courseOptions = useMemo(() => {
+        const courses = new Set(assignments.map(a => a.course));
+        return Array.from(courses);
+    }, [assignments]);
 
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [submittingId, setSubmittingId] = useState<string | null>(null);
@@ -274,15 +279,38 @@ export const AssignmentsPage = () => {
         { label: 'Graded', value: assignments.filter(a => a.status === 'graded').length, icon: CheckCircle, color: 'text-green-600' }
     ];
 
+    if (isLoading) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-zinc-400">Loading assignments...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
+                <div className="text-center py-12">
+                    <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+                    <h3 className="text-[20px] font-semibold text-gray-900 dark:text-zinc-100 mb-2">Failed to load assignments</h3>
+                    <p className="text-gray-600 dark:text-zinc-400">Please try again later</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="space-y-1">
-                    <h1 className="text-[30px] font-bold leading-[36px] text-gray-900">
+                    <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-zinc-100">
                         Assignments
                     </h1>
-                    <p className="text-[16px] leading-[24px] text-gray-600">
+                    <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400">
                         Manage your assignments and track submission status
                     </p>
                 </div>
@@ -296,14 +324,14 @@ export const AssignmentsPage = () => {
                                 <CardContent className="p-6">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-[14px] font-medium text-gray-600 mb-1">
+                                            <p className="text-[14px] font-medium text-gray-600 dark:text-zinc-400 mb-1">
                                                 {stat.label}
                                             </p>
-                                            <p className="text-[24px] font-bold text-gray-900">
+                                            <p className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">
                                                 {stat.value}
                                             </p>
                                         </div>
-                                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                                        <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
                                             <IconComponent className={`w-6 h-6 ${stat.color}`} />
                                         </div>
                                     </div>
@@ -321,20 +349,19 @@ export const AssignmentsPage = () => {
                                 <select
                                     value={selectedCourse}
                                     onChange={(e) => setSelectedCourse(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="all">All Courses</option>
-                                    <option value="CS101">CS101 - Introduction to Programming</option>
-                                    <option value="CS202">CS202 - Data Structures</option>
-                                    <option value="MA203">MA203 - Linear Algebra</option>
-                                    <option value="PHY105">PHY105 - Classical Mechanics</option>
+                                    {courseOptions.map(course => (
+                                        <option key={course} value={course}>{course}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="flex-1">
                                 <select
                                     value={selectedStatus}
                                     onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 >
                                     <option value="all">All Status</option>
                                     <option value="pending">Pending</option>
@@ -360,7 +387,7 @@ export const AssignmentsPage = () => {
                                         {/* Assignment Info */}
                                         <div className="flex-1">
                                             <div className="flex items-start justify-between mb-3">
-                                                <h3 className="text-[18px] font-bold text-gray-900 flex-1">
+                                                <h3 className="text-[18px] font-bold text-gray-900 dark:text-zinc-100 flex-1">
                                                     {assignment.title}
                                                 </h3>
                                                 <div className="flex items-center gap-2 ml-4">
@@ -372,29 +399,29 @@ export const AssignmentsPage = () => {
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                     <User className="w-4 h-4" />
                                                     <span>{assignment.instructor}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600">
+                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
                                                     <Calendar className="w-4 h-4" />
                                                     <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
                                                 </div>
 
 
-                                                <p className="text-[14px] text-gray-700 mb-3">
+                                                <p className="text-[14px] text-gray-700 dark:text-zinc-300 mb-3">
                                                     {assignment.description}
                                                 </p>
 
                                                 {/* Attachments */}
                                                 {assignment.attachments.length > 0 && (
                                                     <div className="mb-3">
-                                                        <p className="text-[12px] font-medium text-gray-600 mb-2">Attachments:</p>
+                                                        <p className="text-[12px] font-medium text-gray-600 dark:text-zinc-400 mb-2">Attachments:</p>
                                                         <div className="flex flex-wrap gap-2">
                                                             {assignment.attachments.map((attachment, index) => (
                                                                 <button
                                                                     key={index}
-                                                                    className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-[12px] text-gray-700 transition-colors"
+                                                                    className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded text-[12px] text-gray-700 dark:text-zinc-300 transition-colors"
                                                                 >
                                                                     <Download className="w-3 h-3" />
                                                                     {attachment}
@@ -406,9 +433,9 @@ export const AssignmentsPage = () => {
 
                                                 {/* File Restrictions */}
                                                 {(assignment.allowedFileTypes || assignment.maxFileSize) && (
-                                                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                                        <p className="text-[12px] font-medium text-gray-700 mb-2">Submission Requirements:</p>
-                                                        <div className="flex flex-wrap gap-4 text-[12px] text-gray-600">
+                                                    <div className="mt-3 p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700">
+                                                        <p className="text-[12px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Submission Requirements:</p>
+                                                        <div className="flex flex-wrap gap-4 text-[12px] text-gray-600 dark:text-zinc-400">
                                                             {assignment.allowedFileTypes && (
                                                                 <span>
                                                                     <span className="font-medium">Allowed types:</span> {assignment.allowedFileTypes.join(', ')}
@@ -432,7 +459,7 @@ export const AssignmentsPage = () => {
                                                             <p className={`text-[12px] font-medium ${deadlineStatus.color}`}>
                                                                 {deadlineStatus.text}
                                                             </p>
-                                                            <p className="text-[11px] text-gray-600 mt-1">
+                                                            <p className="text-[11px] text-gray-600 dark:text-zinc-400 mt-1">
                                                                 Submitted: {new Date(assignment.submittedAt).toLocaleString()}
                                                             </p>
                                                         </div>
@@ -459,7 +486,7 @@ export const AssignmentsPage = () => {
                                                     </button>
                                                 )}
                                                 {assignment.status === 'submitted' && (
-                                                    <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
+                                                    <button className="w-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
                                                         View Submission
                                                     </button>
                                                 )}
@@ -477,7 +504,7 @@ export const AssignmentsPage = () => {
                                                     </button>
                                                 )}
 
-                                                <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                                <button className="w-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                                                     <Eye className="w-4 h-4" />
                                                     View Details
                                                 </button>
@@ -493,11 +520,11 @@ export const AssignmentsPage = () => {
                 {/* Empty State */}
                 {filteredAssignments.length === 0 && (
                     <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
                             <FileText className="w-8 h-8 text-gray-400" />
                         </div>
-                        <h3 className="text-[20px] font-semibold text-gray-900 mb-2">No assignments found</h3>
-                        <p className="text-gray-600">Try adjusting your filter criteria</p>
+                        <h3 className="text-[20px] font-semibold text-gray-900 dark:text-zinc-100 mb-2">No assignments found</h3>
+                        <p className="text-gray-600 dark:text-zinc-400">Try adjusting your filter criteria</p>
                     </div>
                 )}
             </div>
@@ -560,15 +587,15 @@ export const SubmissionModal = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-            <div className="relative bg-white w-full max-w-xl rounded-lg shadow-lg border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-[18px] font-bold text-gray-900">Submit Assignment</h3>
-                    <p className="text-[14px] text-gray-600 mt-1">{assignment.title}</p>
+            <div className="relative bg-white dark:bg-zinc-900 w-full max-w-xl rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700">
+                <div className="p-6 border-b border-gray-200 dark:border-zinc-700">
+                    <h3 className="text-[18px] font-bold text-gray-900 dark:text-zinc-100">Submit Assignment</h3>
+                    <p className="text-[14px] text-gray-600 dark:text-zinc-400 mt-1">{assignment.title}</p>
                 </div>
                 <div className="p-6 space-y-4">
                     <div className="space-y-2">
-                        <label className="text-[14px] font-medium text-gray-900">Upload Files</label>
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-500 transition-colors">
+                        <label className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">Upload Files</label>
+                        <div className="border-2 border-dashed border-gray-300 dark:border-zinc-600 rounded-lg p-4 hover:border-blue-500 transition-colors">
                             <input
                                 type="file"
                                 multiple
@@ -578,7 +605,7 @@ export const SubmissionModal = ({
                                 disabled={submitting}
                             />
                         </div>
-                        <p className="text-[12px] text-gray-600">
+                        <p className="text-[12px] text-gray-600 dark:text-zinc-400">
                             Allowed: {assignment.allowedFileTypes?.join(', ') || 'Any'} • Max size per file: {assignment.maxFileSize || '—'}
                         </p>
                     </div>
@@ -586,15 +613,15 @@ export const SubmissionModal = ({
                     {/* Selected Files List */}
                     {selectedFiles.length > 0 && (
                         <div className="space-y-2">
-                            <label className="text-[14px] font-medium text-gray-900">Selected Files ({selectedFiles.length})</label>
+                            <label className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">Selected Files ({selectedFiles.length})</label>
                             <div className="space-y-2 max-h-40 overflow-y-auto">
                                 {selectedFiles.map((file, index) => (
-                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700">
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                                            <FileText className="w-4 h-4 text-gray-500 shrink-0" />
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-[13px] font-medium text-gray-900 truncate">{file.name}</p>
-                                                <p className="text-[11px] text-gray-500">{formatFileSize(file.size)}</p>
+                                                <p className="text-[13px] font-medium text-gray-900 dark:text-zinc-100 truncate">{file.name}</p>
+                                                <p className="text-[11px] text-gray-500 dark:text-zinc-500">{formatFileSize(file.size)}</p>
                                             </div>
                                         </div>
                                         <button
@@ -611,12 +638,12 @@ export const SubmissionModal = ({
                         </div>
                     )}
                     <div className="space-y-1">
-                        <label className="text-[14px] font-medium text-gray-900">Notes (optional)</label>
+                        <label className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">Notes (optional)</label>
                         <textarea
                             rows={3}
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                             placeholder="Add any notes for your instructor"
                         />
                     </div>
@@ -625,21 +652,21 @@ export const SubmissionModal = ({
                     )}
                     {submitting && (
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between text-[12px] text-gray-600">
+                            <div className="flex items-center justify-between text-[12px] text-gray-600 dark:text-zinc-400">
                                 <span>Uploading...</span>
                                 <span>{progress}%</span>
                             </div>
-                            <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                            <div className="h-2 rounded-full bg-gray-100 dark:bg-zinc-700 overflow-hidden">
                                 <div className="h-full bg-blue-600" style={{ width: `${progress}%` }} />
                             </div>
                         </div>
                     )}
                 </div>
-                <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+                <div className="p-6 border-t border-gray-200 dark:border-zinc-700 flex gap-3 justify-end">
                     <button
                         onClick={onClose}
                         disabled={submitting}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Cancel
                     </button>

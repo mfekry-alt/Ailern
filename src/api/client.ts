@@ -17,8 +17,8 @@ export const setAccessToken = (token: string | null) => {
 export const getAccessToken = () => accessToken;
 
 export const api = axios.create({
-    baseURL: API_URL,
-    withCredentials: true,
+    // ⚡ CHANGE THIS: Use a relative path so it hits the proxy
+    baseURL: '/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -27,6 +27,7 @@ export const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
+        console.log(`[API] ${config.method?.toUpperCase()} ${config.url} | Token: ${accessToken ? 'present' : 'MISSING'}`);
         if (accessToken && config.headers) {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
@@ -78,14 +79,16 @@ api.interceptors.response.use(
         isRefreshing = true;
 
         try {
+            console.log('[API] Token expired — attempting refresh...');
             const response = await api.post(
                 '/Auth/refresh-token',
                 {
+                    accessToken: accessToken,
                     refreshToken: storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN),
                 },
             );
 
-            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
+            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data || response.data;
             setAccessToken(newAccessToken);
 
             if (newRefreshToken) {

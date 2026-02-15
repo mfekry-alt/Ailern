@@ -1,23 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import path from "path"
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: {
-    host: true,
-    watch: {
-      usePolling: true,
-    },
-  },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      // ⚡ This rule tells Vite: "If a request starts with /api, send it to the real backend"
+      '/api': {
+        target: 'https://ailern.runasp.net',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })

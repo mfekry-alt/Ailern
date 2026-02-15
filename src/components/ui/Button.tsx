@@ -29,11 +29,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             primary:
                 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 active:bg-primary-800',
             secondary:
-                'bg-secondary-600 text-white hover:bg-secondary-700 focus:ring-secondary-500 active:bg-secondary-800',
+                'bg-secondary-600 text-white hover:bg-secondary-700 focus:ring-secondary-500 active:bg-secondary-800 dark:bg-secondary-500 dark:hover:bg-secondary-600',
             outline:
-                'border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500 active:bg-primary-100',
+                'border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500 active:bg-primary-100 dark:text-primary-400 dark:border-primary-400 dark:hover:bg-primary-950',
             ghost:
-                'text-secondary-700 hover:bg-secondary-100 focus:ring-secondary-500 active:bg-secondary-200',
+                'text-secondary-700 hover:bg-secondary-100 focus:ring-secondary-500 active:bg-secondary-200 dark:text-secondary-300 dark:hover:bg-zinc-800 dark:active:bg-zinc-700',
             danger:
                 'bg-danger-600 text-white hover:bg-danger-700 focus:ring-danger-500 active:bg-danger-800',
         };

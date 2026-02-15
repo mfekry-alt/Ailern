@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Clock, CheckCircle2, XCircle, AlertCircle, ArrowLeft, ArrowRight, HelpCircle, FileText, Play } from 'lucide-react';
 
 type QuestionType = 'MCQ' | 'TF' | 'Written';
@@ -173,7 +173,7 @@ Good luck!`,
     // Pre-start view
     if (!quizStarted && !quizSubmitted) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
                 <div className="max-w-4xl mx-auto">
                     <button
                         onClick={() => navigate(-1)}
@@ -190,31 +190,31 @@ Good luck!`,
                                     <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
                                         <FileText className="w-8 h-8 text-blue-600" />
                                     </div>
-                                    <h1 className="text-[32px] font-bold text-gray-900 mb-2">{quiz.name}</h1>
+                                    <h1 className="text-[32px] font-bold text-gray-900 dark:text-zinc-100 mb-2">{quiz.name}</h1>
                                 </div>
 
                                 {/* Quiz Info */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="p-4 bg-gray-50 rounded-lg text-center">
+                                    <div className="p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg text-center">
                                         <div className="flex items-center justify-center gap-2 mb-1">
-                                            <Clock className="w-4 h-4 text-gray-600" />
-                                            <span className="text-[14px] text-gray-600">Duration</span>
+                                            <Clock className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
+                                            <span className="text-[14px] text-gray-600 dark:text-zinc-400">Duration</span>
                                         </div>
-                                        <p className="text-[18px] font-bold text-gray-900">{quiz.duration} minutes</p>
+                                        <p className="text-[18px] font-bold text-gray-900 dark:text-zinc-100">{quiz.duration} minutes</p>
                                     </div>
-                                    <div className="p-4 bg-gray-50 rounded-lg text-center">
+                                    <div className="p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg text-center">
                                         <div className="flex items-center justify-center gap-2 mb-1">
-                                            <HelpCircle className="w-4 h-4 text-gray-600" />
-                                            <span className="text-[14px] text-gray-600">Questions</span>
+                                            <HelpCircle className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
+                                            <span className="text-[14px] text-gray-600 dark:text-zinc-400">Questions</span>
                                         </div>
-                                        <p className="text-[18px] font-bold text-gray-900">{totalQuestions}</p>
+                                        <p className="text-[18px] font-bold text-gray-900 dark:text-zinc-100">{totalQuestions}</p>
                                     </div>
-                                    <div className="p-4 bg-gray-50 rounded-lg text-center">
+                                    <div className="p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg text-center">
                                         <div className="flex items-center justify-center gap-2 mb-1">
-                                            <HelpCircle className="w-4 h-4 text-gray-600" />
-                                            <span className="text-[14px] text-gray-600">Attempts Left</span>
+                                            <HelpCircle className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
+                                            <span className="text-[14px] text-gray-600 dark:text-zinc-400">Attempts Left</span>
                                         </div>
-                                        <p className="text-[18px] font-bold text-gray-900">
+                                        <p className="text-[18px] font-bold text-gray-900 dark:text-zinc-100">
                                             {quiz.attemptsAllowed - quiz.attemptsUsed} / {quiz.attemptsAllowed}
                                         </p>
                                     </div>
@@ -232,9 +232,9 @@ Good luck!`,
                                 </div>
 
                                 {/* Question breakdown */}
-                                <div className="p-5 bg-gray-50 rounded-lg">
-                                    <h3 className="text-[16px] font-semibold text-gray-900 mb-3">Question Breakdown:</h3>
-                                    <div className="space-y-2 text-[14px] text-gray-700">
+                                <div className="p-5 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+                                    <h3 className="text-[16px] font-semibold text-gray-900 dark:text-zinc-100 mb-3">Question Breakdown:</h3>
+                                    <div className="space-y-2 text-[14px] text-gray-700 dark:text-zinc-300">
                                         <div className="flex justify-between">
                                             <span>Total Points:</span>
                                             <span className="font-semibold">{totalPoints}</span>
@@ -281,15 +281,15 @@ Good luck!`,
     // Quiz in progress
     if (quizStarted && !quizSubmitted) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+            <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
                 <div className="max-w-5xl mx-auto">
                     {/* Timer and Progress Header */}
                     <Card variant="elevated" className="mb-6">
                         <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h2 className="text-[20px] font-bold text-gray-900">{quiz.name}</h2>
-                                    <p className="text-[14px] text-gray-600">
+                                    <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">{quiz.name}</h2>
+                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400">
                                         Question {currentQuestionIndex + 1} of {totalQuestions}
                                     </p>
                                 </div>
@@ -297,7 +297,7 @@ Good luck!`,
                                     <div className={`text-[28px] font-bold ${timeRemaining < 300 ? 'text-red-600' : 'text-blue-600'}`}>
                                         {formatTime(timeRemaining)}
                                     </div>
-                                    <p className="text-[13px] text-gray-600 flex items-center gap-1">
+                                    <p className="text-[13px] text-gray-600 dark:text-zinc-400 flex items-center gap-1">
                                         <Clock className="w-3 h-3" />
                                         Time Remaining
                                     </p>
@@ -306,11 +306,11 @@ Good luck!`,
 
                             {/* Progress bar */}
                             <div className="mt-4">
-                                <div className="flex items-center justify-between text-[13px] text-gray-600 mb-2">
+                                <div className="flex items-center justify-between text-[13px] text-gray-600 dark:text-zinc-400 mb-2">
                                     <span>Progress: {answeredCount} / {totalQuestions} answered</span>
                                     <span>{Math.round((answeredCount / totalQuestions) * 100)}%</span>
                                 </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2">
                                     <div
                                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                                         style={{ width: `${(answeredCount / totalQuestions) * 100}%` }}
@@ -328,11 +328,11 @@ Good luck!`,
                                     <button
                                         key={q.id}
                                         onClick={() => setCurrentQuestionIndex(index)}
-                                        className={`flex-shrink-0 w-10 h-10 rounded-lg font-semibold text-[14px] transition-all ${index === currentQuestionIndex
-                                                ? 'bg-blue-600 text-white'
-                                                : answers[q.id] !== undefined
-                                                    ? 'bg-green-100 text-green-800 border-2 border-green-300'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        className={`shrink-0 w-10 h-10 rounded-lg font-semibold text-[14px] transition-all ${index === currentQuestionIndex
+                                            ? 'bg-blue-600 text-white'
+                                            : answers[q.id] !== undefined
+                                                ? 'bg-green-100 text-green-800 border-2 border-green-300'
+                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
                                             }`}
                                     >
                                         {index + 1}
@@ -354,11 +354,11 @@ Good luck!`,
                                                     {currentQuestion.type === 'MCQ' ? 'Multiple Choice' :
                                                         currentQuestion.type === 'TF' ? 'True/False' : 'Written Answer'}
                                                 </span>
-                                                <span className="text-[14px] text-gray-600">
+                                                <span className="text-[14px] text-gray-600 dark:text-zinc-400">
                                                     {currentQuestion.points} {currentQuestion.points === 1 ? 'point' : 'points'}
                                                 </span>
                                             </div>
-                                            <h3 className="text-[18px] font-semibold text-gray-900 leading-relaxed">
+                                            <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100 leading-relaxed">
                                                 {currentQuestion.text}
                                             </h3>
                                         </div>
@@ -371,8 +371,8 @@ Good luck!`,
                                                 <label
                                                     key={index}
                                                     className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${answers[currentQuestion.id] === option
-                                                            ? 'border-blue-500 bg-blue-50'
-                                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                        : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-800'
                                                         }`}
                                                 >
                                                     <input
@@ -383,7 +383,7 @@ Good luck!`,
                                                         onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
                                                         className="mt-1 w-4 h-4 text-blue-600"
                                                     />
-                                                    <span className="text-[15px] text-gray-800 flex-1">{option}</span>
+                                                    <span className="text-[15px] text-gray-800 dark:text-zinc-200 flex-1">{option}</span>
                                                 </label>
                                             ))}
                                         </div>
@@ -396,8 +396,8 @@ Good luck!`,
                                                 <label
                                                     key={String(value)}
                                                     className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${answers[currentQuestion.id] === value
-                                                            ? 'border-blue-500 bg-blue-50'
-                                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                        : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-800'
                                                         }`}
                                                 >
                                                     <input
@@ -408,7 +408,7 @@ Good luck!`,
                                                         onChange={() => handleAnswerChange(currentQuestion.id, value)}
                                                         className="w-4 h-4 text-blue-600"
                                                     />
-                                                    <span className="text-[16px] font-medium text-gray-800">
+                                                    <span className="text-[16px] font-medium text-gray-800 dark:text-zinc-200">
                                                         {value ? 'True' : 'False'}
                                                     </span>
                                                 </label>
@@ -422,7 +422,7 @@ Good luck!`,
                                             value={answers[currentQuestion.id] || ''}
                                             onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
                                             placeholder="Type your answer here..."
-                                            className="w-full min-h-[200px] p-4 border-2 border-gray-200 rounded-lg text-[15px] text-gray-800 focus:border-blue-500 focus:outline-none resize-y"
+                                            className="w-full min-h-[200px] p-4 border-2 border-gray-200 dark:border-zinc-700 rounded-lg text-[15px] text-gray-800 dark:text-zinc-200 bg-white dark:bg-zinc-800 focus:border-blue-500 focus:outline-none resize-y"
                                         />
                                     )}
                                 </div>
@@ -436,8 +436,8 @@ Good luck!`,
                             onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
                             disabled={currentQuestionIndex === 0}
                             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-[14px] transition-colors ${currentQuestionIndex === 0
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'bg-gray-600 hover:bg-gray-700 text-white'
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-gray-600 hover:bg-gray-700 text-white'
                                 }`}
                         >
                             <ArrowLeft className="w-4 h-4" />
@@ -468,7 +468,7 @@ Good luck!`,
 
     // Quiz completed - Results view
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto" style={{ background: 'linear-gradient(90deg, #f8fafc 0%, #f8fafc 100%)' }}>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
             <div className="max-w-4xl mx-auto">
                 <Card variant="elevated">
                     <CardContent className="p-8">
@@ -478,24 +478,24 @@ Good luck!`,
                                 <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
                                     <CheckCircle2 className="w-10 h-10 text-green-600" />
                                 </div>
-                                <h1 className="text-[32px] font-bold text-gray-900 mb-2">Quiz Completed!</h1>
-                                <p className="text-[16px] text-gray-600">Your quiz has been submitted successfully</p>
+                                <h1 className="text-[32px] font-bold text-gray-900 dark:text-zinc-100 mb-2">Quiz Completed!</h1>
+                                <p className="text-[16px] text-gray-600 dark:text-zinc-400">Your quiz has been submitted successfully</p>
                             </div>
 
                             {/* Auto-graded Score */}
-                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg border-2 border-blue-200">
-                                <h2 className="text-[20px] font-bold text-gray-900 mb-4 text-center">
+                            <div className="bg-linear-to-br from-blue-50 to-indigo-50 p-6 rounded-lg border-2 border-blue-200">
+                                <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100 mb-4 text-center">
                                     Auto-Graded Score
                                 </h2>
                                 <div className="text-center mb-4">
                                     <div className="text-[48px] font-bold text-blue-600">
                                         {autoGradedScore} / {totalAutoGradablePoints}
                                     </div>
-                                    <div className="text-[18px] text-gray-700 font-medium">
+                                    <div className="text-[18px] text-gray-700 dark:text-zinc-300 font-medium">
                                         {Math.round((autoGradedScore / totalAutoGradablePoints) * 100)}% on auto-graded questions
                                     </div>
                                 </div>
-                                <p className="text-[14px] text-gray-600 text-center">
+                                <p className="text-[14px] text-gray-600 dark:text-zinc-400 text-center">
                                     MCQ and True/False questions have been automatically graded
                                 </p>
                             </div>
@@ -504,7 +504,7 @@ Good luck!`,
                             {hasWrittenQuestions && (
                                 <div className="p-5 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                                     <div className="flex items-start gap-3">
-                                        <AlertCircle className="w-6 h-6 text-yellow-600 mt-0.5 flex-shrink-0" />
+                                        <AlertCircle className="w-6 h-6 text-yellow-600 mt-0.5 shrink-0" />
                                         <div>
                                             <h3 className="text-[16px] font-bold text-yellow-900 mb-2">
                                                 Written Questions Pending Review
@@ -527,7 +527,7 @@ Good luck!`,
 
                             {/* Review Answers */}
                             <div className="space-y-4">
-                                <h2 className="text-[22px] font-bold text-gray-900">Review Your Answers</h2>
+                                <h2 className="text-[22px] font-bold text-gray-900 dark:text-zinc-100">Review Your Answers</h2>
 
                                 {quiz.questions.map((question, index) => {
                                     const userAnswer = answers[question.id];
@@ -535,26 +535,26 @@ Good luck!`,
                                     const isAnswered = userAnswer !== undefined;
 
                                     return (
-                                        <div key={question.id} className="p-5 border-2 border-gray-200 rounded-lg">
+                                        <div key={question.id} className="p-5 border-2 border-gray-200 dark:border-zinc-700 rounded-lg">
                                             <div className="flex items-start justify-between mb-3">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <span className="text-[14px] font-semibold text-gray-700">
+                                                        <span className="text-[14px] font-semibold text-gray-700 dark:text-zinc-300">
                                                             Question {index + 1}
                                                         </span>
-                                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-[12px] font-medium">
+                                                        <span className="px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded text-[12px] font-medium">
                                                             {question.type === 'MCQ' ? 'MCQ' : question.type === 'TF' ? 'T/F' : 'Written'}
                                                         </span>
-                                                        <span className="text-[13px] text-gray-600">
+                                                        <span className="text-[13px] text-gray-600 dark:text-zinc-400">
                                                             {question.points} pts
                                                         </span>
                                                     </div>
-                                                    <p className="text-[15px] text-gray-900 font-medium mb-3">
+                                                    <p className="text-[15px] text-gray-900 dark:text-zinc-100 font-medium mb-3">
                                                         {question.text}
                                                     </p>
                                                 </div>
                                                 {question.type !== 'Written' && (
-                                                    <div className="flex-shrink-0">
+                                                    <div className="shrink-0">
                                                         {isCorrect ? (
                                                             <div className="flex items-center gap-1 text-green-600 bg-green-50 px-3 py-1 rounded-full">
                                                                 <CheckCircle2 className="w-4 h-4" />
@@ -572,14 +572,14 @@ Good luck!`,
 
                                             {/* User's Answer */}
                                             <div className="mb-3">
-                                                <p className="text-[13px] font-semibold text-gray-700 mb-1">Your Answer:</p>
+                                                <p className="text-[13px] font-semibold text-gray-700 dark:text-zinc-300 mb-1">Your Answer:</p>
                                                 <div className={`p-3 rounded-lg ${question.type === 'Written'
-                                                        ? 'bg-blue-50 border border-blue-200'
-                                                        : isCorrect
-                                                            ? 'bg-green-50 border border-green-200'
-                                                            : 'bg-red-50 border border-red-200'
+                                                    ? 'bg-blue-50 border border-blue-200'
+                                                    : isCorrect
+                                                        ? 'bg-green-50 border border-green-200'
+                                                        : 'bg-red-50 border border-red-200'
                                                     }`}>
-                                                    <p className="text-[14px] text-gray-800">
+                                                    <p className="text-[14px] text-gray-800 dark:text-zinc-200">
                                                         {isAnswered
                                                             ? String(userAnswer)
                                                             : <span className="text-gray-500 italic">No answer provided</span>
@@ -591,7 +591,7 @@ Good luck!`,
                                             {/* Correct Answer (for auto-gradable questions) */}
                                             {question.type !== 'Written' && (
                                                 <div className="mb-3">
-                                                    <p className="text-[13px] font-semibold text-gray-700 mb-1">Correct Answer:</p>
+                                                    <p className="text-[13px] font-semibold text-gray-700 dark:text-zinc-300 mb-1">Correct Answer:</p>
                                                     <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                                                         <p className="text-[14px] text-green-900 font-medium">
                                                             {String(question.correctAnswer)}
