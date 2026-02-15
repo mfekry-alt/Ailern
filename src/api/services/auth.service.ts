@@ -38,8 +38,15 @@ export const login = async (
     const tokenData = response.data.data!;
 
     // DEBUG: Log the full login response to see if we're missing an ID field
-    console.log('🔍 [Auth] Full login response:', JSON.stringify(response.data, null, 2));
-    console.log('🔍 [Auth] Token data:', JSON.stringify(tokenData, null, 2));
+    console.log(' [Auth] Full login response:', JSON.stringify(response.data, null, 2));
+    console.log(' [Auth] Token data:', JSON.stringify(tokenData, null, 2));
+    console.log(' [Auth] Available fields:', Object.keys(tokenData));
+    console.log(' [Auth] Looking for numeric ID in:', {
+        id: (tokenData as any).id,
+        userId: (tokenData as any).userId,
+        instructorId: (tokenData as any).instructorId,
+        user: (tokenData as any).user,
+    });
 
     // Store tokens
     setAccessToken(tokenData.accessToken);

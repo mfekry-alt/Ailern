@@ -11,8 +11,18 @@ import type { GetTokenResponseDto } from '@/types/api.types';
 // Helper to transform API user to app User type
 const transformApiUser = (apiUser: GetTokenResponseDto): User => {
     const fullNameParts = apiUser.userName.split(' ');
+
+    // Try to extract numeric ID from various possible fields
+    const numericId = (apiUser as any).id ||
+        (apiUser as any).userId ||
+        (apiUser as any).instructorId ||
+        (apiUser as any).user?.id;
+
+    // DEBUG: Log what ID we're using
+    console.log('🔧 [transformApiUser] Extracted ID:', numericId, 'Type:', typeof numericId);
+
     return {
-        id: apiUser.email, // Use email as ID since API doesn't provide user ID in login
+        id: numericId || apiUser.email, // Use numeric ID if available, fallback to email
         email: apiUser.email,
         firstName: fullNameParts[0] || apiUser.userName,
         lastName: fullNameParts.slice(1).join(' ') || '',
