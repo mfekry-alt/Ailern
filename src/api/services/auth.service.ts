@@ -51,11 +51,18 @@ export const login = async (
     // Store tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+
+    // Extract numeric ID from response
+    const numericId = tokenData.instructorId || tokenData.studentId || tokenData.id;
+
     storage.set(STORAGE_KEYS.USER, {
+        id: numericId || tokenData.email,
         userName: tokenData.userName,
         email: tokenData.email,
         role: tokenData.role,
     });
+
+    console.log(' [Auth] Stored user with ID:', numericId || tokenData.email);
 
     return tokenData;
 };
@@ -100,7 +107,10 @@ export const registerStudent = async (
     // Store tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+
+    const numericId = tokenData.studentId || tokenData.id;
     storage.set(STORAGE_KEYS.USER, {
+        id: numericId || tokenData.email,
         userName: tokenData.userName,
         email: tokenData.email,
         role: tokenData.role,
@@ -127,7 +137,10 @@ export const registerInstructor = async (
     // Store tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+
+    const numericId = tokenData.instructorId || tokenData.id;
     storage.set(STORAGE_KEYS.USER, {
+        id: numericId || tokenData.email,
         userName: tokenData.userName,
         email: tokenData.email,
         role: tokenData.role,
@@ -154,7 +167,10 @@ export const registerAdmin = async (
     // Store tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+
+    const numericId = tokenData.id;
     storage.set(STORAGE_KEYS.USER, {
+        id: numericId || tokenData.email,
         userName: tokenData.userName,
         email: tokenData.email,
         role: tokenData.role,
