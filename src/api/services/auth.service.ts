@@ -34,9 +34,13 @@ export const login = async (
         ENDPOINTS.AUTH.LOGIN,
         credentials
     );
-    
+
     const tokenData = response.data.data!;
-    
+
+    // DEBUG: Log the full login response to see if we're missing an ID field
+    console.log('🔍 [Auth] Full login response:', JSON.stringify(response.data, null, 2));
+    console.log('🔍 [Auth] Token data:', JSON.stringify(tokenData, null, 2));
+
     // Store tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
@@ -45,7 +49,7 @@ export const login = async (
         email: tokenData.email,
         role: tokenData.role,
     });
-    
+
     return tokenData;
 };
 
@@ -61,13 +65,13 @@ export const refreshToken = async (
         ENDPOINTS.AUTH.REFRESH,
         command
     );
-    
+
     const tokenData = response.data.data!;
-    
+
     // Update stored tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
-    
+
     return tokenData;
 };
 
@@ -83,9 +87,9 @@ export const registerStudent = async (
         ENDPOINTS.STUDENTS.REGISTER,
         command
     );
-    
+
     const tokenData = response.data.data!;
-    
+
     // Store tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
@@ -94,7 +98,7 @@ export const registerStudent = async (
         email: tokenData.email,
         role: tokenData.role,
     });
-    
+
     return tokenData;
 };
 
@@ -110,9 +114,9 @@ export const registerInstructor = async (
         ENDPOINTS.INSTRUCTORS.REGISTER,
         command
     );
-    
+
     const tokenData = response.data.data!;
-    
+
     // Store tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
@@ -121,7 +125,7 @@ export const registerInstructor = async (
         email: tokenData.email,
         role: tokenData.role,
     });
-    
+
     return tokenData;
 };
 
@@ -137,9 +141,9 @@ export const registerAdmin = async (
         ENDPOINTS.ADMINS.REGISTER,
         command
     );
-    
+
     const tokenData = response.data.data!;
-    
+
     // Store tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
@@ -148,7 +152,7 @@ export const registerAdmin = async (
         email: tokenData.email,
         role: tokenData.role,
     });
-    
+
     return tokenData;
 };
 

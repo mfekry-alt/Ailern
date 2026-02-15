@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import { Edit2, Trash2, Plus, Users, Calendar, BookOpen, Loader2 } from 'lucide-react';
 import { useInstructorCourses, useDeleteCourse } from '@/features/courses/api';
+import { useAuthStore } from '@/features/auth/store';
 import type { GetAllCoursesDto } from '@/types/api.types';
 
 // --- Interfaces ---
@@ -68,9 +69,17 @@ const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
 
 export const InstructorCoursesPage = () => {
     const navigate = useNavigate();
+    const user = useAuthStore((state) => state.user);
 
-    // Fetch courses from API
-    const { data: coursesData, isLoading, error } = useInstructorCourses();
+    // DEBUG: Log user data to see what ID we have
+    console.log('👤 [InstructorCoursesPage] User object:', user);
+    console.log('🆔 [InstructorCoursesPage] User ID:', user?.id, 'Type:', typeof user?.id);
+
+    // Fetch courses from API using instructor ID
+    // Temporarily disable to avoid 404 until we fix the ID issue
+    const { data: coursesData, isLoading, error } = useInstructorCourses(
+        typeof user?.id === 'number' ? user.id : undefined
+    );
     const deleteCourseMutation = useDeleteCourse();
 
     // Map API data to UI format

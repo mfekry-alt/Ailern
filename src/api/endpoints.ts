@@ -45,6 +45,8 @@ export const ENDPOINTS = {
         REJECT: (id: number) => `/Courses/${id}/reject`,
         ENROLL: (id: number) => `/Courses/${id}/enroll`,
         AVAILABLE_COURSES: '/Courses/available-courses',
+        MY_COURSES: '/Courses/mine', // Fallback endpoint that doesn't require ID
+        INSTRUCTOR_COURSES: (instructorId: number) => `/Courses/instructors/${instructorId}`,
         ENROLLMENT_REQUESTS: (id: number) => `/Courses/${id}/enrollment-requests`,
         APPROVE_ENROLLMENT: (id: number, studentId: number) => `/Courses/${id}/enrollments/${studentId}/approve`,
         REJECT_ENROLLMENT: (id: number, studentId: number) => `/Courses/${id}/enrollments/${studentId}/reject`,

@@ -8,12 +8,18 @@ import type {
 } from '@/types/api.types';
 
 /**
- * Fetch all courses (instructor view) with pagination
+ * Fetch all courses for a specific instructor (includes drafts)
  */
-export const useInstructorCourses = (params?: PaginationParams) => {
+export const useInstructorCourses = (instructorId?: number, params?: PaginationParams) => {
     return useQuery({
-        queryKey: [...QUERY_KEYS.COURSES, params],
-        queryFn: () => courseService.getAllCourses(params),
+        queryKey: [...QUERY_KEYS.COURSES, 'instructor', instructorId, params],
+        queryFn: () => {
+            if (!instructorId) {
+                throw new Error('Instructor ID is required');
+            }
+            return courseService.getInstructorCourses(instructorId, params);
+        },
+        enabled: !!instructorId,
     });
 };
 
