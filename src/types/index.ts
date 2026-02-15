@@ -1,6 +1,6 @@
 // Base types
 export interface User {
-    id: string;
+    id: string | number; // Can be number (from API) or string (fallback to email)
     email: string;
     firstName: string;
     lastName: string;

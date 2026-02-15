@@ -12,14 +12,19 @@ import type { GetTokenResponseDto } from '@/types/api.types';
 const transformApiUser = (apiUser: GetTokenResponseDto): User => {
     const fullNameParts = apiUser.userName.split(' ');
 
-    // Try to extract numeric ID from various possible fields
-    const numericId = (apiUser as any).id ||
-        (apiUser as any).userId ||
-        (apiUser as any).instructorId ||
-        (apiUser as any).user?.id;
+    // Extract numeric ID - prioritize role-specific IDs
+    const numericId = apiUser.instructorId ||
+        apiUser.studentId ||
+        apiUser.id;
 
     // DEBUG: Log what ID we're using
-    console.log('🔧 [transformApiUser] Extracted ID:', numericId, 'Type:', typeof numericId);
+    console.log(' [transformApiUser] Extracted ID:', numericId, 'Type:', typeof numericId);
+    console.log(' [transformApiUser] From fields:', {
+        instructorId: apiUser.instructorId,
+        studentId: apiUser.studentId,
+        id: apiUser.id,
+        email: apiUser.email
+    });
 
     return {
         id: numericId || apiUser.email, // Use numeric ID if available, fallback to email

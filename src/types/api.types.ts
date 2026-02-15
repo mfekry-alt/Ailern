@@ -19,6 +19,9 @@ export interface GetTokenResponseDto {
     userName: string;
     email: string;
     role: string;
+    instructorId?: number; // Numeric instructor ID (present for instructor logins)
+    studentId?: number; // Numeric student ID (present for student logins)
+    id?: number; // Generic user ID (if present)
 }
 
 export interface GetRefreshTokenCommand {
