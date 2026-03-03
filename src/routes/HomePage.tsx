@@ -17,12 +17,9 @@ import {
     Mail,
     Globe,
     School,
-    Bookmark,
-    Moon,
-    Sun,
+    Bookmark
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useDarkMode } from '@/contexts/DarkModeContext';
 
 // --- Animated Words List ---
 const ANIMATED_WORDS = ['Intelligently.', 'Securely.', 'Reliably.'];
@@ -30,7 +27,6 @@ const ANIMATED_WORDS = ['Intelligently.', 'Securely.', 'Reliably.'];
 export const HomePage = () => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const { isDarkMode, toggleDarkMode } = useDarkMode();
 
     // --- Typewriter Effect State ---
     const [text, setText] = useState('');

@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter } from 'react-router-dom';
-import { DarkModeProvider } from '@/contexts/DarkModeContext';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -21,9 +20,7 @@ export const AppProviders = ({ children }: AppProvidersProps) => {
     return (
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
-                <DarkModeProvider>
-                    {children}
-                </DarkModeProvider>
+                {children}
             </BrowserRouter>
             {import.meta.env.VITE_ENABLE_DEVTOOLS === 'true' && (
                 <ReactQueryDevtools initialIsOpen={false} />

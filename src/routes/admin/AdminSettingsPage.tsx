@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useDarkMode } from '@/contexts/DarkModeContext';
 import { ROUTES } from '@/lib/constants';
 
 export const AdminSettingsPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { isDarkMode, toggleDarkMode } = useDarkMode();
     const [statusMessage, setStatusMessage] = useState<string>('');
 
     // Profile state
@@ -148,22 +146,6 @@ export const AdminSettingsPage = () => {
                                         <option value="Africa/Cairo">Africa/Cairo</option>
                                         <option value="Europe/London">Europe/London</option>
                                     </select>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-[14px] font-medium text-azure-8">Display Mode</label>
-                                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg">
-                                    <span className="text-[14px] text-azure-8">Dark Mode</span>
-                                    <button
-                                        onClick={toggleDarkMode}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${isDarkMode ? 'bg-blue-600' : 'bg-gray-300'
-                                            }`}
-                                    >
-                                        <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'
-                                                }`}
-                                        />
-                                    </button>
                                 </div>
                             </div>
                             <div className="space-y-2">

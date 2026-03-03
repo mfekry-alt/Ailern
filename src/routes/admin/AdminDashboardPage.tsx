@@ -137,19 +137,6 @@ export const AdminDashboardPage = () => {
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <div className="mb-3">
-                            <span className="inline-block px-3 py-1 text-[12px] font-medium text-teal-600 bg-teal-50 rounded-md border border-teal-200">
-                                v1.0 System Update Live
-                            </span>
-                        </div>
-                        <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-zinc-100">
-                            Manage Education <span className="text-blue-600">Intelligently.</span>
-                        </h1>
-                        <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400 mt-2">
-                            Ailern provides a comprehensive admin dashboard to oversee students, instructors, and course content with real-time analytics and seamless management tools.
-                        </p>
-                    </div>
                     <div className="flex gap-3">
                         <button
                             onClick={exportDashboardReport}

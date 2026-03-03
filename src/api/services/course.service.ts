@@ -40,7 +40,7 @@ export const createCourse = async (command: CreateCourseCommand): Promise<void> 
  * @returns Paginated list of instructor's courses
  */
 export const getInstructorCourses = async (
-    instructorId?: number,
+    instructorId: number,
     params?: PaginationParams
 ): Promise<GetAllCoursesDtoPaginationResult> => {
     const defaultParams: PaginationParams = {
@@ -57,25 +57,19 @@ export const getInstructorCourses = async (
         end: 0,
     };
 
-    // Strategy 1: Try /Courses/mine endpoint (doesn't require ID)
     try {
-        console.log('[Courses] Attempting to fetch via /Courses/mine...');
-        const response = await api.get<ApiResponse<GetAllCoursesDtoPaginationResult>>(
-            ENDPOINTS.COURSES.MY_COURSES,
-            { params: defaultParams }
-        );
+        // 🚀 THE MOST LIKELY FIX based on your Student endpoints:
+        const response = await api.get('/Users/instructors/my-courses', { params: defaultParams });
         const data = response.data.data || response.data;
-        if (data && (data as any).items) {
-            result.items = (data as any).items || [];
-            result.totalResults = (data as any).totalResults || 0;
-            result.pagesCount = (data as any).pagesCount || (data as any).totalPages || 0;
-            result.start = (data as any).start || 0;
-            result.end = (data as any).end || 0;
-            console.log(`[Courses] Found ${result.items.length} courses via /Courses/mine`);
+
+        if (data?.items) {
+            result.items = data.items;
+            result.totalResults = data.totalResults || 0;
+            result.pagesCount = data.totalPages || data.pagesCount || 0;
             return result;
         }
     } catch (error: any) {
-        console.warn('[Courses] /Courses/mine failed:', error.response?.status, error.message);
+        console.warn("[Courses] '/Users/instructors/my-courses' failed.", error);
     }
 
     // Strategy 2: Try instructor-specific endpoint if ID is provided

@@ -77,9 +77,7 @@ export const InstructorCoursesPage = () => {
 
     // Fetch courses from API using instructor ID
     // Temporarily disable to avoid 404 until we fix the ID issue
-    const { data: coursesData, isLoading, error } = useInstructorCourses(
-        typeof user?.id === 'number' ? user.id : undefined
-    );
+    const { data: coursesData, isLoading, error } = useInstructorCourses(2);
     const deleteCourseMutation = useDeleteCourse();
 
     // Map API data to UI format
