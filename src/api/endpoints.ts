@@ -74,5 +74,14 @@ export const ENDPOINTS = {
         GET_BY_ASSIGNMENT: (assignmentId: number) => `/Assignments/${assignmentId}/Submissions`,
         GET_FILES: (assignmentId: number, submissionId: number) => `/Assignments/${assignmentId}/Submissions/${submissionId}/files`,
     },
+
+    // Quizzes endpoints (POST /api/Quizzes, GET /api/Quizzes?courseId=...)
+    QUIZZES: {
+        CREATE: '/Quizzes',
+        GET: (id: string) => `/Quizzes/${id}`,
+        UPDATE: (id: string) => `/Quizzes/${id}`,
+        DELETE: (id: string) => `/Quizzes/${id}`,
+        BY_COURSE: (courseId: string) => `/Quizzes?courseId=${courseId}`,
+    },
 } as const;
 

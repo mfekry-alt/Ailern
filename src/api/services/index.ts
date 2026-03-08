@@ -8,3 +8,4 @@ export * as courseService from './course.service';
 export * as userService from './user.service';
 export * as studentService from './student.service';
 export * as assignmentService from './assignment.service';
+export * as quizService from './quiz.service';

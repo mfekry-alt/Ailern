@@ -350,3 +350,57 @@ export const UserRole = {
 } as const;
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
+
+// ============================================================================
+// Quiz Types
+// ============================================================================
+
+export type QuizStatus = 'Draft' | 'Published' | 'Scheduled';
+export type QuestionType = 'MCQ' | 'TrueFalse' | 'Written';
+
+/**
+ * Option inside a question.
+ * IMPORTANT: Backend expects the option text in "questionText" (known backend typo).
+ */
+export interface AddOptionRequest {
+    questionText: string; // intentionally "questionText" — backend typo, do NOT rename to optionText
+    isCorrect: boolean;
+}
+
+export interface AddQuestionRequest {
+    questionType: QuestionType;
+    questionText: string;
+    mark: number;
+    explanation?: string;
+    options: AddOptionRequest[];
+}
+
+export interface CreateQuizCommand {
+    title: string;
+    description?: string;
+    courseId: string;
+    maximumAttempts: number;
+    quizStatus: QuizStatus;
+    availableFrom: string;   // ISO – must be > now
+    availableUntil: string;  // ISO – computed as availableFrom + durationMinutes
+    publishedDate?: string;  // ISO – required when quizStatus === 'Scheduled'
+    showResultOnClose: boolean;
+    shuffleQuestions: boolean;
+    shuffleOptions: boolean;
+    questions: AddQuestionRequest[];
+}
+
+export interface GetQuizDto {
+    id: string;
+    title: string;
+    description?: string;
+    courseId: string;
+    maximumAttempts: number;
+    quizStatus: QuizStatus;
+    availableFrom: string;
+    availableUntil: string;
+    publishedDate?: string;
+    submissionsCount: number;
+    questionsCount: number;
+    createdAt: string;
+}

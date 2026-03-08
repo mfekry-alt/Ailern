@@ -2,375 +2,457 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui/Card';
-import { ArrowLeft, Plus, Trash2, Save, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
+import { useCreateQuiz } from '@/features/quizzes/api';
+import type { AddOptionRequest, AddQuestionRequest, QuestionType } from '@/types/api.types';
 
-type QuestionType = 'MCQ' | 'TF' | 'Written';
+// ─── Local UI types ────────────────────────────────────────────────────────
 
-interface Question {
-    id: number;
+interface UIOption {
+    text: string;
+    isCorrect: boolean;
+}
+
+interface UIQuestion {
+    uid: number;
     type: QuestionType;
     text: string;
-    points: number;
-    options?: string[];
-    correctAnswer?: string | boolean;
-    explanation?: string;
+    mark: number;
+    explanation: string;
+    options: UIOption[];
 }
+
+// ─── Defaults ──────────────────────────────────────────────────────────────
+
+const makeMCQOptions = (): UIOption[] => [
+    { text: '', isCorrect: false },
+    { text: '', isCorrect: false },
+    { text: '', isCorrect: false },
+];
+
+const makeTFOptions = (): UIOption[] => [
+    { text: 'True',  isCorrect: true  },
+    { text: 'False', isCorrect: false },
+];
+
+const defaultQuestion = (uid: number): UIQuestion => ({
+    uid,
+    type: 'MCQ',
+    text: '',
+    mark: 5,
+    explanation: '',
+    options: makeMCQOptions(),
+});
+
+// ─── Payload builders ──────────────────────────────────────────────────────
+
+const buildPayloadOptions = (q: UIQuestion): AddOptionRequest[] =>
+    q.options.map(o => ({ questionText: o.text, isCorrect: o.isCorrect }));
+
+const buildPayloadQuestion = (q: UIQuestion): AddQuestionRequest => ({
+    questionType: q.type,
+    questionText: q.text,
+    mark: q.mark,
+    explanation: q.explanation || undefined,
+    options: buildPayloadOptions(q),
+});
+
+// ─── Shared style constants ────────────────────────────────────────────────
+
+const inputCls =
+    'w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100';
+const labelCls = 'block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2';
+
+// ─── Component ─────────────────────────────────────────────────────────────
 
 export const InstructorQuizQuestionBuilderPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [statusMessage, setStatusMessage] = useState<string>('');
+    const settings = (location.state as any)?.settings;
 
-    // Get quiz settings from previous step (in real app, this would come from state/API)
-    const quizSettings = location.state?.quizSettings || {
-        title: 'New Quiz',
-        duration: 30,
-        attemptsAllowed: 1,
-    };
+    const createQuizMutation = useCreateQuiz();
 
-    // Redirect if no settings provided
+    const [questions, setQuestions] = useState<UIQuestion[]>([defaultQuestion(1)]);
+    const [counter,   setCounter]   = useState(2);
+    const [error,     setError]     = useState('');
+    const [success,   setSuccess]   = useState(false);
+
+    // Guard: if no settings, go back to step 1
     useEffect(() => {
-        if (!location.state?.quizSettings) {
-            navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE);
-        }
-    }, [location.state, navigate]);
+        if (!settings) navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE);
+    }, [settings, navigate]);
 
-    const [questions, setQuestions] = useState<Question[]>([
-        {
-            id: 1,
-            type: 'MCQ',
-            text: '',
-            points: 5,
-            options: ['', '', '', ''],
-            correctAnswer: '',
-        },
-    ]);
+    // ── Question helpers ──────────────────────────────────────────────────
+
+    const updateQ = (uid: number, patch: Partial<UIQuestion>) =>
+        setQuestions(qs => qs.map(q => q.uid === uid ? { ...q, ...patch } : q));
+
+    const removeQ = (uid: number) =>
+        setQuestions(qs => qs.filter(q => q.uid !== uid));
 
     const addQuestion = () => {
-        const newQuestion: Question = {
-            id: questions.length + 1,
-            type: 'MCQ',
-            text: '',
-            points: 5,
-            options: ['', '', '', ''],
-            correctAnswer: '',
-        };
-        setQuestions([...questions, newQuestion]);
+        setQuestions(qs => [...qs, defaultQuestion(counter)]);
+        setCounter(c => c + 1);
     };
 
-    const removeQuestion = (id: number) => {
-        setQuestions(questions.filter((q) => q.id !== id));
+    const changeType = (uid: number, type: QuestionType) => {
+        const options =
+            type === 'MCQ'       ? makeMCQOptions() :
+            type === 'TrueFalse' ? makeTFOptions()  : [];
+        updateQ(uid, { type, options });
     };
 
-    const updateQuestion = (id: number, updates: Partial<Question>) => {
-        setQuestions(
-            questions.map((q) => (q.id === id ? { ...q, ...updates } : q))
-        );
-    };
+    // ── Option helpers ────────────────────────────────────────────────────
 
-    const addOption = (questionId: number) => {
-        setQuestions(
-            questions.map((q) => {
-                if (q.id === questionId && q.options) {
-                    return { ...q, options: [...q.options, ''] };
-                }
-                return q;
-            })
-        );
-    };
+    const updateOpt = (uid: number, idx: number, patch: Partial<UIOption>) =>
+        setQuestions(qs => qs.map(q => {
+            if (q.uid !== uid) return q;
+            const options = q.options.map((o, i) => i === idx ? { ...o, ...patch } : o);
+            return { ...q, options };
+        }));
 
-    const removeOption = (questionId: number, optionIndex: number) => {
-        setQuestions(
-            questions.map((q) => {
-                if (q.id === questionId && q.options) {
-                    const newOptions = q.options.filter((_, idx) => idx !== optionIndex);
-                    return { ...q, options: newOptions };
-                }
-                return q;
-            })
-        );
-    };
+    const setCorrect = (uid: number, idx: number) =>
+        setQuestions(qs => qs.map(q => {
+            if (q.uid !== uid) return q;
+            return { ...q, options: q.options.map((o, i) => ({ ...o, isCorrect: i === idx })) };
+        }));
 
-    const updateOption = (questionId: number, optionIndex: number, value: string) => {
-        setQuestions(
-            questions.map((q) => {
-                if (q.id === questionId && q.options) {
-                    const newOptions = [...q.options];
-                    newOptions[optionIndex] = value;
-                    return { ...q, options: newOptions };
-                }
-                return q;
-            })
-        );
-    };
+    const addOption = (uid: number) =>
+        setQuestions(qs => qs.map(q => {
+            if (q.uid !== uid || q.options.length >= 5) return q;
+            return { ...q, options: [...q.options, { text: '', isCorrect: false }] };
+        }));
 
-    const handleSaveQuiz = (publish: boolean) => {
-        // Validate questions
-        for (const question of questions) {
-            if (!question.text.trim()) {
-                setStatusMessage('All questions must have text.');
-                return;
+    const removeOption = (uid: number, idx: number) =>
+        setQuestions(qs => qs.map(q => {
+            if (q.uid !== uid || q.options.length <= 3) return q;
+            return { ...q, options: q.options.filter((_, i) => i !== idx) };
+        }));
+
+    // ── Validation ────────────────────────────────────────────────────────
+
+    const validate = (): string | null => {
+        for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            const n = `Question ${i + 1}`;
+            if (!q.text.trim())       return `${n}: Question text is required.`;
+            if (q.text.length > 1500) return `${n}: Max 1500 characters.`;
+            if (q.mark <= 0)          return `${n}: Points must be greater than 0.`;
+
+            if (q.type === 'MCQ') {
+                if (q.options.length < 3 || q.options.length > 5)
+                    return `${n}: MCQ must have 3–5 options.`;
+                if (q.options.some(o => !o.text.trim()))
+                    return `${n}: All option texts are required.`;
+                if (q.options.filter(o => o.isCorrect).length !== 1)
+                    return `${n}: Exactly one correct option is required.`;
             }
-            if (question.type === 'MCQ') {
-                if (!question.options || question.options.length < 2) {
-                    setStatusMessage('MCQ questions must have at least 2 options.');
-                    return;
-                }
-                if (!question.correctAnswer) {
-                    setStatusMessage('MCQ questions must have a correct answer selected.');
-                    return;
-                }
-            }
-            if (question.type === 'TF' && question.correctAnswer === undefined) {
-                setStatusMessage('True/False questions must have a correct answer.');
-                return;
+
+            if (q.type === 'TrueFalse') {
+                if (q.options.filter(o => o.isCorrect).length !== 1)
+                    return `${n}: Select the correct answer (True or False).`;
             }
         }
-
-        setStatusMessage(publish ? 'Quiz published successfully!' : 'Quiz saved as draft.');
-        // API call would go here
-        setTimeout(() => navigate(ROUTES.INSTRUCTOR_COURSES), 1500);
+        return null;
     };
+
+    // ── Submit ────────────────────────────────────────────────────────────
+
+    const handleSubmit = async () => {
+        const err = validate();
+        if (err) { setError(err); return; }
+        setError('');
+
+        // Compute availableUntil = availableFrom + durationMinutes
+        const from  = new Date(settings.availableFrom);
+        const until = new Date(from.getTime() + settings.durationMinutes * 60_000);
+
+        const payload = {
+            title:             settings.title,
+            description:       settings.description || undefined,
+            courseId:          settings.courseId,
+            maximumAttempts:   settings.maximumAttempts,
+            quizStatus:        settings.quizStatus,
+            availableFrom:     from.toISOString(),
+            availableUntil:    until.toISOString(),
+            publishedDate:
+                settings.quizStatus === 'Scheduled' && settings.publishedDate
+                    ? new Date(settings.publishedDate).toISOString()
+                    : undefined,
+            showResultOnClose: false,
+            shuffleQuestions:  false,
+            shuffleOptions:    false,
+            questions:         questions.map(buildPayloadQuestion),
+        };
+
+        try {
+            await createQuizMutation.mutateAsync(payload);
+            setSuccess(true);
+            setTimeout(() => navigate(-2), 1500);
+        } catch (e: any) {
+            setError(
+                e?.response?.data?.message ?? 'Failed to create quiz. Please try again.'
+            );
+        }
+    };
+
+    const isLoading = createQuizMutation.isPending;
+
+    // ── Render ────────────────────────────────────────────────────────────
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-5xl mx-auto space-y-6">
+
+                {/* Header card */}
                 <Card variant="elevated">
                     <CardContent className="p-6">
-                        <div className="space-y-6">
-                            {/* Header */}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-[30px] font-bold text-gray-900 dark:text-zinc-100 mb-2">Question Builder</h1>
-                                    <p className="text-[16px] text-gray-600 dark:text-zinc-400">
-                                        Step 2 of 2: Add questions to "{quizSettings.title}"
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => navigate(-1)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors"
-                                >
-                                    <ArrowLeft className="w-4 h-4" />
-                                    Back
-                                </button>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-[30px] font-bold text-gray-900 dark:text-zinc-100 mb-1">
+                                    Question Builder
+                                </h1>
+                                <p className="text-[16px] text-gray-600 dark:text-zinc-400">
+                                    Step 2 of 2 — Questions for "{settings?.title}"
+                                </p>
                             </div>
-
-                            {statusMessage && (
-                                <div className={`p-4 rounded-lg ${statusMessage.includes('success') || statusMessage.includes('saved')
-                                    ? 'bg-green-50 border border-green-200 text-green-800'
-                                    : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
-                                    }`}>
-                                    <p className="text-sm">{statusMessage}</p>
-                                </div>
-                            )}
-
-                            {/* Questions List */}
-                            <div className="space-y-6">
-                                {questions.map((question, index) => (
-                                    <div key={question.id} className="p-6 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900">
-                                        <div className="flex items-start justify-between mb-4">
-                                            <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">
-                                                Question {index + 1}
-                                            </h3>
-                                            {questions.length > 1 && (
-                                                <button
-                                                    onClick={() => removeQuestion(question.id)}
-                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        {/* Question Type */}
-                                        <div className="mb-4">
-                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
-                                                Question Type
-                                            </label>
-                                            <select
-                                                value={question.type}
-                                                onChange={(e) =>
-                                                    updateQuestion(question.id, {
-                                                        type: e.target.value as QuestionType,
-                                                        options: e.target.value === 'MCQ' ? ['', '', '', ''] : undefined,
-                                                        correctAnswer: e.target.value === 'TF' ? true : undefined,
-                                                    })
-                                                }
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                            >
-                                                <option value="MCQ">Multiple Choice (MCQ)</option>
-                                                <option value="TF">True/False</option>
-                                                <option value="Written">Written Answer</option>
-                                            </select>
-                                        </div>
-
-                                        {/* Question Text */}
-                                        <div className="mb-4">
-                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
-                                                Question Text <span className="text-red-500">*</span>
-                                            </label>
-                                            <textarea
-                                                rows={3}
-                                                placeholder="Enter your question here..."
-                                                value={question.text}
-                                                onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] resize-none bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                            />
-                                        </div>
-
-                                        {/* Points */}
-                                        <div className="mb-4">
-                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
-                                                Points <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={question.points}
-                                                onChange={(e) =>
-                                                    updateQuestion(question.id, { points: parseInt(e.target.value) || 1 })
-                                                }
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                            />
-                                        </div>
-
-                                        {/* MCQ Options */}
-                                        {question.type === 'MCQ' && (
-                                            <div className="mb-4">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300">
-                                                        Options <span className="text-red-500">*</span>
-                                                    </label>
-                                                    <button
-                                                        onClick={() => addOption(question.id)}
-                                                        className="text-[12px] text-blue-600 hover:text-blue-700 font-medium"
-                                                    >
-                                                        + Add Option
-                                                    </button>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {question.options?.map((option, optIndex) => (
-                                                        <div key={optIndex} className="flex items-center gap-2">
-                                                            <input
-                                                                type="radio"
-                                                                name={`correct-${question.id}`}
-                                                                checked={question.correctAnswer === option}
-                                                                onChange={() => updateQuestion(question.id, { correctAnswer: option })}
-                                                                className="w-4 h-4 text-blue-600"
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                placeholder={`Option ${optIndex + 1}`}
-                                                                value={option}
-                                                                onChange={(e) => updateOption(question.id, optIndex, e.target.value)}
-                                                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                                            />
-                                                            {question.options && question.options.length > 2 && (
-                                                                <button
-                                                                    onClick={() => removeOption(question.id, optIndex)}
-                                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                                >
-                                                                    <Trash2 className="w-3 h-3" />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* True/False Options */}
-                                        {question.type === 'TF' && (
-                                            <div className="mb-4">
-                                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
-                                                    Correct Answer <span className="text-red-500">*</span>
-                                                </label>
-                                                <div className="space-y-2">
-                                                    {[true, false].map((value) => (
-                                                        <label
-                                                            key={String(value)}
-                                                            className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${question.correctAnswer === value
-                                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                                                : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600'
-                                                                }`}
-                                                        >
-                                                            <input
-                                                                type="radio"
-                                                                name={`tf-${question.id}`}
-                                                                checked={question.correctAnswer === value}
-                                                                onChange={() => updateQuestion(question.id, { correctAnswer: value })}
-                                                                className="w-4 h-4 text-blue-600"
-                                                            />
-                                                            <span className="text-[14px] text-gray-900 dark:text-zinc-100">{value ? 'True' : 'False'}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Written Answer Note */}
-                                        {question.type === 'Written' && (
-                                            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                                <p className="text-[13px] text-blue-800">
-                                                    Written questions will be manually graded by the instructor after submission.
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Explanation (Optional) */}
-                                        <div>
-                                            <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
-                                                Explanation (Optional)
-                                            </label>
-                                            <textarea
-                                                rows={2}
-                                                placeholder="Provide an explanation for the correct answer..."
-                                                value={question.explanation || ''}
-                                                onChange={(e) => updateQuestion(question.id, { explanation: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] resize-none bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Add Question Button */}
                             <button
-                                onClick={addQuestion}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors text-[14px] font-medium text-gray-700 dark:text-zinc-300"
+                                onClick={() => navigate(-1)}
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors"
                             >
-                                <Plus className="w-5 h-5" />
-                                Add More Questions
+                                <ArrowLeft className="w-4 h-4" /> Back
                             </button>
-
-                            {/* Action Buttons */}
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-700">
-                                <button
-                                    onClick={() => handleSaveQuiz(false)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    Save Draft
-                                </button>
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => navigate(-1)}
-                                        className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors"
-                                    >
-                                        Back
-                                    </button>
-                                    <button
-                                        onClick={() => handleSaveQuiz(true)}
-                                        className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium text-[14px] rounded-lg transition-colors"
-                                    >
-                                        <CheckCircle2 className="w-4 h-4" />
-                                        Publish Quiz
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Feedback banners */}
+                {error && (
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+                    </div>
+                )}
+                {success && (
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <p className="text-sm text-green-800 dark:text-green-300 font-medium">
+                            Quiz created successfully! Redirecting…
+                        </p>
+                    </div>
+                )}
+
+                {/* Question cards */}
+                {questions.map((q, idx) => (
+                    <Card key={q.uid} variant="elevated">
+                        <CardContent className="p-6 space-y-5">
+
+                            {/* Q header */}
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">
+                                    Question {idx + 1}
+                                </h3>
+                                {questions.length > 1 && (
+                                    <button
+                                        onClick={() => removeQ(q.uid)}
+                                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Type */}
+                            <div>
+                                <label className={labelCls}>Question Type</label>
+                                <select
+                                    value={q.type}
+                                    onChange={e => changeType(q.uid, e.target.value as QuestionType)}
+                                    className={inputCls}
+                                >
+                                    <option value="MCQ">Multiple Choice (MCQ)</option>
+                                    <option value="TrueFalse">True / False</option>
+                                    <option value="Written">Written Answer</option>
+                                </select>
+                            </div>
+
+                            {/* Question text */}
+                            <div>
+                                <label className={labelCls}>
+                                    Question Text <span className="text-red-500">*</span>
+                                    <span className="ml-2 font-normal text-gray-400 dark:text-zinc-500">
+                                        ({q.text.length}/1500)
+                                    </span>
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    maxLength={1500}
+                                    placeholder="Enter your question..."
+                                    value={q.text}
+                                    onChange={e => updateQ(q.uid, { text: e.target.value })}
+                                    className={`${inputCls} resize-none`}
+                                />
+                            </div>
+
+                            {/* Points */}
+                            <div className="w-48">
+                                <label className={labelCls}>
+                                    Points <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0.5"
+                                    step="0.5"
+                                    value={q.mark}
+                                    onChange={e =>
+                                        updateQ(q.uid, { mark: parseFloat(e.target.value) || 1 })
+                                    }
+                                    className={inputCls}
+                                />
+                            </div>
+
+                            {/* MCQ options */}
+                            {q.type === 'MCQ' && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className={`${labelCls} mb-0`}>
+                                            Options <span className="text-red-500">*</span>
+                                            <span className="ml-2 font-normal text-gray-400 dark:text-zinc-500">
+                                                ({q.options.length}/5, min 3)
+                                            </span>
+                                        </label>
+                                        {q.options.length < 5 && (
+                                            <button
+                                                onClick={() => addOption(q.uid)}
+                                                className="text-[13px] text-blue-600 hover:text-blue-700 font-medium"
+                                            >
+                                                + Add Option
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        {q.options.map((opt, oi) => (
+                                            <div key={oi} className="flex items-center gap-3">
+                                                <input
+                                                    type="radio"
+                                                    name={`correct-${q.uid}`}
+                                                    checked={opt.isCorrect}
+                                                    onChange={() => setCorrect(q.uid, oi)}
+                                                    className="w-4 h-4 text-blue-600 flex-shrink-0"
+                                                    title="Mark as correct answer"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder={`Option ${oi + 1}`}
+                                                    value={opt.text}
+                                                    onChange={e => updateOpt(q.uid, oi, { text: e.target.value })}
+                                                    className={`${inputCls} flex-1`}
+                                                />
+                                                {q.options.length > 3 && (
+                                                    <button
+                                                        onClick={() => removeOption(q.uid, oi)}
+                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex-shrink-0"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
+                                        Click the radio button to mark the correct answer.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* True/False */}
+                            {q.type === 'TrueFalse' && (
+                                <div>
+                                    <label className={labelCls}>
+                                        Correct Answer <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="space-y-2">
+                                        {q.options.map((opt, oi) => (
+                                            <label
+                                                key={oi}
+                                                className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                                                    opt.isCorrect
+                                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                        : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
+                                                }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name={`tf-${q.uid}`}
+                                                    checked={opt.isCorrect}
+                                                    onChange={() => setCorrect(q.uid, oi)}
+                                                    className="w-4 h-4 text-blue-600"
+                                                />
+                                                <span className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">
+                                                    {opt.text}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Written note */}
+                            {q.type === 'Written' && (
+                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                    <p className="text-[13px] text-blue-800 dark:text-blue-300">
+                                        Written questions are manually graded after submission. No options needed.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Explanation */}
+                            <div>
+                                <label className={labelCls}>
+                                    Explanation{' '}
+                                    <span className="font-normal text-gray-400 dark:text-zinc-500">(optional)</span>
+                                </label>
+                                <textarea
+                                    rows={2}
+                                    placeholder="Explain the correct answer..."
+                                    value={q.explanation}
+                                    onChange={e => updateQ(q.uid, { explanation: e.target.value })}
+                                    className={`${inputCls} resize-none`}
+                                />
+                            </div>
+
+                        </CardContent>
+                    </Card>
+                ))}
+
+                {/* Add question button */}
+                <button
+                    onClick={addQuestion}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-zinc-800/50 transition-colors text-[14px] font-medium text-gray-600 dark:text-zinc-400"
+                >
+                    <Plus className="w-5 h-5" /> Add Another Question
+                </button>
+
+                {/* Footer actions */}
+                <div className="flex items-center justify-between pb-8">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" /> Back to Settings
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isLoading || success}
+                        className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-medium text-[14px] rounded-lg transition-colors"
+                    >
+                        {isLoading ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</>
+                        ) : (
+                            <><CheckCircle2 className="w-4 h-4" /> Create Quiz</>
+                        )}
+                    </button>
+                </div>
+
             </div>
         </div>
     );

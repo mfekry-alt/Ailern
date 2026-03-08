@@ -22,6 +22,7 @@ import {
     Search,
     Eye
 } from 'lucide-react';
+import { ROUTES } from '@/lib/constants';
 
 type TabType = 'overview' | 'lectures' | 'assignments' | 'quizzes' | 'announcements' | 'students' | 'enrollments';
 
@@ -422,7 +423,7 @@ export const InstructorManageCoursePage = () => {
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">Quizzes</h2>
                                     <button
-                                        onClick={() => navigate('/instructor/quizzes/create')}
+                                        onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE, { state: { courseId: id } })}
                                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
                                     >
                                         <Plus className="w-4 h-4" />
