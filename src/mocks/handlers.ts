@@ -128,7 +128,7 @@ export const handlers = [
 
     // Mock handler for updating course
     http.put('*/api/Courses/:id', async ({ request }) => {
-        const body = await request.json();
+        const body = (await request.json()) as Record<string, unknown>;
         return new Response(
             JSON.stringify({
                 data: { ...mockCourseDetails, ...body },
@@ -177,7 +177,7 @@ export const handlers = [
 
     // Mock handler for creating an assignment
     http.post('*/api/Assignments', async ({ request }) => {
-        const body = await request.json();
+        const body = (await request.json()) as Record<string, unknown>;
         return new Response(
             JSON.stringify({
                 data: {
@@ -203,7 +203,7 @@ export const handlers = [
 
     // Mock handler for updating an assignment
     http.put('*/api/Assignments/:id', async ({ request }) => {
-        const body = await request.json();
+        const body = (await request.json()) as Record<string, unknown>;
         return new Response(
             JSON.stringify({
                 data: {
