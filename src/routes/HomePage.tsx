@@ -20,6 +20,7 @@ import {
     Bookmark
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import ParticleNetwork from '@/components/ParticleNetwork';
 
 // --- Animated Words List ---
 const ANIMATED_WORDS = ['Intelligently.', 'Securely.', 'Reliably.'];
@@ -77,28 +78,28 @@ export const HomePage = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-20 items-center">
                         <div className="flex items-center gap-2.5">
-                            <img src="/logo-removebg.svg" alt={`${APP_NAME} logo`} className="w-[44px] h-[44px] object-contain" />
-                            <span className="text-xl font-bold text-gray-900 dark:text-white">{APP_NAME}</span>
+                            <img src="/logo-removebg.png" alt={`${APP_NAME} logo`} className="w-[120px] h-[120px] object-contain" />
+
                         </div>
                         <div className="hidden md:flex items-center space-x-8">
-                            <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#features">
+                            <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-purple-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#features">
                                 Features
                             </a>
-                            <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#about">
+                            <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-purple-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#about">
                                 About
                             </a>
-                            <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#faq">
+                            <a className="text-sm font-medium text-slate-600 dark:text-zinc-400 hover:text-purple-700 dark:hover:text-blue-400 transition-colors cursor-pointer" href="#faq">
                                 FAQ
                             </a>
                         </div>
                         <div className="hidden md:flex items-center space-x-4">
                             <Link to={ROUTES.LOGIN}>
-                                <button className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-zinc-100 hover:bg-green-700 hover:text-white transition-all bg-slate-100 dark:bg-zinc-800 cursor-pointer">
+                                <button className="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-zinc-100 hover:bg-purple-700 hover:text-white transition-all bg-slate-100 dark:bg-zinc-800 cursor-pointer">
                                     Login
                                 </button>
                             </Link>
                             <Link to={ROUTES.LOGIN}>
-                                <Button size="sm" className="bg-blue-700 shadow-lg shadow-blue-500/30 cursor-pointer">
+                                <Button size="sm" className="bg-purple-700 shadow-lg shadow-purple-500/30 cursor-pointer">
                                     Contact Us
                                 </Button>
                             </Link>
@@ -146,24 +147,25 @@ export const HomePage = () => {
 
             {/* Hero Section */}
             <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-28 overflow-hidden">
+                <ParticleNetwork />
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-                        <div className="max-w-2xl">
+                        <div className="max-w-2xl relative z-10">
                             <div className="inline-flex items-center space-x-2 bg-blue-50 text-primary px-3 py-1 rounded-full text-xs font-semibold mb-6 border border-blue-100">
                                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                                <span className="text-green-700 font-bold">v1.0 System Update Live</span>
+                                <span className="text-purple-700 font-bold">v1.0 System Update Live</span>
                             </div>
 
                             {/* --- Typewriter Applied Here --- */}
-                            <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white-900 dark:text-white mb-6 leading-tight h-[90px] lg:h-[144px]">
+                            <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-blue-900 dark:text-white mb-6 leading-tight h-[90px] lg:h-[144px]">
                                 Manage Education <br />
-                                <span className="text-blue-700 dark:text-blue-500 inline-flex items-center">
+                                <span className="text-purple-700 dark:text-purple-500 inline-flex items-center">
                                     {text}
-                                    <span className="w-1 md:w-1.5 h-[1em] bg-blue-700 dark:bg-blue-500 animate-pulse ml-1 inline-block rounded-sm"></span>
+                                    <span className="w-1 md:w-1.5 h-[1em] bg-purple-700 dark:bg-purple-500 animate-pulse ml-1 inline-block rounded-sm"></span>
                                 </span>
                             </h1>
 
-                            <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+                            <p className="text-lg text-gray-400 mb-8 leading-relaxed">
                                 {APP_NAME} provides a comprehensive admin dashboard to oversee students, instructors, and course content with real-time analytics and seamless management tools.
                             </p>
                             <div className="flex items-center gap-4 text-sm text-slate-500">
@@ -193,7 +195,7 @@ export const HomePage = () => {
                         <div className="relative lg:ml-10">
                             <div className="absolute -top-10 -right-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl"></div>
                             <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-purple-400/20 rounded-full blur-3xl"></div>
-                            <div className="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 p-6 transform  transition-transform duration-500 ease-out">
+                            <div className="relative bg-white dark:bg-zinc-900 rounded-2xl p-6 transform transition-transform duration-500 ease-out border border-white/10 shadow-[0_0_50px_-12px_rgba(168,85,247,0.3)]">
                                 <div className="flex justify-between items-center mb-8 border-b border-slate-100 dark:border-zinc-800 pb-4">
                                     <div>
                                         <h3 className="text-xl font-bold text-white-900 dark:text-zinc-100">System overview</h3>
@@ -213,7 +215,7 @@ export const HomePage = () => {
                                             </div>
                                         </div>
                                         <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">0</div>
-                                        <div className="text-xs text-green-500 dark:text-green-400 font-medium mt-1">+0% growth</div>
+                                        <div className="text-xs text-purple-500 dark:text-purple-400 font-medium mt-1">+0% growth</div>
                                     </div>
                                     <div className="p-4 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800">
                                         <div className="flex justify-between items-start mb-2">
@@ -223,7 +225,7 @@ export const HomePage = () => {
                                             </div>
                                         </div>
                                         <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">0</div>
-                                        <div className="text-xs text-green-500 dark:text-green-400 font-medium mt-1">+0% growth</div>
+                                        <div className="text-xs text-purple-500 dark:text-purple-400 font-medium mt-1">+0% growth</div>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -237,7 +239,7 @@ export const HomePage = () => {
                                                 <div className="text-[10px] text-slate-500 dark:text-zinc-400">Dr. Sarah Wilson</div>
                                             </div>
                                         </div>
-                                        <span className="text-[10px] bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">Approved</span>
+                                        <span className="text-[10px] bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">Approved</span>
                                     </div>
                                     <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 opacity-60">
                                         <div className="flex items-center gap-3">
@@ -253,8 +255,8 @@ export const HomePage = () => {
                                     </div>
                                 </div>
                                 <div className="absolute -right-6 bottom-10 bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 flex items-center gap-3 animate-bounce duration-3000">
-                                    <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-full">
-                                        <CheckCircle2 className="text-green-600 w-5 h-5" />
+                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-full">
+                                        <CheckCircle2 className="text-purple-600 w-5 h-5" />
                                     </div>
                                     <div>
                                         <div className="text-xs font-bold text-white-900 dark:text-zinc-100">System Healthy</div>
@@ -338,8 +340,8 @@ export const HomePage = () => {
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div className="bg-slate-50 dark:bg-zinc-800 p-4 rounded-xl flex items-start gap-4">
-                                        <div className="p-2 bg-green-50 rounded-lg">
-                                            <TrendingUp className="text-green-500 w-5 h-5" />
+                                        <div className="p-2 bg-purple-50 rounded-lg">
+                                            <TrendingUp className="text-purple-500 w-5 h-5" />
                                         </div>
                                         <div>
                                             <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">0</div>
@@ -347,8 +349,8 @@ export const HomePage = () => {
                                         </div>
                                     </div>
                                     <div className="bg-slate-50 dark:bg-zinc-800 p-4 rounded-xl flex items-start gap-4">
-                                        <div className="p-2 bg-blue-50 rounded-lg">
-                                            <CheckCircle2 className="text-primary w-5 h-5" />
+                                        <div className="p-2 bg-purple-50 rounded-lg">
+                                            <CheckCircle2 className="text-purple-500 w-5 h-5" />
                                         </div>
                                         <div>
                                             <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">0</div>
@@ -365,8 +367,8 @@ export const HomePage = () => {
                                         </div>
                                     </div>
                                     <div className="bg-slate-50 dark:bg-zinc-800 p-4 rounded-xl flex items-start gap-4">
-                                        <div className="p-2 bg-green-50 rounded-lg">
-                                            <BarChart3 className="text-green-500 w-5 h-5" />
+                                        <div className="p-2 bg-purple-50 rounded-lg">
+                                            <BarChart3 className="text-purple-500 w-5 h-5" />
                                         </div>
                                         <div>
                                             <div className="text-2xl font-bold text-white-900 dark:text-zinc-100">99.9%</div>
@@ -377,7 +379,7 @@ export const HomePage = () => {
                             </div>
                         </div>
                         <div className="order-1 lg:order-2">
-                            <h2 className="text-3xl font-bold text-white-900 dark:text-zinc-100 mb-6"><span className="text-green-700 dark:text-green-400 font-bold">About</span> {APP_NAME} Platform</h2>
+                            <h2 className="text-3xl font-bold text-white-900 dark:text-zinc-100 mb-6"><span className="text-purple-700 dark:text-purple-400 font-bold">About</span> {APP_NAME} Platform</h2>
                             <p className="text-slate-600 dark:text-zinc-400 mb-6 leading-relaxed">
                                 Built for speed and reliability, {APP_NAME} offers administrators a crystal-clear view of their educational ecosystem. Our platform isn't just about data entry; it's about actionable insights.
                             </p>
@@ -386,15 +388,15 @@ export const HomePage = () => {
                             </p>
                             <ul className="space-y-4 mb-8">
                                 <li className="flex items-center gap-3">
-                                    <Check className="text-green-500 w-5 h-5" />
+                                    <Check className="text-purple-500 w-5 h-5" />
                                     <span className="text-slate-700 dark:text-zinc-200">Centralized User Management</span>
                                 </li>
                                 <li className="flex items-center gap-3">
-                                    <Check className="text-green-500 w-5 h-5" />
+                                    <Check className="text-purple-500 w-5 h-5" />
                                     <span className="text-slate-700 dark:text-zinc-200">Detailed Reporting & Exports</span>
                                 </li>
                                 <li className="flex items-center gap-3">
-                                    <Check className="text-green-500 w-5 h-5" />
+                                    <Check className="text-purple-500 w-5 h-5" />
                                     <span className="text-slate-700 dark:text-zinc-200">Customizable Admin Permissions</span>
                                 </li>
                             </ul>
@@ -448,14 +450,14 @@ export const HomePage = () => {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 bg-blue-300 relative overflow-hidden dark:bg-blue-900">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+            <section className="py-20 relative overflow-hidden">
+                <ParticleNetwork />
                 <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-                    <h2 className="text-3xl md:text-4xl  font-bold mb-6 text-gray-900 dark:text-white">Ready to transform <span className="text-green-700 dark:text-green-400 font-bold">your institution?</span></h2>
-                    <p className="text-slate-700 dark:text-zinc-300 mb-8 text-lg">Join thousands of administrators managing their LMS efficiently with {APP_NAME}.</p>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">Ready to transform <span className="text-purple-400 font-bold">your institution?</span></h2>
+                    <p className="text-zinc-300 mb-8 text-lg">Join thousands of administrators managing their LMS efficiently with {APP_NAME}.</p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
                         <Link to={ROUTES.LOGIN}>
-                            <Button size="lg" className=" text-white bg-green-700 hover:bg-green-800 hover:text-white">
+                            <Button size="lg" className=" text-white bg-purple-700 hover:bg-purple-800 hover:text-white">
                                 Login
                             </Button>
                         </Link>

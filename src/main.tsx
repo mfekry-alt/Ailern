@@ -33,6 +33,8 @@ function renderApp() {
   }
 }
 
-enableMocking().then(() => {
+// enableMocking().then(() => {
+//   renderApp();
+// });
+
   renderApp();
-});

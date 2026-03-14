@@ -34,69 +34,18 @@ export const createCourse = async (command: CreateCourseCommand): Promise<void> 
 };
 
 /**
- * Get courses for a specific instructor (includes drafts)
- * @param instructorId - The ID of the instructor (optional - will use current user if not provided)
- * @param params - Pagination parameters
- * @returns Paginated list of instructor's courses
+ * Get courses for a specific instructor (Temporary Workaround)
+ * Currently fetches ALL courses because the backend endpoint for specific instructors is not ready yet.
  */
 export const getInstructorCourses = async (
-    instructorId: number,
+    instructorId: string | number, // الإيميل أو الـ ID
     params?: PaginationParams
 ): Promise<GetAllCoursesDtoPaginationResult> => {
-    const defaultParams: PaginationParams = {
-        PageNumber: 1,
-        PageSize: 50,
-        ...params,
-    };
 
-    const result: GetAllCoursesDtoPaginationResult = {
-        items: [],
-        totalResults: 0,
-        pagesCount: 0,
-        start: 0,
-        end: 0,
-    };
+    console.log('[Courses] ⚠️ Backend endpoint for specific instructor not ready. Fetching ALL courses instead.');
 
-    try {
-        // 🚀 THE MOST LIKELY FIX based on your Student endpoints:
-        const response = await api.get('/Users/instructors/my-courses', { params: defaultParams });
-        const data = response.data.data || response.data;
-
-        if (data?.items) {
-            result.items = data.items;
-            result.totalResults = data.totalResults || 0;
-            result.pagesCount = data.totalPages || data.pagesCount || 0;
-            return result;
-        }
-    } catch (error: any) {
-        console.warn("[Courses] '/Users/instructors/my-courses' failed.", error);
-    }
-
-    // Strategy 2: Try instructor-specific endpoint if ID is provided
-    if (instructorId) {
-        try {
-            console.log(`[Courses] Attempting to fetch via /Courses/instructors/${instructorId}...`);
-            const response = await api.get<ApiResponse<GetAllCoursesDtoPaginationResult>>(
-                ENDPOINTS.COURSES.INSTRUCTOR_COURSES(instructorId),
-                { params: defaultParams }
-            );
-            const data = response.data.data || response.data;
-            if (data) {
-                result.items = (data as any).items || [];
-                result.totalResults = (data as any).totalResults || 0;
-                result.pagesCount = (data as any).pagesCount || (data as any).totalPages || 0;
-                result.start = (data as any).start || 0;
-                result.end = (data as any).end || 0;
-                console.log(`[Courses] Found ${result.items.length} courses via instructor endpoint`);
-                return result;
-            }
-        } catch (error: any) {
-            console.error(`[Courses] /Courses/instructors/${instructorId} failed:`, error.response?.status, error.message);
-        }
-    }
-
-    console.warn('[Courses] All strategies failed - returning empty result');
-    return result;
+    // ببساطة نقوم باستدعاء دالة جلب كل الكورسات الموجودة بالأسفل
+    return await getAllCourses(params);
 };
 
 export const getAllCourses = async (
@@ -118,9 +67,15 @@ export const getAllCourses = async (
     };
 
     try {
+        // ⚡ التعديل هنا: إرسال الـ params بحروف صغيرة لضمان قراءتها من السيرفر
         const response = await api.get<ApiResponse<GetAllCoursesDtoPaginationResult>>(
             ENDPOINTS.COURSES.LIST,
-            { params: defaultParams }
+            {
+                params: {
+                    pageNumber: defaultParams.PageNumber || 1,
+                    pageSize: defaultParams.PageSize || 50
+                }
+            }
         );
 
         // DEBUG: Print exactly what the backend sent
