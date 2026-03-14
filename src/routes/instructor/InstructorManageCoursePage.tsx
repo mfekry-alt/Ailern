@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useCourseQuizzes, useDeleteQuiz } from '@/features/quizzes/api';
+import type { QuizStatus } from '@/types/api.types';
 import { Card, CardContent } from '@/components/ui/Card';
 import {
     Play,
@@ -23,6 +25,7 @@ import {
     Eye
 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
+import { Filter } from 'lucide-react';
 
 type TabType = 'overview' | 'lectures' | 'assignments' | 'quizzes' | 'announcements' | 'students' | 'enrollments';
 
@@ -41,15 +44,6 @@ interface Assignment {
     attempts: number;
     submissions: number;
     status: 'Draft' | 'Published';
-}
-
-interface Quiz {
-    id: number;
-    name: string;
-    duration: number;
-    attemptsAllowed: number;
-    status: 'Draft' | 'Scheduled' | 'Published';
-    submissions: number;
 }
 
 interface Announcement {
@@ -81,6 +75,7 @@ interface EnrollmentRequest {
 export const InstructorManageCoursePage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const quizzesCourseId = '1018';
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('all');
@@ -101,7 +96,13 @@ export const InstructorManageCoursePage = () => {
 
     const [assignments] = useState<Assignment[]>([]);
 
-    const [quizzes] = useState<Quiz[]>([]);
+    const { data: quizzes = [], isLoading: quizzesLoading } = useCourseQuizzes(quizzesCourseId);
+    const deleteQuizMutation = useDeleteQuiz(quizzesCourseId);
+    const [quizSearch, setQuizSearch] = useState('');
+    const [quizStatusFilter, setQuizStatusFilter] = useState<'all' | QuizStatus>('all');
+    const [quizSort, setQuizSort] = useState<'title' | 'date' | 'submissions'>('date');
+    const [quizDeleteId, setQuizDeleteId] = useState<string | null>(null);
+    const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
 
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
@@ -168,7 +169,7 @@ export const InstructorManageCoursePage = () => {
     ];
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 w-full max-w-[896px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             <div className="space-y-6">
                 {/* Header */}
                 <div>
@@ -280,10 +281,20 @@ export const InstructorManageCoursePage = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
+                                                        <button
+                                                            onClick={() => navigate(ROUTES.INSTRUCTOR_COURSE_EDIT_CONTENT.replace(':id', course.id.toString()))}
+                                                            className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg"
+                                                        >
                                                             <Edit2 className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
                                                         </button>
-                                                        <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
+                                                        <button
+                                                            onClick={() => {
+                                                                if(window.confirm('Are you sure you want to delete this lecture?')) {
+                                                                    // Add your delete logic here later
+                                                                }
+                                                            }}
+                                                            className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg"
+                                                        >
                                                             <Trash2 className="w-4 h-4 text-red-600" />
                                                         </button>
                                                     </div>
@@ -402,10 +413,21 @@ export const InstructorManageCoursePage = () => {
                                                     <Eye className="w-4 h-4" />
                                                     View Submissions
                                                 </button>
-                                                <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
+                                                <button
+                                                    onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT.replace(':id', assignment.id.toString()))}
+                                                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg"
+                                                >
                                                     <Edit2 className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
                                                 </button>
-                                                <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
+                                                <button
+                                                    onClick={() => {
+                                                        if(window.confirm('Are you sure you want to delete this assignment?')) {
+                                                            // Call your delete assignment API mutation here
+                                                            console.log('Delete assignment', assignment.id);
+                                                        }
+                                                    }}
+                                                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg"
+                                                >
                                                     <Trash2 className="w-4 h-4 text-red-600" />
                                                 </button>
                                             </div>
@@ -418,53 +440,237 @@ export const InstructorManageCoursePage = () => {
 
                     {/* Quizzes Tab */}
                     {activeTab === 'quizzes' && (
-                        <Card variant="elevated">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">Quizzes</h2>
-                                    <button
-                                        onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE, { state: { courseId: id } })}
-                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        Create Quiz
-                                    </button>
-                                </div>
-                                <div className="space-y-3">
-                                    {quizzes.map((quiz) => (
-                                        <div
-                                            key={quiz.id}
-                                            className="flex items-center justify-between p-4 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800"
-                                        >
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <h3 className="text-[16px] font-semibold text-gray-900 dark:text-zinc-100">{quiz.name}</h3>
-                                                    <span className={`px-2 py-1 rounded-full text-[12px] font-medium ${quiz.status === 'Published' ? 'bg-green-100 text-green-800' :
-                                                        quiz.status === 'Scheduled' ? 'bg-blue-100 text-blue-800' :
-                                                            'bg-yellow-100 text-yellow-800'
-                                                        }`}>
-                                                        {quiz.status}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-4 text-[13px] text-gray-600 dark:text-zinc-400">
-                                                    <span>Duration: {quiz.duration} min</span>
-                                                    <span>Attempts: {quiz.attemptsAllowed}</span>
-                                                    <span>Submissions: {quiz.submissions}</span>
-                                                </div>
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+
+                            {/* ── Left: Quiz Map sidebar ── */}
+                            <div style={{ width: '208px', flexShrink: 0 }}>
+                                <Card variant="elevated">
+                                    <CardContent className="p-3">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-[12px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Quiz Map</span>
+                                            <span className="text-[11px] bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 px-1.5 py-0.5 rounded-full">{quizzes.length}</span>
+                                        </div>
+
+                                        {quizzesLoading ? (
+                                            <p className="text-[12px] text-gray-400 dark:text-zinc-500 py-2">Loading…</p>
+                                        ) : quizzes.length === 0 ? (
+                                            <p className="text-[12px] text-gray-400 dark:text-zinc-500 py-2">No quizzes yet.</p>
+                                        ) : (
+                                            <div className="space-y-0.5" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                                                {quizzes.map(q => (
+                                                    <button
+                                                        key={q.id}
+                                                        type="button"
+                                                        onClick={() => setSelectedQuizId(prev => prev === q.id ? null : q.id)}
+                                                        style={{ display: 'block', width: '100%', textAlign: 'left' }}
+                                                        className={`px-2.5 py-2 rounded-lg transition-colors ${selectedQuizId === q.id
+                                                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                            : 'hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300'
+                                                            }`}
+                                                    >
+                                                        <div className="text-[13px] font-medium leading-snug" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</div>
+                                                        <div className={`text-[11px] mt-0.5 ${q.quizStatus === 'Published' ? 'text-green-600 dark:text-green-400' :
+                                                            q.quizStatus === 'Scheduled' ? 'text-blue-500 dark:text-blue-400' :
+                                                                'text-yellow-600 dark:text-yellow-400'
+                                                            }`}>{q.quizStatus}</div>
+                                                    </button>
+                                                ))}
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
-                                                    <Edit2 className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
-                                                </button>
-                                                <button className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
-                                                    <Trash2 className="w-4 h-4 text-red-600" />
-                                                </button>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE, { state: { courseId: quizzesCourseId } })}
+                                            className="mt-3 w-full flex items-center justify-center gap-1.5 text-[12px] text-blue-600 hover:text-blue-700 font-medium py-1.5 border border-dashed border-blue-300 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            New Quiz
+                                        </button>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* ── Right: main panel ── */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <Card variant="elevated">
+                                    <CardContent className="p-6">
+
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">Quizzes</h2>
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE, { state: { courseId: quizzesCourseId } })}
+                                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-[14px]"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                Create Quiz
+                                            </button>
+                                        </div>
+
+                                        {/* ── Filter & Sort toolbar ── */}
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', marginBottom: '16px', padding: '12px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '8px' }}>
+                                            {/* Search */}
+                                            <div className="relative" style={{ flex: 1, minWidth: '160px' }}>
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search quizzes…"
+                                                    value={quizSearch}
+                                                    onChange={e => setQuizSearch(e.target.value)}
+                                                    className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                />
+                                            </div>
+                                            {/* Status filter */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <Filter className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
+                                                <select
+                                                    value={quizStatusFilter}
+                                                    onChange={e => setQuizStatusFilter(e.target.value as 'all' | QuizStatus)}
+                                                    className="px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="all">All Statuses</option>
+                                                    <option value="Draft">Draft</option>
+                                                    <option value="Published">Published</option>
+                                                    <option value="Scheduled">Scheduled</option>
+                                                </select>
+                                            </div>
+                                            {/* Sort */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span className="text-[13px] text-gray-500 dark:text-zinc-400 whitespace-nowrap">Sort by:</span>
+                                                <select
+                                                    value={quizSort}
+                                                    onChange={e => setQuizSort(e.target.value as 'title' | 'date' | 'submissions')}
+                                                    className="px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="date">Date Created</option>
+                                                    <option value="title">Title</option>
+                                                    <option value="submissions">Submissions</option>
+                                                </select>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+
+                                        {/* Delete confirmation banner */}
+                                        {quizDeleteId && (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '16px', padding: '16px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px' }}>
+                                                <span className="text-[14px] text-red-700 dark:text-red-400">Delete this quiz? This cannot be undone.</span>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setQuizDeleteId(null)}
+                                                        className="px-3 py-1.5 text-[13px] border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            deleteQuizMutation.mutate(quizDeleteId);
+                                                            if (selectedQuizId === quizDeleteId) setSelectedQuizId(null);
+                                                            setQuizDeleteId(null);
+                                                        }}
+                                                        className="px-3 py-1.5 text-[13px] bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                                                    >
+                                                        Confirm Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* ── Quiz list ── */}
+                                        {quizzesLoading ? (
+                                            <div className="py-12 text-center text-gray-500 dark:text-zinc-400 text-[14px]">Loading quizzes…</div>
+                                        ) : (() => {
+                                            const filtered = quizzes
+                                                .filter(q =>
+                                                    (quizStatusFilter === 'all' || q.quizStatus === quizStatusFilter) &&
+                                                    q.title.toLowerCase().includes(quizSearch.toLowerCase())
+                                                )
+                                                .sort((a, b) => {
+                                                    if (quizSort === 'title') return a.title.localeCompare(b.title);
+                                                    if (quizSort === 'submissions') return b.submissionsCount - a.submissionsCount;
+                                                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                                                });
+
+                                            if (filtered.length === 0) {
+                                                return (
+                                                    <div className="py-12 text-center">
+                                                        <HelpCircle className="w-10 h-10 text-gray-300 dark:text-zinc-600 mx-auto mb-3" />
+                                                        <p className="text-[14px] text-gray-500 dark:text-zinc-400">
+                                                            {quizzes.length === 0
+                                                                ? 'No quizzes yet. Create your first quiz!'
+                                                                : 'No quizzes match your filters.'}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return (
+                                                <div className="space-y-3">
+                                                    {filtered.map(quiz => (
+                                                        <div
+                                                            key={quiz.id}
+                                                            onClick={() => setSelectedQuizId(prev => prev === quiz.id ? null : quiz.id)}
+                                                            style={{
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                                padding: '16px', borderRadius: '8px', cursor: 'pointer',
+                                                                border: `1px solid ${selectedQuizId === quiz.id ? '#3b82f6' : '#e5e7eb'}`,
+                                                                backgroundColor: selectedQuizId === quiz.id ? '#eff6ff' : 'transparent',
+                                                            }}
+                                                        >
+                                                            {/* Info */}
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                                                                    <h3 className="text-[16px] font-semibold text-gray-900 dark:text-zinc-100" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{quiz.title}</h3>
+                                                                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-[12px] font-medium ${quiz.quizStatus === 'Published' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                                                        quiz.quizStatus === 'Scheduled' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                                                                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                                        }`}>
+                                                                        {quiz.quizStatus}
+                                                                    </span>
+                                                                </div>
+                                                                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 16px', fontSize: '13px', color: '#6b7280' }}>
+                                                                    <span>Attempts: {quiz.maximumAttempts}</span>
+                                                                    <span>Questions: {quiz.questionsCount}</span>
+                                                                    <span>Submissions: {quiz.submissionsCount}</span>
+                                                                    {quiz.availableFrom && <span>From: {new Date(quiz.availableFrom).toLocaleDateString()}</span>}
+                                                                    {quiz.availableUntil && <span>Until: {new Date(quiz.availableUntil).toLocaleDateString()}</span>}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Actions — stopPropagation so card click doesn't fire */}
+                                                            <div
+                                                                style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '16px', flexShrink: 0 }}
+                                                                onClick={e => e.stopPropagation()}
+                                                            >
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors"
+                                                                >
+                                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                                    Update
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setQuizDeleteId(quiz.id)}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })()}
+
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                        </div>
                     )}
 
                     {/* Announcements Tab */}

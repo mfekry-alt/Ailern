@@ -49,6 +49,9 @@ export const ROUTES = {
     INSTRUCTOR_SUBMISSIONS: '/instructor/assignments/:assignmentId/submissions',
     INSTRUCTOR_QUIZ_CREATE: '/instructor/quiz/create',
     INSTRUCTOR_QUIZ_QUESTIONS: '/instructor/quiz/questions',
+    INSTRUCTOR_QUIZ_EDIT: '/instructor/quiz/:id/edit',
+    INSTRUCTOR_QUIZ_UPDATE: '/instructor/quiz/:id/update',
+    INSTRUCTOR_QUIZ_QUESTIONS_EDIT: '/instructor/quiz/:id/questions/edit',
 
     // Admin routes
     ADMIN: '/admin',
@@ -84,5 +87,8 @@ export const STORAGE_KEYS = {
     REFRESH_TOKEN: 'refresh_token',
     USER: 'user',
     CSRF_TOKEN: 'csrf_token',
+    QUIZ_BUILDER_DRAFT: 'quiz_builder_draft',
+    QUIZ_SETTINGS_DRAFT: 'quiz_settings_draft',
+    QUIZ_EDIT_DRAFT: 'quiz_edit_draft',
 } as const;
 

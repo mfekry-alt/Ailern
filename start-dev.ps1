@@ -6,9 +6,8 @@ $env:GOOGLE_DRIVE_FILE_STREAM_ENABLED = "0"
 $env:NODE_OPTIONS = ""
 
 Write-Host "Starting Vite development server..." -ForegroundColor Green
-Write-Host "If you see Google Drive errors, consider:" -ForegroundColor Yellow
-Write-Host "1. Moving the project outside of Google Drive" -ForegroundColor Yellow
-Write-Host "2. Pausing Google Drive Desktop sync temporarily" -ForegroundColor Yellow
+Write-Host "Using esbuild-wasm shim (Google Drive DLL workaround active)" -ForegroundColor Cyan
 Write-Host ""
 
-npm run dev
+# Run via cmd.exe to avoid PowerShell treating Google Drive DLL stderr as fatal
+cmd.exe /c "npm run dev"

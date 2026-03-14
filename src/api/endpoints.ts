@@ -81,7 +81,7 @@ export const ENDPOINTS = {
         GET: (id: string) => `/Quizzes/${id}`,
         UPDATE: (id: string) => `/Quizzes/${id}`,
         DELETE: (id: string) => `/Quizzes/${id}`,
-        BY_COURSE: (courseId: string) => `/Quizzes?courseId=${courseId}`,
+        BY_COURSE: (courseId: string) => `/courses/${courseId}/quizzes`,
     },
 } as const;
 

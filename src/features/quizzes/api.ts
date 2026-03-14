@@ -37,6 +37,21 @@ export const useCreateQuiz = () => {
 };
 
 /**
+ * Update an existing quiz
+ */
+export const useUpdateQuiz = (courseId: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, cmd }: { id: string; cmd: Partial<import('@/types/api.types').CreateQuizCommand> }) =>
+            quizService.updateQuiz(id, cmd),
+        onSuccess: (_data, vars) => {
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseId) });
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZ(vars.id) });
+        },
+    });
+};
+
+/**
  * Delete a quiz
  */
 export const useDeleteQuiz = (courseId: string) => {

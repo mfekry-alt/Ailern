@@ -358,21 +358,37 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 export type QuizStatus = 'Draft' | 'Published' | 'Scheduled';
 export type QuestionType = 'MCQ' | 'TrueFalse' | 'Written';
 
-/**
- * Option inside a question.
- * IMPORTANT: Backend expects the option text in "questionText" (known backend typo).
- */
-export interface AddOptionRequest {
-    questionText: string; // intentionally "questionText" — backend typo, do NOT rename to optionText
+// Request types (for creating/updating)
+export interface OptionRequest {
+    optionText: string;
     isCorrect: boolean;
 }
 
-export interface AddQuestionRequest {
-    questionType: QuestionType;
+export interface QuestionRequest {
+    id?: string;           // uuid – omit for new questions, include for updates
     questionText: string;
+    questionType: QuestionType;
     mark: number;
+    instructions?: string;
     explanation?: string;
-    options: AddOptionRequest[];
+    options: OptionRequest[];
+}
+
+// Response types (DTOs returned from API)
+export interface OptionDto {
+    id: string;
+    optionText: string;
+    isCorrect: boolean;
+}
+
+export interface QuestionDto {
+    id: string;
+    questionText: string;
+    questionType: QuestionType;
+    mark: number;
+    instructions?: string;
+    explanation?: string;
+    options: OptionDto[];
 }
 
 export interface CreateQuizCommand {
@@ -380,14 +396,14 @@ export interface CreateQuizCommand {
     description?: string;
     courseId: string;
     maximumAttempts: number;
-    quizStatus: QuizStatus;
-    availableFrom: string;   // ISO – must be > now
-    availableUntil: string;  // ISO – computed as availableFrom + durationMinutes
-    publishedDate?: string;  // ISO – required when quizStatus === 'Scheduled'
+    status: QuizStatus;
+    availableFrom: string;
+    availableUntil: string;
+    publishedDate?: string;
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
     shuffleOptions: boolean;
-    questions: AddQuestionRequest[];
+    questions: QuestionRequest[];
 }
 
 export interface GetQuizDto {
@@ -403,4 +419,8 @@ export interface GetQuizDto {
     submissionsCount: number;
     questionsCount: number;
     createdAt: string;
+    showResultOnClose?: boolean;
+    shuffleQuestions?: boolean;
+    shuffleOptions?: boolean;
+    questions?: QuestionDto[];  // Optional: included when fetching single quiz
 }

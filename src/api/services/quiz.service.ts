@@ -17,8 +17,9 @@ export const createQuiz = async (command: CreateQuizCommand): Promise<GetQuizDto
  * Get all quizzes for a course
  */
 export const getCourseQuizzes = async (courseId: string): Promise<GetQuizDto[]> => {
-    const response = await api.get<ApiResponse<GetQuizDto[]>>(ENDPOINTS.QUIZZES.BY_COURSE(courseId));
-    return response.data.data ?? [];
+    const response = await api.get<ApiResponse<GetQuizDto[]> | GetQuizDto[]>(ENDPOINTS.QUIZZES.BY_COURSE(courseId));
+    const payload = response.data as ApiResponse<GetQuizDto[]> | GetQuizDto[];
+    return Array.isArray(payload) ? payload : (payload.data ?? []);
 };
 
 /**

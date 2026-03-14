@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --configLoader native",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -42,7 +42,8 @@
     "zustand": "^5.0.8"
   },
   "overrides": {
-    "path-to-regexp": "6.3.0"
+    "path-to-regexp": "6.3.0",
+    "esbuild": "file:./esbuild-wasm-shim"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
@@ -55,7 +56,7 @@
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.4",
     "baseline-browser-mapping": "^2.9.10",
-    "esbuild": "^0.27.3",
+    "esbuild-wasm": "0.27.3",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^5.2.0",

@@ -1,4 +1,4 @@
-import { http } from 'msw';
+import { http, passthrough } from 'msw';
 
 // Temporary mock data for testing
 const mockInstructorCourse = {
@@ -238,4 +238,21 @@ export const handlers = [
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
     }),
+
+    // ── Quiz mock handlers ─────────────────────────────────────────────────
+
+    // GET /api/Quizzes?courseId=... -> use real backend
+    http.get('*/api/Quizzes', () => passthrough()),
+
+    // POST /api/Quizzes  (create) -> use real backend
+    http.post('*/api/Quizzes', () => passthrough()),
+
+    // GET /api/Quizzes/:id  (single) -> use real backend
+    http.get('*/api/Quizzes/:id', () => passthrough()),
+
+    // PUT /api/Quizzes/:id  (update) -> use real backend
+    http.put('*/api/Quizzes/:id', () => passthrough()),
+
+    // DELETE /api/Quizzes/:id -> use real backend
+    http.delete('*/api/Quizzes/:id', () => passthrough()),
 ];

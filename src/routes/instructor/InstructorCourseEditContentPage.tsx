@@ -1,12 +1,17 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useQueries } from '@tanstack/react-query';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
+import { useCourseQuizzes, useDeleteQuiz } from '@/features/quizzes/api';
+import { QUERY_KEYS } from '@/lib/constants';
+import { quizService } from '@/api/services';
 import {
     Plus,
     Eye,
     Edit,
     Trash2,
     Upload,
+    Filter,
     FileText,
     Video,
     Presentation,
@@ -73,11 +78,6 @@ const initialAssignments = [
     }
 ];
 
-const initialQuizzes = [
-    { id: 'quiz-1', title: 'Quiz 1: Foundations', status: 'Published', attempts: 2, timeLimit: '30 min', release: '2024-02-15', submissions: 34 },
-    { id: 'quiz-2', title: 'Quiz 2: Research Methods', status: 'Scheduled', attempts: 3, timeLimit: '25 min', release: '2024-02-28', submissions: 0 },
-    { id: 'quiz-3', title: 'Final Quiz', status: 'Draft', attempts: 1, timeLimit: '45 min', release: 'TBD', submissions: 0 }
-];
 
 const initialStudents = [
     { id: 'stu-1', name: 'Alex Kim', progress: '82%', assignments: 'B+', quizzes: 'A-', lastActive: 'Today' },
@@ -93,6 +93,8 @@ const initialEnrollmentRequests = [
 
 export const InstructorCourseEditContentPage = () => {
     const navigate = useNavigate();
+    const { id: courseId } = useParams<{ id: string }>();
+    const quizzesCourseId = '1018';
     const [activeTab, setActiveTab] = useState('Overview');
     const [announcementTitle, setAnnouncementTitle] = useState('');
     const [announcementBody, setAnnouncementBody] = useState('');
@@ -112,7 +114,8 @@ export const InstructorCourseEditContentPage = () => {
     const [lectures, setLectures] = useState(initialLectures);
     const [generalMaterials, setGeneralMaterials] = useState(initialGeneralMaterials);
     const [courseAssignments] = useState(initialAssignments);
-    const [courseQuizzes] = useState(initialQuizzes);
+    const { data: courseQuizzes = [], isLoading: quizzesLoading } = useCourseQuizzes(quizzesCourseId);
+    const deleteQuizMutation = useDeleteQuiz(quizzesCourseId);
     const [students] = useState(initialStudents);
     const [enrollmentRequests, setEnrollmentRequests] = useState(initialEnrollmentRequests);
 
@@ -126,6 +129,9 @@ export const InstructorCourseEditContentPage = () => {
     // Enrollment filters
     const [enrollFilterStatus, setEnrollFilterStatus] = useState<'all' | 'Pending' | 'Approved' | 'Rejected'>('all');
     const [enrollSearch, setEnrollSearch] = useState('');
+    const [quizFilterStatus, setQuizFilterStatus] = useState<'all' | 'Published' | 'Draft' | 'Scheduled'>('all');
+    const [quizSortBy, setQuizSortBy] = useState<'title' | 'date' | 'submissions'>('date');
+    const [quizSearch, setQuizSearch] = useState('');
     const [enrollPage, setEnrollPage] = useState(1);
     const enrollPageSize = 5;
 
@@ -263,6 +269,57 @@ export const InstructorCourseEditContentPage = () => {
     const totalEnrollPages = Math.ceil(filteredEnrollments.length / enrollPageSize) || 1;
     const enrollStart = (enrollPage - 1) * enrollPageSize;
     const pagedEnrollments = filteredEnrollments.slice(enrollStart, enrollStart + enrollPageSize);
+
+    const filteredQuizzes = useMemo(() => {
+        const normalizedSearch = quizSearch.trim().toLowerCase();
+
+        const filtered = courseQuizzes.filter((q) => {
+            const apiStatus = String((q as any).quizStatus ?? (q as any).status ?? '').toLowerCase();
+            const selectedStatus = quizFilterStatus.toLowerCase();
+            const statusOk = quizFilterStatus === 'all' || apiStatus === selectedStatus;
+            const title = String(q.title ?? '').toLowerCase();
+            const searchOk = !normalizedSearch || title.includes(normalizedSearch);
+            return statusOk && searchOk;
+        });
+
+        return filtered.sort((a, b) => {
+            if (quizSortBy === 'title') return String(a.title ?? '').localeCompare(String(b.title ?? ''));
+            if (quizSortBy === 'submissions') return Number((b as any).submissionsCount ?? 0) - Number((a as any).submissionsCount ?? 0);
+            return new Date((b as any).createdAt ?? 0).getTime() - new Date((a as any).createdAt ?? 0).getTime();
+        });
+    }, [courseQuizzes, quizFilterStatus, quizSortBy, quizSearch]);
+
+    // Some list endpoints return lightweight quiz data without full question stats.
+    // Fetch quiz details to display accurate Questions/Total points on cards.
+    const quizDetailsQueries = useQueries({
+        queries: courseQuizzes.map((quiz) => ({
+            queryKey: QUERY_KEYS.QUIZ(String(quiz.id)),
+            queryFn: () => quizService.getQuiz(String(quiz.id)),
+            enabled: !!quiz.id,
+            staleTime: 60_000,
+        })),
+    });
+
+    const quizStatsById = useMemo(() => {
+        const stats = new Map<string, { questionsCount: number; totalPoints: number }>();
+
+        courseQuizzes.forEach((quiz, index) => {
+            const details = quizDetailsQueries[index]?.data as any;
+            if (!details) return;
+
+            const questions = Array.isArray(details.questions) ? details.questions : [];
+            const questionsCount = questions.length > 0
+                ? questions.length
+                : Number(details.questionsCount ?? 0);
+            const totalPoints = questions.length > 0
+                ? questions.reduce((sum: number, q: any) => sum + Number(q?.mark ?? 0), 0)
+                : Number(details.totalPoints ?? 0);
+
+            stats.set(String(quiz.id), { questionsCount, totalPoints });
+        });
+
+        return stats;
+    }, [courseQuizzes, quizDetailsQueries]);
 
     const setEnrollmentStatus = (id: string, status: 'Approved' | 'Rejected') => {
         setEnrollmentRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
@@ -476,29 +533,93 @@ export const InstructorCourseEditContentPage = () => {
         if (activeTab === 'Quizzes') {
             return (
                 <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
-                    <div className="p-6 space-y-4">
-                        {courseQuizzes.map((quiz) => (
-                            <div key={quiz.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex flex-col gap-2">
-                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                                    <div>
-                                        <h4 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{quiz.title}</h4>
-                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Attempts {quiz.attempts} • Time limit {quiz.timeLimit}</p>
-                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Release: {quiz.release}</p>
-                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Submissions: {quiz.submissions}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {getStatusBadge(quiz.status)}
-                                        <button className="text-sm text-blue-600 flex items-center gap-1">
-                                            <Edit className="w-4 h-4" /> Edit
-                                        </button>
-                                        <button className="text-sm text-red-600 flex items-center gap-1">
-                                            <Trash2 className="w-4 h-4" /> Delete
-                                        </button>
-                                    </div>
-                                </div>
+                    <div className="p-6 space-y-6">
+                        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+                            <div className="flex items-center gap-2">
+                                <Filter className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
+                                <select
+                                    value={quizFilterStatus}
+                                    onChange={(e) => setQuizFilterStatus(e.target.value as 'all' | 'Published' | 'Draft' | 'Scheduled')}
+                                    className="px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                                >
+                                    <option value="all">All Statuses</option>
+                                    <option value="Published">Published</option>
+                                    <option value="Draft">Draft</option>
+                                    <option value="Scheduled">Scheduled</option>
+                                </select>
                             </div>
-                        ))}
-                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE)} className="w-full border border-dashed border-gray-300 dark:border-zinc-700 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-zinc-800">
+                            <div className="flex items-center gap-2">
+                                <label className="text-sm text-gray-700 dark:text-zinc-300">Sort by</label>
+                                <select
+                                    value={quizSortBy}
+                                    onChange={(e) => setQuizSortBy(e.target.value as 'title' | 'date' | 'submissions')}
+                                    className="px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                                >
+                                    <option value="date">Date</option>
+                                    <option value="title">Title</option>
+                                    <option value="submissions">Submissions</option>
+                                </select>
+                            </div>
+                            <div className="flex-1 max-w-md">
+                                <input
+                                    value={quizSearch}
+                                    onChange={(e) => setQuizSearch(e.target.value)}
+                                    placeholder="Search quizzes..."
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                                />
+                            </div>
+                        </div>
+
+                        {quizzesLoading ? (
+                            <p className="text-center py-6 text-gray-500 dark:text-zinc-400">Loading quizzes...</p>
+                        ) : filteredQuizzes.length === 0 ? (
+                            <p className="text-center py-6 text-gray-500 dark:text-zinc-400">No quizzes found</p>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {filteredQuizzes.map((quiz) => (
+                                    <div key={quiz.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex flex-col gap-3">
+                                        <div>
+                                            <h4 className="text-base font-semibold text-gray-900 dark:text-zinc-100 line-clamp-2">{quiz.title}</h4>
+                                        </div>
+                                        <div className="flex items-start justify-between gap-3">
+                                            {(() => {
+                                                const stats = quizStatsById.get(String(quiz.id));
+                                                const questionsCount = Number(stats?.questionsCount ?? (quiz as any).questionsCount ?? 0);
+                                                const totalPoints = Number(stats?.totalPoints ?? (quiz as any).totalPoints ?? 0);
+
+                                                return (
+                                                    <div className="text-xs text-gray-600 dark:text-zinc-400 space-y-1">
+                                                        <p>Questions: {questionsCount}</p>
+                                                        <p>Total points: {totalPoints}</p>
+                                                    </div>
+                                                );
+                                            })()}
+                                            <div>{getStatusBadge(String((quiz as any).quizStatus ?? (quiz as any).status ?? 'Draft'))}</div>
+                                        </div>
+                                        <div className="flex items-center gap-1 pt-2 border-t border-gray-200 dark:border-zinc-700">
+                                            <button
+                                                onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))}
+                                                className="flex-1 text-xs text-blue-600 font-medium flex items-center justify-center gap-1 py-1"
+                                            >
+                                                <Edit className="w-3 h-3" /> Edit
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (window.confirm('Are you sure you want to delete this quiz?')) {
+                                                        deleteQuizMutation.mutate(quiz.id);
+                                                    }
+                                                }}
+                                                className="flex-1 text-xs text-red-600 font-medium flex items-center justify-center gap-1 py-1"
+                                            >
+                                                <Trash2 className="w-3 h-3" /> Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE, { state: { courseId: quizzesCourseId } })} className="w-full border border-dashed border-gray-300 dark:border-zinc-700 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-zinc-800">
                             <Plus className="w-4 h-4" /> Create quiz
                         </button>
                     </div>

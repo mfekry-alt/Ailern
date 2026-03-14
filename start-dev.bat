@@ -1,6 +1,5 @@
 @echo off
 echo Starting Vite development server...
+echo Using esbuild-wasm shim (Google Drive DLL workaround active)
 echo.
-set GDRIVE_ENABLED=0
-set NODE_OPTIONS=
 npm run dev

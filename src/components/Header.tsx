@@ -226,9 +226,7 @@ export const Header = () => {
                     to={user ? getDashboardRoute() : ROUTES.HOME}
                     className="flex items-center gap-2.5 h-[48px] w-[148px] cursor-pointer hover:opacity-80 transition-opacity"
                 >
-                    <div className="flex items-center justify-center w-[30px] h-[30px] text-[#2563eb] text-[30px]">
-                        <span className="material-icons">school</span>
-                    </div>
+                    <img src="/logo-removebg.svg" alt="Ailern" className="w-[44px] h-[44px] object-contain" />
                     <div className="font-bold text-[20px] leading-[28px] text-gray-900 dark:text-zinc-100">
                         {APP_NAME}
                     </div>

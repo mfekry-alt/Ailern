@@ -77,7 +77,7 @@ export const HomePage = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-20 items-center">
                         <div className="flex items-center gap-2.5">
-                            <img src="/school.svg" alt={`${APP_NAME} logo`} className="w-[30px]" />
+                            <img src="/logo-removebg.svg" alt={`${APP_NAME} logo`} className="w-[44px] h-[44px] object-contain" />
                             <span className="text-xl font-bold text-gray-900 dark:text-white">{APP_NAME}</span>
                         </div>
                         <div className="hidden md:flex items-center space-x-8">
@@ -475,7 +475,7 @@ export const HomePage = () => {
                         <div className="col-span-2 md:col-span-1">
                             <div className="flex items-center gap-2.5 mb-4">
                                 <div className="flex items-center gap-2.5">
-                                    <img src="/school.svg" alt={`${APP_NAME} logo`} className="w-[30px]" />
+                                    <img src="/logo-removebg.svg" alt={`${APP_NAME} logo`} className="w-[44px] h-[44px] object-contain" />
                                 </div>
                                 <span className="text-xl font-bold text-white">{APP_NAME}</span>
                             </div>

@@ -1,5 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { API_URL, STORAGE_KEYS } from '@/lib/constants';
+import { STORAGE_KEYS } from '@/lib/constants';
 import { storage } from '@/lib/storage';
 import type { ApiError } from '@/types';
 
@@ -17,7 +17,7 @@ export const setAccessToken = (token: string | null) => {
 export const getAccessToken = () => accessToken;
 
 export const api = axios.create({
-    // ⚡ CHANGE THIS: Use a relative path so it hits the proxy
+    // Use relative API path so Vite proxy forwards to backend without browser CORS issues.
     baseURL: '/api',
     headers: {
         'Content-Type': 'application/json',

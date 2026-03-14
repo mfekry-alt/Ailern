@@ -1,0 +1,21 @@
+
+> ailern@0.0.0 dev
+> vite
+
+E0000 00:00:1772999149.177102   15036 ctxmenu.cc:220] UNKNOWN: From legacy status [type.googleapis.com/drive.ds.Status='UNKNOWN_STATUS']
+=== Source Location Trace: ===
+apps/drive/fs/ipc/shell_ipc_client.cc:643
+[31mfailed to load config from C:\Dev\GProject\vite.config.js[39m
+[31merror when starting dev server:
+Error: The service was stopped
+    at C:\Dev\GProject\node_modules\esbuild\lib\main.js:949:34
+    at responseCallbacks.<computed> (C:\Dev\GProject\node_modules\esbuild\lib\main.js:603:9)
+    at Socket.afterClose (C:\Dev\GProject\node_modules\esbuild\lib\main.js:594:28)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)[39m
+npm notice
+npm notice New minor version of npm available! 11.6.2 -> 11.11.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.11.0
+npm notice To update run: npm install -g npm@11.11.0
+npm notice

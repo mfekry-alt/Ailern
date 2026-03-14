@@ -1,4 +1,36 @@
-# Logs
+node_modules/
+dist/
+build/
+.env
+.env.local
+.DS_Store
+.vite
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+/.idea/
+.vscode/
+public/*.exe
+public/*.msi
+public/*.rar
+public/*.zip
+public/*.7z
+*.local
+*.tgz
+*.pem
+*.key
+*.pfx
+__pycache__/
+*.pyc
+/.sass-cache/
+/.cache/
+*.bak
+*.tmp
+dev_out*
+running_server*.txt
+start_out.txt# Logs
 logs
 *.log
 npm-debug.log*
