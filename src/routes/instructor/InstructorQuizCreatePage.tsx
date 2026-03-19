@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/Card';
 import {
     Trash2,
-    Clock, 
+    Clock,
     ArrowLeft, Save, GripVertical
 } from 'lucide-react';
 

@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, setAccessToken } from '@/api/client';
 import { ENDPOINTS } from '@/api/endpoints';
-import { QUERY_KEYS, STORAGE_KEYS } from '@/lib/constants';
+import { normalizeRole, QUERY_KEYS, STORAGE_KEYS } from '@/lib/constants';
 import { useAuthStore } from './store';
 import { storage } from '@/lib/storage';
 import { authService } from '@/api/services';
-import type { User, LoginForm, RegisterForm, ApiResponse } from '@/types';
+import type { User, RegisterForm, ApiResponse } from '@/types';
 import type { GetTokenResponseDto } from '@/types/api.types';
 
 // Helper to transform API user to app User type
@@ -17,22 +17,13 @@ const transformApiUser = (apiUser: GetTokenResponseDto): User => {
         apiUser.studentId ||
         apiUser.id;
 
-    // DEBUG: Log what ID we're using
-    console.log(' [transformApiUser] Extracted ID:', numericId, 'Type:', typeof numericId);
-    console.log(' [transformApiUser] From fields:', {
-        instructorId: apiUser.instructorId,
-        studentId: apiUser.studentId,
-        id: apiUser.id,
-        email: apiUser.email
-    });
-
     return {
         id: numericId || apiUser.email, // Use numeric ID if available, fallback to email
         email: apiUser.email,
         firstName: fullNameParts[0] || apiUser.userName,
         lastName: fullNameParts.slice(1).join(' ') || '',
         fullName: apiUser.userName,
-        roles: [apiUser.role], // Convert single role to array for compatibility
+        roles: [normalizeRole(apiUser.role)],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };

@@ -9,6 +9,17 @@ export const ROLES = {
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 
+export const normalizeRole = (role?: string | null): Role | string => {
+    if (!role) return '';
+
+    const normalized = role.trim().toLowerCase();
+    if (normalized === 'admin') return ROLES.ADMIN;
+    if (normalized === 'instructor') return ROLES.INSTRUCTOR;
+    if (normalized === 'student') return ROLES.STUDENT;
+
+    return role;
+};
+
 export const ROUTES = {
     HOME: '/',
     LOGIN: '/login',

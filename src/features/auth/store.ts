@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { User } from '@/types';
 import { storage } from '@/lib/storage';
-import { STORAGE_KEYS } from '@/lib/constants';
+import { normalizeRole, STORAGE_KEYS } from '@/lib/constants';
 
 interface AuthState {
     user: User | null;
@@ -14,15 +14,35 @@ interface AuthState {
     hasAnyRole: (roles: string[]) => boolean;
 }
 
+const normalizeUser = (user: User | null): User | null => {
+    if (!user) return null;
+
+    const raw = user as User & { role?: string };
+    let normalizedRoles: string[] = [];
+
+    if (Array.isArray(raw.roles) && raw.roles.length > 0) {
+        normalizedRoles = raw.roles.map((r) => normalizeRole(r));
+    } else if (raw.role) {
+        normalizedRoles = [normalizeRole(raw.role)];
+    }
+
+    return {
+        ...raw,
+        roles: normalizedRoles,
+    };
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-    user: storage.get<User>(STORAGE_KEYS.USER),
+    user: normalizeUser(storage.get<User>(STORAGE_KEYS.USER)),
     isAuthenticated: !!storage.get<User>(STORAGE_KEYS.USER),
     isLoading: true,
 
     setUser: (user) => {
-        if (user) {
-            storage.set(STORAGE_KEYS.USER, user);
-            set({ user, isAuthenticated: true, isLoading: false });
+        const normalizedUser = normalizeUser(user);
+
+        if (normalizedUser) {
+            storage.set(STORAGE_KEYS.USER, normalizedUser);
+            set({ user: normalizedUser, isAuthenticated: true, isLoading: false });
         } else {
             storage.remove(STORAGE_KEYS.USER);
             set({ user: null, isAuthenticated: false, isLoading: false });
@@ -40,12 +60,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     hasRole: (role) => {
         const { user } = get();
-        return user?.roles?.includes(role) ?? false;
+        const normalizedRole = normalizeRole(role);
+        return user?.roles?.some((userRole) => normalizeRole(userRole) === normalizedRole) ?? false;
     },
 
     hasAnyRole: (roles) => {
         const { user } = get();
-        return roles.some((role) => user?.roles?.includes(role)) ?? false;
+        const normalizedTargetRoles = roles.map((role) => normalizeRole(role));
+        const userRoles = user?.roles?.map((userRole) => normalizeRole(userRole)) ?? [];
+        return normalizedTargetRoles.some((role) => userRoles.includes(role));
     },
 }));
 

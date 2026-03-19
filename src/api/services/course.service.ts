@@ -58,7 +58,8 @@ const mapCoursesResult = (payload: any): GetAllCoursesDtoPaginationResult => ({
 
 export const createCourse = async (command: CreateCourseCommand): Promise<void> => {
     try {
-        await api.post<ApiResponse>(ENDPOINTS.COURSES.CREATE, command);
+        const response = await api.post<ApiResponse>(ENDPOINTS.COURSES.CREATE, command);
+        console.log('[Courses] Create response:', response.data);
     } catch (error: any) {
         if (error.response?.data?.errors) {
             console.error('⚠️ Validation Errors:', JSON.stringify(error.response.data.errors, null, 2));
@@ -133,6 +134,9 @@ export const getAllCourses = async (
             }
         );
 
+        // DEBUG: Print exactly what the backend sent
+        console.log('📦 [Courses] Raw Data:', response.data);
+
         // 1. Check if data is directly in response.data (some backends do this)
         const dataToUse = extractCoursesPayload(response.data);
 
@@ -151,6 +155,7 @@ export const getAllCourses = async (
         }
 
         // If standard checks failed, try the workarounds
+        console.warn('[Courses] Standard path empty. Trying workarounds...');
 
         // WORKAROUND 1: Lowercase params
         try {
@@ -162,8 +167,8 @@ export const getAllCourses = async (
                 result.pagesCount = d2.totalPages || d2.pagesCount || 0;
                 return result;
             }
-        } catch {
-            // Continue to next fallback.
+        } catch (error) {
+            console.debug('[Courses] Workaround 1 failed:', error);
         }
 
         // WORKAROUND 2: No params
@@ -176,8 +181,8 @@ export const getAllCourses = async (
                 result.pagesCount = d3.totalPages || d3.pagesCount || 0;
                 return result;
             }
-        } catch {
-            // Keep default empty result when fallback also fails.
+        } catch (error) {
+            console.debug('[Courses] Workaround 2 failed:', error);
         }
 
     } catch (error) {

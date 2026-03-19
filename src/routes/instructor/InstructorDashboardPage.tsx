@@ -24,7 +24,6 @@ interface Course {
     enrollmentCount: number;
 }
 
-// --- Helper Functions (Extracted to fix S3358) ---
 const getStatusConfig = (apiStatus: string): Pick<Course, 'status' | 'statusColor' | 'statusBg' | 'primaryAction' | 'secondaryAction'> => {
     switch (apiStatus) {
         case 'Approved':
@@ -75,34 +74,6 @@ const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
     };
 };
 
-const getNotificationColor = (type: string) => {
-    if (type === 'info') return 'bg-blue-600';
-    if (type === 'warning') return 'bg-yellow-500';
-    return 'bg-green-600';
-};
-
-const getApprovalUpdateBadgeClasses = (status: string) => {
-    if (status === 'Pending') {
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-    }
-    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-};
-
-const getDeadlineCardClasses = (priority: string) => {
-    if (priority === 'high') {
-        return 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-900/30';
-    }
-    return 'bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:border-orange-900/30';
-};
-
-const getDeadlineBadgeClasses = (priority: string) => {
-    if (priority === 'high') {
-        return 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200';
-    }
-    return 'bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-};
-
-// --- Component ---
 export const InstructorDashboardPage = () => {
     const user = useAuthStore((state) => state.user);
 
@@ -162,10 +133,7 @@ export const InstructorDashboardPage = () => {
 
                     <div className="flex items-center gap-3">
                         <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
-                            <button
-                                type="button"
-                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2.5 rounded-lg transition-colors shadow-sm cursor-pointer"
-                            >
+                            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2.5 rounded-lg transition-colors shadow-sm">
                                 <Plus className="w-5 h-5" />
                                 Create New Course
                             </button>
@@ -209,10 +177,7 @@ export const InstructorDashboardPage = () => {
                                         My Courses
                                     </h2>
                                     <Link to={ROUTES.INSTRUCTOR_COURSES}>
-                                        <button
-                                            type="button"
-                                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-[14px] cursor-pointer"
-                                        >
+                                        <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-[14px]">
                                             View All
                                         </button>
                                     </Link>
@@ -275,36 +240,24 @@ export const InstructorDashboardPage = () => {
                                             <div className="flex justify-between items-center">
                                                 <div className="flex gap-2">
                                                     <Link to={ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id)}>
-                                                        <button
-                                                            type="button"
-                                                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-600 dark:text-zinc-400 cursor-pointer"
-                                                        >
+                                                        <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-600 dark:text-zinc-400">
                                                             <Edit2 className="w-4 h-4" />
                                                         </button>
                                                     </Link>
-                                                    <button
-                                                        type="button"
-                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-600 dark:text-zinc-400 cursor-pointer"
-                                                    >
+                                                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-600 dark:text-zinc-400">
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
 
                                                 <div className="flex gap-2">
                                                     {course.secondaryAction && (
-                                                        <button
-                                                            type="button"
-                                                            className="bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[12px] px-3 py-1.5 rounded-md transition-colors cursor-pointer"
-                                                        >
+                                                        <button className="bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[12px] px-3 py-1.5 rounded-md transition-colors">
                                                             {course.secondaryAction}
                                                         </button>
                                                     )}
                                                     {course.primaryAction && (
                                                         <Link to={ROUTES.INSTRUCTOR_COURSE_EDIT_CONTENT.replace(':id', course.id)}>
-                                                            <button
-                                                                type="button"
-                                                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] px-3 py-1.5 rounded-md transition-colors cursor-pointer"
-                                                            >
+                                                            <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] px-3 py-1.5 rounded-md transition-colors">
                                                                 {course.primaryAction}
                                                             </button>
                                                         </Link>
@@ -337,7 +290,9 @@ export const InstructorDashboardPage = () => {
                                         </div>
                                     ) : notifications.map((notification) => (
                                         <div key={notification.id} className="flex items-start gap-3">
-                                            <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${getNotificationColor(notification.type)}`}></div>
+                                            <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${notification.type === 'info' ? 'bg-blue-600' :
+                                                notification.type === 'warning' ? 'bg-yellow-500' : 'bg-green-600'
+                                                }`}></div>
                                             <div className="flex-1">
                                                 <p className="text-[14px] text-gray-900 dark:text-zinc-100 mb-1">
                                                     {notification.message}
@@ -350,10 +305,7 @@ export const InstructorDashboardPage = () => {
                                     ))}
                                 </div>
 
-                                <button
-                                    type="button"
-                                    className="w-full mt-6 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-[14px] py-2 border-t border-gray-100 dark:border-zinc-800 cursor-pointer"
-                                >
+                                <button className="w-full mt-6 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-[14px] py-2 border-t border-gray-100 dark:border-zinc-800">
                                     View All
                                 </button>
                             </CardContent>
@@ -398,10 +350,7 @@ export const InstructorDashboardPage = () => {
                                             <p className="text-[12px] text-gray-600 dark:text-zinc-400 mb-3">
                                                 Due: {new Date(submission.dueDate).toLocaleDateString()}
                                             </p>
-                                            <button
-                                                type="button"
-                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] py-1.5 rounded-md transition-colors cursor-pointer"
-                                            >
+                                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] py-1.5 rounded-md transition-colors">
                                                 Grade Submissions
                                             </button>
                                         </div>
@@ -434,7 +383,10 @@ export const InstructorDashboardPage = () => {
                                                 <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 flex-1">
                                                     {update.course}
                                                 </p>
-                                                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${getApprovalUpdateBadgeClasses(update.status)}`}>
+                                                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${update.status === 'Pending'
+                                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                                    }`}>
                                                     {update.status}
                                                 </span>
                                             </div>
@@ -445,10 +397,7 @@ export const InstructorDashboardPage = () => {
                                                 <p className="text-[12px] text-gray-600 dark:text-zinc-400">
                                                     Waiting: {update.daysWaiting} days
                                                 </p>
-                                                <button
-                                                    type="button"
-                                                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-[12px] font-medium cursor-pointer"
-                                                >
+                                                <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-[12px] font-medium">
                                                     Status
                                                 </button>
                                             </div>
@@ -477,12 +426,18 @@ export const InstructorDashboardPage = () => {
                                             <p className="text-[14px] text-gray-500 dark:text-zinc-400">No upcoming deadlines</p>
                                         </div>
                                     ) : upcomingDeadlines.map((deadline) => (
-                                        <div key={deadline.id} className={`rounded-lg p-3 border ${getDeadlineCardClasses(deadline.priority)}`}>
+                                        <div key={deadline.id} className={`rounded-lg p-3 border ${deadline.priority === 'high'
+                                            ? 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-900/30'
+                                            : 'bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:border-orange-900/30'
+                                            }`}>
                                             <div className="flex justify-between items-start mb-1">
                                                 <p className="text-[13px] font-semibold text-gray-600 dark:text-zinc-300">
                                                     {deadline.course}
                                                 </p>
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${getDeadlineBadgeClasses(deadline.priority)}`}>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${deadline.priority === 'high'
+                                                    ? 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                                    : 'bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                                                    }`}>
                                                     {deadline.daysLeft}d
                                                 </span>
                                             </div>

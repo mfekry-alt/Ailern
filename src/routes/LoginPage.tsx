@@ -3,10 +3,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLogin } from '@/features/auth/api';
-import { ROUTES } from '@/lib/constants';
+import { normalizeRole, ROLES, ROUTES, STORAGE_KEYS } from '@/lib/constants';
 import { useState } from 'react';
 import { storage } from '@/lib/storage';
-import { STORAGE_KEYS } from '@/lib/constants';
 import type { User } from '@/types';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -28,9 +27,9 @@ export const LoginPage = () => {
 
     // Redirect based on user role after login - all roles go to their dashboard
     const getRedirectPath = (user: any) => {
-        const userRole = user?.role || user?.roles?.[0];
-        if (userRole === 'Admin') return ROUTES.ADMIN;
-        if (userRole === 'Instructor') return ROUTES.INSTRUCTOR;
+        const userRole = normalizeRole(user?.role || user?.roles?.[0]);
+        if (userRole === ROLES.ADMIN) return ROUTES.ADMIN;
+        if (userRole === ROLES.INSTRUCTOR) return ROUTES.INSTRUCTOR;
         return ROUTES.DASHBOARD;
     };
 

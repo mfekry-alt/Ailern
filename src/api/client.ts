@@ -1,5 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { STORAGE_KEYS } from '@/lib/constants';
+import { API_URL, STORAGE_KEYS } from '@/lib/constants';
 import { storage } from '@/lib/storage';
 import type { ApiError } from '@/types';
 
@@ -17,8 +17,7 @@ export const setAccessToken = (token: string | null) => {
 export const getAccessToken = () => accessToken;
 
 export const api = axios.create({
-
-    baseURL: 'https://ailern.runasp.net/api',
+    baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -27,12 +26,15 @@ export const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
+        console.log(`[API] ${config.method?.toUpperCase()} ${config.url} | Token: ${accessToken ? 'present' : 'MISSING'}`);
         if (accessToken && config.headers) {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
         return config;
     },
-    (error) => Promise.reject(error)
+    (error) => {
+        throw error;
+    }
 );
 
 // Response interceptor for token refresh
@@ -62,7 +64,7 @@ api.interceptors.response.use(
 
         // If error is not 401 or request already retried, reject
         if (error.response?.status !== 401 || originalRequest._retry) {
-            throw(error);
+            throw error;
         }
 
         if (isRefreshing) {
@@ -71,13 +73,16 @@ api.interceptors.response.use(
                 failedQueue.push({ resolve, reject });
             })
                 .then(() => api(originalRequest))
-                .catch((err) => { throw err; });
+                .catch((err) => {
+                    throw err;
+                });
         }
 
         originalRequest._retry = true;
         isRefreshing = true;
 
         try {
+            console.log('[API] Token expired — attempting refresh...');
             const response = await api.post(
                 '/Auth/refresh-token',
                 {
@@ -102,11 +107,11 @@ api.interceptors.response.use(
             storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
 
             // Redirect to login
-            if (typeof globalThis !== 'undefined') {
-                globalThis.location.href = '/login';
+            if (globalThis.window !== undefined) {
+                globalThis.window.location.href = '/login';
             }
 
-            throw (refreshError);
+            throw refreshError;
         } finally {
             isRefreshing = false;
         }

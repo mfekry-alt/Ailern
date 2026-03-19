@@ -6,14 +6,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { ArrowLeft, Plus, Trash2, CheckCircle2, Loader2, GripVertical, Sparkles } from 'lucide-react';
 import { useCreateQuiz } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
-import type { QuestionRequest, QuestionType } from '@/types/api.types';
-import {
-    makeMCQOptions,
-    makeTFOptions,
-    defaultQuestion,
-    convertQuestionRequestToUI,
-    buildPayloadOptions,
-} from './quizQuestion.utils';
+import type { OptionRequest, QuestionRequest, QuestionType } from '@/types/api.types';
 
 // ─── Local UI types ────────────────────────────────────────────────────────
 
@@ -39,7 +32,53 @@ interface BuilderDraftData {
     savedAt: string;
 }
 
+// ─── Defaults ──────────────────────────────────────────────────────────────
+
+const makeMCQOptions = (): UIOption[] => [
+    { text: '', isCorrect: false },
+    { text: '', isCorrect: false },
+    { text: '', isCorrect: false },
+];
+
+const makeTFOptions = (): UIOption[] => [
+    { text: 'True', isCorrect: true },
+    { text: 'False', isCorrect: false },
+];
+
+const defaultQuestion = (uid: number): UIQuestion => ({
+    uid,
+    type: 'MCQ',
+    text: '',
+    instructions: '',
+    mark: 5,
+    explanation: '',
+    options: makeMCQOptions(),
+});
+
+const convertQuestionRequestToUI = (q: QuestionRequest, uid: number): UIQuestion => {
+    const options = q.options?.length
+        ? q.options.map(o => ({ text: o.optionText, isCorrect: o.isCorrect }))
+        : q.questionType === 'TrueFalse'
+            ? makeTFOptions()
+            : q.questionType === 'MCQ'
+                ? makeMCQOptions()
+                : [];
+
+    return {
+        uid,
+        type: q.questionType,
+        text: q.questionText,
+        instructions: q.instructions ?? '',
+        mark: q.mark ?? 5,
+        explanation: q.explanation ?? '',
+        options,
+    };
+};
+
 // ─── Payload builders ──────────────────────────────────────────────────────
+
+const buildPayloadOptions = (q: UIQuestion): OptionRequest[] =>
+    q.options.map(o => ({ optionText: o.text, isCorrect: o.isCorrect }));
 
 const buildPayloadQuestion = (q: UIQuestion): QuestionRequest => ({
     questionType: q.type,
@@ -49,122 +88,6 @@ const buildPayloadQuestion = (q: UIQuestion): QuestionRequest => ({
     explanation: q.explanation || undefined,
     options: buildPayloadOptions(q),
 });
-
-// ─── Validation Helpers (Extracted to reduce Cognitive Complexity) ─────────
-
-const validateMCQ = (q: UIQuestion, questionName: string): string | null => {
-    if (q.options.length < 3 || q.options.length > 5)
-        return `${questionName}: MCQ must have 3–5 options.`;
-    if (q.options.some(o => !o.text.trim()))
-        return `${questionName}: All option texts are required.`;
-    if (q.options.filter(o => o.isCorrect).length !== 1)
-        return `${questionName}: Exactly one correct option is required.`;
-    return null;
-};
-
-const validateTrueFalse = (q: UIQuestion, questionName: string): string | null => {
-    if (q.options.filter(o => o.isCorrect).length !== 1)
-        return `${questionName}: Select the correct answer (True or False).`;
-    return null;
-};
-
-const validateQuestion = (q: UIQuestion, index: number): string | null => {
-    const questionName = `Question ${index + 1}`;
-    if (!q.text.trim()) return `${questionName}: Question text is required.`;
-    if (q.text.length > 1500) return `${questionName}: Max 1500 characters.`;
-    if (q.mark <= 0) return `${questionName}: Points must be greater than 0.`;
-
-    if (q.type === 'MCQ') return validateMCQ(q, questionName);
-    if (q.type === 'TrueFalse') return validateTrueFalse(q, questionName);
-
-    return null;
-};
-
-// ─── State Reducer Helpers (Extracted OUTSIDE to avoid Deep Nesting S2004) ──
-
-const mutateUpdateQ = (qs: UIQuestion[], uid: number, patch: Partial<UIQuestion>) =>
-    qs.map(q => (q.uid === uid ? { ...q, ...patch } : q));
-
-const mutateRemoveQ = (qs: UIQuestion[], uid: number) =>
-    qs.filter(q => q.uid !== uid);
-
-const mutateMoveQ = (qs: UIQuestion[], fromUid: number, toUid: number) => {
-    if (fromUid === toUid) return qs;
-    const next = [...qs];
-    const from = next.findIndex(q => q.uid === fromUid);
-    const to = next.findIndex(q => q.uid === toUid);
-    if (from === -1 || to === -1) return qs;
-    const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved);
-    return next;
-};
-
-const mutateChangeType = (qs: UIQuestion[], uid: number, type: QuestionType) => {
-    let options: UIOption[] = [];
-    if (type === 'MCQ') options = makeMCQOptions();
-    else if (type === 'TrueFalse') options = makeTFOptions();
-    return mutateUpdateQ(qs, uid, { type, options });
-};
-
-const mutateUpdateOpt = (qs: UIQuestion[], uid: number, idx: number, patch: Partial<UIOption>) =>
-    qs.map(q => {
-        if (q.uid !== uid) return q;
-        const options = q.options.map((o, i) => (i === idx ? { ...o, ...patch } : o));
-        return { ...q, options };
-    });
-
-const mutateSetCorrect = (qs: UIQuestion[], uid: number, idx: number) =>
-    qs.map(q => {
-        if (q.uid !== uid) return q;
-        const options = q.options.map((o, i) => ({ ...o, isCorrect: i === idx }));
-        return { ...q, options };
-    });
-
-const mutateAddOption = (qs: UIQuestion[], uid: number) =>
-    qs.map(q => {
-        if (q.uid !== uid || q.options.length >= 5) return q;
-        return { ...q, options: [...q.options, { text: '', isCorrect: false }] };
-    });
-
-const mutateRemoveOption = (qs: UIQuestion[], uid: number, idx: number) =>
-    qs.map(q => {
-        if (q.uid !== uid || q.options.length <= 3) return q;
-        return { ...q, options: q.options.filter((_, i) => i !== idx) };
-    });
-
-const mutateMoveOption = (qs: UIQuestion[], uid: number, fromIdx: number, toIdx: number) =>
-    qs.map(q => {
-        if (q.uid !== uid || fromIdx === toIdx) return q;
-        if (fromIdx < 0 || toIdx < 0 || fromIdx >= q.options.length || toIdx >= q.options.length) return q;
-        const nextOptions = [...q.options];
-        const [moved] = nextOptions.splice(fromIdx, 1);
-        nextOptions.splice(toIdx, 0, moved);
-        return { ...q, options: nextOptions };
-    });
-
-// --- Formatting helpers ---
-const formatApiError = (e: any): string => {
-    const d = e?.response?.data;
-    const fieldErrors = d?.errors
-        ? Object.entries(d.errors as Record<string, string[]>)
-            .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
-            .join(' | ')
-        : null;
-    const title = d?.message || d?.title;
-
-    if (fieldErrors) {
-        if (title) return `${title} — ${fieldErrors}`;
-        return fieldErrors;
-    }
-
-    return title || e?.message || 'Failed to create quiz. Please try again.';
-};
-
-const getStatusBadgeClass = (status?: string) => {
-    if (status === 'Published') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
-    if (status === 'Scheduled') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-    return 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300';
-};
 
 // ─── Shared style constants ────────────────────────────────────────────────
 
@@ -177,8 +100,7 @@ const labelCls = 'block text-[14px] font-medium text-gray-700 dark:text-zinc-300
 export const InstructorQuizQuestionBuilderPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-
-    const settings = location.state?.settings;
+    const settings = (location.state as any)?.settings;
 
     const createQuizMutation = useCreateQuiz();
     const isDraftQuiz = settings?.status === 'Draft';
@@ -192,20 +114,23 @@ export const InstructorQuizQuestionBuilderPage = () => {
     const [showAIModal, setShowAIModal] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // Guard + recovery
+    // Guard + recovery: restore builder settings from local storage if route state is missing
     useEffect(() => {
         if (settings) return;
+
         const persisted = storage.get<BuilderDraftData>(STORAGE_KEYS.QUIZ_BUILDER_DRAFT);
         if (persisted?.settings) {
             navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS, { replace: true, state: { settings: persisted.settings } });
             return;
         }
+
         navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE);
     }, [settings, navigate]);
 
-    // Hydrate
+    // Hydrate question state from local storage for same quiz context.
     useEffect(() => {
         if (!settings || hydrated) return;
+
         const persisted = storage.get<BuilderDraftData>(STORAGE_KEYS.QUIZ_BUILDER_DRAFT);
         const sameContext =
             persisted?.settings?.courseId === settings.courseId &&
@@ -213,14 +138,16 @@ export const InstructorQuizQuestionBuilderPage = () => {
             persisted?.settings?.status === settings.status;
 
         if (sameContext && Array.isArray(persisted?.questions)) {
-            setQuestions(persisted.questions);
+            setQuestions(persisted!.questions);
             setCounter(typeof persisted?.counter === 'number' && persisted.counter > 0 ? persisted.counter : 1);
         }
+
         setHydrated(true);
     }, [settings, hydrated]);
 
     useEffect(() => {
         if (!settings || !hydrated) return;
+
         storage.set<BuilderDraftData>(STORAGE_KEYS.QUIZ_BUILDER_DRAFT, {
             settings,
             questions,
@@ -230,62 +157,142 @@ export const InstructorQuizQuestionBuilderPage = () => {
     }, [settings, questions, counter, hydrated]);
 
     // ── Question helpers ──────────────────────────────────────────────────
-    const updateQ = (uid: number, patch: Partial<UIQuestion>) => setQuestions(qs => mutateUpdateQ(qs, uid, patch));
-    const removeQ = (uid: number) => setQuestions(qs => mutateRemoveQ(qs, uid));
+
+    const updateQ = (uid: number, patch: Partial<UIQuestion>) =>
+        setQuestions(qs => qs.map(q => q.uid === uid ? { ...q, ...patch } : q));
+
+    const removeQ = (uid: number) =>
+        setQuestions(qs => qs.filter(q => q.uid !== uid));
+
     const addQuestion = () => {
         setQuestions(qs => [...qs, defaultQuestion(counter)]);
         setCounter(c => c + 1);
     };
-    const moveQuestion = (fromUid: number, toUid: number) => setQuestions(qs => mutateMoveQ(qs, fromUid, toUid));
-    const changeType = (uid: number, type: QuestionType) => setQuestions(qs => mutateChangeType(qs, uid, type));
 
-    // ── Option helpers ────────────────────────────────────────────────────
-    const updateOpt = (uid: number, idx: number, patch: Partial<UIOption>) => setQuestions(qs => mutateUpdateOpt(qs, uid, idx, patch));
-    const setCorrect = (uid: number, idx: number) => setQuestions(qs => mutateSetCorrect(qs, uid, idx));
-    const addOption = (uid: number) => setQuestions(qs => mutateAddOption(qs, uid));
-    const removeOption = (uid: number, idx: number) => setQuestions(qs => mutateRemoveOption(qs, uid, idx));
-    const moveOption = (uid: number, fromIdx: number, toIdx: number) => setQuestions(qs => mutateMoveOption(qs, uid, fromIdx, toIdx));
+    const handleGenerateWithAI = () => {
+        setShowAIModal(true);
+    };
 
-    // ── Handlers ──────────────────────────────────────────────────────────
     const handleAIGenerate = (generatedQuestions: QuestionRequest[]) => {
         if (!generatedQuestions.length) {
             setError('AI generation returned no questions. Please try again.');
             setShowAIModal(false);
             return;
         }
-        const newQuestions = generatedQuestions.map((q, idx) => convertQuestionRequestToUI(q, counter + idx));
+
+        const newQuestions = generatedQuestions.map((q, idx) =>
+            convertQuestionRequestToUI(q, counter + idx)
+        );
+
         setQuestions(qs => [...qs, ...newQuestions]);
         setCounter(c => c + newQuestions.length);
         setError('');
         setShowAIModal(false);
     };
 
-    const handleDropQuestion = (e: React.DragEvent, targetUid: number) => {
-        e.preventDefault();
-        if (draggedUid !== null) moveQuestion(draggedUid, targetUid);
-        setDraggedUid(null);
+    if (showAIModal) {
+        return (
+            <AIQuestionGeneratorModal
+                isOpen={true}
+                quizId={settings?.quizId}
+                onClose={() => setShowAIModal(false)}
+                onGenerate={handleAIGenerate}
+            />
+        );
+    }
+
+    const moveQuestion = (fromUid: number, toUid: number) => {
+        if (fromUid === toUid) return;
+        setQuestions(qs => {
+            const from = qs.findIndex(q => q.uid === fromUid);
+            const to = qs.findIndex(q => q.uid === toUid);
+            if (from === -1 || to === -1) return qs;
+            const next = [...qs];
+            const [moved] = next.splice(from, 1);
+            next.splice(to, 0, moved);
+            return next;
+        });
     };
 
-    const handleDropOption = (e: React.DragEvent, targetUid: number, targetIdx: number) => {
-        e.preventDefault();
-        if (draggedOption?.uid === targetUid) {
-            moveOption(targetUid, draggedOption.idx, targetIdx);
-        }
-        setDraggedOption(null);
+    const changeType = (uid: number, type: QuestionType) => {
+        const options =
+            type === 'MCQ' ? makeMCQOptions() :
+                type === 'TrueFalse' ? makeTFOptions() : [];
+        updateQ(uid, { type, options });
     };
+
+    // ── Option helpers ────────────────────────────────────────────────────
+
+    const updateOpt = (uid: number, idx: number, patch: Partial<UIOption>) =>
+        setQuestions(qs => qs.map(q => {
+            if (q.uid !== uid) return q;
+            const options = q.options.map((o, i) => i === idx ? { ...o, ...patch } : o);
+            return { ...q, options };
+        }));
+
+    const setCorrect = (uid: number, idx: number) =>
+        setQuestions(qs => qs.map(q => {
+            if (q.uid !== uid) return q;
+            return { ...q, options: q.options.map((o, i) => ({ ...o, isCorrect: i === idx })) };
+        }));
+
+    const addOption = (uid: number) =>
+        setQuestions(qs => qs.map(q => {
+            if (q.uid !== uid || q.options.length >= 5) return q;
+            return { ...q, options: [...q.options, { text: '', isCorrect: false }] };
+        }));
+
+    const removeOption = (uid: number, idx: number) =>
+        setQuestions(qs => qs.map(q => {
+            if (q.uid !== uid || q.options.length <= 3) return q;
+            return { ...q, options: q.options.filter((_, i) => i !== idx) };
+        }));
+
+    const moveOption = (uid: number, fromIdx: number, toIdx: number) =>
+        setQuestions(qs => qs.map(q => {
+            if (q.uid !== uid || fromIdx === toIdx) return q;
+            if (fromIdx < 0 || toIdx < 0 || fromIdx >= q.options.length || toIdx >= q.options.length) return q;
+            const nextOptions = [...q.options];
+            const [moved] = nextOptions.splice(fromIdx, 1);
+            nextOptions.splice(toIdx, 0, moved);
+            return { ...q, options: nextOptions };
+        }));
 
     // ── Validation ────────────────────────────────────────────────────────
+
     const validate = (): string | null => {
         if (isDraftQuiz) return null;
-        if (questions.length === 0) return 'At least one question is required for published or scheduled quizzes.';
+
+        if (questions.length === 0) {
+            return 'At least one question is required for published or scheduled quizzes.';
+        }
+
         for (let i = 0; i < questions.length; i++) {
-            const err = validateQuestion(questions[i], i);
-            if (err) return err;
+            const q = questions[i];
+            const n = `Question ${i + 1}`;
+            if (!q.text.trim()) return `${n}: Question text is required.`;
+            if (q.text.length > 1500) return `${n}: Max 1500 characters.`;
+            if (q.mark <= 0) return `${n}: Points must be greater than 0.`;
+
+            if (q.type === 'MCQ') {
+                if (q.options.length < 3 || q.options.length > 5)
+                    return `${n}: MCQ must have 3–5 options.`;
+                if (q.options.some(o => !o.text.trim()))
+                    return `${n}: All option texts are required.`;
+                if (q.options.filter(o => o.isCorrect).length !== 1)
+                    return `${n}: Exactly one correct option is required.`;
+            }
+
+            if (q.type === 'TrueFalse') {
+                if (q.options.filter(o => o.isCorrect).length !== 1)
+                    return `${n}: Select the correct answer (True or False).`;
+            }
         }
         return null;
     };
 
     // ── Submit ────────────────────────────────────────────────────────────
+
     const handleSubmit = async () => {
         const err = validate();
         if (err) { setError(err); return; }
@@ -295,15 +302,17 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
         const payload = {
             title: settings.title,
+            // Backend currently validates description as required; keep UI optional with a safe fallback.
             description: settings.description?.trim() || settings.title?.trim() || 'Quiz',
             courseId: String(settings.courseId),
             maximumAttempts: settings.maximumAttempts,
             status: settings.status,
             availableFrom: new Date(settings.availableFrom).toISOString(),
             availableUntil: new Date(settings.availableUntil).toISOString(),
-            publishedDate: settings.status === 'Scheduled' && settings.publishedDate
-                ? new Date(settings.publishedDate).toISOString()
-                : undefined,
+            publishedDate:
+                settings.status === 'Scheduled' && settings.publishedDate
+                    ? new Date(settings.publishedDate).toISOString()
+                    : undefined,
             showResultOnClose: settings.showResultOnClose ?? false,
             shuffleQuestions: settings.shuffleQuestions ?? false,
             shuffleOptions: settings.shuffleOptions ?? false,
@@ -318,14 +327,44 @@ export const InstructorQuizQuestionBuilderPage = () => {
             setTimeout(() => navigate(-2), 1500);
         } catch (e: any) {
             console.error('[CreateQuiz] error:', e?.response?.status, e?.response?.data, e);
-            const extracted = formatApiError(e);
+            const d = e?.response?.data;
+            // Field-level errors first (most specific), then title/message, then fallback
+            const fieldErrors = d?.errors
+                ? Object.entries(d.errors as Record<string, string[]>)
+                    .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
+                    .join(' | ')
+                : null;
+            const title = d?.message || d?.title;
+            const extracted = fieldErrors
+                ? (title ? `${title} — ${fieldErrors}` : fieldErrors)
+                : (title || e?.message || 'Failed to create quiz. Please try again.');
             setError(extracted);
         }
     };
 
     const isLoading = createQuizMutation.isPending;
-    const statusBadgeClass = getStatusBadgeClass(settings?.status);
-    const isQuestionComplete = (q: UIQuestion): boolean => validateQuestion(q, 0) === null;
+    const statusBadgeClass =
+        settings?.status === 'Published'
+            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+            : settings?.status === 'Scheduled'
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300';
+
+    const isQuestionComplete = (q: UIQuestion): boolean => {
+        if (!q.text.trim() || q.mark <= 0) return false;
+
+        if (q.type === 'MCQ') {
+            if (q.options.length < 3 || q.options.length > 5) return false;
+            if (q.options.some(o => !o.text.trim())) return false;
+            return q.options.filter(o => o.isCorrect).length === 1;
+        }
+
+        if (q.type === 'TrueFalse') {
+            return q.options.filter(o => o.isCorrect).length === 1;
+        }
+
+        return true;
+    };
 
     const scrollToQuestion = (uid: number) => {
         document.getElementById(`question-card-${uid}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -338,16 +377,6 @@ export const InstructorQuizQuestionBuilderPage = () => {
     };
 
     // ── Render ────────────────────────────────────────────────────────────
-    if (showAIModal) {
-        return (
-            <AIQuestionGeneratorModal
-                isOpen={true}
-                quizId={settings?.quizId}
-                onClose={() => setShowAIModal(false)}
-                onGenerate={handleAIGenerate}
-            />
-        );
-    }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
@@ -377,16 +406,14 @@ export const InstructorQuizQuestionBuilderPage = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
-                                    type="button"
                                     onClick={() => setShowAIModal(true)}
-                                    className="flex items-center gap-2 px-4 py-2 border border-blue-300 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-[14px] font-medium text-blue-700 dark:text-zinc-300 cursor-pointer"
+                                    className="flex items-center gap-2 px-4 py-2 border border-blue-300 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-[14px] font-medium text-blue-700 dark:text-blue-300"
                                 >
                                     <Sparkles className="w-4 h-4" /> Generate with AI
                                 </button>
                                 <button
-                                    type="button"
                                     onClick={() => navigate(-1)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors cursor-pointer"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors"
                                 >
                                     <ArrowLeft className="w-4 h-4" /> Back
                                 </button>
@@ -427,21 +454,24 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                         const complete = isQuestionComplete(q);
                                         return (
                                             <button
-                                                type="button"
                                                 key={q.uid}
                                                 draggable
                                                 onDragStart={() => setDraggedUid(q.uid)}
                                                 onDragOver={e => e.preventDefault()}
-                                                onDrop={e => handleDropQuestion(e, q.uid)}
+                                                onDrop={e => {
+                                                    e.preventDefault();
+                                                    if (draggedUid !== null) moveQuestion(draggedUid, q.uid);
+                                                    setDraggedUid(null);
+                                                }}
                                                 onDragEnd={() => setDraggedUid(null)}
                                                 onClick={() => scrollToQuestion(q.uid)}
-                                                className={`w-full text-left rounded-lg border px-3 py-2 transition-colors cursor-pointer ${complete
+                                                className={`w-full text-left rounded-lg border px-3 py-2 transition-colors ${complete
                                                     ? 'border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
                                                     : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
                                                     }`}
                                             >
                                                 <div className="flex items-start gap-2">
-                                                    <GripVertical className="w-3.5 h-3.5 mt-0.5 text-gray-400 dark:text-zinc-500 cursor-grab" />
+                                                    <GripVertical className="w-3.5 h-3.5 mt-0.5 text-gray-400 dark:text-zinc-500" />
                                                     <div className="min-w-0">
                                                         <div className="text-[11px] text-gray-500 dark:text-zinc-400">Question {idx + 1}</div>
                                                         <div className="text-[13px] font-medium text-gray-900 dark:text-zinc-100 truncate">{getQuestionName(q, idx)}</div>
@@ -470,10 +500,8 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                             Question {idx + 1}: {getQuestionName(q, idx)}
                                         </h3>
                                         <button
-                                            type="button"
                                             onClick={() => removeQ(q.uid)}
-                                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
-                                            aria-label="Remove Question"
+                                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -481,9 +509,8 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                                     {/* Type */}
                                     <div>
-                                        <label htmlFor={`q-type-${q.uid}`} className={labelCls}>Question Type</label>
+                                        <label className={labelCls}>Question Type</label>
                                         <select
-                                            id={`q-type-${q.uid}`}
                                             value={q.type}
                                             onChange={e => changeType(q.uid, e.target.value as QuestionType)}
                                             className={inputCls}
@@ -496,14 +523,13 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                                     {/* Question text */}
                                     <div>
-                                        <label htmlFor={`q-text-${q.uid}`} className={labelCls}>
+                                        <label className={labelCls}>
                                             Question Text <span className="text-red-500">*</span>
                                             <span className="ml-2 font-normal text-gray-400 dark:text-zinc-500">
                                                 ({q.text.length}/1500)
                                             </span>
                                         </label>
                                         <textarea
-                                            id={`q-text-${q.uid}`}
                                             rows={3}
                                             maxLength={1500}
                                             placeholder="Enter your question..."
@@ -515,18 +541,17 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                                     {/* Points */}
                                     <div className="w-48">
-                                        <label htmlFor={`q-mark-${q.uid}`} className={labelCls}>
+                                        <label className={labelCls}>
                                             Points <span className="text-red-500">*</span>
                                         </label>
                                         <input
-                                            id={`q-mark-${q.uid}`}
                                             type="number"
                                             min="0.5"
                                             max="100"
                                             step="0.5"
                                             value={q.mark}
                                             onChange={e =>
-                                                updateQ(q.uid, { mark: Number.parseFloat(e.target.value) || 1 })
+                                                updateQ(q.uid, { mark: parseFloat(e.target.value) || 1 })
                                             }
                                             className={inputCls}
                                         />
@@ -536,81 +561,64 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                     {q.type === 'MCQ' && (
                                         <div>
                                             <div className="flex items-center justify-between mb-2">
-                                                <div className={`${labelCls} mb-0`}>
+                                                <label className={`${labelCls} mb-0`}>
                                                     Options <span className="text-red-500">*</span>
                                                     <span className="ml-2 font-normal text-gray-400 dark:text-zinc-500">
                                                         ({q.options.length}/5, min 3)
                                                     </span>
-                                                </div>
+                                                </label>
                                                 {q.options.length < 5 && (
                                                     <button
-                                                        type="button"
                                                         onClick={() => addOption(q.uid)}
-                                                        className="text-[13px] text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                                                        className="text-[13px] text-blue-600 hover:text-blue-700 font-medium"
                                                     >
                                                         + Add Option
                                                     </button>
                                                 )}
                                             </div>
                                             <div className="space-y-2">
-                                                {q.options.map((opt, oi) => {
-                                                    // 💡 Spread events to bypass SonarQube S6848 False Positive
-                                                    const dragAndDropHandlers = {
-                                                        draggable: true,
-                                                        onDragStart: () => setDraggedOption({ uid: q.uid, idx: oi }),
-                                                        onDragOver: (e: React.DragEvent) => e.preventDefault(),
-                                                        onDrop: (e: React.DragEvent) => handleDropOption(e, q.uid, oi),
-                                                        onDragEnd: () => setDraggedOption(null)
-                                                    };
-
-                                                    return (
-                                                        <div
-                                                            key={`${q.uid}-opt-${oi}`}
-                                                            {...dragAndDropHandlers}
-                                                            className="flex items-center gap-3 p-1 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors"
-                                                        >
-                                                            <div className="cursor-grab p-1">
-                                                                <GripVertical className="w-4 h-4 text-gray-400" />
-                                                            </div>
-
-                                                            <input
-                                                                type="radio"
-                                                                id={`correct-${q.uid}-${oi}`}
-                                                                name={`correct-${q.uid}`}
-                                                                checked={opt.isCorrect}
-                                                                onChange={() => setCorrect(q.uid, oi)}
-                                                                className="w-4 h-4 text-blue-600 cursor-pointer"
-                                                            />
-
-                                                            <label htmlFor={`correct-${q.uid}-${oi}`} className="sr-only">
-                                                                Option {oi + 1} is correct
-                                                            </label>
-
-                                                            <input
-                                                                id={`opt-text-${q.uid}-${oi}`}
-                                                                type="text"
-                                                                placeholder={`Option ${oi + 1}`}
-                                                                value={opt.text}
-                                                                onChange={e => updateOpt(q.uid, oi, { text: e.target.value })}
-                                                                className="flex-1 p-2 border rounded-lg text-sm bg-white dark:bg-zinc-800"
-                                                            />
-
-                                                            <label htmlFor={`opt-text-${q.uid}-${oi}`} className="sr-only">
-                                                                Text for option {oi + 1}
-                                                            </label>
-
-                                                            {q.options.length > 3 && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeOption(q.uid, oi)}
-                                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
+                                                {q.options.map((opt, oi) => (
+                                                    <div
+                                                        key={oi}
+                                                        draggable
+                                                        onDragStart={() => setDraggedOption({ uid: q.uid, idx: oi })}
+                                                        onDragOver={e => e.preventDefault()}
+                                                        onDrop={e => {
+                                                            e.preventDefault();
+                                                            if (draggedOption && draggedOption.uid === q.uid) {
+                                                                moveOption(q.uid, draggedOption.idx, oi);
+                                                            }
+                                                            setDraggedOption(null);
+                                                        }}
+                                                        onDragEnd={() => setDraggedOption(null)}
+                                                        className="flex items-center gap-3"
+                                                    >
+                                                        <GripVertical className="w-3.5 h-3.5 text-gray-400 dark:text-zinc-500 flex-shrink-0" />
+                                                        <input
+                                                            type="radio"
+                                                            name={`correct-${q.uid}`}
+                                                            checked={opt.isCorrect}
+                                                            onChange={() => setCorrect(q.uid, oi)}
+                                                            className="w-4 h-4 text-blue-600 flex-shrink-0"
+                                                            title="Mark as correct answer"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder={`Option ${oi + 1}`}
+                                                            value={opt.text}
+                                                            onChange={e => updateOpt(q.uid, oi, { text: e.target.value })}
+                                                            className={`${inputCls} flex-1`}
+                                                        />
+                                                        {q.options.length > 3 && (
+                                                            <button
+                                                                onClick={() => removeOption(q.uid, oi)}
+                                                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex-shrink-0"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
                                             </div>
                                             <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
                                                 Click the radio button to mark the correct answer.
@@ -621,14 +629,13 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                     {/* True/False */}
                                     {q.type === 'TrueFalse' && (
                                         <div>
-                                            <div className={labelCls}>
+                                            <label className={labelCls}>
                                                 Correct Answer <span className="text-red-500">*</span>
-                                            </div>
+                                            </label>
                                             <div className="space-y-2">
                                                 {q.options.map((opt, oi) => (
                                                     <label
-                                                        key={`${q.uid}-tf-${oi}`}
-                                                        htmlFor={`tf-${q.uid}-${oi}`}
+                                                        key={oi}
                                                         className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${opt.isCorrect
                                                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                                                             : 'border-gray-200 dark:border-zinc-700 hover:border-gray-300'
@@ -636,11 +643,10 @@ export const InstructorQuizQuestionBuilderPage = () => {
                                                     >
                                                         <input
                                                             type="radio"
-                                                            id={`tf-${q.uid}-${oi}`}
                                                             name={`tf-${q.uid}`}
                                                             checked={opt.isCorrect}
                                                             onChange={() => setCorrect(q.uid, oi)}
-                                                            className="w-4 h-4 text-blue-600 cursor-pointer"
+                                                            className="w-4 h-4 text-blue-600"
                                                         />
                                                         <span className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">
                                                             {opt.text}
@@ -662,12 +668,11 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                                     {/* Question instructions */}
                                     <div>
-                                        <label htmlFor={`q-instructions-${q.uid}`} className={labelCls}>
+                                        <label className={labelCls}>
                                             Instructions{' '}
                                             <span className="font-normal text-gray-400 dark:text-zinc-500">(optional)</span>
                                         </label>
                                         <textarea
-                                            id={`q-instructions-${q.uid}`}
                                             rows={2}
                                             placeholder="Add student-facing instruction for this question..."
                                             value={q.instructions}
@@ -678,12 +683,11 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                                     {/* Explanation */}
                                     <div>
-                                        <label htmlFor={`q-explanation-${q.uid}`} className={labelCls}>
+                                        <label className={labelCls}>
                                             Explanation{' '}
                                             <span className="font-normal text-gray-400 dark:text-zinc-500">(optional)</span>
                                         </label>
                                         <textarea
-                                            id={`q-explanation-${q.uid}`}
                                             rows={2}
                                             placeholder="Explain the correct answer..."
                                             value={q.explanation}
@@ -698,9 +702,8 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                         {/* Add question button */}
                         <button
-                            type="button"
                             onClick={addQuestion}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-zinc-800/50 transition-colors text-[14px] font-medium text-gray-600 dark:text-zinc-400 cursor-pointer"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-zinc-800/50 transition-colors text-[14px] font-medium text-gray-600 dark:text-zinc-400"
                         >
                             <Plus className="w-5 h-5" /> Add Another Question
                         </button>
@@ -708,17 +711,15 @@ export const InstructorQuizQuestionBuilderPage = () => {
                         {/* Footer actions */}
                         <div className="flex items-center justify-between pb-8">
                             <button
-                                type="button"
                                 onClick={() => navigate(-1)}
-                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors cursor-pointer"
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors"
                             >
                                 <ArrowLeft className="w-4 h-4" /> Back to Settings
                             </button>
                             <button
-                                type="button"
                                 onClick={handleSubmit}
                                 disabled={isLoading || success}
-                                className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-medium text-[14px] rounded-lg transition-colors cursor-pointer"
+                                className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-medium text-[14px] rounded-lg transition-colors"
                             >
                                 {isLoading ? (
                                     <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</>
@@ -734,3 +735,4 @@ export const InstructorQuizQuestionBuilderPage = () => {
         </div>
     );
 };
+

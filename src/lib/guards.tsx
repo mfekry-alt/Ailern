@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { ROUTES } from './constants';
+import { normalizeRole, ROLES, ROUTES } from './constants';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -72,17 +72,13 @@ export const GuestOnly = ({ children }: GuestOnlyProps) => {
     }
 
     if (isAuthenticated) {
-        // Redirect based on user role
-        console.log('GuestOnly guard: User is authenticated, redirecting. User roles:', user?.roles);
-        if (user?.roles?.includes('Admin')) {
-            console.log('GuestOnly: Redirecting to ADMIN dashboard');
+        const userRoles = user?.roles?.map((role) => normalizeRole(role)) ?? [];
+        if (userRoles.includes(ROLES.ADMIN)) {
             return <Navigate to={ROUTES.ADMIN} replace />;
         }
-        if (user?.roles?.includes('Instructor')) {
-            console.log('GuestOnly: Redirecting to INSTRUCTOR dashboard');
+        if (userRoles.includes(ROLES.INSTRUCTOR)) {
             return <Navigate to={ROUTES.INSTRUCTOR} replace />;
         }
-        console.log('GuestOnly: Redirecting to STUDENT dashboard');
         return <Navigate to={ROUTES.DASHBOARD} replace />;
     }
 

@@ -189,9 +189,9 @@ export const getSubmissionFiles = async (
 export const getInstructorAssignments = async (
     params?: PaginationParams
 ): Promise<GetAssignmentDto[]> => {
-    // Import getAllCourses dynamically to use its fallback logic
-    const { getAllCourses } = await import('./course.service');
-    const coursesData = await getAllCourses({ PageSize: 100 });
+    // Use instructor-scoped courses endpoint to avoid forbidden /Courses access for instructors.
+    const { getInstructorCourses } = await import('./course.service');
+    const coursesData = await getInstructorCourses(undefined, { PageSize: 100 });
 
     const courses = coursesData.items || [];
     if (courses.length === 0) return [];
