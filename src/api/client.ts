@@ -27,7 +27,6 @@ export const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        console.log(`[API] ${config.method?.toUpperCase()} ${config.url} | Token: ${accessToken ? 'present' : 'MISSING'}`);
         if (accessToken && config.headers) {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
@@ -63,7 +62,7 @@ api.interceptors.response.use(
 
         // If error is not 401 or request already retried, reject
         if (error.response?.status !== 401 || originalRequest._retry) {
-            return Promise.reject(error);
+            throw(error);
         }
 
         if (isRefreshing) {
@@ -72,14 +71,13 @@ api.interceptors.response.use(
                 failedQueue.push({ resolve, reject });
             })
                 .then(() => api(originalRequest))
-                .catch((err) => Promise.reject(err));
+                .catch((err) => { throw err; });
         }
 
         originalRequest._retry = true;
         isRefreshing = true;
 
         try {
-            console.log('[API] Token expired — attempting refresh...');
             const response = await api.post(
                 '/Auth/refresh-token',
                 {
@@ -104,11 +102,11 @@ api.interceptors.response.use(
             storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
 
             // Redirect to login
-            if (typeof window !== 'undefined') {
-                window.location.href = '/login';
+            if (typeof globalThis !== 'undefined') {
+                globalThis.location.href = '/login';
             }
 
-            return Promise.reject(refreshError);
+            throw (refreshError);
         } finally {
             isRefreshing = false;
         }

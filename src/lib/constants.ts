@@ -13,9 +13,9 @@ export const ROUTES = {
     HOME: '/',
     LOGIN: '/login',
     REGISTER: '/register',
-    FORGOT_PASSWORD: '/forgot-password',
+    FORGOT_PASSWORD: '/forgot-password',// NOSONAR
     VERIFY_EMAIL: '/verify-email',
-    SET_PASSWORD: '/set-password',
+    SET_PASSWORD: '/set-password',      // NOSONAR
     FORBIDDEN: '/403',
     NOT_FOUND: '/404',
 
@@ -26,7 +26,7 @@ export const ROUTES = {
     COURSE_DETAIL: '/courses/:id',
     LEARN: '/learn/:courseId/:lessonId',
     PROFILE: '/profile',
-    CHANGE_PASSWORD: '/change-password',
+    CHANGE_PASSWORD: '/change-password',        // NOSONAR
     NOTIFICATIONS: '/notifications',
     ASSIGNMENTS: '/assignments',
     ASSIGNMENT_DETAIL: '/assignments/:id',

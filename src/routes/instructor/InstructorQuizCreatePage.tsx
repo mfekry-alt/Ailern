@@ -1,320 +1,213 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES, STORAGE_KEYS } from '@/lib/constants';
-import { storage } from '@/lib/storage';
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/Card';
-import { ArrowLeft } from 'lucide-react';
-import type { QuizStatus } from '@/types/api.types';
+import {
+    Trash2,
+    Clock, 
+    ArrowLeft, Save, GripVertical
+} from 'lucide-react';
 
-interface QuizSettings {
+// ─── Interfaces ─────────────────────────────────────────────────────────
+
+type TabType = 'Overview' | 'Curriculum' | 'Students' | 'Announcements';
+
+interface Lesson {
+    id: string;
     title: string;
-    description: string;
-    availableUntil: string;
-    maximumAttempts: number;
-    status: QuizStatus | '';
-    availableFrom: string;
-    publishedDate: string;
-    courseId: string;
-    showResultOnClose: boolean;
-    shuffleQuestions: boolean;
-    shuffleOptions: boolean;
+    type: 'video' | 'quiz' | 'document';
+    duration?: string;
 }
 
-const inputCls =
-    'w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100';
-const labelCls = 'block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2';
+interface Section {
+    id: string;
+    title: string;
+    lessons: Lesson[];
+}
 
-const PUBLISH_OPTIONS: { value: QuizStatus; title: string; desc: string }[] = [
-    { value: 'Draft', title: 'Save as Draft', desc: 'Not visible to students yet' },
-    { value: 'Published', title: 'Publish Immediately', desc: 'Visible to students right away after creation' },
-    { value: 'Scheduled', title: 'Schedule', desc: 'Set a future publish date' },
-];
+// ─── State Reducer Helpers (Extracted to solve S2004) ────────────────────
 
-export const InstructorQuizCreatePage = () => {
-    const navigate = useNavigate();
-    const [error, setError] = useState('');
-    const [hydrated, setHydrated] = useState(false);
+const mutateUpdateSection = (sections: Section[], sid: string, title: string) =>
+    sections.map(s => (s.id === sid ? { ...s, title } : s));
 
-    const [settings, setSettings] = useState<QuizSettings>({
-        title: '',
-        description: '',
-        availableUntil: '',
-        maximumAttempts: 1,
-        status: '',
-        availableFrom: '',
-        publishedDate: '',
-        courseId: '1018',
-        showResultOnClose: false,
-        shuffleQuestions: false,
-        shuffleOptions: false,
+const mutateUpdateLesson = (sections: Section[], sid: string, lid: string, title: string) =>
+    sections.map(s => {
+        if (s.id !== sid) return s;
+        return {
+            ...s,
+            lessons: s.lessons.map(l => (l.id === lid ? { ...l, title } : l))
+        };
     });
 
-    const set = (patch: Partial<QuizSettings>) =>
-        setSettings(s => ({ ...s, ...patch }));
+const mutateRemoveLesson = (sections: Section[], sid: string, lid: string) =>
+    sections.map(s => {
+        if (s.id !== sid) return s;
+        return { ...s, lessons: s.lessons.filter(l => l.id !== lid) };
+    });
 
-    // Load persisted settings from localStorage on mount
-    useEffect(() => {
-        const persisted = storage.get<QuizSettings>(STORAGE_KEYS.QUIZ_SETTINGS_DRAFT);
-        if (persisted) {
-            // Force temporary courseId target for API integration.
-            setSettings(prev => ({
-                ...persisted,
-                courseId: '1018',
-            }));
-        }
-        setHydrated(true);
-    }, []);
+// ─── UI Styling Helpers (Extracted to solve S3358) ───────────────────────
 
-    // Save settings to localStorage whenever they change (after hydration)
-    useEffect(() => {
-        if (hydrated) {
-            storage.set(STORAGE_KEYS.QUIZ_SETTINGS_DRAFT, settings);
-        }
-    }, [settings, hydrated]);
+const getTabClasses = (active: boolean) => {
+    const base = "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer";
+    const activeStyle = "border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/20";
+    const inactiveStyle = "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-zinc-400 dark:hover:bg-zinc-800";
+    return `${base} ${active ? activeStyle : inactiveStyle}`;
+};
 
-    const validate = (): string | null => {
-        if (!settings.title.trim()) return 'Quiz title is required.';
-        if (!settings.status) return 'Please choose a publish status.';
-        if (settings.maximumAttempts < 1 || settings.maximumAttempts > 5)
-            return 'Attempts allowed must be between 1 and 5.';
-        if (!settings.availableFrom) return 'Available From date & time is required.';
-        if (new Date(settings.availableFrom) <= new Date())
-            return 'Available From must be in the future.';
-        if (!settings.availableUntil) return '"Available Until" date & time is required.';
-        if (new Date(settings.availableUntil) <= new Date(settings.availableFrom))
-            return '"Available Until" must be after "Available From".';
-        if (settings.status === 'Scheduled') {
-            if (!settings.publishedDate) return 'Publish Date is required for scheduled quizzes.';
-            const pd = new Date(settings.publishedDate);
-            if (pd <= new Date()) return 'Publish Date must be in the future.';
-            if (pd >= new Date(settings.availableFrom))
-                return 'Publish Date must be before "Available From".';
+const getStatusStyle = (status: string) => {
+    if (status === 'Pending') return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30';
+    if (status === 'Approved') return 'bg-green-100 text-green-700 dark:bg-green-900/30';
+    return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30';
+};
+
+// ─── Main Component ─────────────────────────────────────────────────────
+
+export const InstructorCourseEditContentPage = () => {
+    const navigate = useNavigate();
+    useParams<{ id: string; }>();
+    const [activeTab, setActiveTab] = useState<TabType>('Curriculum');
+    const [courseTitle, setCourseTitle] = useState('Introduction to Modern Web Development');
+
+    const [sections, setSections] = useState<Section[]>([
+        {
+            id: 'sec-1',
+            title: 'Introduction to Web Development',
+            lessons: [
+                { id: 'les-1', title: 'Course Overview', type: 'video', duration: '5:00' },
+                { id: 'les-2', title: 'Environment Setup', type: 'video', duration: '12:00' },
+            ]
         }
-        return null;
+    ]);
+
+    // Handlers using mutation helpers
+    const handleUpdateSection = (sid: string, val: string) => setSections(prev => mutateUpdateSection(prev, sid, val));
+    const handleUpdateLesson = (sid: string, lid: string, val: string) => setSections(prev => mutateUpdateLesson(prev, sid, lid, val));
+    const handleRemoveLesson = (sid: string, lid: string) => setSections(prev => mutateRemoveLesson(prev, sid, lid));
+
+    const addSection = () => {
+        setSections([...sections, { id: `sec-${Date.now()}`, title: 'New Section', lessons: [] }]);
     };
 
-    const handleNext = () => {
-        const err = validate();
-        if (err) { setError(err); return; }
-        setError('');
-        navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS, {
-            state: { settings: { ...settings, status: settings.status as QuizStatus, courseId: '1018' } },
-        });
+    const addLesson = (sid: string) => {
+        setSections(prev => prev.map(s => s.id === sid ? {
+            ...s,
+            lessons: [...s.lessons, { id: `les-${Date.now()}`, title: 'New Lesson', type: 'video' }]
+        } : s));
     };
-
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-            <div>
-                <Card variant="elevated">
-                    <CardContent className="p-6">
-                        <div className="space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
+            <div className="max-w-6xl mx-auto space-y-6">
+                {/* Header */}
+                <header className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-4 w-full">
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            className="p-2 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-lg cursor-pointer"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <h1 className="text-2xl font-bold">Edit Course Content</h1>
+                    </div>
+                    <div className="flex gap-3">
+                        <button type="button" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold cursor-pointer">
+                            <Save className="w-4 h-4 inline mr-2" /> Save
+                        </button>
+                    </div>
+                </header>
 
-                            {/* Header */}
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-[30px] font-bold text-gray-900 dark:text-zinc-100 mb-1">
-                                        Create New Quiz
-                                    </h1>
-                                    <p className="text-[16px] text-gray-600 dark:text-zinc-400">
-                                        Step 1 of 2 — Quiz Settings
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => navigate(-1)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors"
-                                >
-                                    <ArrowLeft className="w-4 h-4" /> Back
-                                </button>
-                            </div>
+                {/* Tabs */}
+                <nav className="flex border-b border-gray-200 dark:border-zinc-800 overflow-x-auto">
+                    {(['Overview', 'Curriculum', 'Students', 'Announcements'] as TabType[]).map(tab => (
+                        <button
+                            key={tab}
+                            type="button"
+                            className={getTabClasses(activeTab === tab)}
+                            onClick={() => setActiveTab(tab)}
+                        >
+                            {tab}
+                        </button>
+                    ))}
+                </nav>
 
-                            {/* Error */}
-                            {error && (
-                                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                                    <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
-                                </div>
-                            )}
-
-                            {/* Title */}
-                            <div>
-                                <label className={labelCls}>
-                                    Quiz Title <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g., Midterm Exam — Chapter 1–5"
-                                    value={settings.title}
-                                    onChange={e => set({ title: e.target.value })}
-                                    className={inputCls}
-                                />
-                            </div>
-
-                            {/* Description */}
-                            <div>
-                                <label className={labelCls}>Description</label>
-                                <textarea
-                                    rows={3}
-                                    placeholder="Instructions or info for students..."
-                                    value={settings.description}
-                                    onChange={e => set({ description: e.target.value })}
-                                    className={`${inputCls} resize-none`}
-                                />
-                            </div>
-
-                            {/* Available From / Available Until */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className={labelCls}>
-                                        Available From <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="datetime-local"
-                                        value={settings.availableFrom}
-                                        onChange={e => set({ availableFrom: e.target.value })}
-                                        min={new Date().toISOString().slice(0, 16)}
-                                        className={inputCls}
-                                    />
-                                    <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
-                                        When students can start the quiz.
-                                    </p>
-                                </div>
-                                <div>
-                                    <label className={labelCls}>
-                                        Available Until <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="datetime-local"
-                                        value={settings.availableUntil}
-                                        onChange={e => set({ availableUntil: e.target.value })}
-                                        min={settings.availableFrom || new Date().toISOString().slice(0, 16)}
-                                        className={inputCls}
-                                    />
-                                    <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
-                                        Last moment a student can enter the quiz.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Attempts Allowed */}
-                            <div>
-                                <label className={labelCls}>
-                                    Attempts Allowed <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="5"
-                                    value={settings.maximumAttempts}
-                                    onChange={e =>
-                                        set({
-                                            maximumAttempts: Math.min(
-                                                5,
-                                                Math.max(1, parseInt(e.target.value) || 1)
-                                            ),
-                                        })
-                                    }
-                                    className={`${inputCls} max-w-xs`}
-                                />
-                                <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">1 – 5 attempts.</p>
-                            </div>
-
-                            {/* Publish Options */}
-                            <div>
-                                <label className={labelCls}>Publish Options</label>
-                                <div className="space-y-3">
-                                    {PUBLISH_OPTIONS.map(opt => (
-                                        <label
-                                            key={opt.value}
-                                            className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${settings.status === opt.value
-                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                                : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                                }`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="status"
-                                                value={opt.value}
-                                                checked={settings.status === opt.value}
-                                                onChange={() => set({ status: opt.value })}
-                                                className="w-4 h-4 text-blue-600"
-                                            />
-                                            <div>
-                                                <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">
-                                                    {opt.title}
-                                                </div>
-                                                <div className="text-[12px] text-gray-600 dark:text-zinc-400">
-                                                    {opt.desc}
-                                                </div>
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Quiz Behavior Toggles */}
-                            <div>
-                                <label className={labelCls}>Quiz Behavior</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                                    {[
-                                        { key: 'showResultOnClose' as const, label: 'Show results on close', desc: 'Show correct answers to students after the quiz ends' },
-                                        { key: 'shuffleQuestions' as const, label: 'Shuffle questions', desc: 'Randomize the order of questions for each attempt' },
-                                        { key: 'shuffleOptions' as const, label: 'Shuffle options', desc: 'Randomize the order of answer choices' },
-                                    ].map(({ key, label, desc }) => (
-                                        <label
-                                            key={key}
-                                            className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${settings[key]
-                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                                : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                                }`}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={settings[key]}
-                                                onChange={e => set({ [key]: e.target.checked })}
-                                                className="w-4 h-4 text-blue-600 mt-0.5"
-                                            />
-                                            <div>
-                                                <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">{label}</div>
-                                                <div className="text-[12px] text-gray-600 dark:text-zinc-400">{desc}</div>
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Scheduled: Publish Date */}
-                            {settings.status === 'Scheduled' && (
-                                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                    <label className={labelCls}>
-                                        Publish Date <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="datetime-local"
-                                        value={settings.publishedDate}
-                                        onChange={e => set({ publishedDate: e.target.value })}
-                                        className={inputCls}
-                                    />
-                                    <p className="text-[12px] text-blue-700 dark:text-blue-400 mt-1">
-                                        Must be in the future and <strong>before</strong> "Available From".
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Footer */}
-                            <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-zinc-700">
-                                <button
-                                    onClick={handleNext}
-                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] rounded-lg transition-colors"
-                                >
-                                    Next: Add Questions →
-                                </button>
-                            </div>
-
+                {activeTab === 'Curriculum' && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-xl font-bold">Curriculum</h2>
+                            <button type="button" onClick={addSection} className="text-blue-600 font-medium cursor-pointer">+ Add Section</button>
                         </div>
-                    </CardContent>
-                </Card>
+
+                        <div className="space-y-4">
+                            {sections.map((section, sIdx) => (
+                                <Card key={section.id} variant="elevated">
+                                    <div className="p-4 border-b bg-gray-50/50 dark:bg-zinc-800/30 flex items-center gap-4">
+                                        <label htmlFor={`sec-input-${section.id}`} className="text-sm font-bold text-gray-400 shrink-0">Section {sIdx + 1}</label>
+                                        <input
+                                            id={`sec-input-${section.id}`}
+                                            type="text"
+                                            value={section.title}
+                                            onChange={(e) => handleUpdateSection(section.id, e.target.value)}
+                                            className="flex-1 bg-transparent border-none focus:ring-0 font-bold text-lg"
+                                        />
+                                    </div>
+                                    <CardContent className="p-4 space-y-3">
+                                        {section.lessons.map((lesson, lIdx) => (
+                                            <div key={lesson.id} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg group">
+                                                <GripVertical className="w-4 h-4 text-gray-300" />
+                                                <label htmlFor={`les-input-${lesson.id}`} className="text-xs font-medium text-gray-400 w-6">{lIdx + 1}</label>
+                                                <input
+                                                    id={`les-input-${lesson.id}`}
+                                                    type="text"
+                                                    value={lesson.title}
+                                                    onChange={(e) => handleUpdateLesson(section.id, lesson.id, e.target.value)}
+                                                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm"
+                                                />
+                                                <button type="button" onClick={() => handleRemoveLesson(section.id, lesson.id)} className="text-red-500 opacity-0 group-hover:opacity-100 cursor-pointer">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button type="button" onClick={() => addLesson(section.id)} className="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400 hover:text-blue-500 cursor-pointer">+ Add Lesson</button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'Overview' && (
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2 space-y-6">
+                            <Card variant="elevated">
+                                <CardContent className="p-6 space-y-4">
+                                    <h3 className="text-lg font-bold">General Info</h3>
+                                    <div>
+                                        <label htmlFor="course-title-main" className="block text-sm font-medium mb-2">Course Title</label>
+                                        <input
+                                            id="course-title-main"
+                                            type="text"
+                                            value={courseTitle}
+                                            onChange={(e) => setCourseTitle(e.target.value)}
+                                            className="w-full p-2 border rounded-lg dark:bg-zinc-900"
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <div className="space-y-6">
+                            <Card variant="elevated">
+                                <CardContent className="p-6 space-y-4">
+                                    <h3 className="text-lg font-bold">Status</h3>
+                                    <div className={`p-3 rounded-lg flex items-center gap-3 ${getStatusStyle('Pending')}`}>
+                                        <Clock className="w-5 h-5" />
+                                        <span className="font-medium text-sm">Pending Review</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
-

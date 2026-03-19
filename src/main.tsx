@@ -10,7 +10,6 @@ async function enableMocking() {
   await worker.start({
     onUnhandledRequest: 'bypass',
   });
-  console.log('🔶 Mock Service Worker enabled');
 }
 
 // Direct render
@@ -33,8 +32,4 @@ function renderApp() {
   }
 }
 
-// enableMocking().then(() => {
-//   renderApp();
-// });
-
-  renderApp();
+renderApp();

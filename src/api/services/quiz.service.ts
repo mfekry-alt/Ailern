@@ -3,7 +3,7 @@
  */
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
-import type { CreateQuizCommand, GetQuizDto, ApiResponse } from '@/types/api.types';
+import type { CreateQuizCommand, GetQuizDto, ApiResponse, QuestionRequest } from '@/types/api.types';
 
 export interface QuizGenerationFile {
     id: string;
@@ -31,7 +31,7 @@ export interface GenerateQuizByAIPayload {
 
 const unwrapApiResponse = <T>(payload: ApiResponse<T> | T): T => {
     if (payload && typeof payload === 'object' && 'data' in payload) {
-        return (payload as ApiResponse<T>).data as T;
+        return (payload).data as T;
     }
     return payload as T;
 };
@@ -72,13 +72,13 @@ export const createQuiz = async (command: CreateQuizCommand): Promise<GetQuizDto
 export const getCourseQuizzes = async (courseId: string): Promise<GetQuizDto[]> => {
     try {
         const response = await api.get<ApiResponse<GetQuizDto[]> | GetQuizDto[]>(ENDPOINTS.QUIZZES.BY_COURSE(courseId));
-        const payload = response.data as ApiResponse<GetQuizDto[]> | GetQuizDto[];
+        const payload = response.data;
         return Array.isArray(payload) ? payload : (payload.data ?? []);
     } catch {
         const response = await api.get<ApiResponse<GetQuizDto[]> | GetQuizDto[]>(ENDPOINTS.QUIZZES.LIST, {
             params: { courseId },
         });
-        const payload = response.data as ApiResponse<GetQuizDto[]> | GetQuizDto[];
+        const payload = response.data;
         return Array.isArray(payload) ? payload : (payload.data ?? []);
     }
 };
@@ -114,7 +114,7 @@ export const deleteQuiz = async (id: string): Promise<void> => {
  */
 export const generateQuizQuestionsByAI = async (quizId: string, payload: GenerateQuizByAIPayload): Promise<any> => {
     const formData = buildGenerateFormData(payload);
-    const response = await api.post<ApiResponse<any> | any>(
+    const response = await api.post<ApiResponse<any>>(
         ENDPOINTS.QUIZZES.GENERATE_BY_AI(quizId),
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -123,10 +123,24 @@ export const generateQuizQuestionsByAI = async (quizId: string, payload: Generat
 };
 
 /**
+ * Quick AI Generation - Fixes "Function not implemented" error
+ */
+export const generateAIQuestions = async (params: {
+    topic: string;
+    difficulty: "Easy" | "Medium" | "Hard";
+    count: number;
+    context?: string;
+}): Promise<QuestionRequest[]> => {
+    // 💡 نقوم هنا بالنداء على الـ Endpoint الخاص بالـ Quick Generation
+    const response = await api.post<ApiResponse<QuestionRequest[]>>('/Quizzes/quick-generate', params);
+    return response.data.data || [];
+};
+
+/**
  * Get AI generation job status/results
  */
 export const getQuizGenerationJob = async (jobId: string): Promise<any> => {
-    const response = await api.get<ApiResponse<any> | any>(ENDPOINTS.QUIZZES.JOB_STATUS(jobId));
+    const response = await api.get<ApiResponse<any>>(ENDPOINTS.QUIZZES.JOB_STATUS(jobId));
     return unwrapApiResponse(response.data);
 };
 
@@ -134,6 +148,6 @@ export const getQuizGenerationJob = async (jobId: string): Promise<any> => {
  * Get available files for AI question generation for a quiz
  */
 export const getQuizGenerationFiles = async (quizId: string): Promise<any> => {
-    const response = await api.get<ApiResponse<any> | any>(ENDPOINTS.QUIZZES.GENERATE_FILES(quizId));
+    const response = await api.get<ApiResponse<any>>(ENDPOINTS.QUIZZES.GENERATE_FILES(quizId));
     return unwrapApiResponse(response.data);
 };

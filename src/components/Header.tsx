@@ -142,7 +142,7 @@ export const Header = () => {
         searchTimerRef.current = setTimeout(() => searchCourses(value), 300);
     };
 
-    const handleSearch = (e: React.FormEvent) => {
+    const handleSearch = (e: React.SyntheticEvent) => {
         e.preventDefault();
         searchCourses(searchQuery);
     };
@@ -209,6 +209,37 @@ export const Header = () => {
     };
 
     const navLinks = getNavLinks();
+
+    // Helper function to render search results without nested ternary
+    const renderSearchResultsContent = () => {
+        if (isSearching) {
+            return <div className="px-4 py-3 text-center text-[14px] text-gray-500 dark:text-zinc-400">Searching...</div>;
+        }
+        if (searchResults.length === 0) {
+            return <div className="px-4 py-3 text-center text-[14px] text-gray-500 dark:text-zinc-400">No courses found</div>;
+        }
+        return (
+            <ul className="max-h-[280px] overflow-auto">
+                {searchResults.map((course) => (
+                    <li
+                        key={course.id}
+                        className="border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
+                    >
+                        <button
+                            type="button"
+                            onClick={() => handleSearchResultClick(course.id)}
+                            className="block w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+                        >
+                            <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 truncate">{course.name}</p>
+                            {course.code && (
+                                <p className="text-[12px] text-gray-500 dark:text-zinc-400">{course.code}</p>
+                            )}
+                        </button>
+                    </li>
+                ))}
+            </ul>
+        );
+    };
 
     return (
         <header
@@ -297,26 +328,7 @@ export const Header = () => {
                                 {/* Search Results Dropdown */}
                                 {showSearchResults && (
                                     <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-zinc-900 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 z-50 overflow-hidden">
-                                        {isSearching ? (
-                                            <div className="px-4 py-3 text-center text-[14px] text-gray-500 dark:text-zinc-400">Searching...</div>
-                                        ) : searchResults.length === 0 ? (
-                                            <div className="px-4 py-3 text-center text-[14px] text-gray-500 dark:text-zinc-400">No courses found</div>
-                                        ) : (
-                                            <ul className="max-h-[280px] overflow-auto">
-                                                {searchResults.map((course) => (
-                                                    <li
-                                                        key={course.id}
-                                                        onClick={() => handleSearchResultClick(course.id)}
-                                                        className="px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
-                                                    >
-                                                        <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 truncate">{course.name}</p>
-                                                        {course.code && (
-                                                            <p className="text-[12px] text-gray-500 dark:text-zinc-400">{course.code}</p>
-                                                        )}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
+                                        {renderSearchResultsContent()}
                                     </div>
                                 )}
                             </div>
@@ -325,7 +337,7 @@ export const Header = () => {
                             <div className="relative" ref={notificationsRef}>
                                 <button
                                     onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                                    className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                                    className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                                 >
                                     <Bell className="w-6 h-6 text-gray-500 dark:text-zinc-400" />
                                     {unreadCount > 0 && (
@@ -345,8 +357,9 @@ export const Header = () => {
                                                 Notifications
                                             </h3>
                                             <button
+                                                type="button"
                                                 onClick={markAllAsRead}
-                                                className="text-[14px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                                                className="text-[14px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
                                             >
                                                 Mark all as read
                                             </button>
@@ -357,10 +370,11 @@ export const Header = () => {
                                             {notifications.map((notification) => {
                                                 const IconComponent = notification.icon;
                                                 return (
-                                                    <div
+                                                    <button
+                                                        type="button"
                                                         key={notification.id}
                                                         onClick={() => markNotificationAsRead(notification.id)}
-                                                        className={`border-b border-gray-200 dark:border-zinc-700 last:border-b-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors ${notification.isRead ? 'bg-gray-50 dark:bg-zinc-900' : 'bg-blue-50 dark:bg-blue-900/20'
+                                                        className={`block w-full text-left border-b border-gray-200 dark:border-zinc-700 last:border-b-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors ${notification.isRead ? 'bg-gray-50 dark:bg-zinc-900' : 'bg-blue-50 dark:bg-blue-900/20'
                                                             }`}
                                                     >
                                                         <div className="p-4">
@@ -386,7 +400,7 @@ export const Header = () => {
                                                                 )}
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    </button>
                                                 );
                                             })}
                                         </div>
@@ -407,6 +421,7 @@ export const Header = () => {
 
                             {/* User Avatar */}
                             <button
+                                type="button"
                                 onClick={handleProfileClick}
                                 className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold hover:from-blue-600 hover:to-blue-700 transition-colors cursor-pointer"
                             >
@@ -418,5 +433,4 @@ export const Header = () => {
             </div>
         </header>
     );
-
 };

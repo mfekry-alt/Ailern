@@ -149,9 +149,9 @@ export const InstructorQuizEditPage = () => {
                 id: id!,
                 cmd: {
                     title: settings.title,
-                    // Backend currently validates description as required; keep UI optional with a safe fallback.
                     description: settings.description?.trim() || settings.title?.trim() || 'Quiz',
-                    courseId: Number(settings.courseId) as any,
+                    // 🚨 تم إصلاح مشكلة الـ Number() هنا لتجنب إرسال NaN للباك إند إذا كان الـ ID عبارة عن String
+                    courseId: settings.courseId as any,
                     maximumAttempts: settings.maximumAttempts,
                     status: settings.status,
                     availableFrom,
@@ -160,11 +160,10 @@ export const InstructorQuizEditPage = () => {
                     showResultOnClose: settings.showResultOnClose,
                     shuffleQuestions: settings.shuffleQuestions,
                     shuffleOptions: settings.shuffleOptions,
-                    // Backend expects full question collection on update, including unchanged questions.
                     questions: allQuestions,
                 },
             },
-            { onSuccess: () => navigate(-1) }
+            { onSuccess: () => { navigate(-1); } }
         );
     };
 
@@ -190,8 +189,9 @@ export const InstructorQuizEditPage = () => {
             {/* Header */}
             <div className="flex items-center gap-4 mb-6">
                 <button
+                    type="button"
                     onClick={() => navigate(-1)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
                 >
                     <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
                 </button>
@@ -211,10 +211,11 @@ export const InstructorQuizEditPage = () => {
 
                     {/* Title */}
                     <div>
-                        <label className={labelCls}>
+                        <label htmlFor="title" className={labelCls}>
                             Quiz Title <span className="text-red-500">*</span>
                         </label>
                         <input
+                            id="title"
                             type="text"
                             value={settings.title}
                             onChange={e => set({ title: e.target.value })}
@@ -225,8 +226,9 @@ export const InstructorQuizEditPage = () => {
 
                     {/* Description */}
                     <div>
-                        <label className={labelCls}>Description</label>
+                        <label htmlFor="description" className={labelCls}>Description</label>
                         <textarea
+                            id="description"
                             value={settings.description}
                             onChange={e => set({ description: e.target.value })}
                             rows={3}
@@ -238,10 +240,11 @@ export const InstructorQuizEditPage = () => {
                     {/* Available From / Available Until */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className={labelCls}>
+                            <label htmlFor="availableFrom" className={labelCls}>
                                 Available From <span className="text-red-500">*</span>
                             </label>
                             <input
+                                id="availableFrom"
                                 type="datetime-local"
                                 value={settings.availableFrom}
                                 onChange={e => set({ availableFrom: e.target.value })}
@@ -253,10 +256,11 @@ export const InstructorQuizEditPage = () => {
                             </p>
                         </div>
                         <div>
-                            <label className={labelCls}>
+                            <label htmlFor="availableUntil" className={labelCls}>
                                 Available Until <span className="text-red-500">*</span>
                             </label>
                             <input
+                                id="availableUntil"
                                 type="datetime-local"
                                 value={settings.availableUntil}
                                 onChange={e => set({ availableUntil: e.target.value })}
@@ -271,15 +275,16 @@ export const InstructorQuizEditPage = () => {
 
                     {/* Attempts Allowed */}
                     <div>
-                        <label className={labelCls}>
+                        <label htmlFor="maximumAttempts" className={labelCls}>
                             Attempts Allowed <span className="text-red-500">*</span>
                         </label>
                         <input
+                            id="maximumAttempts"
                             type="number"
                             min={1}
                             max={5}
                             value={settings.maximumAttempts}
-                            onChange={e => set({ maximumAttempts: Math.min(5, Math.max(1, parseInt(e.target.value) || 1)) })}
+                            onChange={e => set({ maximumAttempts: Math.min(5, Math.max(1, Number.parseInt(e.target.value) || 1)) })}
                             className={`${inputCls} max-w-xs`}
                         />
                         <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">1 – 5 attempts.</p>
@@ -287,33 +292,34 @@ export const InstructorQuizEditPage = () => {
 
                     {/* Publish Status */}
                     <div>
-                        <label className={labelCls}>Publish Status</label>
+                        <div className={labelCls}>Publish Status</div>
                         <div className="space-y-2">
                             {PUBLISH_OPTIONS.map(opt => (
-                                <label
+                                <div
                                     key={opt.value}
-                                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${settings.status === opt.value
+                                    className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${settings.status === opt.value
                                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                                         : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
                                         }`}
                                 >
                                     <input
+                                        id={`status-${opt.value}`}
                                         type="radio"
                                         name="status"
                                         value={opt.value}
                                         checked={settings.status === opt.value}
                                         onChange={() => set({ status: opt.value })}
-                                        className="w-4 h-4 text-blue-600 mt-0.5"
+                                        className="w-4 h-4 text-blue-600 mt-0.5 cursor-pointer"
                                     />
-                                    <div>
+                                    <label htmlFor={`status-${opt.value}`} className="cursor-pointer w-full">
                                         <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">
                                             {opt.title}
                                         </div>
                                         <div className="text-[12px] text-gray-600 dark:text-zinc-400">
                                             {opt.desc}
                                         </div>
-                                    </div>
-                                </label>
+                                    </label>
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -321,10 +327,11 @@ export const InstructorQuizEditPage = () => {
                     {/* Scheduled: Publish Date */}
                     {settings.status === 'Scheduled' && (
                         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                            <label className={labelCls}>
+                            <label htmlFor="publishedDate" className={labelCls}>
                                 Publish Date <span className="text-red-500">*</span>
                             </label>
                             <input
+                                id="publishedDate"
                                 type="datetime-local"
                                 value={settings.publishedDate}
                                 onChange={e => set({ publishedDate: e.target.value })}
@@ -338,31 +345,32 @@ export const InstructorQuizEditPage = () => {
 
                     {/* Quiz Behavior Toggles */}
                     <div>
-                        <label className={labelCls}>Quiz Behavior</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                        <div className={labelCls}>Quiz Behavior</div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {[
                                 { key: 'showResultOnClose' as const, label: 'Show results on close', desc: 'Show correct answers to students after the quiz ends' },
                                 { key: 'shuffleQuestions' as const, label: 'Shuffle questions', desc: 'Randomize the order of questions for each attempt' },
                                 { key: 'shuffleOptions' as const, label: 'Shuffle options', desc: 'Randomize the order of answer choices' },
                             ].map(({ key, label, desc }) => (
-                                <label
+                                <div
                                     key={key}
-                                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${settings[key]
+                                    className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${settings[key]
                                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                                         : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
                                         }`}
                                 >
                                     <input
+                                        id={key}
                                         type="checkbox"
                                         checked={settings[key]}
                                         onChange={e => set({ [key]: e.target.checked })}
-                                        className="w-4 h-4 text-blue-600 mt-0.5"
+                                        className="w-4 h-4 text-blue-600 mt-0.5 cursor-pointer"
                                     />
-                                    <div>
+                                    <label htmlFor={key} className="cursor-pointer w-full">
                                         <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">{label}</div>
                                         <div className="text-[12px] text-gray-600 dark:text-zinc-400">{desc}</div>
-                                    </div>
-                                </label>
+                                    </label>
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -370,16 +378,18 @@ export const InstructorQuizEditPage = () => {
                     {/* Footer */}
                     <div className="flex justify-between gap-3 pt-4 border-t border-gray-200 dark:border-zinc-700">
                         <button
+                            type="button"
                             onClick={() => navigate(-1)}
-                            className="px-6 py-2 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                            className="px-6 py-2 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                         >
                             Cancel
                         </button>
                         <div className="flex gap-3">
                             <button
+                                type="button"
                                 onClick={handleSettingsOnly}
                                 disabled={updateQuiz.isPending}
-                                className="flex items-center gap-2 px-6 py-2 border border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-500 font-medium text-[14px] rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 transition-colors"
+                                className="flex items-center gap-2 px-6 py-2 border border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-500 font-medium text-[14px] rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 transition-colors cursor-pointer"
                             >
                                 {updateQuiz.isPending
                                     ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</>
@@ -387,8 +397,9 @@ export const InstructorQuizEditPage = () => {
                                 }
                             </button>
                             <button
+                                type="button"
                                 onClick={handleNext}
-                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] rounded-lg transition-colors"
+                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] rounded-lg transition-colors cursor-pointer"
                             >
                                 Next: Edit Questions <ArrowRight className="w-4 h-4" />
                             </button>

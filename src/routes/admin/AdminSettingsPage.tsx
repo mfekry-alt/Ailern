@@ -76,8 +76,9 @@ export const AdminSettingsPage = () => {
                             </div>
                             <div className="grid sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[14px] font-medium text-azure-8 mb-2">First Name</label>
+                                    <label htmlFor="firstName" className="block text-[14px] font-medium text-azure-8 mb-2">First Name</label>
                                     <input
+                                        id="firstName"
                                         type="text"
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
@@ -85,8 +86,9 @@ export const AdminSettingsPage = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[14px] font-medium text-azure-8 mb-2">Last Name</label>
+                                    <label htmlFor="lastName" className="block text-[14px] font-medium text-azure-8 mb-2">Last Name</label>
                                     <input
+                                        id="lastName"
                                         type="text"
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
@@ -96,8 +98,9 @@ export const AdminSettingsPage = () => {
                             </div>
                             <div className="grid sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[14px] font-medium text-azure-8 mb-2">Email</label>
+                                    <label htmlFor="email" className="block text-[14px] font-medium text-azure-8 mb-2">Email</label>
                                     <input
+                                        id="email"
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
@@ -105,8 +108,9 @@ export const AdminSettingsPage = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[14px] font-medium text-azure-8 mb-2">Phone</label>
+                                    <label htmlFor="phone" className="block text-[14px] font-medium text-azure-8 mb-2">Phone</label>
                                     <input
+                                        id="phone"
                                         type="tel"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
@@ -125,8 +129,9 @@ export const AdminSettingsPage = () => {
                         <div className="space-y-4">
                             <div className="grid sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[14px] font-medium text-azure-8 mb-2">Language</label>
+                                    <label htmlFor="language" className="block text-[14px] font-medium text-azure-8 mb-2">Language</label>
                                     <select
+                                        id="language"
                                         value={language}
                                         onChange={(e) => setLanguage(e.target.value)}
                                         className="w-full px-3 py-2 border border-azure-88 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-azure-50 focus:border-azure-50"
@@ -136,8 +141,9 @@ export const AdminSettingsPage = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-[14px] font-medium text-azure-8 mb-2">Timezone</label>
+                                    <label htmlFor="timezone" className="block text-[14px] font-medium text-azure-8 mb-2">Timezone</label>
                                     <select
+                                        id="timezone"
                                         value={timezone}
                                         onChange={(e) => setTimezone(e.target.value)}
                                         className="w-full px-3 py-2 border border-azure-88 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-azure-50 focus:border-azure-50"
@@ -149,24 +155,26 @@ export const AdminSettingsPage = () => {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="block text-[14px] font-medium text-azure-8">Notifications</label>
+                                <div className="block text-[14px] font-medium text-azure-8 mb-2">Notifications</div>
                                 <div className="flex items-center">
                                     <input
+                                        id="notifEmail"
                                         type="checkbox"
                                         checked={notifEmail}
                                         onChange={(e) => setNotifEmail(e.target.checked)}
                                         className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                     />
-                                    <span className="ml-2 text-[14px] text-azure-8">Email notifications</span>
+                                    <label htmlFor="notifEmail" className="ml-2 text-[14px] text-azure-8 cursor-pointer">Email notifications</label>
                                 </div>
                                 <div className="flex items-center">
                                     <input
+                                        id="notifInApp"
                                         type="checkbox"
                                         checked={notifInApp}
                                         onChange={(e) => setNotifInApp(e.target.checked)}
                                         className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                     />
-                                    <span className="ml-2 text-[14px] text-azure-8">In-app notifications</span>
+                                    <label htmlFor="notifInApp" className="ml-2 text-[14px] text-azure-8 cursor-pointer">In-app notifications</label>
                                 </div>
                             </div>
                         </div>
@@ -179,21 +187,23 @@ export const AdminSettingsPage = () => {
                         </h2>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="block text-[14px] font-medium text-azure-8">Multi-factor authentication (MFA)</label>
+                                <div className="block text-[14px] font-medium text-azure-8 mb-2">Multi-factor authentication (MFA)</div>
                                 <div className="flex items-center">
                                     <input
+                                        id="mfaEnabled"
                                         type="checkbox"
                                         checked={mfaEnabled}
                                         onChange={(e) => setMfaEnabled(e.target.checked)}
                                         className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                     />
-                                    <span className="ml-2 text-[14px] text-azure-8">Enable MFA</span>
+                                    <label htmlFor="mfaEnabled" className="ml-2 text-[14px] text-azure-8 cursor-pointer">Enable MFA</label>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-[14px] font-medium text-azure-8 mb-2">Session Timeout (minutes)</label>
+                                <label htmlFor="sessionTimeout" className="block text-[14px] font-medium text-azure-8 mb-2">Session Timeout (minutes)</label>
                                 <input
+                                    id="sessionTimeout"
                                     type="number"
                                     value={sessionTimeout}
                                     onChange={(e) => setSessionTimeout(Number(e.target.value))}
@@ -202,25 +212,27 @@ export const AdminSettingsPage = () => {
                             </div>
 
                             <div>
-                                <label className="block text-[14px] font-medium text-azure-8 mb-2">Password Requirements</label>
+                                <div className="block text-[14px] font-medium text-azure-8 mb-2">Password Requirements</div>
                                 <div className="space-y-2">
                                     <div className="flex items-center">
                                         <input
+                                            id="requireMinLength"
                                             type="checkbox"
                                             checked={requireMinLength}
                                             onChange={(e) => setRequireMinLength(e.target.checked)}
                                             className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                         />
-                                        <span className="ml-2 text-[14px] text-azure-8">Minimum 8 characters</span>
+                                        <label htmlFor="requireMinLength" className="ml-2 text-[14px] text-azure-8 cursor-pointer">Minimum 8 characters</label>
                                     </div>
                                     <div className="flex items-center">
                                         <input
+                                            id="requireUppercase"
                                             type="checkbox"
                                             checked={requireUppercase}
                                             onChange={(e) => setRequireUppercase(e.target.checked)}
                                             className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
                                         />
-                                        <span className="ml-2 text-[14px] text-azure-8">Require uppercase letter</span>
+                                        <label htmlFor="requireUppercase" className="ml-2 text-[14px] text-azure-8 cursor-pointer">Require uppercase letter</label>
                                     </div>
                                 </div>
                             </div>

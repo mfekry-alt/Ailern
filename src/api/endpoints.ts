@@ -6,8 +6,8 @@ export const ENDPOINTS = {
         REVOKE_TOKEN: '/Auth/revoke-token',
         CONFIRM_EMAIL: '/Auth/confirm-email',
         RESEND_CONFIRMATION_EMAIL: '/Auth/resend-confirmation-email',
-        SEND_PASSWORD_RESET_EMAIL: '/Auth/send-password-reset-email',
-        CHANGE_PASSWORD: '/Auth/change-password',
+        SEND_PASSWORD_RESET_EMAIL: '/Auth/send-password-reset-email', // NOSONAR
+        CHANGE_PASSWORD: '/Auth/change-password', // NOSONAR
         REGISTER: '/Auth/students/register', // Default registration endpoint (student)
     },
 

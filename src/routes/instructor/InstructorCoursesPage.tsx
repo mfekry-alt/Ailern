@@ -190,10 +190,6 @@ export const InstructorCoursesPage = () => {
         return Number.isFinite(parsedId) && parsedId > 0 ? parsedId : undefined;
     }, [user?.id]);
 
-    // DEBUG: Log user data to see what ID we have
-    console.log('👤 [InstructorCoursesPage] User object:', user);
-    console.log('🆔 [InstructorCoursesPage] User ID:', user?.id, 'Type:', typeof user?.id);
-
     // Fetch instructor courses using numeric ID when available, otherwise fallback endpoint.
     const { data: coursesData, isLoading, error } = useInstructorCourses(instructorId);
     const deleteCourseMutation = useDeleteCourse();
@@ -205,8 +201,8 @@ export const InstructorCoursesPage = () => {
     }, [coursesData]);
 
     const handleDeleteCourse = (id: string) => {
-        if (window.confirm('Are you sure you want to delete this course?')) {
-            deleteCourseMutation.mutate(parseInt(id));
+        if (globalThis.confirm('Are you sure you want to delete this course?')) {
+            deleteCourseMutation.mutate(Number.parseInt(id));
         }
     };
 

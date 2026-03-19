@@ -169,11 +169,12 @@ export const ProfilePage = () => {
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="firstName" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             First Name
                                         </label>
                                         {isEditingPersonal ? (
                                             <input
+                                                id="firstName"
                                                 type="text"
                                                 value={personalForm.firstName}
                                                 onChange={(e) => handlePersonalChange('firstName', e.target.value)}
@@ -186,11 +187,12 @@ export const ProfilePage = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="lastName" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Last Name
                                         </label>
                                         {isEditingPersonal ? (
                                             <input
+                                                id="lastName"
                                                 type="text"
                                                 value={personalForm.lastName}
                                                 onChange={(e) => handlePersonalChange('lastName', e.target.value)}
@@ -203,11 +205,12 @@ export const ProfilePage = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="email" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Email
                                         </label>
                                         {isEditingPersonal ? (
                                             <input
+                                                id="email"
                                                 type="email"
                                                 value={personalForm.email}
                                                 onChange={(e) => handlePersonalChange('email', e.target.value)}
@@ -222,11 +225,12 @@ export const ProfilePage = () => {
                                 </div>
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="address" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Address
                                         </label>
                                         {isEditingPersonal ? (
                                             <textarea
+                                                id="address"
                                                 value={personalForm.address}
                                                 onChange={(e) => handlePersonalChange('address', e.target.value)}
                                                 rows={3}
@@ -239,19 +243,20 @@ export const ProfilePage = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <div className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Student ID
-                                        </label>
+                                        </div>
                                         <p className="text-[16px] text-gray-900 dark:text-zinc-100">
                                             {personalForm.studentId || '-'}
                                         </p>
                                     </div>
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="phoneNumber" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Phone Number
                                         </label>
                                         {isEditingPersonal ? (
                                             <input
+                                                id="phoneNumber"
                                                 type="tel"
                                                 value={personalForm.phoneNumber}
                                                 onChange={(e) => handlePersonalChange('phoneNumber', e.target.value)}
@@ -308,11 +313,12 @@ export const ProfilePage = () => {
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="program" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Program
                                         </label>
                                         {isEditingAcademic ? (
                                             <input
+                                                id="program"
                                                 type="text"
                                                 value={academicForm.program}
                                                 onChange={(e) => handleAcademicChange('program', e.target.value)}
@@ -325,11 +331,12 @@ export const ProfilePage = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="expectedGraduationYear" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Expected Graduation Year
                                         </label>
                                         {isEditingAcademic ? (
                                             <input
+                                                id="expectedGraduationYear"
                                                 type="text"
                                                 value={academicForm.expectedGraduationYear}
                                                 onChange={(e) => handleAcademicChange('expectedGraduationYear', e.target.value)}
@@ -344,11 +351,12 @@ export const ProfilePage = () => {
                                 </div>
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="enrollmentDate" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Enrollment Date
                                         </label>
                                         {isEditingAcademic ? (
                                             <input
+                                                id="enrollmentDate"
                                                 type="date"
                                                 value={academicForm.enrollmentDate}
                                                 onChange={(e) => handleAcademicChange('enrollmentDate', e.target.value)}

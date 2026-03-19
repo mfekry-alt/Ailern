@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ROUTES } from '@/lib/constants';
 import { ArrowLeft, Save, Upload, X, FileText, Loader2 } from 'lucide-react';
-import { useCreateAssignment, useConfirmAssignmentUpload } from '@/features/assignments/api';
+import { useCreateAssignment } from '@/features/assignments/api';
 import { useInstructorCourses } from '@/features/courses/api';
 import { handleApiError } from '@/api/client';
 
@@ -15,7 +15,6 @@ export const InstructorAssignmentCreatePage = () => {
 
     // API hooks
     const createAssignmentMutation = useCreateAssignment();
-    const confirmUploadMutation = useConfirmAssignmentUpload();
     const { data: coursesData } = useInstructorCourses();
 
     const [formData, setFormData] = useState({
@@ -34,7 +33,7 @@ export const InstructorAssignmentCreatePage = () => {
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        const maxFiles = parseInt(formData.maxFileCount) || 5;
+        const maxFiles = Number.parseInt(formData.maxFileCount) || 5;
         const totalFiles = attachments.length + files.length;
 
         if (totalFiles > maxFiles) {
@@ -83,7 +82,7 @@ export const InstructorAssignmentCreatePage = () => {
                 dueDate: formData.dueDate
                     ? new Date(formData.dueDate).toISOString()
                     : new Date().toISOString(),
-                courseId: parseInt(formData.course),
+                courseId: Number.parseInt(formData.course),
                 allowLateSubmission: formData.allowLateSubmission,
                 isPublished: !isDraft,
                 uploadedFileMetaData: attachments.map((file) => ({
@@ -119,7 +118,7 @@ export const InstructorAssignmentCreatePage = () => {
                                 </div>
                                 <button
                                     onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENTS)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors cursor-pointer"
                                 >
                                     <ArrowLeft className="w-4 h-4" />
                                     Back
@@ -137,10 +136,11 @@ export const InstructorAssignmentCreatePage = () => {
 
                             {/* Title */}
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                <label htmlFor="assignmentTitle" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                     Assignment Title <span className="text-red-500">*</span>
                                 </label>
                                 <input
+                                    id="assignmentTitle"
                                     type="text"
                                     placeholder="e.g., Programming Assignment 1: Basic Algorithms"
                                     value={formData.title}
@@ -151,10 +151,11 @@ export const InstructorAssignmentCreatePage = () => {
 
                             {/* Course */}
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                <label htmlFor="assignmentCourse" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                     Course <span className="text-red-500">*</span>
                                 </label>
                                 <select
+                                    id="assignmentCourse"
                                     value={formData.course}
                                     onChange={(e) => setFormData({ ...formData, course: e.target.value })}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
@@ -170,10 +171,11 @@ export const InstructorAssignmentCreatePage = () => {
 
                             {/* Description */}
                             <div>
-                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                <label htmlFor="assignmentDescription" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                     Description <span className="text-red-500">*</span>
                                 </label>
                                 <textarea
+                                    id="assignmentDescription"
                                     rows={6}
                                     placeholder="Provide detailed instructions for the assignment..."
                                     value={formData.description}
@@ -189,9 +191,9 @@ export const InstructorAssignmentCreatePage = () => {
                                     id="allowLateSubmission"
                                     checked={formData.allowLateSubmission}
                                     onChange={(e) => setFormData({ ...formData, allowLateSubmission: e.target.checked })}
-                                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-zinc-700 rounded focus:ring-blue-500"
+                                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-zinc-700 rounded focus:ring-blue-500 cursor-pointer"
                                 />
-                                <label htmlFor="allowLateSubmission" className="text-[14px] font-medium text-gray-700 dark:text-zinc-300">
+                                <label htmlFor="allowLateSubmission" className="text-[14px] font-medium text-gray-700 dark:text-zinc-300 cursor-pointer">
                                     Allow Late Submission
                                 </label>
                             </div>
@@ -199,10 +201,11 @@ export const InstructorAssignmentCreatePage = () => {
                             {/* Due Date and File Settings */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                    <label htmlFor="assignmentDueDate" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                         Due Date <span className="text-red-500">*</span>
                                     </label>
                                     <input
+                                        id="assignmentDueDate"
                                         type="datetime-local"
                                         value={formData.dueDate}
                                         onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
@@ -212,16 +215,16 @@ export const InstructorAssignmentCreatePage = () => {
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <div className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Allowed File Types
-                                        </label>
+                                        </div>
                                         <div className="flex flex-wrap gap-2">
                                             {fileTypeOptions.map((type) => (
                                                 <button
                                                     key={type}
                                                     type="button"
                                                     onClick={() => toggleFileType(type)}
-                                                    className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${formData.allowedFileTypes.includes(type)
+                                                    className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${formData.allowedFileTypes.includes(type)
                                                         ? 'bg-blue-600 text-white'
                                                         : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
                                                         }`}
@@ -233,10 +236,11 @@ export const InstructorAssignmentCreatePage = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="assignmentMaxFileSize" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Maximum File Size
                                         </label>
                                         <select
+                                            id="assignmentMaxFileSize"
                                             value={formData.maxFileSize}
                                             onChange={(e) => setFormData({ ...formData, maxFileSize: e.target.value })}
                                             className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
@@ -251,17 +255,18 @@ export const InstructorAssignmentCreatePage = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                                        <label htmlFor="assignmentMaxFileCount" className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">
                                             Maximum Number of Files
                                         </label>
                                         <input
+                                            id="assignmentMaxFileCount"
                                             type="number"
                                             min="1"
                                             max="100"
                                             value={formData.maxFileCount}
                                             onChange={(e) => {
                                                 const value = e.target.value;
-                                                if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 100)) {
+                                                if (value === '' || (Number.parseInt(value) >= 1 && Number.parseInt(value) <= 100)) {
                                                     setFormData({ ...formData, maxFileCount: value });
                                                 }
                                             }}
@@ -275,44 +280,46 @@ export const InstructorAssignmentCreatePage = () => {
                                 {/* Attachments */}
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300">
+                                        <div className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300">
                                             Attachments (Optional)
-                                        </label>
+                                        </div>
                                         <div className="text-[12px] text-gray-500 dark:text-zinc-500">
                                             {attachments.length} / {formData.maxFileCount || 5} files uploaded
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <label className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${attachments.length >= (parseInt(formData.maxFileCount) || 5)
+                                        <label htmlFor="assignmentFileUpload" className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${attachments.length >= (Number.parseInt(formData.maxFileCount) || 5)
                                             ? 'border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 cursor-not-allowed opacity-50'
                                             : 'border-gray-300 dark:border-zinc-700 cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-zinc-800'
                                             }`}>
-                                            <Upload className={`w-5 h-5 ${attachments.length >= (parseInt(formData.maxFileCount) || 5)
+                                            <Upload className={`w-5 h-5 ${attachments.length >= (Number.parseInt(formData.maxFileCount) || 5)
                                                 ? 'text-gray-400 dark:text-zinc-600'
                                                 : 'text-gray-600 dark:text-zinc-400'
                                                 }`} />
-                                            <span className={`text-[14px] font-medium ${attachments.length >= (parseInt(formData.maxFileCount) || 5)
+                                            <span className={`text-[14px] font-medium ${attachments.length >= (Number.parseInt(formData.maxFileCount) || 5)
                                                 ? 'text-gray-400 dark:text-zinc-600'
                                                 : 'text-gray-700 dark:text-zinc-300'
                                                 }`}>
-                                                {attachments.length >= (parseInt(formData.maxFileCount) || 5)
+                                                {attachments.length >= (Number.parseInt(formData.maxFileCount) || 5)
                                                     ? 'Maximum files reached'
                                                     : 'Upload Files'
                                                 }
                                             </span>
                                             <input
+                                                id="assignmentFileUpload"
                                                 type="file"
                                                 multiple
                                                 onChange={handleFileUpload}
                                                 className="hidden"
-                                                disabled={attachments.length >= (parseInt(formData.maxFileCount) || 5)}
+                                                disabled={attachments.length >= (Number.parseInt(formData.maxFileCount) || 5)}
                                             />
                                         </label>
                                         {attachments.length > 0 && (
                                             <div className="space-y-2">
                                                 {attachments.map((file, index) => (
                                                     <div
-                                                        key={index}
+                                                        // Using a more stable key by combining file name and index, as index alone can cause issues if array changes
+                                                        key={`${file.name}-${index}`}
                                                         className="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700"
                                                     >
                                                         <div className="flex items-center gap-2">
@@ -323,8 +330,10 @@ export const InstructorAssignmentCreatePage = () => {
                                                             </span>
                                                         </div>
                                                         <button
+                                                            type="button"
                                                             onClick={() => removeAttachment(index)}
-                                                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                                            aria-label="Remove attachment"
                                                         >
                                                             <X className="w-4 h-4" />
                                                         </button>
@@ -338,24 +347,27 @@ export const InstructorAssignmentCreatePage = () => {
                                 {/* Action Buttons */}
                                 <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-700">
                                     <button
+                                        type="button"
                                         onClick={() => handleSave(true)}
                                         disabled={isSubmitting}
-                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors disabled:opacity-50"
+                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                                     >
                                         {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                         Save Draft
                                     </button>
                                     <div className="flex gap-3">
                                         <button
+                                            type="button"
                                             onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENTS)}
-                                            className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors"
+                                            className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg transition-colors cursor-pointer"
                                         >
                                             Cancel
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => handleSave(false)}
                                             disabled={isSubmitting}
-                                            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium text-[14px] rounded-lg transition-colors disabled:opacity-50"
+                                            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium text-[14px] rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                                         >
                                             {isSubmitting ? 'Publishing...' : 'Publish'}
                                         </button>
@@ -369,6 +381,3 @@ export const InstructorAssignmentCreatePage = () => {
         </div>
     );
 };
-
-
-
