@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { ArrowLeft, Plus, Trash2, CheckCircle2, Loader2, GripVertical, Sparkles } from 'lucide-react';
 import { useCreateQuiz } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
-import type { GeneratePayload } from '@/components/ui/AIQuestionGeneratorModal';
 import type { OptionRequest, QuestionRequest, QuestionType } from '@/types/api.types';
 
 // ─── Local UI types ────────────────────────────────────────────────────────
@@ -56,80 +55,24 @@ const defaultQuestion = (uid: number): UIQuestion => ({
     options: makeMCQOptions(),
 });
 
-const makeAIDraftQuestion = (uid: number, topic: string): UIQuestion => ({
-    uid,
-    type: 'MCQ',
-    text: `Which statement best explains ${topic}?`,
-    instructions: `Choose the single best answer related to ${topic}.`,
-    mark: 5,
-    explanation: `This checks core understanding of ${topic} before moving to advanced items.`,
-    options: [
-        { text: `${topic} focuses on applying key concepts to practical scenarios.`, isCorrect: true },
-        { text: `${topic} is only about memorizing definitions without application.`, isCorrect: false },
-        { text: `${topic} has no relation to real-world problem solving.`, isCorrect: false },
-    ],
-});
+const convertQuestionRequestToUI = (q: QuestionRequest, uid: number): UIQuestion => {
+    const options = q.options?.length
+        ? q.options.map(o => ({ text: o.optionText, isCorrect: o.isCorrect }))
+        : q.questionType === 'TrueFalse'
+            ? makeTFOptions()
+            : q.questionType === 'MCQ'
+                ? makeMCQOptions()
+                : [];
 
-const makePrioritizedAIDraftQuestion = (
-    uid: number,
-    topic: string,
-    type: 'MCQ' | 'Written',
-    level: 'Hard' | 'Medium' | 'Easy'
-): UIQuestion => {
-    if (type === 'Written') {
-        const promptByLevel =
-            level === 'Hard'
-                ? `Analyze a complex challenge in ${topic} and propose a justified solution.`
-                : level === 'Medium'
-                    ? `Explain one practical use-case of ${topic} and its key trade-off.`
-                    : `Describe a basic concept of ${topic} using one short example.`;
-
-        return {
-            uid,
-            type: 'Written',
-            text: promptByLevel,
-            instructions: `Difficulty: ${level}. Write a clear response in 3-5 sentences.`,
-            mark: 5,
-            explanation: '',
-            options: [],
-        };
-    }
-
-    const base = makeAIDraftQuestion(uid, topic);
     return {
-        ...base,
-        text:
-            level === 'Hard'
-                ? `Which advanced statement best explains ${topic} in a complex scenario?`
-                : level === 'Medium'
-                    ? `Which statement best applies ${topic} in practice?`
-                    : `Which statement best defines the basics of ${topic}?`,
-        instructions: `Difficulty: ${level}. ${base.instructions}`,
+        uid,
+        type: q.questionType,
+        text: q.questionText,
+        instructions: q.instructions ?? '',
+        mark: q.mark ?? 5,
+        explanation: q.explanation ?? '',
+        options,
     };
-};
-
-const buildPrioritizedAIQuestions = (startUid: number, topic: string, payload: GeneratePayload): UIQuestion[] => {
-    const total = 3;
-    const requestedTotal = Math.max(1, payload.mcqCount + payload.writtenCount);
-    const ratioMcq = payload.mcqCount / requestedTotal;
-    const mcqTarget = Math.max(2, Math.min(3, Math.round(ratioMcq * total)));
-    const writtenTarget = total - mcqTarget;
-
-    const levels: Array<'Hard' | 'Medium' | 'Easy'> = [];
-    const hardCount = Math.max(1, Math.round((payload.difficulty.hard / 100) * total));
-    const mediumCount = Math.max(0, Math.round((payload.difficulty.medium / 100) * total));
-    for (let i = 0; i < Math.min(total, hardCount); i++) levels.push('Hard');
-    for (let i = 0; i < Math.min(total - levels.length, mediumCount); i++) levels.push('Medium');
-    while (levels.length < total) levels.push(levels.length < 2 ? 'Hard' : 'Easy');
-
-    const types: Array<'MCQ' | 'Written'> = [
-        ...Array.from({ length: mcqTarget }, () => 'MCQ' as const),
-        ...Array.from({ length: writtenTarget }, () => 'Written' as const),
-    ];
-
-    return Array.from({ length: total }, (_, i) =>
-        makePrioritizedAIDraftQuestion(startUid + i, topic, types[i], levels[i])
-    );
 };
 
 // ─── Payload builders ──────────────────────────────────────────────────────
@@ -230,11 +173,16 @@ export const InstructorQuizQuestionBuilderPage = () => {
         setShowAIModal(true);
     };
 
-    const handleAIGenerate = (data: GeneratePayload) => {
-        const rawTopic = String(settings?.title || settings?.description || data.instructions || 'this topic').trim();
-        const topic = rawTopic.replace(/\s+/g, ' ').slice(0, 80) || 'this topic';
+    const handleAIGenerate = (generatedQuestions: QuestionRequest[]) => {
+        if (!generatedQuestions.length) {
+            setError('AI generation returned no questions. Please try again.');
+            setShowAIModal(false);
+            return;
+        }
 
-        const newQuestions = buildPrioritizedAIQuestions(counter, topic, data);
+        const newQuestions = generatedQuestions.map((q, idx) =>
+            convertQuestionRequestToUI(q, counter + idx)
+        );
 
         setQuestions(qs => [...qs, ...newQuestions]);
         setCounter(c => c + newQuestions.length);
@@ -246,6 +194,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
         return (
             <AIQuestionGeneratorModal
                 isOpen={true}
+                quizId={settings?.quizId}
                 onClose={() => setShowAIModal(false)}
                 onGenerate={handleAIGenerate}
             />
@@ -355,7 +304,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
             title: settings.title,
             // Backend currently validates description as required; keep UI optional with a safe fallback.
             description: settings.description?.trim() || settings.title?.trim() || 'Quiz',
-            courseId: Number(settings.courseId),
+            courseId: String(settings.courseId),
             maximumAttempts: settings.maximumAttempts,
             status: settings.status,
             availableFrom: new Date(settings.availableFrom).toISOString(),

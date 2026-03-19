@@ -45,7 +45,7 @@ export const ENDPOINTS = {
         REJECT: (id: number) => `/Courses/${id}/reject`,
         ENROLL: (id: number) => `/Courses/${id}/enroll`,
         AVAILABLE_COURSES: '/Courses/available-courses',
-        MY_COURSES: '/Courses/mine', // Fallback endpoint that doesn't require ID
+        MY_COURSES: '/Users/instructor/my-courses', // Fallback endpoint that doesn't require ID
         INSTRUCTOR_COURSES: (instructorId: number) => `/Courses/instructors/${instructorId}`,
         ENROLLMENT_REQUESTS: (id: number) => `/Courses/${id}/enrollment-requests`,
         APPROVE_ENROLLMENT: (id: number, studentId: number) => `/Courses/${id}/enrollments/${studentId}/approve`,
@@ -75,13 +75,26 @@ export const ENDPOINTS = {
         GET_FILES: (assignmentId: number, submissionId: number) => `/Assignments/${assignmentId}/Submissions/${submissionId}/files`,
     },
 
-    // Quizzes endpoints (POST /api/Quizzes, GET /api/Quizzes?courseId=...)
+    // Quizzes endpoints
     QUIZZES: {
         CREATE: '/Quizzes',
         GET: (id: string) => `/Quizzes/${id}`,
         UPDATE: (id: string) => `/Quizzes/${id}`,
         DELETE: (id: string) => `/Quizzes/${id}`,
         BY_COURSE: (courseId: string) => `/courses/${courseId}/quizzes`,
+        LIST: '/Quizzes',
+        GENERATE_BY_AI: (quizId: string) => `/Quizzes/${quizId}/generate-by-ai`,
+        GENERATE_FILES: (quizId: string) => `/Quizzes/${quizId}/generate-questions-files`,
+        JOB_STATUS: (jobId: string) => `/Quizzes/job/${jobId}`,
+    },
+
+    // Sections endpoints
+    SECTIONS: {
+        BY_COURSE: (courseId: number) => `/Sections/courses/${courseId}/sections`,
+        GET: (sectionId: string) => `/Sections/${sectionId}`,
+        CREATE: '/Sections',
+        UPDATE: (sectionId: string) => `/Sections/${sectionId}`,
+        DELETE: (sectionId: string) => `/Sections/${sectionId}`,
     },
 } as const;
 

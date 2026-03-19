@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent, ParallaxTiltCard } from '@/components/ui';
 import { ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
 import { courseService } from '@/api/services';
@@ -263,10 +263,10 @@ export const CoursesPage = () => {
                             const isEnrolling = enrollingIds.has(course.id);
 
                             return (
-                                <div
+                                <ParallaxTiltCard
                                     key={course.id}
                                     onClick={() => navigate(`${ROUTES.COURSES}/${course.id}`)}
-                                    className={`overflow-hidden hover:shadow-xl transition-all card-hover animate-scale-up cursor-pointer rounded-lg bg-white dark:bg-zinc-900 shadow-md dark:shadow-lg border border-transparent dark:border-zinc-800 flex flex-col items-start`}
+                                    className={`overflow-hidden hover:shadow-xl transition-shadow card-hover animate-scale-up cursor-pointer rounded-lg bg-white dark:bg-zinc-900 shadow-md dark:shadow-lg border border-transparent dark:border-zinc-800 flex flex-col items-start`}
                                     style={{ animationDelay: `${(index % 4) * 0.1}s` }}
                                 >
                                     <div className="relative w-full">
@@ -300,7 +300,7 @@ export const CoursesPage = () => {
                                             {isEnrolling ? 'Sending Request...' : 'Request Enrollment'}
                                         </button>
                                     </div>
-                                </div>
+                                </ParallaxTiltCard>
                             );
                         })}
                     </div>

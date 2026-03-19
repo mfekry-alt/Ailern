@@ -83,7 +83,7 @@ export const InstructorCourseEditPage = () => {
                 await updateCourseMutation.mutateAsync({ id: courseId, command });
             }
 
-            setStatusMessage(isDraft ? 'Draft saved.' : 'Submitted for approval.');
+            setStatusMessage(isDraft ? 'Draft saved.' : 'Course approved.');
             setTimeout(() => navigate(ROUTES.INSTRUCTOR_COURSES), 1000);
         } catch (error) {
             const apiError = handleApiError(error);
@@ -400,7 +400,7 @@ export const InstructorCourseEditPage = () => {
                             >
                                 <div className="relative flex items-center justify-center w-fit -mt-px font-medium text-white text-[14px] text-center leading-[20px] whitespace-nowrap gap-2">
                                     {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                                    Submit for Approval
+                                    Approve Course
                                 </div>
                             </button>
                         </div>

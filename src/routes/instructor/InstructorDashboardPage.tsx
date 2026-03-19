@@ -1,10 +1,14 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import {
     Edit2, Trash2, Plus, Users, BookOpen, Clock, TrendingUp,
-    AlertCircle, CheckSquare, FileText, Calendar
+    AlertCircle, CheckSquare, FileText, Calendar, Loader2
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
+import { useInstructorCourses } from '@/features/courses/api';
+import { useAuthStore } from '@/features/auth/store';
+import type { GetAllCoursesDto } from '@/types/api.types';
 
 // --- Interfaces ---
 interface Course {
@@ -20,10 +24,79 @@ interface Course {
     enrollmentCount: number;
 }
 
-// --- Mock Data ---
-const courses: Course[] = [];
+const getStatusConfig = (apiStatus: string): Pick<Course, 'status' | 'statusColor' | 'statusBg' | 'primaryAction' | 'secondaryAction'> => {
+    switch (apiStatus) {
+        case 'Approved':
+            return {
+                status: 'Approved',
+                statusColor: '#166534',
+                statusBg: '#dcfce7',
+                primaryAction: 'Go to Content',
+                secondaryAction: 'Edit',
+            };
+        case 'Pending':
+            return {
+                status: 'Pending Review',
+                statusColor: '#1d4ed8',
+                statusBg: '#dbeafe',
+                primaryAction: 'Go to Content',
+                secondaryAction: 'Edit',
+            };
+        case 'Rejected':
+            return {
+                status: 'Draft',
+                statusColor: '#854d0e',
+                statusBg: '#fef9c3',
+                primaryAction: 'Continue Editing',
+                secondaryAction: 'Edit',
+            };
+        default:
+            return {
+                status: 'Draft',
+                statusColor: '#854d0e',
+                statusBg: '#fef9c3',
+                primaryAction: 'Go to Content',
+                secondaryAction: 'Edit',
+            };
+    }
+};
+
+const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
+    const statusConfig = getStatusConfig(dto.courseStatus);
+
+    return {
+        id: dto.id.toString(),
+        title: dto.name,
+        courseId: dto.code,
+        instructor: `Instructor #${dto.instructorId}`,
+        enrollmentCount: 0,
+        ...statusConfig,
+    };
+};
 
 export const InstructorDashboardPage = () => {
+    const user = useAuthStore((state) => state.user);
+
+    const instructorId = useMemo(() => {
+        if (typeof user?.id === 'number') {
+            return user.id;
+        }
+
+        const parsedId = Number(user?.id);
+        return Number.isFinite(parsedId) && parsedId > 0 ? parsedId : undefined;
+    }, [user?.id]);
+
+    const {
+        data: coursesData,
+        isLoading: isCoursesLoading,
+        error: coursesError,
+    } = useInstructorCourses(instructorId, { PageNumber: 1, PageSize: 5 });
+
+    const courses = useMemo(() => {
+        if (!coursesData?.items) return [];
+        return coursesData.items.map(mapCourseToUI);
+    }, [coursesData]);
+
     // Dashboard statistics
     const stats = [
         { label: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100' },
@@ -111,7 +184,21 @@ export const InstructorDashboardPage = () => {
                                 </div>
 
                                 <div className="grid gap-4">
-                                    {courses.length === 0 ? (
+                                    {isCoursesLoading && (
+                                        <div className="flex items-center justify-center py-8 text-gray-500 dark:text-zinc-400">
+                                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                                            <span className="text-[14px]">Loading courses...</span>
+                                        </div>
+                                    )}
+
+                                    {!isCoursesLoading && coursesError && (
+                                        <div className="text-center py-6">
+                                            <AlertCircle className="w-10 h-10 text-red-300 dark:text-red-700 mx-auto mb-3" />
+                                            <p className="text-[14px] text-red-600 dark:text-red-400">Failed to load courses</p>
+                                        </div>
+                                    )}
+
+                                    {!isCoursesLoading && !coursesError && courses.length === 0 ? (
                                         <div className="text-center py-8">
                                             <BookOpen className="w-10 h-10 text-gray-300 dark:text-zinc-700 mx-auto mb-3" />
                                             <p className="text-[14px] text-gray-500 dark:text-zinc-400">No courses yet</p>
@@ -152,9 +239,11 @@ export const InstructorDashboardPage = () => {
 
                                             <div className="flex justify-between items-center">
                                                 <div className="flex gap-2">
-                                                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-600 dark:text-zinc-400">
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
+                                                    <Link to={ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id)}>
+                                                        <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-600 dark:text-zinc-400">
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                    </Link>
                                                     <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-600 dark:text-zinc-400">
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -167,7 +256,7 @@ export const InstructorDashboardPage = () => {
                                                         </button>
                                                     )}
                                                     {course.primaryAction && (
-                                                        <Link to={`/instructor/courses/${course.id}/content`}>
+                                                        <Link to={ROUTES.INSTRUCTOR_COURSE_EDIT_CONTENT.replace(':id', course.id)}>
                                                             <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] px-3 py-1.5 rounded-md transition-colors">
                                                                 {course.primaryAction}
                                                             </button>

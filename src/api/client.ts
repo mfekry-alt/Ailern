@@ -17,8 +17,8 @@ export const setAccessToken = (token: string | null) => {
 export const getAccessToken = () => accessToken;
 
 export const api = axios.create({
-    // Use relative API path so Vite proxy forwards to backend without browser CORS issues.
-    baseURL: '/api',
+
+    baseURL: 'https://ailern.runasp.net/api',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -131,4 +131,3 @@ export const handleApiError = (error: unknown): ApiError => {
         status: 500,
     };
 };
-

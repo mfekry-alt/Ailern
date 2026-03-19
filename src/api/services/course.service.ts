@@ -19,6 +19,43 @@ import type {
     ApiResponse,
 } from '@/types/api.types';
 
+const EMPTY_COURSES_RESULT: GetAllCoursesDtoPaginationResult = {
+    items: [],
+    totalResults: 0,
+    pagesCount: 0,
+    start: 0,
+    end: 0,
+};
+
+const extractCoursesPayload = (responseData: unknown): any | null => {
+    const directData = responseData as any;
+    const wrapperData = directData?.data;
+
+    if (wrapperData?.items || wrapperData?.totalResults !== undefined) {
+        return wrapperData;
+    }
+    if (directData?.items || directData?.totalResults !== undefined) {
+        return directData;
+    }
+
+    if (Array.isArray(wrapperData)) {
+        return { items: wrapperData, totalResults: wrapperData.length };
+    }
+    if (Array.isArray(directData)) {
+        return { items: directData, totalResults: directData.length };
+    }
+
+    return null;
+};
+
+const mapCoursesResult = (payload: any): GetAllCoursesDtoPaginationResult => ({
+    items: payload?.items || [],
+    totalResults: payload?.totalResults || 0,
+    pagesCount: payload?.totalPages ?? payload?.pagesCount ?? 0,
+    start: payload?.start || 0,
+    end: payload?.end || 0,
+});
+
 export const createCourse = async (command: CreateCourseCommand): Promise<void> => {
     try {
         const response = await api.post<ApiResponse>(ENDPOINTS.COURSES.CREATE, command);
@@ -34,18 +71,43 @@ export const createCourse = async (command: CreateCourseCommand): Promise<void> 
 };
 
 /**
- * Get courses for a specific instructor (Temporary Workaround)
- * Currently fetches ALL courses because the backend endpoint for specific instructors is not ready yet.
+ * Get courses for the current instructor.
+ * Uses numeric instructor endpoint when available, otherwise falls back to /Courses/mine.
  */
 export const getInstructorCourses = async (
-    instructorId: string | number, // الإيميل أو الـ ID
+    instructorId?: string | number,
     params?: PaginationParams
 ): Promise<GetAllCoursesDtoPaginationResult> => {
+    const defaultParams: PaginationParams = {
+        PageNumber: 1,
+        PageSize: 50,
+        ...params,
+    };
 
-    console.log('[Courses] ⚠️ Backend endpoint for specific instructor not ready. Fetching ALL courses instead.');
+    const numericInstructorId =
+        typeof instructorId === 'number' ? instructorId : Number(instructorId);
 
-    // ببساطة نقوم باستدعاء دالة جلب كل الكورسات الموجودة بالأسفل
-    return await getAllCourses(params);
+    const endpoint = Number.isFinite(numericInstructorId) && numericInstructorId > 0
+        ? ENDPOINTS.COURSES.INSTRUCTOR_COURSES(numericInstructorId)
+        : ENDPOINTS.COURSES.MY_COURSES;
+
+    try {
+        const response = await api.get<ApiResponse<GetAllCoursesDtoPaginationResult>>(
+            endpoint,
+            {
+                params: {
+                    pageNumber: defaultParams.PageNumber || 1,
+                    pageSize: defaultParams.PageSize || 50,
+                },
+            }
+        );
+
+        const dataToUse = extractCoursesPayload(response.data);
+        return dataToUse ? mapCoursesResult(dataToUse) : EMPTY_COURSES_RESULT;
+    } catch (error) {
+        console.error('[Courses] Instructor list failed:', error);
+        return EMPTY_COURSES_RESULT;
+    }
 };
 
 export const getAllCourses = async (
@@ -58,16 +120,10 @@ export const getAllCourses = async (
     };
 
     // Initialize default result structure (Strictly matching your interface)
-    const result: GetAllCoursesDtoPaginationResult = {
-        items: [],
-        totalResults: 0,
-        pagesCount: 0,
-        start: 0,
-        end: 0
-    };
+    const result: GetAllCoursesDtoPaginationResult = { ...EMPTY_COURSES_RESULT };
 
     try {
-        // ⚡ التعديل هنا: إرسال الـ params بحروف صغيرة لضمان قراءتها من السيرفر
+        
         const response = await api.get<ApiResponse<GetAllCoursesDtoPaginationResult>>(
             ENDPOINTS.COURSES.LIST,
             {
@@ -82,12 +138,7 @@ export const getAllCourses = async (
         console.log('📦 [Courses] Raw Data:', response.data);
 
         // 1. Check if data is directly in response.data (some backends do this)
-        const directData = response.data as any;
-        // 2. Check if data is inside response.data.data (standard wrapper)
-        const wrapperData = response.data.data as any;
-
-        const dataToUse = (wrapperData?.items || wrapperData?.totalResults) ? wrapperData :
-            (directData?.items || directData?.totalResults) ? directData : null;
+        const dataToUse = extractCoursesPayload(response.data);
 
         if (dataToUse) {
             result.items = dataToUse.items || [];
@@ -116,7 +167,9 @@ export const getAllCourses = async (
                 result.pagesCount = d2.totalPages || d2.pagesCount || 0;
                 return result;
             }
-        } catch (e) { /* ignore */ }
+        } catch (error) {
+            console.debug('[Courses] Workaround 1 failed:', error);
+        }
 
         // WORKAROUND 2: No params
         try {
@@ -128,7 +181,9 @@ export const getAllCourses = async (
                 result.pagesCount = d3.totalPages || d3.pagesCount || 0;
                 return result;
             }
-        } catch (e) { /* ignore */ }
+        } catch (error) {
+            console.debug('[Courses] Workaround 2 failed:', error);
+        }
 
     } catch (error) {
         console.error('[Courses] List failed:', error);

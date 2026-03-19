@@ -10,16 +10,10 @@ import type {
 /**
  * Fetch all courses for a specific instructor (includes drafts)
  */
-export const useInstructorCourses = (instructorId?: number, params?: PaginationParams) => {
+export const useInstructorCourses = (instructorId?: number | string, params?: PaginationParams) => {
     return useQuery({
         queryKey: [...QUERY_KEYS.COURSES, 'instructor', instructorId, params],
-        queryFn: () => {
-            if (!instructorId) {
-                throw new Error('Instructor ID is required');
-            }
-            return courseService.getInstructorCourses(instructorId, params);
-        },
-        enabled: !!instructorId,
+        queryFn: () => courseService.getInstructorCourses(instructorId, params),
     });
 };
 
