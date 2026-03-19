@@ -61,7 +61,7 @@ const getStatusStyle = (status: string) => {
 
 // ─── Main Component ─────────────────────────────────────────────────────
 
-export const InstructorCourseEditContentPage = () => {
+export const InstructorQuizCreatePage = () => {
     const navigate = useNavigate();
     useParams<{ id: string; }>();
     const [activeTab, setActiveTab] = useState<TabType>('Curriculum');
