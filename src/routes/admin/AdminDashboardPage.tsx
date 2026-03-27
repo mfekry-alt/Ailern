@@ -4,7 +4,6 @@ import { ROUTES } from '@/lib/constants';
 import {
     Users,
     BookOpen,
-    Clock,
     TrendingUp,
     AlertCircle,
     CheckCircle,
@@ -40,15 +39,7 @@ interface Activity {
     activity: string;
     user: string;
     timestamp: string;
-    type: 'enrollment' | 'approval' | 'course_creation' | 'completion' | 'system';
-}
-
-interface PendingApproval {
-    id: number;
-    type: 'Course' | 'User';
-    title: string;
-    instructor: string;
-    submittedAt: string;
+    type: 'enrollment' | 'course_creation' | 'completion' | 'system';
 }
 
 export const AdminDashboardPage = () => {
@@ -56,7 +47,6 @@ export const AdminDashboardPage = () => {
     const [stats, setStats] = useState<Stat[]>([]);
     const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
     const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
-    const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const downloadText = (filename: string, text: string) => {
@@ -76,7 +66,6 @@ export const AdminDashboardPage = () => {
             ['section', 'label', 'value'],
             ...stats.map((s) => ['stats', s.label, s.value]),
             ...systemMetrics.map((m) => ['system_metrics', m.label, m.value]),
-            ...pendingApprovals.map((p) => ['pending_approvals', `${p.type}: ${p.title}`, `${p.instructor} (${p.submittedAt})`]),
             ...recentActivity.map((a) => ['recent_activity', a.type, `${a.activity} | ${a.user} | ${a.timestamp}`]),
         ];
         const csv = rows
@@ -85,26 +74,12 @@ export const AdminDashboardPage = () => {
         downloadText('admin-dashboard-report.csv', csv);
     };
 
-    const handleApprove = (id: number) => {
-        setPendingApprovals((prev) => prev.filter((a) => a.id !== id));
-    };
-
-    const handleReview = (approval: PendingApproval) => {
-        if (approval.type === 'Course') {
-            navigate(ROUTES.ADMIN_COURSES);
-            return;
-        }
-        navigate(ROUTES.ADMIN_USERS);
-    };
-
     const { data: coursesData } = useQuery({
         queryKey: ['admin', 'courses', 'stats'],
         queryFn: () => courseService.getAllCourses({ PageNumber: 1, PageSize: 500 }),
     });
 
     const totalCourses = coursesData?.totalResults ?? 0;
-    const pendingCourses =
-        coursesData?.items?.filter((c) => c.courseStatus === 'Pending').length ?? 0;
 
     useEffect(() => {
         setIsLoading(false);
@@ -112,7 +87,7 @@ export const AdminDashboardPage = () => {
             { label: 'Total Students', value: '—', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100', change: '+0%' },
             { label: 'Total Instructors', value: '—', icon: BookOpen, color: 'text-green-600', bgColor: 'bg-green-100', change: '+0%' },
             { label: 'Total Courses', value: String(totalCourses), icon: Award, color: 'text-purple-600', bgColor: 'bg-purple-100', change: '+0%' },
-            { label: 'Pending Approvals', value: String(pendingCourses), icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100', change: '-0%' },
+            { label: 'Published Courses', value: String(totalCourses), icon: CheckCircle, color: 'text-yellow-600', bgColor: 'bg-yellow-100', change: '+0%' },
         ]);
         setSystemMetrics([
             { label: 'Active Users Today', value: '—', icon: TrendingUp, color: 'text-green-600' },
@@ -121,8 +96,7 @@ export const AdminDashboardPage = () => {
             { label: 'System Uptime', value: '99.9%', icon: BarChart3, color: 'text-green-600' }
         ]);
         setRecentActivity([]);
-        setPendingApprovals([]);
-    }, [totalCourses, pendingCourses]);
+    }, [totalCourses]);
 
     if (isLoading) {
         return (
@@ -184,111 +158,49 @@ export const AdminDashboardPage = () => {
                     })}
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-6">
-                    {/* System Metrics */}
-                    <div className="lg:col-span-2">
-                        <Card variant="elevated">
-                            <CardContent className="p-6 bg-white dark:bg-zinc-900 transition-colors">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">
-                                            System overview
-                                        </h2>
-                                        <p className="text-[14px] text-gray-600 dark:text-zinc-400">Live statistics</p>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <button className="text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 font-medium text-[14px] cursor-pointer">
-                                            Export
-                                        </button>
-                                        <button
-                                            onClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
-                                            className="text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 font-medium text-[14px] cursor-pointer"
-                                        >
-                                            Settings
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    {systemMetrics.map((metric) => {
-                                        const IconComponent = metric.icon;
-                                        return (
-                                            <div key={metric.label} className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-4 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-lg bg-white dark:bg-zinc-700 flex items-center justify-center">
-                                                        <IconComponent className={`w-5 h-5 ${metric.color}`} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">{metric.value}</p>
-                                                        <p className="text-[12px] text-gray-600 dark:text-zinc-400">{metric.label}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Pending Approvals */}
-                    <div className="lg:col-span-1">
-                        <Card variant="elevated">
-                            <CardContent className="p-6 bg-white dark:bg-zinc-900 transition-colors">
-                                <div className="flex items-center justify-between mb-6">
+                <div className="grid gap-6">
+                    <Card variant="elevated">
+                        <CardContent className="p-6 bg-white dark:bg-zinc-900 transition-colors">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
                                     <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">
-                                        Pending Approvals
+                                        System overview
                                     </h2>
-                                    <AlertCircle className="w-5 h-5 text-yellow-500" />
+                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400">Live statistics</p>
                                 </div>
+                                <div className="flex gap-3">
+                                    <button className="text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 font-medium text-[14px] cursor-pointer">
+                                        Export
+                                    </button>
+                                    <button
+                                        onClick={() => navigate(ROUTES.ADMIN_SETTINGS)}
+                                        className="text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 font-medium text-[14px] cursor-pointer"
+                                    >
+                                        Settings
+                                    </button>
+                                </div>
+                            </div>
 
-                                <div className="space-y-3">
-                                    {pendingApprovals.map((approval) => (
-                                        <div key={approval.id} className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-3">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div>
-                                                    <p className="text-[14px] font-semibold text-gray-900 dark:text-zinc-100">
-                                                        {approval.title}
-                                                    </p>
-                                                    <p className="text-[12px] text-gray-600 dark:text-zinc-400">
-                                                        {approval.instructor}
-                                                    </p>
+                            <div className="grid grid-cols-2 gap-4">
+                                {systemMetrics.map((metric) => {
+                                    const IconComponent = metric.icon;
+                                    return (
+                                        <div key={metric.label} className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-4 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-white dark:bg-zinc-700 flex items-center justify-center">
+                                                    <IconComponent className={`w-5 h-5 ${metric.color}`} />
                                                 </div>
-                                                <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${approval.type === 'Course' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                                                    }`}>
-                                                    {approval.type}
-                                                </span>
-                                            </div>
-                                            <p className="text-[10px] text-gray-500 mb-2">
-                                                Submitted: {approval.submittedAt}
-                                            </p>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleApprove(approval.id)}
-                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium text-[12px] px-3 py-1.5 rounded-lg transition-colors"
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    onClick={() => handleReview(approval)}
-                                                    className="flex-1 bg-gray-100 dark:bg-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-300 font-medium text-[12px] px-3 py-1.5 rounded-lg transition-colors"
-                                                >
-                                                    Review
-                                                </button>
+                                                <div>
+                                                    <p className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">{metric.value}</p>
+                                                    <p className="text-[12px] text-gray-600 dark:text-zinc-400">{metric.label}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-
-                                <button
-                                    onClick={() => navigate(ROUTES.ADMIN_COURSES)}
-                                    className="w-full mt-4 text-blue-600 hover:text-blue-700 font-medium text-[14px] py-2"
-                                >
-                                    View All Approvals
-                                </button>
-                            </CardContent>
-                        </Card>
-                    </div>
+                                    );
+                                })}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Quick Actions */}
@@ -371,7 +283,7 @@ export const AdminDashboardPage = () => {
                                             </td>
                                             <td className="py-4 px-6">
                                                 <span className={`px-2 py-1 rounded-full text-[12px] font-medium ${activity.type === 'enrollment' ? 'bg-blue-100 text-blue-800' :
-                                                    activity.type === 'approval' ? 'bg-green-100 text-green-800' :
+                                                    (activity.type as string) === 'approval' ? 'bg-green-100 text-green-800' :
                                                         activity.type === 'course_creation' ? 'bg-purple-100 text-purple-800' :
                                                             activity.type === 'completion' ? 'bg-yellow-100 text-yellow-800' :
                                                                 'bg-gray-100 text-gray-800'

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import {
     Edit2, Trash2, Plus, Users, BookOpen, Clock, TrendingUp,
-    AlertCircle, CheckSquare, FileText, Calendar, Loader2
+    AlertCircle, CheckSquare, Calendar, Loader2
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { useInstructorCourses } from '@/features/courses/api';
@@ -16,7 +16,7 @@ interface Course {
     title: string;
     courseId: string;
     instructor: string;
-    status: 'Draft' | 'Approved' | 'Ready to Submit' | 'Pending Review';
+    status: 'Published';
     statusColor: string;
     statusBg: string;
     primaryAction?: string;
@@ -25,40 +25,14 @@ interface Course {
 }
 
 const getStatusConfig = (apiStatus: string): Pick<Course, 'status' | 'statusColor' | 'statusBg' | 'primaryAction' | 'secondaryAction'> => {
-    switch (apiStatus) {
-        case 'Approved':
-            return {
-                status: 'Approved',
-                statusColor: '#166534',
-                statusBg: '#dcfce7',
-                primaryAction: 'Go to Content',
-                secondaryAction: 'Edit',
-            };
-        case 'Pending':
-            return {
-                status: 'Pending Review',
-                statusColor: '#1d4ed8',
-                statusBg: '#dbeafe',
-                primaryAction: 'Go to Content',
-                secondaryAction: 'Edit',
-            };
-        case 'Rejected':
-            return {
-                status: 'Draft',
-                statusColor: '#854d0e',
-                statusBg: '#fef9c3',
-                primaryAction: 'Continue Editing',
-                secondaryAction: 'Edit',
-            };
-        default:
-            return {
-                status: 'Draft',
-                statusColor: '#854d0e',
-                statusBg: '#fef9c3',
-                primaryAction: 'Go to Content',
-                secondaryAction: 'Edit',
-            };
-    }
+    void apiStatus;
+    return {
+        status: 'Published',
+        statusColor: '#166534',
+        statusBg: '#dcfce7',
+        primaryAction: 'Go to Content',
+        secondaryAction: 'Edit',
+    };
 };
 
 const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
@@ -101,7 +75,7 @@ export const InstructorDashboardPage = () => {
     const stats = [
         { label: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100' },
         { label: 'Active Courses', value: '0', icon: BookOpen, color: 'text-green-600', bgColor: 'bg-green-100' },
-        { label: 'Pending Reviews', value: '0', icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
+        { label: 'Published Courses', value: '0', icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
         { label: 'Avg. Rating', value: '0.0', icon: TrendingUp, color: 'text-purple-600', bgColor: 'bg-purple-100' },
     ];
 
@@ -110,9 +84,6 @@ export const InstructorDashboardPage = () => {
 
     // Submissions to grade
     const submissionsToGrade: { id: number; course: string; assignment: string; submissions: number; dueDate: string }[] = [];
-
-    // Course approval updates
-    const approvalUpdates: { id: number; course: string; status: string; submittedDate: string; daysWaiting: number }[] = [];
 
     // Upcoming deadlines
     const upcomingDeadlines: { id: number; course: string; item: string; dueDate: string; daysLeft: number; priority: string }[] = [];
@@ -314,7 +285,7 @@ export const InstructorDashboardPage = () => {
                 </div>
 
                 {/* Pending Tasks Section */}
-                <div className="grid lg:grid-cols-3 gap-6">
+                <div className="grid lg:grid-cols-2 gap-6">
                     {/* Submissions to Grade */}
                     <div className="lg:col-span-1">
                         <Card variant="elevated" className="bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 h-full">
@@ -353,54 +324,6 @@ export const InstructorDashboardPage = () => {
                                             <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] py-1.5 rounded-md transition-colors">
                                                 Grade Submissions
                                             </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Course Approval Updates */}
-                    <div className="lg:col-span-1">
-                        <Card variant="elevated" className="bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 h-full">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-[20px] font-bold">
-                                        Approvals
-                                    </h2>
-                                    <FileText className="w-5 h-5 text-purple-600" />
-                                </div>
-
-                                <div className="space-y-4">
-                                    {approvalUpdates.length === 0 ? (
-                                        <div className="text-center py-6">
-                                            <FileText className="w-10 h-10 text-gray-300 dark:text-zinc-700 mx-auto mb-3" />
-                                            <p className="text-[14px] text-gray-500 dark:text-zinc-400">No pending approvals</p>
-                                        </div>
-                                    ) : approvalUpdates.map((update) => (
-                                        <div key={update.id} className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-100 dark:border-purple-900/30">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 flex-1">
-                                                    {update.course}
-                                                </p>
-                                                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${update.status === 'Pending'
-                                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                                                    }`}>
-                                                    {update.status}
-                                                </span>
-                                            </div>
-                                            <p className="text-[12px] text-gray-600 dark:text-zinc-400 mb-2">
-                                                Submitted: {new Date(update.submittedDate).toLocaleDateString()}
-                                            </p>
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-[12px] text-gray-600 dark:text-zinc-400">
-                                                    Waiting: {update.daysWaiting} days
-                                                </p>
-                                                <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-[12px] font-medium">
-                                                    Status
-                                                </button>
-                                            </div>
                                         </div>
                                     ))}
                                 </div>

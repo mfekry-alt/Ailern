@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui';
-import { Search, Eye, CheckCircle, XCircle, Filter, Download, BookOpen, Users, Calendar, TrendingUp, Loader2 } from 'lucide-react';
+import { Search, Eye, CheckCircle, Filter, Download, BookOpen, Users, TrendingUp, Loader2 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
 import { courseService } from '@/api/services';
 import { handleApiError } from '@/api/client';
@@ -17,7 +17,7 @@ type CourseRow = {
     createdDate: string;
     lastUpdated: string;
     rating: number;
-    modules: number;
+    sections: number;
     category: string;
     description: string;
     prerequisites: string[];
@@ -30,12 +30,9 @@ type CourseRow = {
 
 export const AdminCoursesPage = () => {
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [selectedCourse, setSelectedCourse] = useState<CourseRow | null>(null);
-    const [statusMessage, setStatusMessage] = useState<string>('');
-    const [reviewerNotes, setReviewerNotes] = useState<string>('');
 
     const { data: paginated, isLoading, error } = useQuery({
         queryKey: ['admin', 'courses'],
@@ -50,11 +47,11 @@ export const AdminCoursesPage = () => {
             courseId: c.code,
             instructor: '—',
             students: 0,
-            status: c.courseStatus || 'Pending',
+            status: 'Published',
             createdDate: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—',
             lastUpdated: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—',
             rating: 0,
-            modules: 0,
+            sections: 0,
             category: '—',
             description: '',
             prerequisites: [],
@@ -99,43 +96,24 @@ export const AdminCoursesPage = () => {
         downloadText('courses-export.csv', csv);
     };
 
-    const approveCourse = (id: number) => {
-        queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] });
-        setStatusMessage(`Course approved${reviewerNotes ? ` — Notes: ${reviewerNotes}` : '.'}`);
-        setReviewerNotes('');
-    };
-
-    const rejectCourse = async (id: number) => {
-        try {
-            await courseService.rejectCourse(id, { reason: reviewerNotes || 'Rejected by admin' });
-            queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] });
-            setStatusMessage(`Course rejected${reviewerNotes ? ` — Notes: ${reviewerNotes}` : '.'}`);
-        } catch {
-            setStatusMessage('Failed to reject course.');
-        }
-        setReviewerNotes('');
-    };
-
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'Published':
                 return 'bg-green-100 text-green-800';
             case 'Draft':
                 return 'bg-yellow-100 text-yellow-800';
-            case 'Pending Review':
-                return 'bg-blue-100 text-blue-800';
-            case 'Rejected':
-                return 'bg-red-100 text-red-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
     };
 
+    const totalCourses = courses.length;
+
     const stats = [
-        { label: 'Total Courses', value: '300', icon: BookOpen, color: 'text-blue-600' },
-        { label: 'Published', value: '245', icon: CheckCircle, color: 'text-green-600' },
-        { label: 'Pending Review', value: '15', icon: Calendar, color: 'text-yellow-600' },
-        { label: 'Total Students', value: '5,250', icon: Users, color: 'text-purple-600' }
+        { label: 'Total Courses', value: String(totalCourses), icon: BookOpen, color: 'text-blue-600' },
+        { label: 'Published', value: String(totalCourses), icon: CheckCircle, color: 'text-green-600' },
+        { label: 'Visible Courses', value: String(filteredCourses.length), icon: TrendingUp, color: 'text-orange-600' },
+        { label: 'Total Students', value: '0', icon: Users, color: 'text-purple-600' }
     ];
 
     if (isLoading) {
@@ -187,12 +165,6 @@ export const AdminCoursesPage = () => {
                     </div>
                 </div>
 
-                {statusMessage && (
-                    <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-[14px] text-green-800">
-                        {statusMessage}
-                    </div>
-                )}
-
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {stats.map((stat) => {
@@ -238,8 +210,6 @@ export const AdminCoursesPage = () => {
                                     <option value="all">All Status</option>
                                     <option value="Published">Published</option>
                                     <option value="Draft">Draft</option>
-                                    <option value="Pending Review">Pending Review</option>
-                                    <option value="Rejected">Rejected</option>
                                 </select>
                                 <button className="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors">
                                     <Filter className="w-4 h-4" />
@@ -286,7 +256,7 @@ export const AdminCoursesPage = () => {
                                             <td className="py-4 px-6">
                                                 <div>
                                                     <p className="text-[16px] font-medium text-gray-900 dark:text-zinc-100">{course.title}</p>
-                                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400">{course.courseId} • {course.modules} modules</p>
+                                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400">{course.courseId} • {course.sections} sections</p>
                                                 </div>
                                             </td>
                                             <td className="py-4 px-6">
@@ -315,29 +285,11 @@ export const AdminCoursesPage = () => {
                                                     <button
                                                         onClick={() => {
                                                             setSelectedCourse(course);
-                                                            setReviewerNotes('');
-                                                            setStatusMessage('');
                                                         }}
                                                         className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
                                                     >
                                                         <Eye className="w-4 h-4 text-gray-600" />
                                                     </button>
-                                                    {course.status === 'Pending Review' && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => approveCourse(course.id)}
-                                                                className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
-                                                            >
-                                                                <CheckCircle className="w-4 h-4 text-green-600" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => rejectCourse(course.id)}
-                                                                className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
-                                                            >
-                                                                <XCircle className="w-4 h-4 text-red-600" />
-                                                            </button>
-                                                        </>
-                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -422,35 +374,12 @@ export const AdminCoursesPage = () => {
                                 >
                                     Download
                                 </button>
-                                {selectedCourse.status === 'Pending Review' ? (
-                                    <>
-                                        <button
-                                            onClick={() => {
-                                                approveCourse(selectedCourse.id);
-                                                setSelectedCourse(null);
-                                            }}
-                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
-                                        >
-                                            Approve
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                rejectCourse(selectedCourse.id);
-                                                setSelectedCourse(null);
-                                            }}
-                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
-                                        >
-                                            Reject
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button
-                                        onClick={() => setSelectedCourse(null)}
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
-                                    >
-                                        Close
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => setSelectedCourse(null)}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    Close
+                                </button>
                             </div>
                         </div>
                     </div>

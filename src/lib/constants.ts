@@ -23,7 +23,6 @@ export const normalizeRole = (role?: string | null): Role | string => {
 export const ROUTES = {
     HOME: '/',
     LOGIN: '/login',
-    REGISTER: '/register',
     FORGOT_PASSWORD: '/forgot-password',// NOSONAR
     VERIFY_EMAIL: '/verify-email',
     SET_PASSWORD: '/set-password',      // NOSONAR
@@ -43,7 +42,6 @@ export const ROUTES = {
     ASSIGNMENT_DETAIL: '/assignments/:id',
     QUIZZES: '/quizzes',
     QUIZ: '/quiz/:id',
-    MESSAGES: '/messages',
     GRADES: '/grades',
 
     // Instructor routes
@@ -58,7 +56,7 @@ export const ROUTES = {
     INSTRUCTOR_ASSIGNMENT_CREATE: '/instructor/assignments/create',
     INSTRUCTOR_ASSIGNMENT_EDIT: '/instructor/assignments/:id/edit',
     INSTRUCTOR_SUBMISSIONS: '/instructor/assignments/:assignmentId/submissions',
-    INSTRUCTOR_QUIZ_CREATE: '/instructor/quiz/create',
+    INSTRUCTOR_QUIZ_CREATE: '/courses/:courseId/quiz/create',
     INSTRUCTOR_QUIZ_QUESTIONS: '/instructor/quiz/questions',
     INSTRUCTOR_QUIZ_EDIT: '/instructor/quiz/:id/edit',
     INSTRUCTOR_QUIZ_UPDATE: '/instructor/quiz/:id/update',
@@ -70,7 +68,6 @@ export const ROUTES = {
     ADMIN_USER_CREATE: '/admin/users/create',
     ADMIN_USER_EDIT: '/admin/users/:id/edit',
     ADMIN_COURSES: '/admin/courses',
-    ADMIN_COURSE_APPROVAL: '/admin/courses/approval',
     ADMIN_REPORTS: '/admin/reports',
     ADMIN_SETTINGS: '/admin/settings',
 } as const;

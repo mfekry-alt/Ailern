@@ -16,9 +16,6 @@ import type {
     SendPasswordResetEmailCommand,
     UserPasswordResetCommand,
     EmailConfirmationParams,
-    CreateStudentCommand,
-    CreateInstructorCommand,
-    CreateAdminCommand,
     ApiResponse,
 } from '@/types/api.types';
 
@@ -85,96 +82,6 @@ export const refreshToken = async (
     // Update stored tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
-
-    return tokenData;
-};
-
-/**
- * Register a new student
- * @param command - Student registration data
- * @returns Token response
- */
-export const registerStudent = async (
-    command: CreateStudentCommand
-): Promise<GetTokenResponseDto> => {
-    const response = await api.post<ApiResponse<GetTokenResponseDto>>(
-        ENDPOINTS.STUDENTS.REGISTER,
-        command
-    );
-
-    const tokenData = response.data.data!;
-
-    // Store tokens
-    setAccessToken(tokenData.accessToken);
-    storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
-
-    const numericId = tokenData.studentId || tokenData.id;
-    storage.set(STORAGE_KEYS.USER, {
-        id: numericId || tokenData.email,
-        userName: tokenData.userName,
-        email: tokenData.email,
-        role: tokenData.role,
-    });
-
-    return tokenData;
-};
-
-/**
- * Register a new instructor
- * @param command - Instructor registration data
- * @returns Token response
- */
-export const registerInstructor = async (
-    command: CreateInstructorCommand
-): Promise<GetTokenResponseDto> => {
-    const response = await api.post<ApiResponse<GetTokenResponseDto>>(
-        ENDPOINTS.INSTRUCTORS.REGISTER,
-        command
-    );
-
-    const tokenData = response.data.data!;
-
-    // Store tokens
-    setAccessToken(tokenData.accessToken);
-    storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
-
-    const numericId = tokenData.instructorId || tokenData.id;
-    storage.set(STORAGE_KEYS.USER, {
-        id: numericId || tokenData.email,
-        userName: tokenData.userName,
-        email: tokenData.email,
-        role: tokenData.role,
-    });
-
-    return tokenData;
-};
-
-/**
- * Register a new admin
- * @param command - Admin registration data
- * @returns Token response
- */
-export const registerAdmin = async (
-    command: CreateAdminCommand
-): Promise<GetTokenResponseDto> => {
-    const response = await api.post<ApiResponse<GetTokenResponseDto>>(
-        ENDPOINTS.ADMINS.REGISTER,
-        command
-    );
-
-    const tokenData = response.data.data!;
-
-    // Store tokens
-    setAccessToken(tokenData.accessToken);
-    storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
-
-    const numericId = tokenData.id;
-    storage.set(STORAGE_KEYS.USER, {
-        id: numericId || tokenData.email,
-        userName: tokenData.userName,
-        email: tokenData.email,
-        role: tokenData.role,
-    });
 
     return tokenData;
 };

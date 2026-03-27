@@ -362,22 +362,6 @@ export const InstructorCourseEditPage = () => {
                                     />
                                 </div>
                             </div>
-
-                            {/* Ready to Submit Checkbox */}
-                            <div className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
-                                <input
-                                    type="checkbox"
-                                    id="readyToSubmit"
-                                    checked={formData.readyToSubmit}
-                                    onChange={(e) => setFormData({ ...formData, readyToSubmit: e.target.checked })}
-                                    className="w-4 h-4 bg-white rounded relative border border-solid border-[#dee2e6]"
-                                />
-                                <div className="inline-flex flex-col items-start pl-2 pr-0 py-0 relative flex-[0_0_auto]">
-                                    <label htmlFor="readyToSubmit" className="relative flex items-center justify-center w-fit -mt-px font-normal text-[#212529] dark:text-zinc-100 text-[14px] leading-[20px] whitespace-nowrap cursor-pointer">
-                                        Ready to Submit for Approval
-                                    </label>
-                                </div>
-                            </div>
                         </div>
 
                         {/* Action Buttons */}
@@ -400,7 +384,7 @@ export const InstructorCourseEditPage = () => {
                             >
                                 <div className="relative flex items-center justify-center w-fit -mt-px font-medium text-white text-[14px] text-center leading-[20px] whitespace-nowrap gap-2">
                                     {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                                    Approve Course
+                                    Create Course
                                 </div>
                             </button>
                         </div>

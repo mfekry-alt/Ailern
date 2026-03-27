@@ -128,7 +128,7 @@ export const InstructorQuizQuestionsEditPage = () => {
 
     const { data: quiz, isLoading: quizLoading } = useQuiz(quizId ?? '');
     const updateQuizMutation = useUpdateQuiz(settings?.courseId ?? quiz?.courseId ?? '');
-    const isDraftQuiz = settings?.status === 'Draft' || quiz?.quizStatus === 'Draft';
+    const isDraftQuiz = settings?.status === 'Draft' || quiz?.status === 'Draft';
 
     const [questions, setQuestions] = useState<UIQuestion[]>([]);
     const [counter, setCounter] = useState(1);
@@ -338,7 +338,7 @@ export const InstructorQuizQuestionsEditPage = () => {
                 'Quiz',
             courseId: Number(settings?.courseId || quiz?.courseId) as any,
             maximumAttempts: settings?.maximumAttempts ?? quiz?.maximumAttempts,
-            status: settings?.status || quiz?.quizStatus,
+            status: settings?.status || quiz?.status,
             availableFrom: settings?.availableFrom ? new Date(settings.availableFrom).toISOString() : quiz?.availableFrom,
             availableUntil: settings?.availableUntil ? new Date(settings.availableUntil).toISOString() : quiz?.availableUntil,
             publishedDate:
@@ -390,9 +390,9 @@ export const InstructorQuizQuestionsEditPage = () => {
 
     const isLoading = updateQuizMutation.isPending;
     const statusBadgeClass =
-        (settings?.status || quiz.quizStatus) === 'Published'
+        (settings?.status || quiz?.status) === 'Published'
             ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-            : (settings?.status || quiz.quizStatus) === 'Scheduled'
+            : (settings?.status || quiz?.status) === 'Scheduled'
                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                 : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300';
 
@@ -442,7 +442,7 @@ export const InstructorQuizQuestionsEditPage = () => {
                                     </p>
                                     <div className="mt-3 flex flex-wrap items-center gap-3">
                                         <span className={`inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold ${statusBadgeClass}`}>
-                                            Status: {settings?.status || quiz.quizStatus}
+                                            Status: {settings?.status || quiz.status}
                                         </span>
                                         {isDraftQuiz && (
                                             <span className="text-[12px] text-slate-600 dark:text-zinc-400">

@@ -1,247 +1,289 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/Card';
-import { Clock, CheckCircle2, XCircle, AlertCircle, Play, FileText, HelpCircle } from 'lucide-react';
+import { useQuery, useQueries } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
+import { getMyStudentQuizzes } from '@/api/services/student.service';
+import { getQuizAttempts, type StartAttemptResponse } from '@/api/services/attempts.service';
+import { QuizCard } from '@/components/QuizCard';
+import type { GetQuizDto } from '@/types/api.types';
 
-interface Quiz {
-    id: string;
-    title: string;
-    course: string;
-    instructor: string;
-    duration: number; // in minutes
-    totalQuestions: number;
-    totalPoints: number;
-    attemptsAllowed: number;
-    attemptsUsed: number;
-    dueDate: string;
-    status: 'not_started' | 'in_progress' | 'completed';
-    score?: number;
-    lastAttempt?: string;
-}
+// Parse server dates correctly by treating them as UTC if they don't have timezone info
+const parseServerDate = (dateString?: string): Date => {
+    if (!dateString) return new Date();
+    // Add 'Z' suffix if not present to ensure the browser interprets it as UTC
+    const normalizedDate = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
+    return new Date(normalizedDate);
+};
 
 export const QuizzesPage = () => {
     const navigate = useNavigate();
-    const [selectedCourse, setSelectedCourse] = useState('all');
-    const [selectedStatus, setSelectedStatus] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [filterCourse, setFilterCourse] = useState('all');
+    const [showStats, setShowStats] = useState(false);
+    const [startingQuizId, setStartingQuizId] = useState<string | null>(null);
 
-    const [quizzes] = useState<Quiz[]>([]);
-
-    const getStatusBadge = (quiz: Quiz) => {
-        if (quiz.status === 'completed') {
-            return {
-                text: 'Completed',
-                className: 'bg-green-100 text-green-800',
-                icon: CheckCircle2
-            };
-        }
-        if (quiz.attemptsUsed >= quiz.attemptsAllowed) {
-            return {
-                text: 'No Attempts Left',
-                className: 'bg-red-100 text-red-800',
-                icon: XCircle
-            };
-        }
-        if (new Date(quiz.dueDate) < new Date()) {
-            return {
-                text: 'Overdue',
-                className: 'bg-red-100 text-red-800',
-                icon: AlertCircle
-            };
-        }
-        return {
-            text: 'Available',
-            className: 'bg-blue-100 text-blue-800',
-            icon: Play
-        };
-    };
-
-    const handleStartQuiz = (quizId: string) => {
-        navigate(`/quiz/${quizId}`);
-    };
-
-    const filteredQuizzes = quizzes.filter(quiz => {
-        const courseMatch = selectedCourse === 'all' || quiz.course.includes(selectedCourse);
-        const statusMatch = selectedStatus === 'all' || quiz.status === selectedStatus;
-        return courseMatch && statusMatch;
+    const { data: quizzesData = [], isLoading, error } = useQuery({
+        queryKey: ['student-quizzes'],
+        queryFn: async () => {
+            const data = await getMyStudentQuizzes();
+            return Array.isArray(data) ? data : [];
+        },
     });
 
-    const stats = [
-        { label: 'Total Quizzes', value: quizzes.length, color: 'text-blue-600' },
-        { label: 'Completed', value: quizzes.filter(q => q.status === 'completed').length, color: 'text-green-600' },
-        { label: 'Pending', value: quizzes.filter(q => q.status === 'not_started').length, color: 'text-yellow-600' },
-        { label: 'Average Score', value: `${Math.round(quizzes.filter(q => q.score).reduce((acc, q) => acc + (q.score! / q.totalPoints * 100), 0) / quizzes.filter(q => q.score).length) || 0}%`, color: 'text-purple-600' }
-    ];
+    // Fetch attempts for all quizzes in parallel
+    const attemptsQueries = useQueries({
+        queries: quizzesData.map((quiz) => ({
+            queryKey: ['quiz-attempts', quiz.id],
+            queryFn: () => getQuizAttempts(quiz.id),
+            enabled: !!quiz.id && !isLoading,
+        })),
+    });
+
+    // Map attempts by quiz ID for easy lookup
+    const attemptsByQuizId = new Map<string, StartAttemptResponse[]>();
+    quizzesData.forEach((quiz, index) => {
+        const attemptsData = attemptsQueries[index]?.data ?? [];
+        attemptsByQuizId.set(quiz.id, Array.isArray(attemptsData) ? attemptsData : []);
+    });
+
+    // Determine quiz computed status with proper timezone handling
+    const getQuizComputedStatus = (quiz: GetQuizDto) => {
+        const now = new Date();
+        const from = parseServerDate(quiz.availableFrom);
+        const until = parseServerDate(quiz.availableUntil);
+
+        if (quiz.status !== 'Published') return 'draft';
+        if (now < from) return 'upcoming';
+        if (now > until) return 'expired';
+        return 'available';
+    };
+
+    // Get time status string with proper timezone handling
+    const getTimeStatus = (availableFrom: string, availableUntil: string): string => {
+        const now = new Date();
+        const from = parseServerDate(availableFrom);
+        const until = parseServerDate(availableUntil);
+
+        if (now < from) {
+            const daysUntil = Math.ceil((from.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            return `Available in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`;
+        }
+        if (now > until) {
+            const daysSince = Math.ceil((now.getTime() - until.getTime()) / (1000 * 60 * 60 * 24));
+            return `Expired ${daysSince} day${daysSince !== 1 ? 's' : ''} ago`;
+        }
+        const daysLeft = Math.ceil((until.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`;
+    };
+
+    const filteredQuizzes = useMemo(() => {
+        return quizzesData.filter((quiz) => {
+            if (filterStatus !== 'all' && getQuizComputedStatus(quiz) !== filterStatus) {
+                return false;
+            }
+            // Course filtering removed - courseName not available in GetQuizDto
+            return true;
+        });
+    }, [quizzesData, filterStatus]);
+
+    // Get unique course names
+    const uniqueCourses = useMemo(() => {
+        // TODO: Implement course name filtering when course data is available
+        return [];
+    }, []);
+
+    // Calculate stats
+    const stats = {
+        total: quizzesData.length,
+        completed: quizzesData.filter((q) => (q.submissionsCount || 0) > 0).length,
+        pending: quizzesData.filter(
+            (q) =>
+                (q.submissionsCount || 0) === 0 &&
+                getQuizComputedStatus(q) === 'available'
+        ).length,
+        available: quizzesData.filter((q) => getQuizComputedStatus(q) === 'available').length,
+    };
+
+    // Handle start/resume quiz
+    const handleStartQuiz = async (quizId: string) => {
+        setStartingQuizId(quizId);
+        try {
+            // Navigate to quiz attempt page
+            navigate(`/quizzes/${quizId}/attempt`);
+        } catch (error) {
+            console.error('Failed to start quiz:', error);
+            alert('Failed to start quiz. Please try again.');
+        } finally {
+            setStartingQuizId(null);
+        }
+    };
+
+    // Handle view attempts
+    const handleViewAttempts = (quizId: string) => {
+        navigate(`/quizzes/${quizId}/attempts`);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-8 text-center bg-red-500/10 text-red-400 rounded-lg mx-auto max-w-2xl mt-8 border border-red-500/20">
+                <p>Failed to load quizzes. Please try refreshing.</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
-            <div className="space-y-6">
+        <main className="flex-1 p-8 bg-slate-950">
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div>
-                    <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">Quizzes</h1>
-                    <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">View and take your course quizzes</p>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+                    <div>
+                        <nav className="flex items-center gap-2 text-xs text-slate-500 mb-2">
+                            <span>Dashboard</span>
+                            <span className="text-slate-600">›</span>
+                            <span className="text-indigo-400">Quizzes</span>
+                        </nav>
+                        <h1 className="text-4xl font-extrabold text-white mb-2">
+                            Quizzes
+                        </h1>
+                        <p className="text-slate-400 max-w-lg">
+                            Track your upcoming assessments, test your knowledge, and review your performance across all enrolled courses.
+                        </p>
+                    </div>
+
+                    {/* Filter and Stats */}
+                    <div className="flex flex-col gap-3">
+                        <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 gap-1">
+                            {['all', 'available', 'upcoming', 'expired'].map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilterStatus(status)}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all capitalize ${filterStatus === status
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                        : 'text-slate-400 hover:text-white'
+                                        }`}
+                                >
+                                    {status === 'all' ? 'All' : status}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Course Filter */}
+                        {uniqueCourses.length > 0 && (
+                            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 gap-1 flex-wrap">
+                                <button
+                                    onClick={() => setFilterCourse('all')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all capitalize ${filterCourse === 'all'
+                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                                        : 'text-slate-400 hover:text-white'
+                                        }`}
+                                >
+                                    All Courses
+                                </button>
+                                {uniqueCourses.map((course) => (
+                                    <button
+                                        key={course}
+                                        onClick={() => setFilterCourse(course)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${filterCourse === course
+                                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                                            : 'text-slate-400 hover:text-white'
+                                            }`}
+                                    >
+                                        {course}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => setShowStats(!showStats)}
+                            className="flex items-center justify-end gap-2 text-sm font-semibold text-indigo-400 hover:text-indigo-300"
+                        >
+                            {showStats ? 'Hide' : 'Show'} Stats
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {stats.map((stat, index) => (
-                        <Card key={index} variant="elevated">
-                            <CardContent className="p-5">
-                                <p className="text-[14px] text-gray-600 dark:text-zinc-400 mb-1">{stat.label}</p>
-                                <p className={`text-[28px] font-bold ${stat.color}`}>{stat.value}</p>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Filters */}
-                <Card variant="elevated">
-                    <CardContent className="p-4">
-                        <div className="flex flex-wrap gap-4">
-                            <div>
-                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Course</label>
-                                <select
-                                    value={selectedCourse}
-                                    onChange={(e) => setSelectedCourse(e.target.value)}
-                                    className="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                >
-                                    <option value="all">All Courses</option>
-                                    <option value="CS101">CS101 - Introduction to Programming</option>
-                                    <option value="CS202">CS202 - Data Structures</option>
-                                    <option value="MA203">MA203 - Linear Algebra</option>
-                                    <option value="PHY105">PHY105 - Classical Mechanics</option>
-                                </select>
+                {showStats && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        {[
+                            {
+                                label: 'Total Quizzes',
+                                value: stats.total,
+                                color: 'from-blue-600/20 to-blue-600/10',
+                                textColor: 'text-blue-400',
+                            },
+                            {
+                                label: 'Available',
+                                value: stats.available,
+                                color: 'from-emerald-600/20 to-emerald-600/10',
+                                textColor: 'text-emerald-400',
+                            },
+                            {
+                                label: 'Pending',
+                                value: stats.pending,
+                                color: 'from-yellow-600/20 to-yellow-600/10',
+                                textColor: 'text-yellow-400',
+                            },
+                            {
+                                label: 'Completed',
+                                value: stats.completed,
+                                color: 'from-purple-600/20 to-purple-600/10',
+                                textColor: 'text-purple-400',
+                            },
+                        ].map((stat, idx) => (
+                            <div
+                                key={idx}
+                                className={`bg-gradient-to-br ${stat.color} border border-slate-700 rounded-xl p-4`}
+                            >
+                                <p className="text-xs uppercase text-slate-400 font-bold mb-2">
+                                    {stat.label}
+                                </p>
+                                <p className={`text-3xl font-black ${stat.textColor}`}>
+                                    {stat.value}
+                                </p>
                             </div>
-                            <div>
-                                <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Status</label>
-                                <select
-                                    value={selectedStatus}
-                                    onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                >
-                                    <option value="all">All Statuses</option>
-                                    <option value="not_started">Not Started</option>
-                                    <option value="completed">Completed</option>
-                                </select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        ))}
+                    </div>
+                )}
 
-                {/* Quizzes List */}
-                <div className="space-y-4">
-                    {filteredQuizzes.map((quiz) => {
-                        const statusBadge = getStatusBadge(quiz);
-                        const StatusIcon = statusBadge.icon;
-                        const canTakeQuiz = quiz.attemptsUsed < quiz.attemptsAllowed && new Date(quiz.dueDate) > new Date();
-
-                        return (
-                            <Card key={quiz.id} variant="elevated">
-                                <CardContent className="p-6">
-                                    <div className="flex flex-col lg:flex-row gap-6">
-                                        <div className="flex-1">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="flex-1">
-                                                    <h3 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100 mb-1">
-                                                        {quiz.title}
-                                                    </h3>
-                                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400">{quiz.course}</p>
-                                                    <p className="text-[13px] text-gray-500 dark:text-zinc-500">Instructor: {quiz.instructor}</p>
-                                                </div>
-                                                <span className={`flex items-center gap-1 px-3 py-1 rounded-full text-[13px] font-medium ${statusBadge.className}`}>
-                                                    <StatusIcon className="w-3 h-3" />
-                                                    {statusBadge.text}
-                                                </span>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
-                                                    <Clock className="w-4 h-4" />
-                                                    <span>{quiz.duration} min</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
-                                                    <HelpCircle className="w-4 h-4" />
-                                                    <span>{quiz.totalQuestions} questions</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
-                                                    <FileText className="w-4 h-4" />
-                                                    <span>{quiz.totalPoints} points</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[14px] text-gray-600 dark:text-zinc-400">
-                                                    <Play className="w-4 h-4" />
-                                                    <span>{quiz.attemptsUsed} / {quiz.attemptsAllowed} attempts</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-4 text-[13px]">
-                                                <div>
-                                                    <span className="text-gray-600 dark:text-zinc-400">Due: </span>
-                                                    <span className="font-medium text-gray-900 dark:text-zinc-100">
-                                                        {new Date(quiz.dueDate).toLocaleString()}
-                                                    </span>
-                                                </div>
-                                                {quiz.score !== undefined && (
-                                                    <div>
-                                                        <span className="text-gray-600 dark:text-zinc-400">Last Score: </span>
-                                                        <span className="font-semibold text-blue-600">
-                                                            {quiz.score} / {quiz.totalPoints} ({Math.round((quiz.score / quiz.totalPoints) * 100)}%)
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {quiz.lastAttempt && (
-                                                <div className="mt-2 text-[12px] text-gray-500 dark:text-zinc-500">
-                                                    Last attempt: {new Date(quiz.lastAttempt).toLocaleString()}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex flex-col gap-2 lg:min-w-[200px]">
-                                            {canTakeQuiz ? (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleStartQuiz(quiz.id)}
-                                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
-                                                    >
-                                                        <Play className="w-4 h-4" />
-                                                        {quiz.status === 'completed' ? 'Retake Quiz' : 'Start Quiz'}
-                                                    </button>
-                                                    {quiz.status === 'completed' && (
-                                                        <button
-                                                            onClick={() => handleStartQuiz(quiz.id)}
-                                                            className="w-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
-                                                        >
-                                                            View Results
-                                                        </button>
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <div className="p-3 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg text-center">
-                                                    <p className="text-[13px] text-gray-600 dark:text-zinc-400">
-                                                        {quiz.attemptsUsed >= quiz.attemptsAllowed
-                                                            ? 'No attempts remaining'
-                                                            : 'Quiz closed'}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </div>
-
-                {filteredQuizzes.length === 0 && (
-                    <Card variant="elevated">
-                        <CardContent className="p-12 text-center">
-                            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-[16px] text-gray-600 dark:text-zinc-400">No quizzes found</p>
-                            <p className="text-[14px] text-gray-500 dark:text-zinc-500 mt-1">Try adjusting your filters</p>
-                        </CardContent>
-                    </Card>
+                {/* Quiz Grid */}
+                {filteredQuizzes.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredQuizzes.map((quiz) => (
+                            <QuizCard
+                                key={quiz.id}
+                                quiz={quiz}
+                                onStartQuiz={handleStartQuiz}
+                                onViewAttempts={handleViewAttempts}
+                                isLoading={startingQuizId === quiz.id}
+                                attempts={attemptsByQuizId.get(quiz.id) ?? []}
+                                parseServerDate={parseServerDate}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12">
+                        <p className="text-slate-400 text-lg mb-4">
+                            No quizzes found in this category
+                        </p>
+                        <button
+                            onClick={() => setFilterStatus('all')}
+                            className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700"
+                        >
+                            View All Quizzes
+                        </button>
+                    </div>
                 )}
             </div>
-        </div>
+        </main>
     );
 };

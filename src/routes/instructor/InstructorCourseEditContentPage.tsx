@@ -3,6 +3,7 @@ import { useQueries } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import { useCourseQuizzes, useDeleteQuiz } from '@/features/quizzes/api';
+import { useCourse } from '@/features/courses/api';
 import { QUERY_KEYS } from '@/lib/constants';
 import { quizService } from '@/api/services';
 import {
@@ -94,7 +95,12 @@ const initialEnrollmentRequests = [
 export const InstructorCourseEditContentPage = () => {
     const navigate = useNavigate();
     const { id: courseId } = useParams<{ id: string }>();
-    const quizzesCourseId = '1018';
+    const numericCourseId = useMemo(() => {
+        const parsed = Number(courseId);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    }, [courseId]);
+    const quizzesCourseId = courseId ?? '';
+    const { data: courseDetails, isLoading: courseLoading } = useCourse(numericCourseId ?? 0);
     const [activeTab, setActiveTab] = useState('Overview');
     const [announcementTitle, setAnnouncementTitle] = useState('');
     const [announcementBody, setAnnouncementBody] = useState('');
@@ -176,12 +182,18 @@ export const InstructorCourseEditContentPage = () => {
         );
     };
 
-    const courseStats = [
-        { label: 'Total Students', value: '45', icon: Users, color: 'text-blue-600' },
-        { label: 'Modules', value: '8', icon: BookOpen, color: 'text-green-600' },
-        { label: 'Start Date', value: 'Jan 15', icon: Calendar, color: 'text-purple-600' },
-        { label: 'Materials', value: '12', icon: FileText, color: 'text-orange-600' }
-    ];
+    const courseStats = useMemo(() => {
+        const createdAt = courseDetails?.createdAt
+            ? new Date(courseDetails.createdAt).toLocaleDateString()
+            : 'Mock';
+
+        return [
+            { label: 'Course ID', value: courseDetails?.id?.toString() ?? 'Mock', icon: Users, color: 'text-blue-600' },
+            { label: 'Code', value: courseDetails?.code ?? 'Mock', icon: BookOpen, color: 'text-green-600' },
+            { label: 'Created At', value: createdAt, icon: Calendar, color: 'text-purple-600' },
+            { label: 'Status', value: courseDetails?.courseStatus ?? 'Mock', icon: FileText, color: 'text-orange-600' }
+        ];
+    }, [courseDetails]);
 
     const handleAddAnnouncement = () => {
         if (!announcementTitle.trim() || !announcementBody.trim()) {
@@ -333,7 +345,7 @@ export const InstructorCourseEditContentPage = () => {
                         <div className="space-y-4">
                             <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Course overview</h3>
                             <p className="text-gray-700 dark:text-zinc-300 leading-relaxed">
-                                Students explore foundational psychological theories, research methods, and cognitive processes. The course combines short lectures with practice activities and weekly reflections to reinforce learning.
+                                {courseDetails?.description || 'Mock description: course content and outcomes will appear here.'}
                             </p>
                             <ul className="list-disc list-inside text-gray-700 dark:text-zinc-300 space-y-2">
                                 <li>Weekly lectures with downloadable slides and readings</li>
@@ -619,7 +631,7 @@ export const InstructorCourseEditContentPage = () => {
                             </div>
                         )}
 
-                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_CREATE, { state: { courseId: quizzesCourseId } })} className="w-full border border-dashed border-gray-300 dark:border-zinc-700 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-zinc-800">
+                        <button onClick={() => navigate(`/courses/${quizzesCourseId}/quiz/create`)} className="w-full border border-dashed border-gray-300 dark:border-zinc-700 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-zinc-800">
                             <Plus className="w-4 h-4" /> Create quiz
                         </button>
                     </div>
@@ -809,8 +821,12 @@ export const InstructorCourseEditContentPage = () => {
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
                 <div>
-                    <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">Introduction to Psychology</h1>
-                    <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">PSYCH 101 - Spring 2024</p>
+                    <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">
+                        {courseLoading ? 'Loading course...' : (courseDetails?.name || 'Course Content')}
+                    </h1>
+                    <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">
+                        {courseDetails?.code || (courseId ? `Course #${courseId}` : 'Mock course')}
+                    </p>
                 </div>
                 <div className="flex gap-3">
                     <button className="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[16px] px-6 py-3 rounded-lg transition-colors">

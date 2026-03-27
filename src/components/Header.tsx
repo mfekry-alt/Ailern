@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES, APP_NAME } from '@/lib/constants';
-import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle } from 'lucide-react';
+import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Menu, X } from 'lucide-react';
 import { api } from '@/api/client';
 
 interface NavLink {
@@ -16,6 +16,7 @@ export const Header = () => {
     const { user } = useAuth();
     const isGuest = !user;
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<{ id: string; name: string; code: string }[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -82,6 +83,10 @@ export const Header = () => {
     ]);
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
+
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [location.pathname]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -191,18 +196,15 @@ export const Header = () => {
                 { label: 'Courses', path: ROUTES.INSTRUCTOR_COURSES },
                 { label: 'Assignments', path: ROUTES.INSTRUCTOR_ASSIGNMENTS },
                 { label: 'Calender', path: '/instructor/calendar' },
-                { label: 'Messages', path: '/instructor/messages' },
             ];
         }
         if (user?.roles?.includes('Student')) {
             return [
                 { label: 'Dashboard', path: ROUTES.DASHBOARD },
-                { label: 'My Courses', path: ROUTES.MY_COURSES },
-                { label: 'Available Courses', path: ROUTES.COURSES },
+                { label: 'Courses', path: ROUTES.COURSES },
                 { label: 'Assignments', path: ROUTES.ASSIGNMENTS },
                 { label: 'Quizzes', path: ROUTES.QUIZZES },
                 { label: 'Grades', path: ROUTES.GRADES },
-                { label: 'Messages', path: ROUTES.MESSAGES },
             ];
         }
         return [];
@@ -255,29 +257,27 @@ export const Header = () => {
                 {/* Logo */}
                 <Link
                     to={user ? getDashboardRoute() : ROUTES.HOME}
-                    className="flex items-center gap-2.5 h-[48px] w-[148px] cursor-pointer hover:opacity-80 transition-opacity"
+                    className="flex items-center gap-3 h-[56px] cursor-pointer hover:opacity-80 transition-opacity"
                 >
-                    <img src="/logo-removebg.svg" alt="Ailern" className="w-[44px] h-[44px] object-contain" />
-                    <div className="font-bold text-[20px] leading-[28px] text-gray-900 dark:text-zinc-100">
-                        {APP_NAME}
-                    </div>
+                    <img src="/logo-removebg.svg" alt="Ailern" className="w-[52px] h-[52px] object-contain" />
                 </Link>
 
                 {/* Navigation */}
-                <nav className="flex items-center gap-6 flex-1 justify-center">
+                <nav className="hidden lg:flex items-center gap-6 flex-1 justify-center">
                     {!isGuest &&
                         navLinks.map((link) => {
-                            const isActive = location.pathname === link.path ||
-                                (link.path !== getDashboardRoute() && location.pathname.startsWith(link.path));
+                            const isActive = (location.pathname === link.path ||
+                                (link.path !== getDashboardRoute() && location.pathname.startsWith(link.path))) &&
+                                !location.pathname.includes('/profile');
                             return (
                                 <Link
                                     key={link.path}
                                     to={link.path}
                                     className="relative font-medium text-[14px] leading-[20px] py-1"
                                     style={{
-                                        color: isActive ? '#0d7ff2' : '#868e96',
+                                        color: isActive ? '#a78bfa' : '#868e96',
                                         fontWeight: isActive ? 700 : 500,
-                                        borderBottom: isActive ? '2px solid #0d7ff2' : 'none',
+                                        borderBottom: isActive ? '2px solid #a78bfa' : 'none',
                                     }}
                                 >
                                     {link.label}
@@ -287,7 +287,17 @@ export const Header = () => {
                 </nav>
 
                 {/* Search and User */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    {!isGuest && (
+                        <button
+                            type="button"
+                            aria-label="Toggle menu"
+                            onClick={() => setIsMobileMenuOpen(prev => !prev)}
+                            className="lg:hidden w-10 h-10 rounded-full border border-gray-200 dark:border-zinc-800 flex items-center justify-center text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                        </button>
+                    )}
                     {isGuest ? (
                         <div className="flex items-center gap-3">
                             <Link
@@ -306,7 +316,7 @@ export const Header = () => {
                     ) : (
                         <>
                             {/* Search */}
-                            <div className="relative w-[256px]" ref={searchRef}>
+                            <div className="relative w-[256px] hidden md:block" ref={searchRef}>
                                 <form onSubmit={handleSearch}>
                                     <div
                                         className="flex items-center h-[40px] px-3 rounded-full relative bg-gray-100 dark:bg-zinc-800"
@@ -431,6 +441,37 @@ export const Header = () => {
                     )}
                 </div>
             </div>
+
+            {/* Mobile Menu */}
+            {!isGuest && isMobileMenuOpen && (
+                <div className="lg:hidden mt-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-zinc-800">
+                        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">Navigation</p>
+                    </div>
+                    <div className="flex flex-col">
+                        {navLinks.map((link) => {
+                            const isActive = (location.pathname === link.path ||
+                                (link.path !== getDashboardRoute() && location.pathname.startsWith(link.path))) &&
+                                !location.pathname.includes('/profile');
+                            return (
+                                <Link
+                                    key={link.path}
+                                    to={link.path}
+                                    className="px-4 py-3 text-sm font-medium border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
+                                    style={{
+                                        color: isActive ? '#a78bfa' : '#6b7280',
+                                        backgroundColor: isActive ? 'rgba(167, 139, 250, 0.08)' : 'transparent',
+                                        fontWeight: isActive ? 700 : 500,
+                                    }}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    {link.label}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
         </header>
     );
 };

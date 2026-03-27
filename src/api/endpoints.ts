@@ -8,22 +8,10 @@ export const ENDPOINTS = {
         RESEND_CONFIRMATION_EMAIL: '/Auth/resend-confirmation-email',
         SEND_PASSWORD_RESET_EMAIL: '/Auth/send-password-reset-email', // NOSONAR
         CHANGE_PASSWORD: '/Auth/change-password', // NOSONAR
-        REGISTER: '/Auth/students/register', // Default registration endpoint (student)
-    },
-
-    // Admins endpoints (based on API: /api/Auth/admin/*)
-    ADMINS: {
-        REGISTER: '/Auth/admin/register',
-    },
-
-    // Instructors endpoints (based on API: /api/Auth/instructor/*)
-    INSTRUCTORS: {
-        REGISTER: '/Auth/instructor/register',
     },
 
     // Students endpoints (based on API: /api/Auth/students/* and /api/Users/students/*)
     STUDENTS: {
-        REGISTER: '/Auth/students/register',
         MY_COURSES: '/Users/students/my-courses',
     },
 
@@ -86,6 +74,8 @@ export const ENDPOINTS = {
         GENERATE_BY_AI: (quizId: string) => `/Quizzes/${quizId}/generate-by-ai`,
         GENERATE_FILES: (quizId: string) => `/Quizzes/${quizId}/generate-questions-files`,
         JOB_STATUS: (jobId: string) => `/Quizzes/job/${jobId}`,
+        GET_ATTEMPTS: (quizId: string) => `/Quizzes/${quizId}/attempts`,
+        GET_SUBMISSIONS: (quizId: string) => `/Quizzes/${quizId}/submissions`,
     },
 
     // Sections endpoints
@@ -95,6 +85,18 @@ export const ENDPOINTS = {
         CREATE: '/Sections',
         UPDATE: (sectionId: string) => `/Sections/${sectionId}`,
         DELETE: (sectionId: string) => `/Sections/${sectionId}`,
+    },
+
+    // Quiz Attempts endpoints
+    ATTEMPTS: {
+        START: (quizId: string) => `/Quizzes/${quizId}/Attempts`, // POST
+        GET_ATTEMPTS: (quizId: string) => `/Quizzes/${quizId}/attempts`, // GET 
+        GET_QUESTIONS: (attemptId: string) => `/Attempts/${attemptId}/questions`, // GET
+        SAVE: (attemptId: string) => `/Attempts/${attemptId}/save`, // POST
+        SUBMIT: (attemptId: string) => `/Attempts/${attemptId}/submit`, // PUT
+        GET_RESULT: (attemptId: string) => `/Attempts/${attemptId}/result`, // GET
+        GET_STUDENT_ANSWERS: (attemptId: string) => `/Attempts/${attemptId}/student-answers`, // GET
+        GRADE: (attemptId: string) => `/Attempts/${attemptId}/grade`, // PUT
     },
 } as const;
 

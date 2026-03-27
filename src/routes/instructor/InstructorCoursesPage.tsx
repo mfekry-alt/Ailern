@@ -13,43 +13,26 @@ interface Course {
     title: string;
     courseId: string;
     instructor: string;
-    status: 'Draft' | 'Published';
+    status: 'Published';
     statusColor: string;
     statusBg: string;
     primaryAction?: string;
     secondaryAction?: string;
     students: number;
     startDate: string;
-    modules: number;
+    sections: number;
 }
 
 // --- Helper: Map API status to UI status ---
 const getStatusConfig = (apiStatus: string): Pick<Course, 'status' | 'statusColor' | 'statusBg' | 'primaryAction' | 'secondaryAction'> => {
-    switch (apiStatus) {
-        case 'Approved':
-        case 'Pending':
-            return {
-                status: 'Published',
-                statusColor: '#166534',
-                statusBg: '#dcfce7',
-                primaryAction: 'View Analytics',
-                secondaryAction: 'Edit Content',
-            };
-        case 'Rejected':
-            return {
-                status: 'Draft',
-                statusColor: '#854d0e',
-                statusBg: '#fef9c3',
-                primaryAction: 'Continue Editing',
-            };
-        default:
-            return {
-                status: 'Draft',
-                statusColor: '#854d0e',
-                statusBg: '#fef9c3',
-                primaryAction: 'Go to Content',
-            };
-    }
+    void apiStatus;
+    return {
+        status: 'Published',
+        statusColor: '#166534',
+        statusBg: '#dcfce7',
+        primaryAction: 'Go to Content',
+        secondaryAction: 'Edit Content',
+    };
 };
 
 // --- Helper: Map API DTO to UI Course ---
@@ -62,7 +45,7 @@ const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
         instructor: `Instructor #${dto.instructorId}`,
         students: 0,
         startDate: new Date(dto.createdAt).toLocaleDateString(),
-        modules: 0,
+        sections: 0,
         ...statusConfig,
     };
 };
@@ -126,9 +109,9 @@ const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DC
                     <div className="text-center">
                         <div className="flex items-center justify-center mb-1">
                             <BookOpen className="w-4 h-4 text-gray-500 dark:text-zinc-500 mr-1" />
-                            <span className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">{course.modules}</span>
+                            <span className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">{course.sections}</span>
                         </div>
-                        <p className="text-[12px] text-gray-600 dark:text-zinc-500">Modules</p>
+                        <p className="text-[12px] text-gray-600 dark:text-zinc-500">Sections</p>
                     </div>
                 </div>
             </div>
@@ -211,10 +194,7 @@ export const InstructorCoursesPage = () => {
     };
 
     const runSecondaryAction = (course: Course) => {
-        // Navigate to edit page for draft courses
-        if (course.status === 'Draft') {
-            navigate(ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id));
-        }
+        navigate(ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id));
     };
 
     return (

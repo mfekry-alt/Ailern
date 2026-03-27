@@ -45,6 +45,15 @@ const toDatetimeLocal = (iso: string): string => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+/** Convert datetime-local input value to ISO/UTC string for backend submission */
+const toISOString = (datetimeLocal: string): string => {
+    if (!datetimeLocal) return '';
+    // datetime-local values are in local timezone, convert to ISO string
+    const d = new Date(datetimeLocal);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString();
+};
+
 export const InstructorQuizEditPage = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
@@ -81,7 +90,7 @@ export const InstructorQuizEditPage = () => {
                 status: resolveQuizStatus(quiz),
                 availableFrom: toDatetimeLocal(quiz.availableFrom),
                 publishedDate: quiz.publishedDate ? toDatetimeLocal(quiz.publishedDate) : '',
-                courseId: quiz.courseId,
+                courseId: String(quiz.courseId),
                 showResultOnClose: quiz.showResultOnClose ?? false,
                 shuffleQuestions: quiz.shuffleQuestions ?? false,
                 shuffleOptions: quiz.shuffleOptions ?? false,
@@ -129,8 +138,8 @@ export const InstructorQuizEditPage = () => {
             return;
         }
 
-        const availableFrom = settings.availableFrom;
-        const availableUntil = new Date(settings.availableUntil).toISOString();
+        const availableFrom = toISOString(settings.availableFrom);
+        const availableUntil = toISOString(settings.availableUntil);
         const allQuestions: QuestionRequest[] = quiz.questions.map(q => ({
             id: q.id,
             questionType: q.questionType,

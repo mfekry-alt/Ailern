@@ -23,11 +23,17 @@ export const api = axios.create({
     },
 });
 
-// Request interceptor
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
+        // Retrieve latest token directly from storage to ensure we have the most up-to-date one
+        // especially after a refresh or login
+        const storedToken = storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
+        if (storedToken) {
+            accessToken = storedToken;
+        }
+
         console.log(`[API] ${config.method?.toUpperCase()} ${config.url} | Token: ${accessToken ? 'present' : 'MISSING'}`);
-        if (accessToken && config.headers) {
+        if (accessToken) {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
         return config;
@@ -44,79 +50,116 @@ let failedQueue: Array<{
     reject: (reason?: any) => void;
 }> = [];
 
-const processQueue = (error: any = null) => {
+const processQueue = (error: any = null, token: string | null = null) => {
     failedQueue.forEach((promise) => {
         if (error) {
             promise.reject(error);
         } else {
-            promise.resolve();
+            promise.resolve(token);
         }
     });
+
     failedQueue = [];
 };
 
 api.interceptors.response.use(
-    (response) => response,
-    async (error: AxiosError<ApiError>) => {
+    (response) => {
+        return response;
+    },
+    async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & {
             _retry?: boolean;
         };
 
-        // If error is not 401 or request already retried, reject
         if (error.response?.status !== 401 || originalRequest._retry) {
-            throw error;
+            return Promise.reject(error);
         }
 
         if (isRefreshing) {
-            // If already refreshing, queue the request
-            return new Promise((resolve, reject) => {
+            return new Promise(function (resolve, reject) {
                 failedQueue.push({ resolve, reject });
             })
-                .then(() => api(originalRequest))
+                .then((token) => {
+                    if (token) {
+                        originalRequest.headers.Authorization = 'Bearer ' + token;
+                    }
+                    return api(originalRequest);
+                })
                 .catch((err) => {
-                    throw err;
+                    return Promise.reject(err);
                 });
         }
 
         originalRequest._retry = true;
         isRefreshing = true;
 
+
         try {
             console.log('[API] Token expired — attempting refresh...');
-            const response = await api.post(
+            const refreshToken = storage.get(STORAGE_KEYS.REFRESH_TOKEN);
+
+            // If no refresh token, fail immediately
+            if (!refreshToken) {
+                throw new Error('No refresh token available');
+            }
+
+            // Create a new axios instance for refresh to avoid interceptor loop
+            const refreshApi = axios.create({
+                baseURL: API_URL,
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const response = await refreshApi.post(
                 '/Auth/refresh-token',
                 {
-                    accessToken: accessToken,
-                    refreshToken: storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN),
-                },
+                    refreshToken: refreshToken
+                }
             );
 
-            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data || response.data;
+            // Safer extraction of tokens
+            const data = response.data?.data || response.data;
+            const newAccessToken = data?.accessToken;
+            const newRefreshToken = data?.refreshToken;
+
+            if (!newAccessToken) {
+                throw new Error('Refresh failed - no access token received');
+            }
+
             setAccessToken(newAccessToken);
+            // Update the failed request config with new token
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
 
             if (newRefreshToken) {
                 storage.set(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
             }
 
-            processQueue();
+            // Resolve queue with new token
+            processQueue(null, newAccessToken);
+
             return api(originalRequest);
         } catch (refreshError) {
             processQueue(refreshError);
+            // If refresh fails, it likely means the refresh token itself is expired or invalid.
+            // In this case, we MUST clear everything and force a login.
+            // We should NOT let the error propagate in a way that causes a loop or a generic 500.
             setAccessToken(null);
+            storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
             storage.remove(STORAGE_KEYS.USER);
             storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
 
-            // Redirect to login
             if (globalThis.window !== undefined) {
                 globalThis.window.location.href = '/login';
             }
 
-            throw refreshError;
+            // Return a specific error indicating session expiry, rather than the raw 401/500
+            return Promise.reject(new Error('Session expired. Please login again.'));
         } finally {
             isRefreshing = false;
         }
     }
 );
+
 
 // Error handler utility
 export const handleApiError = (error: unknown): ApiError => {

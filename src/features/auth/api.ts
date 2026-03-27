@@ -1,11 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, setAccessToken } from '@/api/client';
-import { ENDPOINTS } from '@/api/endpoints';
 import { normalizeRole, QUERY_KEYS, STORAGE_KEYS } from '@/lib/constants';
 import { useAuthStore } from './store';
 import { storage } from '@/lib/storage';
 import { authService } from '@/api/services';
-import type { User, RegisterForm, ApiResponse } from '@/types';
+import type { User } from '@/types';
 import type { GetTokenResponseDto } from '@/types/api.types';
 
 // Helper to transform API user to app User type
@@ -68,34 +66,6 @@ export const useLogin = () => {
             const user = transformApiUser(data);
             setUser(user);
             queryClient.setQueryData(QUERY_KEYS.ME, user);
-        },
-    });
-};
-
-// Register mutation - Note: Real API has separate endpoints for Student/Instructor/Admin
-// This is a wrapper that will need to be updated based on user type
-export const useRegister = () => {
-    const setUser = useAuthStore((state) => state.setUser);
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (data: RegisterForm & { userType?: 'student' | 'instructor' | 'admin' }) => {
-            // For now, default to student registration
-            // TODO: Implement proper registration flow based on user type
-            const response = await api.post<
-                ApiResponse<{ user: User; accessToken: string; csrfToken?: string }>
-            >(ENDPOINTS.AUTH.REGISTER, data);
-            return response.data.data;
-        },
-        onSuccess: (data) => {
-            setAccessToken(data.accessToken);
-            setUser(data.user);
-
-            if (data.csrfToken) {
-                storage.set(STORAGE_KEYS.CSRF_TOKEN, data.csrfToken);
-            }
-
-            queryClient.setQueryData(QUERY_KEYS.ME, data.user);
         },
     });
 };

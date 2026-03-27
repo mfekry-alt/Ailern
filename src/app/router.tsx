@@ -11,7 +11,6 @@ import { InstructorLayout } from './layouts/InstructorLayout';
 // Public pages
 import { HomePage } from '@/routes/HomePage';
 import { LoginPage } from '@/routes/LoginPage';
-import { RegisterPage } from '@/routes/RegisterPage';
 import { ForgotPasswordPage } from '@/routes/ForgotPasswordPage';
 import { VerifyEmailPage } from '@/routes/VerifyEmailPage';
 import { SetPasswordPage } from '@/routes/SetPasswordPage';
@@ -19,7 +18,6 @@ import { ChangePasswordPage } from '@/routes/ChangePasswordPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 import { ForbiddenPage } from '@/routes/ForbiddenPage';
 import { NotificationsPage } from '@/routes/NotificationsPage';
-import { MessagesPage } from '@/routes/MessagesPage';
 
 // Student pages
 import { DashboardPage } from '@/routes/student/DashboardPage';
@@ -31,7 +29,9 @@ import { ProfilePage } from '@/routes/student/ProfilePage';
 import { AssignmentsPage } from '@/routes/student/AssignmentsPage';
 import { AssignmentDetailPage } from '@/routes/student/AssignmentDetailPage';
 import { QuizzesPage } from '@/routes/student/QuizzesPage';
-import { QuizPage } from '@/routes/student/QuizPage';
+import { QuizAttemptsPage } from '@/routes/student/QuizAttemptsPage';
+import { QuizAttemptViewer } from '@/routes/student/QuizAttemptViewer';
+import { QuizResultViewer } from '@/components/QuizResultViewer';
 import { GradesPage } from '@/routes/student/GradesPage';
 
 // Instructor pages
@@ -42,9 +42,9 @@ import { InstructorCourseEditPage } from '@/routes/instructor/InstructorCourseEd
 import { InstructorCourseEditContentPage } from '@/routes/instructor/InstructorCourseEditContentPage';
 import { InstructorGradebookPage } from '@/routes/instructor/InstructorGradebookPage';
 import { InstructorCalendarPage } from '@/routes/instructor/InstructorCalendarPage';
-import { InstructorMessagesPage } from '@/routes/instructor/InstructorMessagesPage';
 import { InstructorAssignmentsPage } from '@/routes/instructor/InstructorAssignmentsPage';
 import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';
+import { CreateQuizPage } from '@/routes/instructor/CreateQuizPage';
 import { InstructorQuizQuestionBuilderPage } from '@/routes/instructor/InstructorQuizQuestionBuilderPage';
 import { InstructorQuizEditPage } from '@/routes/instructor/InstructorQuizEditPage';
 import { InstructorQuizUpdatePage } from '@/routes/instructor/InstructorQuizUpdatePage';
@@ -59,7 +59,6 @@ import { AdminUsersPage } from '@/routes/admin/AdminUsersPage';
 import { AdminUserCreatePage } from '@/routes/admin/AdminUserCreatePage';
 import { AdminUserEditPage } from '@/routes/admin/AdminUserEditPage';
 import { AdminCoursesPage } from '@/routes/admin/AdminCoursesPage';
-import { AdminCourseApprovalPage } from '@/routes/admin/AdminCourseApprovalPage';
 import { AdminReportsPage } from '@/routes/admin/AdminReportsPage';
 import { AdminSettingsPage } from '@/routes/admin/AdminSettingsPage';
 
@@ -75,7 +74,6 @@ export const AppRouter = () => {
                 }
             >
                 <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-                <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
                 <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
                 <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
                 <Route path={ROUTES.SET_PASSWORD} element={<SetPasswordPage />} />
@@ -108,8 +106,10 @@ export const AppRouter = () => {
                 <Route path={ROUTES.ASSIGNMENTS} element={<AssignmentsPage />} />
                 <Route path={ROUTES.ASSIGNMENT_DETAIL} element={<AssignmentDetailPage />} />
                 <Route path={ROUTES.QUIZZES} element={<QuizzesPage />} />
-                <Route path={ROUTES.QUIZ} element={<QuizPage />} />
-                <Route path={ROUTES.MESSAGES} element={<MessagesPage />} />
+                <Route path="/quizzes/:id/attempts" element={<QuizAttemptsPage />} />
+                <Route path="/quizzes/:id/attempt" element={<QuizAttemptViewer />} />
+                <Route path="/quizzes/:id/attempt/:attemptId" element={<QuizAttemptViewer />} />
+                <Route path="/quizzes/:id/attempt/:attemptId/result" element={<QuizResultViewer />} />
                 <Route path={ROUTES.GRADES} element={<GradesPage />} />
             </Route>
 
@@ -130,13 +130,12 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<InstructorAssignmentCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT} element={<InstructorAssignmentEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />
-                <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
+                <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<CreateQuizPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS} element={<InstructorQuizQuestionBuilderPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_UPDATE} element={<InstructorQuizUpdatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT} element={<InstructorQuizQuestionsEditPage />} />
                 <Route path="/instructor/calendar" element={<InstructorCalendarPage />} />
-                <Route path="/instructor/messages" element={<InstructorMessagesPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
             </Route>
@@ -153,7 +152,6 @@ export const AppRouter = () => {
                 <Route path={ROUTES.ADMIN_USER_CREATE} element={<AdminUserCreatePage />} />
                 <Route path={ROUTES.ADMIN_USER_EDIT} element={<AdminUserEditPage />} />
                 <Route path={ROUTES.ADMIN_COURSES} element={<AdminCoursesPage />} />
-                <Route path={ROUTES.ADMIN_COURSE_APPROVAL} element={<AdminCourseApprovalPage />} />
                 <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReportsPage />} />
                 <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettingsPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />

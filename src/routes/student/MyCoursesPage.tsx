@@ -8,6 +8,7 @@ const dropIcon = '/drop.svg';
 import { ROUTES } from '@/lib/constants';
 import { userService } from '@/api/services';
 import { handleApiError } from '@/api/client';
+import type { GetCourseDto } from '@/types/api.types';
 
 const GRADIENTS = [
     'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -33,13 +34,40 @@ export const MyCoursesPage = () => {
     const filterRef = useRef<HTMLDivElement>(null);
     const sortRef = useRef<HTMLDivElement>(null);
 
-    const { data: apiCourses = [], isLoading, error } = useQuery({
+    const { data: apiCoursesData, isLoading, error } = useQuery({
         queryKey: ['student', 'my-courses'],
         queryFn: () => userService.getStudentCourses(),
     });
 
+    // Safely extract courses from various possible API response structures
+    const apiCourses = (() => {
+        // Direct array
+        if (Array.isArray(apiCoursesData)) return apiCoursesData;
+
+        // Wrapped in data.items
+        if ((apiCoursesData as any)?.data?.items && Array.isArray((apiCoursesData as any).data.items)) {
+            return (apiCoursesData as any).data.items;
+        }
+
+        // Wrapped in items
+        if ((apiCoursesData as any)?.items && Array.isArray((apiCoursesData as any).items)) {
+            return (apiCoursesData as any).items;
+        }
+
+        // Search for first array property
+        if (apiCoursesData && typeof apiCoursesData === 'object') {
+            for (const key of Object.keys(apiCoursesData)) {
+                if (Array.isArray((apiCoursesData as any)[key])) {
+                    return (apiCoursesData as any)[key];
+                }
+            }
+        }
+
+        return [];
+    })();
+
     const courses = useMemo(() => {
-        return apiCourses.map((c, i) => ({
+        return apiCourses.map((c: GetCourseDto, i: number) => ({
             id: c.id,
             title: c.name || c.code,
             instructor: c.instructorName || 'Instructor',
@@ -75,7 +103,7 @@ export const MyCoursesPage = () => {
     }, [location.search]);
 
     // Filter courses
-    const filteredCourses = courses.filter(course => {
+    const filteredCourses = courses.filter((course: any) => {
         // Apply search filter
         const matchesSearch = searchQuery === '' ||
             course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -85,8 +113,8 @@ export const MyCoursesPage = () => {
         let matchesFilter = true;
         if (filterOption === 'All') matchesFilter = true;
         else if (filterOption === 'In Progress') matchesFilter = course.status === 'In Progress';
-        else if (filterOption === 'Completed') matchesFilter = course.status === '100% Complete';
-        else if (filterOption === 'Not Started') matchesFilter = course.progress === 0;
+        else if (filterOption === 'Completed') matchesFilter = course.status === 'Completed';
+        else if (filterOption === 'Not Started') matchesFilter = course.status === 'Not Started';
 
         return matchesSearch && matchesFilter;
     });

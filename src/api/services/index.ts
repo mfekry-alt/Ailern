@@ -10,3 +10,4 @@ export * as studentService from './student.service';
 export * as assignmentService from './assignment.service';
 export * as quizService from './quiz.service';
 export * as sectionService from './section.service';
+export * as attemptsService from './attempts.service';

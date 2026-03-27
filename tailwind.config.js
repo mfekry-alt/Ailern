@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Figma Design Tokens - Support both direct usage and scale
+        
         primary: {
           DEFAULT: '#2563EB', // Blue-600 matching the header/button
           50: '#0d7ff2', // Azure Radiance
@@ -60,9 +60,9 @@ export default {
         success: {
           50: '#f0fdf4',
           100: '#dcfce7',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
+          500: '#f956ff99',
+          600: '#e539ff',
+          700: '#6d1579',
         },
         warning: {
           50: '#fffbeb',

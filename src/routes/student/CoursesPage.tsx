@@ -4,10 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, ParallaxTiltCard } from '@/components/ui';
 import { ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
-import { courseService } from '@/api/services';
+import { studentService } from '@/api/services';
 import { handleApiError } from '@/api/client';
 // You might need to import your API client directly if courseService doesn't have the enroll method yet
-import { api } from '@/api/client';
 
 const filterIcon = '/filter.svg';
 const sortIcon = '/sort.svg';
@@ -40,36 +39,56 @@ export const CoursesPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const coursesPerPage = 8;
 
-    // Track enrollment requests to show loading states on specific buttons
-    const [enrollingIds, setEnrollingIds] = useState<Set<number>>(new Set());
 
     const sortRef = useRef<HTMLDivElement>(null);
     const instructorRef = useRef<HTMLDivElement>(null);
 
-    // Fetch Available Courses from Real API
-    const { data: paginated, isLoading, error, refetch } = useQuery({
-        queryKey: ['courses', 'available', { PageNumber: currentPage, PageSize: coursesPerPage }],
-        queryFn: () => courseService.getAvailableCourses({
-            PageNumber: currentPage,
-            PageSize: coursesPerPage,
-        }),
+    // Fetch student's enrolled courses
+    const { data: enrolledCoursesData, isLoading, error } = useQuery({
+        queryKey: ['student-courses'],
+        queryFn: () => studentService.getMyStudentCourses(),
     });
 
-    const apiItems = paginated?.items || [];
+    // Safely extract courses from various possible API response structures
+    const enrolledCourses = (() => {
+        // Direct array
+        if (Array.isArray(enrolledCoursesData)) return enrolledCoursesData;
+
+        // Wrapped in data.items
+        if ((enrolledCoursesData as any)?.data?.items && Array.isArray((enrolledCoursesData as any).data.items)) {
+            return (enrolledCoursesData as any).data.items;
+        }
+
+        // Wrapped in items
+        if ((enrolledCoursesData as any)?.items && Array.isArray((enrolledCoursesData as any).items)) {
+            return (enrolledCoursesData as any).items;
+        }
+
+        // Search for first array property
+        if (enrolledCoursesData && typeof enrolledCoursesData === 'object') {
+            for (const key of Object.keys(enrolledCoursesData)) {
+                if (Array.isArray((enrolledCoursesData as any)[key])) {
+                    return (enrolledCoursesData as any)[key];
+                }
+            }
+        }
+
+        return [];
+    })();
 
     // Map API data cleanly
     const allCourses = useMemo(() => {
-        return apiItems.map((c: any, i: number) => ({
+        return enrolledCourses.map((c: any, i: number) => ({
             id: c.id,
             title: c.name || c.code || 'Untitled Course',
             description: c.description || 'No description available.',
             instructor: c.instructorName || 'Unknown Instructor',
             gradient: GRADIENTS[i % GRADIENTS.length],
         }));
-    }, [apiItems]);
+    }, [enrolledCourses]);
 
     const instructors = useMemo(
-        () => Array.from(new Set(allCourses.map((c) => c.instructor))),
+        () => Array.from(new Set(allCourses.map((c: any) => c.instructor))),
         [allCourses]
     );
 
@@ -89,7 +108,7 @@ export const CoursesPage = () => {
     }, []);
 
     // Filter Courses
-    const filteredCourses = allCourses.filter(course => {
+    const filteredCourses = allCourses.filter((course: any) => {
         const instructorMatch = filterByInstructor === 'All' || course.instructor === filterByInstructor;
         const searchMatch =
             searchQuery === '' ||
@@ -125,29 +144,6 @@ export const CoursesPage = () => {
         setCurrentPage(1);
     }, [filterByInstructor, searchQuery, sortBy]);
 
-    // REAL Enrollment Request Function
-    const handleEnrollment = async (e: React.MouseEvent, courseId: number) => {
-        e.stopPropagation(); // Prevent card click navigation
-
-        setEnrollingIds(prev => new Set(prev).add(courseId));
-
-        try {
-            // Call the real endpoint from your Swagger: POST /api/Courses/{id}/enroll
-            await api.post(`/Courses/${courseId}/enroll`);
-            alert("Enrollment requested successfully!");
-            // Refresh the list so the course disappears from "Available" if the backend handles it that way
-            refetch();
-        } catch (err: any) {
-            console.error("Enrollment failed:", err);
-            alert(err.response?.data?.message || "Failed to request enrollment.");
-        } finally {
-            setEnrollingIds(prev => {
-                const next = new Set(prev);
-                next.delete(courseId);
-                return next;
-            });
-        }
-    };
 
     if (isLoading) {
         return (
@@ -177,8 +173,8 @@ export const CoursesPage = () => {
 
                 {/* Header */}
                 <div className="animate-fade-in">
-                    <h1 className="text-[36px] font-bold leading-[40px] text-gray-900 dark:text-zinc-100">Available Courses</h1>
-                    <p className="text-[18px] leading-[28px] text-gray-600 dark:text-zinc-400 mt-1">Browse and join courses offered this term.</p>
+                    <h1 className="text-[36px] font-bold leading-[40px] text-gray-900 dark:text-zinc-100">My Courses</h1>
+                    <p className="text-[18px] leading-[28px] text-gray-600 dark:text-zinc-400 mt-1">Your enrolled courses for this term.</p>
                 </div>
 
                 {/* Search and Filters */}
@@ -240,13 +236,13 @@ export const CoursesPage = () => {
                                         >
                                             All Instructors
                                         </button>
-                                        {instructors.map((instructor) => (
+                                        {instructors.map((instructor: any) => (
                                             <button
-                                                key={instructor}
-                                                onClick={() => { setFilterByInstructor(instructor); setShowInstructorDropdown(false); }}
+                                                key={instructor as string}
+                                                onClick={() => { setFilterByInstructor(instructor as string); setShowInstructorDropdown(false); }}
                                                 className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-sm ${filterByInstructor === instructor ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : ''}`}
                                             >
-                                                {instructor}
+                                                {instructor as string}
                                             </button>
                                         ))}
                                     </div>
@@ -260,8 +256,6 @@ export const CoursesPage = () => {
                 <div className="w-full">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {paginatedCourses.map((course, index) => {
-                            const isEnrolling = enrollingIds.has(course.id);
-
                             return (
                                 <ParallaxTiltCard
                                     key={course.id}
@@ -292,12 +286,13 @@ export const CoursesPage = () => {
                                         </div>
 
                                         <button
-                                            onClick={(e) => handleEnrollment(e, course.id)}
-                                            disabled={isEnrolling}
-                                            className="w-full py-2 px-4 rounded-lg font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-auto"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`${ROUTES.COURSES}/${course.id}`);
+                                            }}
+                                            className="w-full py-2 px-4 rounded-lg font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-2 mt-auto"
                                         >
-                                            {isEnrolling && <Loader2 className="w-4 h-4 animate-spin" />}
-                                            {isEnrolling ? 'Sending Request...' : 'Request Enrollment'}
+                                            View Course
                                         </button>
                                     </div>
                                 </ParallaxTiltCard>

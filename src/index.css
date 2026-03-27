@@ -39,6 +39,56 @@ html.dark body {
   /* zinc-100 */
 }
 
+/* Blue & Purple Color Palette for Dashboard */
+:root {
+  --espresso: #0f172a;
+  --deep-purple: #312e81;
+  --purple: #4c1d95;
+  --warm-card: #1e3a8a;
+  --amber-accent: #3b82f6;
+  --amber-glow: rgba(59, 130, 246, 0.4);
+  --plum-gradient: linear-gradient(135deg, #1e3a8a 0%, #5b21b6 100%);
+}
+
+.dashboard-warm {
+  background-color: #0f172a;
+  color: #dbeafe;
+}
+
+.sidebar-bg-warm {
+  background-color: #0a0e27;
+}
+
+.card-warm {
+  background-color: #1e3a8a;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.hero-banner-warm {
+  background: linear-gradient(135deg, #1e3a8a 0%, #5b21b6 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-banner-warm::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: radial-gradient(circle at 70% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.accent-glow {
+  box-shadow: 0 0 15px var(--amber-glow);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
 /* Beautiful Animations */
 
 /* Fade in animation */

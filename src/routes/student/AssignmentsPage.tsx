@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { getMyStudentCourses } from '@/api/services/student.service';
 import { getCourseAssignmentsForStudent } from '@/api/services/assignment.service';
-import type { GetAssignmentDto } from '@/types/api.types';
+import type { GetAssignmentDto, GetCourseDto } from '@/types/api.types';
 
 interface Assignment {
     id: string;
@@ -63,18 +63,45 @@ export const AssignmentsPage = () => {
     const [selectedStatus, setSelectedStatus] = useState('all');
 
     // Fetch student's enrolled courses
-    const { data: enrolledCourses = [] } = useQuery({
+    const { data: enrolledCoursesData } = useQuery({
         queryKey: ['student-courses'],
         queryFn: () => getMyStudentCourses(),
     });
 
+    // Safely extract courses from various possible API response structures
+    const enrolledCourses = (() => {
+        // Direct array
+        if (Array.isArray(enrolledCoursesData)) return enrolledCoursesData;
+
+        // Wrapped in data.items
+        if ((enrolledCoursesData as any)?.data?.items && Array.isArray((enrolledCoursesData as any).data.items)) {
+            return (enrolledCoursesData as any).data.items;
+        }
+
+        // Wrapped in items
+        if ((enrolledCoursesData as any)?.items && Array.isArray((enrolledCoursesData as any).items)) {
+            return (enrolledCoursesData as any).items;
+        }
+
+        // Search for first array property
+        if (enrolledCoursesData && typeof enrolledCoursesData === 'object') {
+            for (const key of Object.keys(enrolledCoursesData)) {
+                if (Array.isArray((enrolledCoursesData as any)[key])) {
+                    return (enrolledCoursesData as any)[key];
+                }
+            }
+        }
+
+        return [];
+    })();
+
     // Fetch assignments for all enrolled courses
     const { data: allAssignments = [], isLoading, error } = useQuery({
-        queryKey: [QUERY_KEYS.ASSIGNMENTS, enrolledCourses.map(c => c.id)],
+        queryKey: [QUERY_KEYS.ASSIGNMENTS, enrolledCourses.map((c: GetCourseDto) => c.id)],
         queryFn: async () => {
             if (enrolledCourses.length === 0) return [];
             const results = await Promise.allSettled(
-                enrolledCourses.map(course => getCourseAssignmentsForStudent(course.id))
+                enrolledCourses.map((course: GetCourseDto) => getCourseAssignmentsForStudent(course.id))
             );
             const combined: GetAssignmentDto[] = [];
             for (const result of results) {
@@ -94,6 +121,22 @@ export const AssignmentsPage = () => {
     useEffect(() => {
         setAssignments(mappedAssignments);
     }, [mappedAssignments]);
+
+    if (isLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-8 text-center bg-red-50 text-red-600 rounded-lg mx-auto max-w-2xl mt-8">
+                <p>Failed to load assignments. Please try refreshing.</p>
+            </div>
+        );
+    }
 
     // Derive unique course names for filter dropdown
     const courseOptions = useMemo(() => {
