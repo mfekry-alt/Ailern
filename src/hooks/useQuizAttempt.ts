@@ -142,12 +142,13 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
         setIsLoadingStart(true);
         setErrorStart(null);
         try {
-            const response = await attemptsService.startQuizAttempt(quizId);
-            setAttemptId(response.attemptId);
+            const response = await attemptsService.startOrResumeQuizAttempt(quizId);
+            const resolvedAttemptId = response.id;  // Backend sends 'id', not 'attemptId'
+            setAttemptId(resolvedAttemptId);
 
             // Fetch questions for this attempt
             setIsLoadingQuestions(true);
-            const questionsData = await attemptsService.getAttemptQuestions(response.attemptId);
+            const questionsData = await attemptsService.getAttemptQuestions(resolvedAttemptId);
             setQuestions(questionsData as Question[]);
             setIsLoadingQuestions(false);
 

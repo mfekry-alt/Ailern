@@ -5,6 +5,7 @@
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
 import type { ApiResponse } from '@/types/api.types';
+import axios from 'axios';
 
 /**
  * Represents a single question attempt with student's answer
@@ -26,13 +27,15 @@ export interface SaveAttemptPayload {
  * Represents the final result of a quiz attempt after grading
  */
 export interface AttemptResult {
-    attemptId: string;
     quizId: string;
-    score: number;
-    totalScore: number;
+    score: number;        // achievedScore from backend
+    totalScore: number;   // totalScore from backend
     percentage: number;
-    status: 'Submitted' | 'Graded' | 'InProgress';
-    submittedAt: string;
+    status: string;
+    studentId?: number;
+    quizName?: string;
+    submittedAt?: string;
+    attemptNumber?: number;
 }
 
 /**
@@ -50,19 +53,20 @@ export interface StudentAnswer {
 
 /**
  * DTO for starting a quiz attempt
+ * Maps to actual backend response structure
  */
 export interface StartAttemptResponse {
     id: string;
-    attemptId: string;
     quizId: string;
-    startedAt: string;
-    submittedAt?: string;
-    status: 'InProgress' | 'Submitted' | 'Graded' | 'In-Progress';
-    timeLimit?: number;
-    score?: number;
+    timeSpent: number;
+    startAt: string;  // Backend field name (not startedAt)
+    submittedAt?: string;  // Will be null/undefined for in-progress attempts
+    status: 'InProgress' | 'Submitted' | 'In-Progress';
+    score?: number | null;
+    attemptNumber?: number;
     totalMarks?: number;
     duration?: number;
-    attemptNumber?: number;
+    // Note: timeLimit must be fetched from quiz separately, not from attempt
 }
 
 /**
@@ -98,8 +102,6 @@ export const startQuizAttempt = async (quizId: string): Promise<StartAttemptResp
 /**
  * Get student's open/in-progress attempts for a quiz
  * Used to detect if student has an existing attempt to resume
- * @param quizId - The ID of the quiz
- * @returns Promise with array of open attempts (usually 0-1)
  */
 export const getStudentOpenAttempts = async (quizId: string): Promise<StartAttemptResponse[]> => {
     try {
@@ -107,21 +109,85 @@ export const getStudentOpenAttempts = async (quizId: string): Promise<StartAttem
             ENDPOINTS.ATTEMPTS.GET_ATTEMPTS(quizId)
         );
 
-        // Get all attempts from the response
-        const allAttempts = response.data.data?.attempts ?? [];
+        // -- التعديل هنا: قراءة الـ Array بشكل آمن لتجنب فشل الـ 409 --
+        let allAttempts: any[] = [];
+        if (Array.isArray(response.data)) {
+            allAttempts = response.data;
+        } else if (Array.isArray(response.data?.data)) {
+            allAttempts = response.data.data;
+        } else if (Array.isArray(response.data?.data?.attempts)) {
+            allAttempts = response.data.data.attempts;
+        } else if (Array.isArray(response.data?.items)) {
+            allAttempts = response.data.items;
+        }
 
-        // Filter to get only InProgress attempts (check both variations)
+        // -- التعديل هنا: الاعتماد على الـ status --
         const openAttempts = allAttempts.filter(
             (attempt: StartAttemptResponse) =>
-                attempt.status === 'InProgress' || attempt.status === 'In-Progress'
+                attempt.status === 'InProgress' ||
+                attempt.status === 'In-Progress' ||
+                !attempt.submittedAt
         );
 
         console.log('✓ Open attempts fetched:', openAttempts.length, 'from', allAttempts.length, 'total');
         return openAttempts;
     } catch (error) {
         console.warn('✗ Failed to fetch open attempts:', error);
-        // Return empty array instead of throwing - not all backends support this endpoint
         return [];
+    }
+};
+
+/**
+ * Start a new attempt or resume an existing in-progress attempt.
+ */
+export const startOrResumeQuizAttempt = async (quizId: string): Promise<StartAttemptResponse> => {
+    const openAttempts = await getStudentOpenAttempts(quizId);
+    let resumableAttempt = openAttempts.find(
+        (attempt) => attempt.status === 'InProgress' || attempt.status === 'In-Progress' || !attempt.submittedAt
+    );
+
+    if (resumableAttempt) {
+        // Fix missing 'id' issue if backend uses 'attemptId'
+        if (!resumableAttempt.id && (resumableAttempt as any).attemptId) {
+            resumableAttempt.id = (resumableAttempt as any).attemptId;
+        }
+        console.log('✓ Resuming existing quiz attempt:', resumableAttempt.id);
+        return resumableAttempt;
+    }
+
+    try {
+        return await startQuizAttempt(quizId);
+    } catch (error) {
+        if (!axios.isAxiosError(error)) {
+            throw error;
+        }
+
+        const status = error.response?.status;
+        const message = String(error.response?.data?.message ?? '').toLowerCase();
+        const isExistingAttemptConflict =
+            status === 409 ||
+            (status === 400 && (message.includes('in-progress') || message.includes('already created') || message.includes('attempt')));
+
+        if (!isExistingAttemptConflict) {
+            throw error;
+        }
+
+        console.warn('⚠ Attempt already exists. Fetching existing in-progress attempt...');
+        const retryOpenAttempts = await getStudentOpenAttempts(quizId);
+        resumableAttempt = retryOpenAttempts.find(
+            (attempt) => attempt.status === 'InProgress' || attempt.status === 'In-Progress' || !attempt.submittedAt
+        );
+
+        if (resumableAttempt) {
+            // Fix missing 'id' issue if backend uses 'attemptId'
+            if (!resumableAttempt.id && (resumableAttempt as any).attemptId) {
+                resumableAttempt.id = (resumableAttempt as any).attemptId;
+            }
+            console.log('✓ Recovered existing attempt after conflict:', resumableAttempt.id);
+            return resumableAttempt;
+        }
+
+        throw error;
     }
 };
 
@@ -136,12 +202,63 @@ export const getAttemptQuestions = async (attemptId: string): Promise<QuestionDt
             ENDPOINTS.ATTEMPTS.GET_QUESTIONS(attemptId)
         );
         console.log('✓ Attempt questions fetched:', response.data.data?.length, 'questions');
-        return response.data.data ?? [];
+        const rawQuestions = response.data.data ?? [];
+        return normalizeQuestionsForViewer(rawQuestions);
     } catch (error) {
         console.error('✗ Failed to fetch attempt questions:', error);
         throw error;
     }
 };
+
+/**
+ * Normalize questions from backend API response to frontend viewer format.
+ * Handles multiple backend response structures.
+ * Backend formats:
+ * - { question, questionText } for text
+ * - { options: [{option, optionNumber}, {optionText}] }
+ * - { type, questionType } for type
+ */
+function normalizeQuestionsForViewer(questions: any[]): QuestionDto[] {
+    return questions.map((q) => ({
+        id: q.id,
+        // Handle 'question' (from attempt responses), 'text', or 'questionText'
+        text: q.question || q.text || q.questionText || '',
+        // Handle both 'type' and 'questionType', normalize to standard format
+        type: normalizeQuestionType(q.type || q.questionType || 'MCQ'),
+        options: normalizeOptions(q.options || []),
+        points: q.points || q.mark || 1,
+    }));
+}
+
+/**
+ * Normalize question type string to expected enum values.
+ */
+function normalizeQuestionType(type: any): 'MCQ' | 'TrueFalse' | 'Written' {
+    const typeStr = String(type).toLowerCase();
+    if (typeStr.includes('true') || typeStr.includes('false')) return 'TrueFalse';
+    if (typeStr.includes('written') || typeStr.includes('essay')) return 'Written';
+    return 'MCQ';
+}
+
+/**
+ * Normalize options array from backend format to service format.
+ * Backend formats:
+ * - { optionText } - from quiz creation API
+ * - { option, optionNumber } - from attempt quiz responses
+ * - { id, text } - from other endpoints
+ */
+function normalizeOptions(options: any[]): { id: string; text: string }[] {
+    if (!Array.isArray(options)) return [];
+    return options
+        .filter((opt) => opt) // Filter out null/undefined
+        .map((opt, idx) => ({
+            // Use option number as id for attempt responses, fall back to id or index
+            id: String(opt.optionNumber ?? opt.id ?? idx),
+            // Handle all three field names: option, optionText, text
+            text: opt.option || opt.optionText || opt.text || '',
+        }))
+        .filter((opt) => opt.text); // Only keep options with text
+}
 
 /**
  * Save student's progress on a quiz attempt
@@ -200,11 +317,29 @@ export const submitQuizAttempt = async (
  */
 export const getAttemptResult = async (attemptId: string): Promise<AttemptResult> => {
     try {
-        const response = await api.get<ApiResponse<AttemptResult>>(
+        const response = await api.get<ApiResponse<any>>(
             ENDPOINTS.ATTEMPTS.GET_RESULT(attemptId)
         );
-        console.log('✓ Attempt result fetched - Score:', response.data.data?.score);
-        return response.data.data!;
+
+        const data = response.data.data;
+        console.log('✓ Attempt result fetched - Score:', data?.achievedScore);
+
+        // Calculate percentage
+        const achieved = data?.achievedScore || 0;
+        const total = data?.totalScore || 1; // 1 to avoid division by zero
+        const percentage = Math.round((achieved / total) * 100);
+
+        return {
+            quizId: data?.quizId,
+            score: achieved,
+            totalScore: data?.totalScore || 0,
+            percentage: percentage,
+            status: data?.status || 'Submitted',
+            studentId: data?.studentId,
+            quizName: data?.quizName,
+            submittedAt: data?.submittedAt,
+            attemptNumber: data?.attemptNumber,
+        };
     } catch (error) {
         console.error('✗ Failed to fetch attempt result:', error);
         throw error;
@@ -213,20 +348,37 @@ export const getAttemptResult = async (attemptId: string): Promise<AttemptResult
 
 /**
  * Get detailed student answers for review
- * Includes both student answers and correct answers for learning purposes
+ * Reads answers from attemptResult array in the result response
  * @param attemptId - The ID of the attempt
  * @returns Promise with array of student's answers with feedback
  */
 export const getStudentAnswers = async (attemptId: string): Promise<StudentAnswer[]> => {
     try {
-        const response = await api.get<ApiResponse<StudentAnswer[]>>(
-            ENDPOINTS.ATTEMPTS.GET_STUDENT_ANSWERS(attemptId)
+        // Use GET_RESULT endpoint since backend combines result with answer details
+        const response = await api.get<ApiResponse<any>>(
+            ENDPOINTS.ATTEMPTS.GET_RESULT(attemptId)
         );
-        console.log('✓ Student answers fetched:', response.data.data?.length, 'answers');
-        return response.data.data ?? [];
+
+        const resultsArray = response.data.data?.attemptResult || [];
+        console.log('✓ Student answers fetched:', resultsArray.length, 'answers');
+
+        return resultsArray.map((item: any) => {
+            // Find the correct option from options array
+            const correctOption = item.options?.find((opt: any) => opt.isCorrect);
+
+            return {
+                questionId: item.questionId,
+                questionText: item.questionText,
+                studentAnswer: item.studentAnswer,
+                correctAnswer: correctOption ? correctOption.optionText : undefined,
+                isCorrect: item.score > 0, // If score > 0, it's correct
+                points: item.score,
+                possiblePoints: item.maxScore
+            };
+        });
     } catch (error) {
         console.error('✗ Failed to fetch student answers:', error);
-        throw error;
+        return [];
     }
 };
 

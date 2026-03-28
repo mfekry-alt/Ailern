@@ -1,213 +1,403 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/Card';
-import {
-    Trash2,
-    Clock,
-    ArrowLeft, Save, GripVertical
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import type { CreateQuizCommand, QuizStatus } from '@/types/api.types';
+import { ROUTES } from '@/lib/constants';
 
-// ─── Interfaces ─────────────────────────────────────────────────────────
-
-type TabType = 'Overview' | 'Curriculum' | 'Students' | 'Announcements';
-
-interface Lesson {
-    id: string;
+interface QuizSettings {
     title: string;
-    type: 'video' | 'quiz' | 'document';
-    duration?: string;
+    description: string;
+    availableUntil: string;
+    maximumAttempts: number;
+    status: QuizStatus;
+    availableFrom: string;
+    publishedDate: string;
+    showResultOnClose: boolean;
+    shuffleQuestions: boolean;
+    shuffleOptions: boolean;
 }
 
-interface Section {
-    id: string;
-    title: string;
-    lessons: Lesson[];
-}
+const inputCls =
+    'w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100';
+const labelCls = 'block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2';
 
-// ─── State Reducer Helpers (Extracted to solve S2004) ────────────────────
+const PUBLISH_OPTIONS: { value: QuizStatus; title: string; desc: string }[] = [
+    { value: 'Draft', title: 'Save as Draft', desc: 'Not visible to students yet' },
+    { value: 'Published', title: 'Publish Immediately', desc: 'Visible to students right away' },
+    { value: 'Scheduled', title: 'Schedule', desc: 'Set a future publish date' },
+];
 
-const mutateUpdateSection = (sections: Section[], sid: string, title: string) =>
-    sections.map(s => (s.id === sid ? { ...s, title } : s));
-
-const mutateUpdateLesson = (sections: Section[], sid: string, lid: string, title: string) =>
-    sections.map(s => {
-        if (s.id !== sid) return s;
-        return {
-            ...s,
-            lessons: s.lessons.map(l => (l.id === lid ? { ...l, title } : l))
-        };
-    });
-
-const mutateRemoveLesson = (sections: Section[], sid: string, lid: string) =>
-    sections.map(s => {
-        if (s.id !== sid) return s;
-        return { ...s, lessons: s.lessons.filter(l => l.id !== lid) };
-    });
-
-// ─── UI Styling Helpers (Extracted to solve S3358) ───────────────────────
-
-const getTabClasses = (active: boolean) => {
-    const base = "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer";
-    const activeStyle = "border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/20";
-    const inactiveStyle = "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-zinc-400 dark:hover:bg-zinc-800";
-    return `${base} ${active ? activeStyle : inactiveStyle}`;
+/** Format an ISO/UTC date string to datetime-local input value (YYYY-MM-DDTHH:MM) */
+const toDatetimeLocal = (iso: string): string => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-const getStatusStyle = (status: string) => {
-    if (status === 'Pending') return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30';
-    if (status === 'Approved') return 'bg-green-100 text-green-700 dark:bg-green-900/30';
-    return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30';
+/** Convert datetime-local input value to ISO/UTC string for backend submission */
+const toISOStringFromLocal = (datetimeLocal: string): string => {
+    if (!datetimeLocal) return '';
+    const d = new Date(datetimeLocal);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString();
 };
 
-// ─── Main Component ─────────────────────────────────────────────────────
+const defaultDateRange = () => {
+    const from = new Date();
+    const until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    return {
+        availableFrom: toDatetimeLocal(from.toISOString()),
+        availableUntil: toDatetimeLocal(until.toISOString()),
+    };
+};
 
 export const InstructorQuizCreatePage = () => {
     const navigate = useNavigate();
-    useParams<{ id: string; }>();
-    const [activeTab, setActiveTab] = useState<TabType>('Curriculum');
-    const [courseTitle, setCourseTitle] = useState('Introduction to Modern Web Development');
+    const { courseId } = useParams<{ courseId: string }>();
+    const [error, setError] = useState('');
 
-    const [sections, setSections] = useState<Section[]>([
-        {
-            id: 'sec-1',
-            title: 'Introduction to Web Development',
-            lessons: [
-                { id: 'les-1', title: 'Course Overview', type: 'video', duration: '5:00' },
-                { id: 'les-2', title: 'Environment Setup', type: 'video', duration: '12:00' },
-            ]
+    const [settings, setSettings] = useState<QuizSettings>(() => {
+        const { availableFrom, availableUntil } = defaultDateRange();
+        return {
+            title: '',
+            description: '',
+            availableUntil,
+            maximumAttempts: 1,
+            status: 'Draft',
+            availableFrom,
+            publishedDate: '',
+            showResultOnClose: true,
+            shuffleQuestions: true,
+            shuffleOptions: true,
+        };
+    });
+
+    const set = (patch: Partial<QuizSettings>) =>
+        setSettings(s => ({ ...s, ...patch }));
+
+    const validate = (): string | null => {
+        if (!settings.title.trim()) return 'Quiz title is required.';
+        if (settings.title.length > 255) return 'Title must be 255 characters or less.';
+        if (settings.maximumAttempts < 1 || settings.maximumAttempts > 5)
+            return 'Attempts allowed must be between 1 and 5.';
+        if (!settings.availableFrom) return 'Available From date & time is required.';
+        if (!settings.availableUntil) return '"Available Until" is required.';
+        if (new Date(settings.availableUntil) <= new Date(settings.availableFrom))
+            return '"Available Until" must be after "Available From".';
+        if (settings.status === 'Scheduled') {
+            if (!settings.publishedDate) return 'Publish Date is required for scheduled quizzes.';
+            const pd = new Date(settings.publishedDate);
+            if (pd <= new Date()) return 'Publish Date must be in the future.';
+            if (pd >= new Date(settings.availableFrom))
+                return 'Publish Date must be before "Available From".';
         }
-    ]);
-
-    // Handlers using mutation helpers
-    const handleUpdateSection = (sid: string, val: string) => setSections(prev => mutateUpdateSection(prev, sid, val));
-    const handleUpdateLesson = (sid: string, lid: string, val: string) => setSections(prev => mutateUpdateLesson(prev, sid, lid, val));
-    const handleRemoveLesson = (sid: string, lid: string) => setSections(prev => mutateRemoveLesson(prev, sid, lid));
-
-    const addSection = () => {
-        setSections([...sections, { id: `sec-${Date.now()}`, title: 'New Section', lessons: [] }]);
+        return null;
     };
 
-    const addLesson = (sid: string) => {
-        setSections(prev => prev.map(s => s.id === sid ? {
-            ...s,
-            lessons: [...s.lessons, { id: `les-${Date.now()}`, title: 'New Lesson', type: 'video' }]
-        } : s));
+    const buildCommand = (): CreateQuizCommand => {
+        const availableFrom = toISOStringFromLocal(settings.availableFrom);
+        const availableUntil = toISOStringFromLocal(settings.availableUntil);
+        const description =
+            settings.description?.trim() || settings.title.trim() || 'Quiz';
+        return {
+            title: settings.title.trim(),
+            description,
+            courseId: courseId!,
+            maximumAttempts: settings.maximumAttempts,
+            status: settings.status,
+            availableFrom,
+            availableUntil,
+            publishedDate:
+                settings.status === 'Scheduled'
+                    ? toISOStringFromLocal(settings.publishedDate)
+                    : undefined,
+            showResultOnClose: settings.showResultOnClose,
+            shuffleQuestions: settings.shuffleQuestions,
+            shuffleOptions: settings.shuffleOptions,
+            questions: [],
+        };
     };
+
+    /** Step 1: go to question builder; API create runs there on final submit. */
+    const handleNextToQuestions = () => {
+        const err = validate();
+        if (err) {
+            setError(err);
+            return;
+        }
+        setError('');
+        const cmd = buildCommand();
+        navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS, {
+            state: {
+                settings: cmd,
+                courseId: courseId!,
+            },
+        });
+    };
+
+    if (!courseId) {
+        return (
+            <div className="p-8 max-w-lg mx-auto text-center">
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100 mb-2">
+                    Invalid request
+                </h1>
+                <p className="text-gray-500 dark:text-zinc-400 mb-6">Course ID is missing.</p>
+                <button
+                    type="button"
+                    onClick={() => navigate(ROUTES.INSTRUCTOR_COURSES)}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] rounded-lg cursor-pointer"
+                >
+                    Back to courses
+                </button>
+            </div>
+        );
+    }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-            <div className="max-w-6xl mx-auto space-y-6">
-                {/* Header */}
-                <header className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-4 w-full">
-                        <button
-                            type="button"
-                            onClick={() => navigate(-1)}
-                            className="p-2 hover:bg-gray-200 dark:hover:bg-zinc-800 rounded-lg cursor-pointer"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                        <h1 className="text-2xl font-bold">Edit Course Content</h1>
-                    </div>
-                    <div className="flex gap-3">
-                        <button type="button" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold cursor-pointer">
-                            <Save className="w-4 h-4 inline mr-2" /> Save
-                        </button>
-                    </div>
-                </header>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
+            <div className="flex items-center gap-4 mb-6">
+                <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                >
+                    <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
+                </button>
+                <div>
+                    <h1 className="text-[28px] font-bold text-gray-900 dark:text-zinc-100">
+                        Create Quiz
+                    </h1>
+                    <p className="text-[14px] text-gray-500 dark:text-zinc-400">
+                        Set up timing, attempts, and behavior—then add questions.
+                    </p>
+                </div>
+            </div>
 
-                {/* Tabs */}
-                <nav className="flex border-b border-gray-200 dark:border-zinc-800 overflow-x-auto">
-                    {(['Overview', 'Curriculum', 'Students', 'Announcements'] as TabType[]).map(tab => (
-                        <button
-                            key={tab}
-                            type="button"
-                            className={getTabClasses(activeTab === tab)}
-                            onClick={() => setActiveTab(tab)}
-                        >
-                            {tab}
-                        </button>
-                    ))}
-                </nav>
-
-                {activeTab === 'Curriculum' && (
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold">Curriculum</h2>
-                            <button type="button" onClick={addSection} className="text-blue-600 font-medium cursor-pointer">+ Add Section</button>
+            <Card variant="elevated">
+                <CardContent className="p-6 space-y-6">
+                    {error && (
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400 text-[14px]">
+                            {error}
                         </div>
+                    )}
 
-                        <div className="space-y-4">
-                            {sections.map((section, sIdx) => (
-                                <Card key={section.id} variant="elevated">
-                                    <div className="p-4 border-b bg-gray-50/50 dark:bg-zinc-800/30 flex items-center gap-4">
-                                        <label htmlFor={`sec-input-${section.id}`} className="text-sm font-bold text-gray-400 shrink-0">Section {sIdx + 1}</label>
-                                        <input
-                                            id={`sec-input-${section.id}`}
-                                            type="text"
-                                            value={section.title}
-                                            onChange={(e) => handleUpdateSection(section.id, e.target.value)}
-                                            className="flex-1 bg-transparent border-none focus:ring-0 font-bold text-lg"
-                                        />
-                                    </div>
-                                    <CardContent className="p-4 space-y-3">
-                                        {section.lessons.map((lesson, lIdx) => (
-                                            <div key={lesson.id} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg group">
-                                                <GripVertical className="w-4 h-4 text-gray-300" />
-                                                <label htmlFor={`les-input-${lesson.id}`} className="text-xs font-medium text-gray-400 w-6">{lIdx + 1}</label>
-                                                <input
-                                                    id={`les-input-${lesson.id}`}
-                                                    type="text"
-                                                    value={lesson.title}
-                                                    onChange={(e) => handleUpdateLesson(section.id, lesson.id, e.target.value)}
-                                                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm"
-                                                />
-                                                <button type="button" onClick={() => handleRemoveLesson(section.id, lesson.id)} className="text-red-500 opacity-0 group-hover:opacity-100 cursor-pointer">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        <button type="button" onClick={() => addLesson(section.id)} className="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400 hover:text-blue-500 cursor-pointer">+ Add Lesson</button>
-                                    </CardContent>
-                                </Card>
+                    <div>
+                        <label htmlFor="title" className={labelCls}>
+                            Quiz Title <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            id="title"
+                            type="text"
+                            value={settings.title}
+                            onChange={e => set({ title: e.target.value })}
+                            className={inputCls}
+                            placeholder="Enter quiz title"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="description" className={labelCls}>
+                            Description
+                        </label>
+                        <textarea
+                            id="description"
+                            value={settings.description}
+                            onChange={e => set({ description: e.target.value })}
+                            rows={3}
+                            className={inputCls}
+                            placeholder="Optional description"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="availableFrom" className={labelCls}>
+                                Available From <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                id="availableFrom"
+                                type="datetime-local"
+                                value={settings.availableFrom}
+                                onChange={e => set({ availableFrom: e.target.value })}
+                                min={new Date().toISOString().slice(0, 16)}
+                                className={inputCls}
+                            />
+                            <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
+                                When students can start the quiz.
+                            </p>
+                        </div>
+                        <div>
+                            <label htmlFor="availableUntil" className={labelCls}>
+                                Available Until <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                id="availableUntil"
+                                type="datetime-local"
+                                value={settings.availableUntil}
+                                onChange={e => set({ availableUntil: e.target.value })}
+                                min={
+                                    settings.availableFrom ||
+                                    new Date().toISOString().slice(0, 16)
+                                }
+                                className={inputCls}
+                            />
+                            <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
+                                Last moment a student can enter the quiz.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="maximumAttempts" className={labelCls}>
+                            Attempts Allowed <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            id="maximumAttempts"
+                            type="number"
+                            min={1}
+                            max={5}
+                            value={settings.maximumAttempts}
+                            onChange={e =>
+                                set({
+                                    maximumAttempts: Math.min(
+                                        5,
+                                        Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                                    ),
+                                })
+                            }
+                            className={`${inputCls} max-w-xs`}
+                        />
+                        <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
+                            1 – 5 attempts.
+                        </p>
+                    </div>
+
+                    <div>
+                        <div className={labelCls}>Publish Status</div>
+                        <div className="space-y-2">
+                            {PUBLISH_OPTIONS.map(opt => (
+                                <div
+                                    key={opt.value}
+                                    className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${
+                                        settings.status === opt.value
+                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                            : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
+                                    }`}
+                                >
+                                    <input
+                                        id={`status-${opt.value}`}
+                                        type="radio"
+                                        name="status"
+                                        value={opt.value}
+                                        checked={settings.status === opt.value}
+                                        onChange={() => set({ status: opt.value })}
+                                        className="w-4 h-4 text-blue-600 mt-0.5 cursor-pointer"
+                                    />
+                                    <label
+                                        htmlFor={`status-${opt.value}`}
+                                        className="cursor-pointer w-full"
+                                    >
+                                        <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">
+                                            {opt.title}
+                                        </div>
+                                        <div className="text-[12px] text-gray-600 dark:text-zinc-400">
+                                            {opt.desc}
+                                        </div>
+                                    </label>
+                                </div>
                             ))}
                         </div>
                     </div>
-                )}
 
-                {activeTab === 'Overview' && (
-                    <div className="grid md:grid-cols-3 gap-6">
-                        <div className="md:col-span-2 space-y-6">
-                            <Card variant="elevated">
-                                <CardContent className="p-6 space-y-4">
-                                    <h3 className="text-lg font-bold">General Info</h3>
-                                    <div>
-                                        <label htmlFor="course-title-main" className="block text-sm font-medium mb-2">Course Title</label>
-                                        <input
-                                            id="course-title-main"
-                                            type="text"
-                                            value={courseTitle}
-                                            onChange={(e) => setCourseTitle(e.target.value)}
-                                            className="w-full p-2 border rounded-lg dark:bg-zinc-900"
-                                        />
-                                    </div>
-                                </CardContent>
-                            </Card>
+                    {settings.status === 'Scheduled' && (
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <label htmlFor="publishedDate" className={labelCls}>
+                                Publish Date <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                id="publishedDate"
+                                type="datetime-local"
+                                value={settings.publishedDate}
+                                onChange={e => set({ publishedDate: e.target.value })}
+                                className={inputCls}
+                            />
+                            <p className="text-[12px] text-blue-700 dark:text-blue-400 mt-1">
+                                Must be in the future and <strong>before</strong> &quot;Available
+                                From&quot;.
+                            </p>
                         </div>
-                        <div className="space-y-6">
-                            <Card variant="elevated">
-                                <CardContent className="p-6 space-y-4">
-                                    <h3 className="text-lg font-bold">Status</h3>
-                                    <div className={`p-3 rounded-lg flex items-center gap-3 ${getStatusStyle('Pending')}`}>
-                                        <Clock className="w-5 h-5" />
-                                        <span className="font-medium text-sm">Pending Review</span>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                    )}
+
+                    <div>
+                        <div className={labelCls}>Quiz Behavior</div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {[
+                                {
+                                    key: 'showResultOnClose' as const,
+                                    label: 'Show results on close',
+                                    desc: 'Show correct answers to students after the quiz ends',
+                                },
+                                {
+                                    key: 'shuffleQuestions' as const,
+                                    label: 'Shuffle questions',
+                                    desc: 'Randomize the order of questions for each attempt',
+                                },
+                                {
+                                    key: 'shuffleOptions' as const,
+                                    label: 'Shuffle options',
+                                    desc: 'Randomize the order of answer choices',
+                                },
+                            ].map(({ key, label, desc }) => (
+                                <div
+                                    key={key}
+                                    className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${
+                                        settings[key]
+                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                            : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
+                                    }`}
+                                >
+                                    <input
+                                        id={key}
+                                        type="checkbox"
+                                        checked={settings[key]}
+                                        onChange={e => set({ [key]: e.target.checked })}
+                                        className="w-4 h-4 text-blue-600 mt-0.5 cursor-pointer"
+                                    />
+                                    <label htmlFor={key} className="cursor-pointer w-full">
+                                        <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">
+                                            {label}
+                                        </div>
+                                        <div className="text-[12px] text-gray-600 dark:text-zinc-400">
+                                            {desc}
+                                        </div>
+                                    </label>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                )}
-            </div>
+
+                    <div className="flex justify-between gap-3 pt-4 border-t border-gray-200 dark:border-zinc-700">
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            className="px-6 py-2 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleNextToQuestions}
+                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] rounded-lg transition-colors cursor-pointer"
+                        >
+                            Next: Add questions
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 };

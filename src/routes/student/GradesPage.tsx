@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui';
 import {
-    Award,
-    BookOpen,
-    Download,
-    Eye,
-    Clock,
-    CheckCircle,
-    AlertCircle,
-    Target
+    Award, BookOpen, Download, Eye, Clock, CheckCircle, AlertCircle,
+    Target, GraduationCap, ChevronDown, Inbox, MessageSquare, X
 } from 'lucide-react';
 
 interface Grade {
@@ -41,55 +35,46 @@ export const GradesPage = () => {
     const [selectedSemester, setSelectedSemester] = useState('all');
     const [selectedGrade, setSelectedGrade] = useState<Grade | null>(null);
 
+    // TODO: Replace with actual data fetching
     const grades: Grade[] = [];
-
     const courseGrades: CourseGrade[] = [];
 
     const getGradeColor = (percentage: number) => {
-        if (percentage >= 90) return 'text-green-600';
-        if (percentage >= 80) return 'text-blue-600';
-        if (percentage >= 70) return 'text-yellow-600';
-        if (percentage >= 60) return 'text-orange-600';
-        return 'text-red-600';
+        if (percentage >= 90) return 'text-emerald-700 dark:text-emerald-400';
+        if (percentage >= 80) return 'text-blue-700 dark:text-blue-400';
+        if (percentage >= 70) return 'text-yellow-700 dark:text-yellow-400';
+        if (percentage >= 60) return 'text-orange-700 dark:text-orange-400';
+        return 'text-red-700 dark:text-red-400';
     };
 
     const getGradeBgColor = (percentage: number) => {
-        if (percentage >= 90) return 'bg-green-100';
-        if (percentage >= 80) return 'bg-blue-100';
-        if (percentage >= 70) return 'bg-yellow-100';
-        if (percentage >= 60) return 'bg-orange-100';
-        return 'bg-red-100';
+        if (percentage >= 90) return 'bg-emerald-100 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20';
+        if (percentage >= 80) return 'bg-blue-100 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20';
+        if (percentage >= 70) return 'bg-yellow-100 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/20';
+        if (percentage >= 60) return 'bg-orange-100 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20';
+        return 'bg-red-100 dark:bg-red-500/10 border-red-200 dark:border-red-500/20';
     };
 
     const getStatusIcon = (status: string) => {
         switch (status) {
-            case 'graded':
-                return CheckCircle;
-            case 'pending':
-                return Clock;
-            case 'late':
-                return AlertCircle;
-            default:
-                return Clock;
+            case 'graded': return CheckCircle;
+            case 'pending': return Clock;
+            case 'late': return AlertCircle;
+            default: return Clock;
         }
     };
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'graded':
-                return 'text-green-600';
-            case 'pending':
-                return 'text-yellow-600';
-            case 'late':
-                return 'text-red-600';
-            default:
-                return 'text-gray-600';
+            case 'graded': return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20';
+            case 'pending': return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20';
+            case 'late': return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20';
+            default: return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
         }
     };
 
     const filteredGrades = grades.filter(grade => {
-        const courseMatch = selectedCourse === 'all' || grade.course.includes(selectedCourse);
-        return courseMatch;
+        return selectedCourse === 'all' || grade.course.includes(selectedCourse);
     });
 
     const downloadText = (filename: string, text: string) => {
@@ -105,8 +90,9 @@ export const GradesPage = () => {
     };
 
     const exportGrades = () => {
+        if (filteredGrades.length === 0) return; // Add simple validation
         const rows = [
-            ['assignmentName', 'course', 'instructor', 'pointsEarned', 'totalPoints', 'percentage', 'letterGrade', 'status', 'gradedAt'],
+            ['Assignment Name', 'Course', 'Instructor', 'Points Earned', 'Total Points', 'Percentage', 'Letter Grade', 'Status', 'Graded At'],
             ...filteredGrades.map((g) => [
                 g.assignmentName,
                 g.course,
@@ -128,369 +114,363 @@ export const GradesPage = () => {
     };
 
     const stats = [
-        { label: 'Overall GPA', value: '0', icon: Award, color: 'text-purple-600' },
-        { label: 'Courses Completed', value: '0', icon: BookOpen, color: 'text-blue-600' },
-        { label: 'Credits Earned', value: '0', icon: Target, color: 'text-green-600' },
-        { label: 'Assignments Graded', value: grades.filter(g => g.status === 'graded').length.toString(), icon: CheckCircle, color: 'text-orange-600' }
+        { label: 'Overall GPA', value: '0.0', icon: Award, color: 'purple' },
+        { label: 'Courses Completed', value: '0', icon: BookOpen, color: 'blue' },
+        { label: 'Credits Earned', value: '0', icon: Target, color: 'emerald' },
+        { label: 'Graded Assignments', value: grades.filter(g => g.status === 'graded').length.toString(), icon: CheckCircle, color: 'amber' }
     ];
 
-
-
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-            <div className="space-y-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans selection:bg-blue-500/30 pb-20">
+            <div className="max-w-7xl mx-auto space-y-8">
+
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-zinc-100">
-                            Grades & Feedback
-                        </h1>
-                        <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400 mt-1">
-                            Track your academic progress and view instructor feedback
-                        </p>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 animate-fade-in">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-indigo-600/10 dark:bg-indigo-500/20 rounded-2xl flex items-center justify-center border border-indigo-600/20 dark:border-indigo-500/30 shrink-0">
+                            <GraduationCap className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Grades & Feedback</h1>
+                            <p className="text-gray-600 dark:text-slate-400 mt-1 text-lg">Track your academic progress and instructor feedback.</p>
+                        </div>
                     </div>
                     <button
                         onClick={exportGrades}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2 rounded-lg transition-colors"
+                        disabled={filteredGrades.length === 0}
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/80 text-gray-700 dark:text-slate-200 rounded-xl font-semibold transition-all shadow-sm text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Download className="w-5 h-5" />
-                        Export Grades
+                        <Download className="w-4 h-4" />
+                        Export CSV
                     </button>
                 </div>
 
-                {/* Statistics */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {stats.map((stat) => {
-                        const IconComponent = stat.icon;
+                {/* Statistics Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                    {stats.map((stat, idx) => {
+                        const Icon = stat.icon;
                         return (
-                            <Card key={stat.label} variant="elevated">
-                                <CardContent className="p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-[14px] font-medium text-gray-600 dark:text-zinc-400 mb-1">
-                                                {stat.label}
-                                            </p>
-                                            <p className="text-[24px] font-bold text-gray-900 dark:text-zinc-100">
-                                                {stat.value}
-                                            </p>
-                                        </div>
-                                        <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                                            <IconComponent className={`w-6 h-6 ${stat.color}`} />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <div key={idx} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group">
+                                <div className={`absolute left-0 top-0 w-1 h-full bg-${stat.color}-500`}></div>
+                                <div>
+                                    <p className="text-gray-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
+                                    <h3 className="text-3xl font-black text-gray-900 dark:text-white">{stat.value}</h3>
+                                </div>
+                                <div className={`w-12 h-12 sm:w-14 sm:h-14 bg-${stat.color}-50 dark:bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center text-${stat.color}-600 dark:text-${stat.color}-400 group-hover:scale-110 transition-transform shrink-0`}>
+                                    <Icon className="w-6 h-6" />
+                                </div>
+                            </div>
                         );
                     })}
                 </div>
 
-                {/* Course Grades Overview */}
-                <Card variant="elevated">
-                    <CardContent className="p-6">
-                        <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100 mb-6">
-                            Course Grades Overview
-                        </h2>
-                        <div className="space-y-4">
-                            {courseGrades.map((course) => (
-                                <div key={course.courseId} className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div>
-                                            <h3 className="text-[16px] font-semibold text-gray-900 dark:text-zinc-100">
-                                                {course.courseName}
-                                            </h3>
-                                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">
-                                                Instructor: {course.instructor}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className={`inline-flex items-center px-3 py-1 rounded-full text-[14px] font-semibold ${getGradeBgColor(course.overallGrade)} ${getGradeColor(course.overallGrade)}`}>
-                                                {course.letterGrade}
-                                            </div>
-                                            <p className="text-[12px] text-gray-600 dark:text-zinc-400 mt-1">
-                                                {course.overallGrade}% • {course.credits} credits
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Progress Bar */}
-                                    <div className="mb-3">
-                                        <div className="flex justify-between text-[12px] text-gray-600 dark:text-zinc-400 mb-1">
-                                            <span>Overall Progress</span>
-                                            <span>{course.overallGrade}%</span>
-                                        </div>
-                                        <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2">
-                                            <div
-                                                className={`h-2 rounded-full ${getGradeBgColor(course.overallGrade).replace('bg-', 'bg-').replace('-100', '-500')}`}
-                                                style={{ width: `${course.overallGrade}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-
-                                    {/* Assignment Count */}
-                                    <div className="flex items-center gap-4 text-[12px] text-gray-600 dark:text-zinc-400">
-                                        <span>{course.assignments.length} assignments</span>
-                                        <span>{course.assignments.filter(a => a.status === 'graded').length} graded</span>
-                                        <span>{course.assignments.filter(a => a.status === 'pending').length} pending</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-
                 {/* Filters */}
-                <Card variant="elevated">
-                    <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="flex-1">
-                                <select
-                                    value={selectedCourse}
-                                    onChange={(e) => setSelectedCourse(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                >
-                                    <option value="all">All Courses</option>
-                                    <option value="CS101">CS101 - Introduction to Programming</option>
-                                    <option value="CS202">CS202 - Data Structures</option>
-                                    <option value="MA203">MA203 - Linear Algebra</option>
-                                </select>
+                <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-4 flex flex-col sm:flex-row gap-4 shadow-sm relative z-10">
+                    <div className="flex-1 relative group">
+                        <select
+                            value={selectedCourse}
+                            onChange={(e) => setSelectedCourse(e.target.value)}
+                            className="w-full appearance-none pl-4 pr-10 py-3 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm font-medium cursor-pointer"
+                        >
+                            <option value="all">All Courses</option>
+                            <option value="CS101">CS101 - Introduction to Programming</option>
+                            <option value="CS202">CS202 - Data Structures</option>
+                            <option value="MA203">MA203 - Linear Algebra</option>
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                    <div className="flex-1 relative group">
+                        <select
+                            value={selectedSemester}
+                            onChange={(e) => setSelectedSemester(e.target.value)}
+                            className="w-full appearance-none pl-4 pr-10 py-3 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm font-medium cursor-pointer"
+                        >
+                            <option value="all">All Semesters</option>
+                            <option value="fall2024">Fall 2024</option>
+                            <option value="spring2024">Spring 2024</option>
+                            <option value="summer2024">Summer 2024</option>
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                </div>
+
+                {/* Course Grades Overview */}
+                <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-gray-200 dark:border-slate-700/50 shadow-sm rounded-[2rem] overflow-hidden">
+                    <CardContent className="p-6 sm:p-8">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                            <BookOpen className="w-5 h-5 text-blue-500" />
+                            Course Overview
+                        </h2>
+
+                        {courseGrades.length === 0 ? (
+                            <div className="text-center py-10 bg-gray-50 dark:bg-slate-800/20 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
+                                <Target className="w-10 h-10 text-gray-400 dark:text-slate-500 mx-auto mb-3 opacity-50" />
+                                <p className="text-gray-500 dark:text-slate-400 font-medium">No course grades available yet.</p>
                             </div>
-                            <div className="flex-1">
-                                <select
-                                    value={selectedSemester}
-                                    onChange={(e) => setSelectedSemester(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                >
-                                    <option value="all">All Semesters</option>
-                                    <option value="fall2024">Fall 2024</option>
-                                    <option value="spring2024">Spring 2024</option>
-                                    <option value="summer2024">Summer 2024</option>
-                                </select>
+                        ) : (
+                            <div className="space-y-4">
+                                {courseGrades.map((course) => (
+                                    <div key={course.courseId} className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700/50 p-5 hover:border-blue-200 dark:hover:border-slate-600 transition-colors">
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{course.courseName}</h3>
+                                                <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">Instructor: {course.instructor}</p>
+                                            </div>
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                <div className="text-right">
+                                                    <p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Overall Grade</p>
+                                                    <p className={`text-xl font-black ${getGradeColor(course.overallGrade)}`}>{course.overallGrade}%</p>
+                                                </div>
+                                                <div className={`flex items-center justify-center w-12 h-12 rounded-xl text-xl font-black border ${getGradeBgColor(course.overallGrade)} ${getGradeColor(course.overallGrade)}`}>
+                                                    {course.letterGrade}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Progress Bar */}
+                                        <div className="mb-4">
+                                            <div className="w-full bg-gray-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full relative"
+                                                    style={{ width: `${course.overallGrade}%` }}
+                                                >
+                                                    <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 blur-[2px]"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                                            <span className="bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm">{course.credits} Credits</span>
+                                            <span className="bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm">{course.assignments.length} Tasks</span>
+                                            <span className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-500/20">{course.assignments.filter(a => a.status === 'graded').length} Graded</span>
+                                            <span className="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-lg border border-amber-100 dark:border-amber-500/20">{course.assignments.filter(a => a.status === 'pending').length} Pending</span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* Detailed Grades */}
-                <Card variant="elevated">
+                {/* Detailed Grades Table */}
+                <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-gray-200 dark:border-slate-700/50 shadow-sm rounded-[2rem] overflow-hidden">
                     <CardContent className="p-0">
-                        <div className="p-6 border-b border-gray-200 dark:border-zinc-700">
-                            <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">
+                        <div className="p-6 sm:p-8 border-b border-gray-100 dark:border-slate-700/50 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Award className="w-5 h-5 text-purple-500" />
                                 Assignment Grades
                             </h2>
+                            <span className="text-xs font-bold bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 px-3 py-1.5 rounded-full border border-gray-200 dark:border-slate-700">
+                                {filteredGrades.length} Records
+                            </span>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-gray-50 dark:bg-zinc-800">
-                                    <tr>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
-                                            Assignment
-                                        </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
-                                            Course
-                                        </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
-                                            Grade
-                                        </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
-                                            Status
-                                        </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
-                                            Graded
-                                        </th>
-                                        <th className="text-left py-4 px-6 text-[14px] font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wide">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredGrades.map((grade, index) => {
-                                        const StatusIcon = getStatusIcon(grade.status);
-                                        return (
-                                            <tr key={grade.id} className={`border-b border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors ${index === filteredGrades.length - 1 ? 'border-b-0' : ''}`}>
-                                                <td className="py-4 px-6">
-                                                    <div>
-                                                        <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100">
-                                                            {grade.assignmentName}
+                        {filteredGrades.length === 0 ? (
+                            <div className="text-center py-16 px-4">
+                                <Inbox className="w-12 h-12 text-gray-400 mx-auto mb-3 opacity-50" />
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No Grades Found</h3>
+                                <p className="text-gray-500 dark:text-slate-400 text-sm">There are no graded assignments matching your filters.</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-gray-50/50 dark:bg-slate-800/50 text-xs uppercase tracking-wider font-bold text-gray-500 dark:text-slate-400">
+                                        <tr>
+                                            <th className="px-6 py-4">Assignment</th>
+                                            <th className="px-6 py-4">Course</th>
+                                            <th className="px-6 py-4">Grade</th>
+                                            <th className="px-6 py-4">Status</th>
+                                            <th className="px-6 py-4">Date Graded</th>
+                                            <th className="px-6 py-4 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
+                                        {filteredGrades.map((grade) => {
+                                            const StatusIcon = getStatusIcon(grade.status);
+                                            return (
+                                                <tr key={grade.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors group">
+                                                    <td className="px-6 py-4">
+                                                        <p className="text-sm font-bold text-gray-900 dark:text-white mb-0.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{grade.assignmentName}</p>
+                                                        <p className="text-xs text-gray-500 dark:text-slate-400">{grade.instructor}</p>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-slate-300 font-medium">
+                                                        {grade.course}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-sm font-black ${getGradeColor(grade.percentage)}`}>
+                                                                {grade.percentage}%
+                                                            </span>
+                                                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${getGradeBgColor(grade.percentage)} ${getGradeColor(grade.percentage)}`}>
+                                                                {grade.letterGrade}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1">
+                                                            {grade.pointsEarned}/{grade.totalPoints} pts
                                                         </p>
-                                                        <p className="text-[12px] text-gray-600 dark:text-zinc-400">
-                                                            {grade.instructor}
-                                                        </p>
-                                                    </div>
-                                                </td>
-                                                <td className="py-4 px-6 text-[14px] text-gray-600 dark:text-zinc-400">
-                                                    {grade.course}
-                                                </td>
-                                                <td className="py-4 px-6">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`text-[16px] font-bold ${getGradeColor(grade.percentage)}`}>
-                                                            {grade.percentage}%
-                                                        </span>
-                                                        <span className={`px-2 py-1 rounded-full text-[12px] font-semibold ${getGradeBgColor(grade.percentage)} ${getGradeColor(grade.percentage)}`}>
-                                                            {grade.letterGrade}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-[12px] text-gray-600 dark:text-zinc-400 mt-1">
-                                                        {grade.pointsEarned}/{grade.totalPoints} points
-                                                    </p>
-                                                </td>
-                                                <td className="py-4 px-6">
-                                                    <div className="flex items-center gap-2">
-                                                        <StatusIcon className={`w-4 h-4 ${getStatusColor(grade.status)}`} />
-                                                        <span className={`text-[12px] font-medium capitalize ${getStatusColor(grade.status)}`}>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold capitalize border ${getStatusColor(grade.status)}`}>
+                                                            <StatusIcon className="w-3.5 h-3.5" />
                                                             {grade.status}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="py-4 px-6 text-[14px] text-gray-600 dark:text-zinc-400">
-                                                    {grade.gradedAt ? new Date(grade.gradedAt).toLocaleDateString() : 'Not graded'}
-                                                </td>
-                                                <td className="py-4 px-6">
-                                                    <div className="flex items-center gap-2">
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 font-medium">
+                                                        {grade.gradedAt ? new Date(grade.gradedAt).toLocaleDateString() : '—'}
+                                                    </td>
+                                                    <td className="px-6 py-4">
                                                         <button
                                                             onClick={() => setSelectedGrade(grade)}
-                                                            className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+                                                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/20 dark:text-slate-400 dark:hover:text-blue-400 transition-colors mx-auto"
+                                                            title="View Details"
                                                         >
-                                                            <Eye className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
+                                                            <Eye className="w-4 h-4" />
                                                         </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                const summary = [
-                                                                    `Assignment: ${grade.assignmentName}`,
-                                                                    `Course: ${grade.course}`,
-                                                                    `Instructor: ${grade.instructor}`,
-                                                                    `Score: ${grade.pointsEarned}/${grade.totalPoints} (${grade.percentage}%)`,
-                                                                    `Letter: ${grade.letterGrade}`,
-                                                                    `Status: ${grade.status}`,
-                                                                    grade.gradedAt ? `Graded At: ${new Date(grade.gradedAt).toLocaleString()}` : '',
-                                                                    '',
-                                                                    `Feedback:`,
-                                                                    grade.feedback || '—',
-                                                                ]
-                                                                    .filter(Boolean)
-                                                                    .join('\n');
-                                                                downloadText(`grade-${grade.id}.txt`, summary);
-                                                            }}
-                                                            className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
-                                                        >
-                                                            <Download className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
+                {/* Feedback Section */}
+                <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-gray-200 dark:border-slate-700/50 shadow-sm rounded-[2rem] overflow-hidden">
+                    <CardContent className="p-6 sm:p-8">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                            <MessageSquare className="w-5 h-5 text-amber-500" />
+                            Recent Feedback
+                        </h2>
+
+                        {grades.filter(g => g.feedback && g.status === 'graded').length === 0 ? (
+                            <div className="text-center py-10 bg-gray-50 dark:bg-slate-800/20 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
+                                <MessageSquare className="w-10 h-10 text-gray-400 dark:text-slate-500 mx-auto mb-3 opacity-50" />
+                                <p className="text-gray-500 dark:text-slate-400 font-medium">No feedback available yet.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {grades.filter(g => g.feedback && g.status === 'graded').map((grade) => (
+                                    <div key={grade.id} className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700/50 p-5 hover:shadow-md transition-shadow relative overflow-hidden group">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div>
+                                                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-0.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                    {grade.assignmentName}
+                                                </h3>
+                                                <p className="text-xs font-medium text-gray-500 dark:text-slate-400">
+                                                    {grade.course} • {new Date(grade.gradedAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <div className={`px-2 py-1 rounded-md text-[11px] font-bold border ${getGradeBgColor(grade.percentage)} ${getGradeColor(grade.percentage)}`}>
+                                                {grade.letterGrade}
+                                            </div>
+                                        </div>
+                                        <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-3 rounded-xl">
+                                            <p className="text-sm text-gray-700 dark:text-slate-300 italic">
+                                                "{grade.feedback}"
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Grade Detail Modal */}
                 {selectedGrade && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white dark:bg-zinc-900 rounded-lg max-w-2xl w-full overflow-hidden">
-                            <div className="p-6 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in">
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedGrade(null)} />
+
+                        <div className="relative bg-white dark:bg-slate-900 w-full max-w-xl rounded-[2rem] shadow-2xl border border-gray-200 dark:border-slate-700 flex flex-col max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-4 overflow-hidden">
+                            {/* Modal Header */}
+                            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-start justify-between bg-gray-50/50 dark:bg-slate-800/30">
                                 <div>
-                                    <h2 className="text-[18px] font-bold text-gray-900 dark:text-zinc-100">Grade Details</h2>
-                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400">{selectedGrade.course}</p>
+                                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">{selectedGrade.course}</p>
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">Grade Details</h2>
                                 </div>
                                 <button
                                     onClick={() => setSelectedGrade(null)}
-                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300"
+                                    className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 dark:hover:text-white dark:hover:bg-slate-800 rounded-xl transition-colors"
                                 >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
 
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <div className="text-[14px] font-semibold text-gray-900 dark:text-zinc-100">{selectedGrade.assignmentName}</div>
-                                    <div className="text-[14px] text-gray-600 dark:text-zinc-400">Instructor: {selectedGrade.instructor}</div>
+                            {/* Modal Body */}
+                            <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                                <div className="bg-gray-50 dark:bg-slate-800/50 rounded-2xl p-5 border border-gray-100 dark:border-slate-700">
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{selectedGrade.assignmentName}</h3>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-slate-400 flex items-center gap-2">
+                                        <User className="w-4 h-4" /> Instructor: {selectedGrade.instructor}
+                                    </p>
                                 </div>
 
-                                <div className="grid sm:grid-cols-2 gap-4">
-                                    <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
-                                        <div className="text-[12px] text-gray-600 dark:text-zinc-400">Score</div>
-                                        <div className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">
-                                            {selectedGrade.pointsEarned}/{selectedGrade.totalPoints} ({selectedGrade.percentage}%)
-                                        </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="rounded-2xl border border-gray-200 dark:border-slate-700 p-5 bg-white dark:bg-slate-900">
+                                        <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Score</p>
+                                        <p className="text-2xl font-black text-gray-900 dark:text-white">
+                                            {selectedGrade.pointsEarned}<span className="text-base text-gray-400">/{selectedGrade.totalPoints}</span>
+                                        </p>
+                                        <p className={`text-sm font-bold mt-1 ${getGradeColor(selectedGrade.percentage)}`}>{selectedGrade.percentage}%</p>
                                     </div>
-                                    <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
-                                        <div className="text-[12px] text-gray-600 dark:text-zinc-400">Letter Grade</div>
-                                        <div className="text-[16px] font-bold text-gray-900 dark:text-zinc-100">{selectedGrade.letterGrade}</div>
-                                    </div>
-                                </div>
-
-                                <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
-                                    <div className="text-[12px] text-gray-600 dark:text-zinc-400 mb-2">Feedback</div>
-                                    <div className="text-[14px] text-gray-700 dark:text-zinc-300 whitespace-pre-line">
-                                        {selectedGrade.feedback || '—'}
+                                    <div className={`rounded-2xl border p-5 flex flex-col justify-center items-center text-center ${getGradeBgColor(selectedGrade.percentage)}`}>
+                                        <p className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${getGradeColor(selectedGrade.percentage)}`}>Letter Grade</p>
+                                        <p className={`text-4xl font-black ${getGradeColor(selectedGrade.percentage)}`}>{selectedGrade.letterGrade}</p>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => {
-                                            const summary = [
-                                                `Assignment: ${selectedGrade.assignmentName}`,
-                                                `Course: ${selectedGrade.course}`,
-                                                `Instructor: ${selectedGrade.instructor}`,
-                                                `Score: ${selectedGrade.pointsEarned}/${selectedGrade.totalPoints} (${selectedGrade.percentage}%)`,
-                                                `Letter: ${selectedGrade.letterGrade}`,
-                                                '',
-                                                `Feedback:`,
-                                                selectedGrade.feedback || '—',
-                                            ].join('\n');
-                                            downloadText(`grade-${selectedGrade.id}.txt`, summary);
-                                        }}
-                                        className="flex-1 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium px-4 py-2 rounded-lg transition-colors"
-                                    >
-                                        Download
-                                    </button>
-                                    <button
-                                        onClick={() => setSelectedGrade(null)}
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
-                                    >
-                                        Close
-                                    </button>
+                                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 p-5 bg-white dark:bg-slate-900">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-3 flex items-center gap-2">
+                                        <MessageSquare className="w-3.5 h-3.5" /> Instructor Feedback
+                                    </p>
+                                    {selectedGrade.feedback ? (
+                                        <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-line italic">
+                                            "{selectedGrade.feedback}"
+                                        </p>
+                                    ) : (
+                                        <p className="text-sm text-gray-400 dark:text-slate-500 italic">No feedback provided.</p>
+                                    )}
                                 </div>
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="p-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row gap-3 shrink-0">
+                                <button
+                                    onClick={() => setSelectedGrade(null)}
+                                    className="flex-1 px-4 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-semibold transition-colors text-sm"
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const summary = [
+                                            `Assignment: ${selectedGrade.assignmentName}`,
+                                            `Course: ${selectedGrade.course}`,
+                                            `Instructor: ${selectedGrade.instructor}`,
+                                            `Score: ${selectedGrade.pointsEarned}/${selectedGrade.totalPoints} (${selectedGrade.percentage}%)`,
+                                            `Letter: ${selectedGrade.letterGrade}`,
+                                            `Status: ${selectedGrade.status}`,
+                                            selectedGrade.gradedAt ? `Graded At: ${new Date(selectedGrade.gradedAt).toLocaleString()}` : '',
+                                            '',
+                                            `Feedback:`,
+                                            selectedGrade.feedback || 'No feedback provided.',
+                                        ].filter(Boolean).join('\n');
+                                        downloadText(`grade-${selectedGrade.id}.txt`, summary);
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Download Summary
+                                </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Feedback Section */}
-                <Card variant="elevated">
-                    <CardContent className="p-6">
-                        <h2 className="text-[20px] font-bold text-gray-900 dark:text-zinc-100 mb-6">
-                            Recent Feedback
-                        </h2>
-                        <div className="space-y-4">
-                            {grades.filter(g => g.feedback && g.status === 'graded').map((grade) => (
-                                <div key={grade.id} className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-4">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div>
-                                            <h3 className="text-[14px] font-semibold text-gray-900 dark:text-zinc-100">
-                                                {grade.assignmentName}
-                                            </h3>
-                                            <p className="text-[12px] text-gray-600 dark:text-zinc-400">
-                                                {grade.course} • {new Date(grade.gradedAt).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                        <div className={`px-2 py-1 rounded-full text-[12px] font-semibold ${getGradeBgColor(grade.percentage)} ${getGradeColor(grade.percentage)}`}>
-                                            {grade.letterGrade}
-                                        </div>
-                                    </div>
-                                    <p className="text-[14px] text-gray-700 dark:text-zinc-300">
-                                        {grade.feedback}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
         </div>
     );

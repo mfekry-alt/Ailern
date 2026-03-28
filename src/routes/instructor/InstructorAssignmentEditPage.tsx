@@ -178,7 +178,7 @@ export const InstructorAssignmentEditPage = () => {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 cursor-not-allowed"
                                 >
                                     <option value="">Select a course</option>
-                                    {coursesData?.items?.map((course) => (
+                                    {coursesData?.items?.map((course ) => (
                                         <option key={course.id} value={course.id.toString()}>
                                             {course.code} - {course.name}
                                         </option>
@@ -362,6 +362,3 @@ export const InstructorAssignmentEditPage = () => {
         </div>
     );
 };
-
-
-

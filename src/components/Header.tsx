@@ -32,8 +32,8 @@ export const Header = () => {
             time: '10:30 AM',
             isRead: false,
             icon: BookOpen,
-            iconBg: 'bg-green-100',
-            iconColor: 'text-green-600'
+            iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+            iconColor: 'text-blue-600 dark:text-blue-400'
         },
         {
             id: 2,
@@ -41,8 +41,8 @@ export const Header = () => {
             time: 'Yesterday',
             isRead: true,
             icon: Users,
-            iconBg: 'bg-green-100',
-            iconColor: 'text-green-600'
+            iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
+            iconColor: 'text-emerald-600 dark:text-emerald-400'
         },
         {
             id: 3,
@@ -50,35 +50,8 @@ export const Header = () => {
             time: '2 days ago',
             isRead: true,
             icon: AlertTriangle,
-            iconBg: 'bg-yellow-100',
-            iconColor: 'text-yellow-600'
-        },
-        {
-            id: 4,
-            title: 'New discussion post in Literature 303',
-            time: '3 days ago',
-            isRead: true,
-            icon: MessageSquare,
-            iconBg: 'bg-green-100',
-            iconColor: 'text-green-600'
-        },
-        {
-            id: 5,
-            title: 'Student requested extension for Physics 404',
-            time: '4 days ago',
-            isRead: true,
-            icon: Clock,
-            iconBg: 'bg-gray-100',
-            iconColor: 'text-gray-600'
-        },
-        {
-            id: 6,
-            title: 'System maintenance scheduled for next week',
-            time: '5 days ago',
-            isRead: true,
-            icon: CheckCircle,
-            iconBg: 'bg-red-100',
-            iconColor: 'text-red-600'
+            iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+            iconColor: 'text-amber-600 dark:text-amber-400'
         }
     ]);
 
@@ -116,6 +89,7 @@ export const Header = () => {
         );
     };
 
+    // 🌟 التعديل الأساسي هنا لحل مشكلة البحث و الـ 403
     const searchCourses = useCallback(async (query: string) => {
         if (!query.trim()) {
             setSearchResults([]);
@@ -125,16 +99,39 @@ export const Header = () => {
         setIsSearching(true);
         setShowSearchResults(true);
         try {
-            const res = await api.get('/Courses', { params: { search: query.trim() } });
-            const courses = res.data?.data || res.data || [];
+            // استخدام الرابط الخاص بالطالب بناءً على ה JSON الخاص بك
+            const res = await api.get('/Users/students/my-courses', {
+                params: { search: query.trim() }
+            });
+
+            // قراءة الـ Items من الـ Response
+            let coursesData: any[] = [];
+            if (res.data?.data?.items && Array.isArray(res.data.data.items)) {
+                coursesData = res.data.data.items;
+            } else if (res.data?.items && Array.isArray(res.data.items)) {
+                coursesData = res.data.items;
+            } else if (Array.isArray(res.data?.data)) {
+                coursesData = res.data.data;
+            } else if (Array.isArray(res.data)) {
+                coursesData = res.data;
+            }
+
+            // فلترة إضافية للبيانات في الـ Frontend للتأكد أن البحث يعمل حتى لو الـ API أرجع كل الكورسات
+            const lowerQuery = query.toLowerCase();
+            const filteredCourses = coursesData.filter(c =>
+                (c.name || '').toLowerCase().includes(lowerQuery) ||
+                (c.code || '').toLowerCase().includes(lowerQuery)
+            );
+
             setSearchResults(
-                courses.slice(0, 8).map((c: any) => ({
+                filteredCourses.slice(0, 8).map((c: any) => ({
                     id: c.id,
-                    name: c.name || c.title || 'Untitled',
-                    code: c.code || '',
+                    name: c.name || c.title || c.courseName || 'Untitled Course',
+                    code: c.code || c.courseCode || '',
                 }))
             );
-        } catch {
+        } catch (error) {
+            console.error("Search failed:", error);
             setSearchResults([]);
         } finally {
             setIsSearching(false);
@@ -195,7 +192,7 @@ export const Header = () => {
                 { label: 'Dashboard', path: ROUTES.INSTRUCTOR },
                 { label: 'Courses', path: ROUTES.INSTRUCTOR_COURSES },
                 { label: 'Assignments', path: ROUTES.INSTRUCTOR_ASSIGNMENTS },
-                { label: 'Calender', path: '/instructor/calendar' },
+                { label: 'Calendar', path: '/instructor/calendar' },
             ];
         }
         if (user?.roles?.includes('Student')) {
@@ -212,29 +209,27 @@ export const Header = () => {
 
     const navLinks = getNavLinks();
 
-    // Helper function to render search results without nested ternary
     const renderSearchResultsContent = () => {
         if (isSearching) {
-            return <div className="px-4 py-3 text-center text-[14px] text-gray-500 dark:text-zinc-400">Searching...</div>;
+            return <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-slate-400 animate-pulse">Searching...</div>;
         }
         if (searchResults.length === 0) {
-            return <div className="px-4 py-3 text-center text-[14px] text-gray-500 dark:text-zinc-400">No courses found</div>;
+            return <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-slate-400">No courses found</div>;
         }
         return (
-            <ul className="max-h-[280px] overflow-auto">
+            <ul className="max-h-[320px] overflow-auto custom-scrollbar p-2">
                 {searchResults.map((course) => (
-                    <li
-                        key={course.id}
-                        className="border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
-                    >
+                    <li key={course.id} className="mb-1 last:mb-0">
                         <button
                             type="button"
                             onClick={() => handleSearchResultClick(course.id)}
-                            className="block w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+                            className="w-full text-left px-4 py-3 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors group flex flex-col gap-1"
                         >
-                            <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 truncate">{course.name}</p>
+                            <span className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                {course.name}
+                            </span>
                             {course.code && (
-                                <p className="text-[12px] text-gray-500 dark:text-zinc-400">{course.code}</p>
+                                <span className="text-xs text-gray-500 dark:text-slate-400">{course.code}</span>
                             )}
                         </button>
                     </li>
@@ -244,41 +239,37 @@ export const Header = () => {
     };
 
     return (
-        <header
-            className="bg-white/60 dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800 sticky top-0 z-50 transition-colors"
-            style={{
-                paddingTop: '12px',
-                paddingBottom: '13px',
-                paddingLeft: '24px',
-                paddingRight: '24px'
-            }}
-        >
-            <div className="flex items-center justify-between w-full">
+        <header className="sticky top-0 z-50 w-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 shadow-sm transition-all duration-300 px-6 py-3">
+            <div className="flex items-center justify-between w-full max-w-[1920px] mx-auto">
+
                 {/* Logo */}
                 <Link
                     to={user ? getDashboardRoute() : ROUTES.HOME}
-                    className="flex items-center gap-3 h-[56px] cursor-pointer hover:opacity-80 transition-opacity"
+                    className="flex items-center gap-3 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                 >
-                    <img src="/logo-removebg.svg" alt="Ailern" className="w-[52px] h-[52px] object-contain" />
+                    <img
+                        src="/logo-removebg.svg"
+                        alt="Ailern"
+                        className="w-[60px] sm:w-[60px] h-auto object-contain drop-shadow-md"
+                    />
                 </Link>
 
-                {/* Navigation */}
-                <nav className="hidden lg:flex items-center gap-6 flex-1 justify-center">
+                {/* Desktop Navigation */}
+                <nav className="hidden lg:flex items-center gap-2 flex-1 justify-center px-8">
                     {!isGuest &&
                         navLinks.map((link) => {
                             const isActive = (location.pathname === link.path ||
                                 (link.path !== getDashboardRoute() && location.pathname.startsWith(link.path))) &&
                                 !location.pathname.includes('/profile');
+
                             return (
                                 <Link
                                     key={link.path}
                                     to={link.path}
-                                    className="relative font-medium text-[14px] leading-[20px] py-1"
-                                    style={{
-                                        color: isActive ? '#a78bfa' : '#868e96',
-                                        fontWeight: isActive ? 700 : 500,
-                                        borderBottom: isActive ? '2px solid #a78bfa' : 'none',
-                                    }}
+                                    className={`relative px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${isActive
+                                        ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                                        }`}
                                 >
                                     {link.label}
                                 </Link>
@@ -286,29 +277,29 @@ export const Header = () => {
                         })}
                 </nav>
 
-                {/* Search and User */}
-                <div className="flex items-center gap-3">
+                {/* Right Side Actions (Search, Notifications, Profile) */}
+                <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                     {!isGuest && (
                         <button
                             type="button"
-                            aria-label="Toggle menu"
                             onClick={() => setIsMobileMenuOpen(prev => !prev)}
-                            className="lg:hidden w-10 h-10 rounded-full border border-gray-200 dark:border-zinc-800 flex items-center justify-center text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                            className="lg:hidden p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                         >
                             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
                     )}
+
                     {isGuest ? (
                         <div className="flex items-center gap-3">
                             <Link
                                 to={ROUTES.LOGIN}
-                                className="px-4 py-2 rounded-lg font-medium text-[14px] text-gray-700 hover:bg-gray-100 transition-colors"
+                                className="px-5 py-2.5 rounded-xl font-semibold text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                             >
                                 Login
                             </Link>
                             <Link
                                 to={`${ROUTES.HOME}#contact`}
-                                className="px-4 py-2 rounded-lg font-medium text-[14px] text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                                className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg hover:shadow-blue-500/25 transition-all hover:-translate-y-0.5"
                             >
                                 Contact Us
                             </Link>
@@ -316,28 +307,24 @@ export const Header = () => {
                     ) : (
                         <>
                             {/* Search */}
-                            <div className="relative w-[256px] hidden md:block" ref={searchRef}>
+                            <div className="relative w-[260px] hidden md:block group" ref={searchRef}>
                                 <form onSubmit={handleSearch}>
-                                    <div
-                                        className="flex items-center h-[40px] px-3 rounded-full relative bg-gray-100 dark:bg-zinc-800"
-                                    >
-                                        <div className="absolute left-[12px] top-[10px] w-[20px] h-[20px]">
-                                            <Search className="w-[20px] h-[20px] text-gray-500 dark:text-zinc-400" />
-                                        </div>
+                                    <div className="flex items-center h-10 px-3 rounded-full relative bg-gray-100/80 dark:bg-slate-800/80 border border-transparent focus-within:border-blue-500/50 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all duration-300">
+                                        <Search className="absolute left-3 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                                         <input
                                             type="text"
                                             placeholder="Search Courses..."
                                             value={searchQuery}
                                             onChange={(e) => handleSearchChange(e.target.value)}
                                             onFocus={() => { if (searchResults.length > 0) setShowSearchResults(true); }}
-                                            className="bg-transparent border-none outline-none text-[16px] w-full pl-[40px] pr-[31px] text-gray-500 dark:text-zinc-400 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
+                                            className="bg-transparent border-none outline-none text-sm w-full pl-7 pr-2 text-gray-700 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-500"
                                         />
                                     </div>
                                 </form>
 
                                 {/* Search Results Dropdown */}
                                 {showSearchResults && (
-                                    <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-zinc-900 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 z-50 overflow-hidden">
+                                    <div className="absolute right-0 top-[calc(100%+8px)] w-full bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-700/80 shadow-xl rounded-2xl overflow-hidden backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2">
                                         {renderSearchResultsContent()}
                                     </div>
                                 )}
@@ -347,36 +334,31 @@ export const Header = () => {
                             <div className="relative" ref={notificationsRef}>
                                 <button
                                     onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                                    className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                    className="relative p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                 >
-                                    <Bell className="w-6 h-6 text-gray-500 dark:text-zinc-400" />
+                                    <Bell className="w-5 h-5" />
                                     {unreadCount > 0 && (
-                                        <span
-                                            className="absolute top-[4px] right-[4px] w-[10px] h-[10px] rounded-full border-2 border-white"
-                                            style={{ backgroundColor: '#ef4444' }}
-                                        />
+                                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border-2 border-white dark:border-slate-900 shadow-sm" />
                                     )}
                                 </button>
 
                                 {/* Notifications Dropdown */}
                                 {isNotificationsOpen && (
-                                    <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-zinc-900 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 z-50">
+                                    <div className="absolute right-0 top-[calc(100%+8px)] w-[380px] bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-700/80 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2">
                                         {/* Header */}
-                                        <div className="border-b border-gray-200 dark:border-zinc-700 h-[57px] flex items-center justify-between px-4">
-                                            <h3 className="text-[18px] font-medium text-gray-900 dark:text-zinc-100">
-                                                Notifications
-                                            </h3>
+                                        <div className="border-b border-gray-100 dark:border-slate-800 p-4 flex items-center justify-between bg-white/50 dark:bg-slate-900/50">
+                                            <h3 className="text-base font-bold text-gray-900 dark:text-white">Notifications</h3>
                                             <button
                                                 type="button"
                                                 onClick={markAllAsRead}
-                                                className="text-[14px] font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
+                                                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                                             >
                                                 Mark all as read
                                             </button>
                                         </div>
 
                                         {/* Notifications List */}
-                                        <div className="max-h-[384px] overflow-auto">
+                                        <div className="max-h-[360px] overflow-auto custom-scrollbar">
                                             {notifications.map((notification) => {
                                                 const IconComponent = notification.icon;
                                                 return (
@@ -384,45 +366,40 @@ export const Header = () => {
                                                         type="button"
                                                         key={notification.id}
                                                         onClick={() => markNotificationAsRead(notification.id)}
-                                                        className={`block w-full text-left border-b border-gray-200 dark:border-zinc-700 last:border-b-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors ${notification.isRead ? 'bg-gray-50 dark:bg-zinc-900' : 'bg-blue-50 dark:bg-blue-900/20'
+                                                        className={`w-full text-left border-b border-gray-50 dark:border-slate-800/50 last:border-0 p-4 transition-colors flex items-start gap-4 ${notification.isRead
+                                                            ? 'hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                                                            : 'bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                                                             }`}
                                                     >
-                                                        <div className="p-4">
-                                                            <div className="flex gap-4 items-start">
-                                                                {/* Icon */}
-                                                                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${notification.iconBg} shrink-0`}>
-                                                                    <IconComponent className={`w-6 h-6 ${notification.iconColor}`} />
-                                                                </div>
-
-                                                                {/* Content */}
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 leading-[20px] mb-1">
-                                                                        {notification.title}
-                                                                    </p>
-                                                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400 leading-[20px]">
-                                                                        {notification.time}
-                                                                    </p>
-                                                                </div>
-
-                                                                {/* Unread Indicator */}
-                                                                {!notification.isRead && (
-                                                                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full shrink-0 mt-2"></div>
-                                                                )}
-                                                            </div>
+                                                        <div className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${notification.iconBg}`}>
+                                                            <IconComponent className={`w-5 h-5 ${notification.iconColor}`} />
                                                         </div>
+
+                                                        <div className="flex-1 min-w-0 pr-2">
+                                                            <p className={`text-sm leading-snug mb-1 ${notification.isRead ? 'text-gray-700 dark:text-slate-300' : 'text-gray-900 dark:text-white font-medium'}`}>
+                                                                {notification.title}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 dark:text-slate-500">
+                                                                {notification.time}
+                                                            </p>
+                                                        </div>
+
+                                                        {!notification.isRead && (
+                                                            <div className="w-2 h-2 bg-blue-600 rounded-full shrink-0 mt-2 shadow-sm shadow-blue-500/50"></div>
+                                                        )}
                                                     </button>
                                                 );
                                             })}
                                         </div>
 
                                         {/* Footer */}
-                                        <div className="bg-gray-50 dark:bg-zinc-800 border-t border-gray-200 dark:border-zinc-700 h-[45px] flex items-center justify-center">
+                                        <div className="border-t border-gray-100 dark:border-slate-800 p-3 flex items-center justify-center bg-gray-50/80 dark:bg-slate-900/80">
                                             <Link
                                                 to={ROUTES.NOTIFICATIONS}
-                                                className="text-[14px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                                                className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                                                 onClick={() => setIsNotificationsOpen(false)}
                                             >
-                                                See All Notifications
+                                                View all notifications
                                             </Link>
                                         </div>
                                     </div>
@@ -433,7 +410,7 @@ export const Header = () => {
                             <button
                                 type="button"
                                 onClick={handleProfileClick}
-                                className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold hover:from-blue-600 hover:to-blue-700 transition-colors cursor-pointer"
+                                className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm hover:shadow-md hover:scale-105 transition-all ring-2 ring-transparent hover:ring-blue-500/30"
                             >
                                 {user?.firstName?.[0]}{user?.lastName?.[0]}
                             </button>
@@ -444,11 +421,11 @@ export const Header = () => {
 
             {/* Mobile Menu */}
             {!isGuest && isMobileMenuOpen && (
-                <div className="lg:hidden mt-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-100 dark:border-zinc-800">
-                        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-400">Navigation</p>
+                <div className="lg:hidden absolute top-full left-0 w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shadow-xl animate-in slide-in-from-top-4">
+                    <div className="px-4 py-2 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-500">Menu</p>
                     </div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col py-2">
                         {navLinks.map((link) => {
                             const isActive = (location.pathname === link.path ||
                                 (link.path !== getDashboardRoute() && location.pathname.startsWith(link.path))) &&
@@ -457,14 +434,13 @@ export const Header = () => {
                                 <Link
                                     key={link.path}
                                     to={link.path}
-                                    className="px-4 py-3 text-sm font-medium border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
-                                    style={{
-                                        color: isActive ? '#a78bfa' : '#6b7280',
-                                        backgroundColor: isActive ? 'rgba(167, 139, 250, 0.08)' : 'transparent',
-                                        fontWeight: isActive ? 700 : 500,
-                                    }}
+                                    className={`px-6 py-3.5 text-sm font-semibold transition-colors flex items-center gap-3 ${isActive
+                                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10'
+                                        : 'text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                        }`}
                                     onClick={() => setIsMobileMenuOpen(false)}
                                 >
+                                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />}
                                     {link.label}
                                 </Link>
                             );

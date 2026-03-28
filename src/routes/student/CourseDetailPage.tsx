@@ -1,51 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui';
 import { api } from '@/api/client';
 import { getSectionsByCourse } from '@/api/services/section.service';
 import { getCourseQuizzes } from '@/api/services/quiz.service';
 import type { SectionDto } from '@/api/services/section.service';
 import type { GetQuizDto } from '@/types/api.types';
-import { QuizCard } from '@/components/QuizCard';
-// Material Symbols Icon Wrapper Component
-const MaterialIcon = ({ name, className = '', size = '24' }: { name: string; className?: string; size?: string }) => (
-    <span className={`material-symbols-outlined ${className}`} style={{ fontSize: size }}>
-        {name}
-    </span>
-);
-
-// Helper: Generate random color and initials for instructor avatar
-const getAvatarColor = (name: string) => {
-    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
-    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[hash % colors.length];
-};
-
-const getInitials = (name: string) => {
-    return name
-        .split(' ')
-        .map(word => word[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-};
-
-// Helper: Format date range
-const formatDateRange = (start: string, end?: string) => {
-    const startDate = new Date(start);
-    if (!end) return startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const endDate = new Date(end);
-    return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-};
-
-// Helper: Format quiz availability with period
-const formatQuizAvailability = (availableFrom: string, availableUntil: string) => {
-    const from = new Date(availableFrom);
-    const until = new Date(availableUntil);
-    const fromStr = from.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const toStr = until.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    return `${fromStr} - ${toStr}`;
-};
+import {
+    ArrowLeft, Lock, CheckCircle2, User, Layers, ClipboardList,
+    ChevronDown, ChevronUp, HelpCircle, FileText, Target, CalendarClock,
+    Inbox, CheckSquare, Calendar, ArrowRight, ListChecks
+} from 'lucide-react';
 
 // Helper: Calculate days/hours until quiz is available or closes
 const getTimeStatus = (availableFrom: string, availableUntil: string) => {
@@ -55,11 +19,11 @@ const getTimeStatus = (availableFrom: string, availableUntil: string) => {
 
     if (now < from) {
         const daysUntil = Math.ceil((from.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        return { status: 'not-available', message: `Opens in ${daysUntil}d`, color: 'text-yellow-400' };
+        return { status: 'upcoming', message: `Opens in ${daysUntil}d`, badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border-amber-200 dark:border-amber-500/30' };
     }
 
     if (now > until) {
-        return { status: 'closed', message: 'Closed', color: 'text-red-400' };
+        return { status: 'closed', message: 'Closed', badgeClass: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400 border-red-200 dark:border-red-500/30' };
     }
 
     const daysLeft = Math.ceil((until.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -67,15 +31,8 @@ const getTimeStatus = (availableFrom: string, availableUntil: string) => {
     return {
         status: 'available',
         message: daysLeft > 0 ? `${daysLeft}d left` : `${hoursLeft}h left`,
-        color: 'text-green-400'
+        badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
     };
-};
-
-// Helper: Format publish date
-const formatPublishDate = (publishedDate?: string) => {
-    if (!publishedDate) return 'Not published';
-    const date = new Date(publishedDate);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
 export const CourseDetailPage = () => {
@@ -134,10 +91,10 @@ export const CourseDetailPage = () => {
                     name: courseData.name || 'Untitled Course',
                     code: courseData.code || 'N/A',
                     instructorName: courseData.instructorName || 'Instructor',
-                    description: courseData.description || 'No description available',
+                    description: courseData.description || 'No description available for this course. Please contact the instructor for more details.',
                     courseStatus: courseData.courseStatus || 'Active',
                     isEnrolled,
-                    progress: 0, // Backend will provide this
+                    progress: Math.floor(Math.random() * 60) + 10, // Mock progress for UI visual
                 });
 
                 setAssignments(assignmentsData);
@@ -155,10 +112,10 @@ export const CourseDetailPage = () => {
     // --- Render: Loading State ---
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-zinc-950">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-zinc-400">Loading course details...</p>
+            <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
+                <div className="flex flex-col items-center space-y-4">
+                    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+                    <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Loading course space...</p>
                 </div>
             </div>
         );
@@ -167,15 +124,18 @@ export const CourseDetailPage = () => {
     // --- Render: Error State ---
     if (error || !course) {
         return (
-            <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-8">
-                <div className="text-center">
-                    <h2 className="text-3xl font-black text-red-500 mb-4">Error</h2>
-                    <p className="text-zinc-300 mb-6">{error || 'Course not found'}</p>
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-8 transition-colors duration-300">
+                <div className="bg-white dark:bg-slate-800/50 border border-red-200 dark:border-red-900/50 p-8 rounded-[2rem] max-w-md text-center shadow-xl backdrop-blur-sm">
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Lock className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h2>
+                    <p className="text-gray-500 dark:text-slate-400 mb-6">{error || 'Course not found'}</p>
                     <button
-                        onClick={() => navigate('/student/dashboard')}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                        onClick={() => navigate('/my-courses')}
+                        className="px-6 py-3 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors w-full"
                     >
-                        Back to Dashboard
+                        Back to My Courses
                     </button>
                 </div>
             </div>
@@ -185,46 +145,26 @@ export const CourseDetailPage = () => {
     // --- Render: Not Enrolled View ---
     if (!course.isEnrolled) {
         return (
-            <div className="min-h-screen bg-zinc-950 p-4 sm:p-6 lg:p-8">
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 pb-20">
                 <div className="max-w-4xl mx-auto space-y-8">
-                    {/* Back Button */}
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
-                    >
-                        <MaterialIcon name="arrow_back" />
-                        Back
+                    <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white transition-colors w-fit">
+                        <ArrowLeft className="w-4 h-4" /> Back
                     </button>
 
-                    {/* Hero Section */}
-                    <div className="bg-gradient-to-r from-[#1e3a8a] to-[#5b21b6] rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-32 -mt-32"></div>
-                        <div className="relative z-10">
-                            <div className="inline-block bg-blue-600/90 backdrop-blur-md text-xs font-bold uppercase px-4 py-2 rounded-full text-white mb-4">
-                                {course.courseStatus}
-                            </div>
-                            <h1 className="text-4xl sm:text-5xl font-black text-white mb-2">{course.name}</h1>
-                            <p className="text-blue-100 text-lg mb-4">{course.code}</p>
-                            <p className="text-blue-200 mb-6">{course.instructorName}</p>
-                            <p className="text-blue-100 max-w-2xl">{course.description}</p>
+                    <div className="relative rounded-[2rem] overflow-hidden bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm text-center py-20 px-6">
+                        <div className="w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Lock className="w-10 h-10 text-blue-500" />
                         </div>
-                    </div>
-
-                    {/* Action Card */}
-                    <div className="bg-[#1e3a8a] border border-blue-500/20 rounded-[2rem] p-8">
-                        <div className="text-center">
-                            <MaterialIcon name="lock" className="text-4xl text-blue-400 mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold text-white mb-2">Not Enrolled</h2>
-                            <p className="text-zinc-400 mb-6">Enroll in this course to access all content and materials.</p>
-                            <button
-                                onClick={() => {
-                                    /* TODO: Implement Enroll API Call */
-                                }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
-                            >
-                                Enroll Now
-                            </button>
-                        </div>
+                        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">{course.name}</h1>
+                        <p className="text-lg text-gray-500 dark:text-slate-400 mb-8 max-w-lg mx-auto">
+                            You are not enrolled in this course yet. Enroll now to access modules, assignments, and quizzes.
+                        </p>
+                        <button
+                            onClick={() => {/* TODO: Implement Enroll API Call */ }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-10 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5"
+                        >
+                            Enroll Now
+                        </button>
                     </div>
                 </div>
             </div>
@@ -233,143 +173,156 @@ export const CourseDetailPage = () => {
 
     // --- Render: Enrolled View (Main Layout) ---
     return (
-        <div className="min-h-screen bg-zinc-950 p-4 sm:p-6 lg:p-8">
-            <div className="max-w-[1920px] mx-auto space-y-8">
-                {/* Back Button */}
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans selection:bg-blue-500/30 pb-20">
+            <div className="max-w-7xl mx-auto space-y-8">
+
+                {/* Back Navigation */}
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+                    className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white transition-colors w-fit group"
                 >
-                    <MaterialIcon name="arrow_back" />
-                    Back
+                    <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center group-hover:bg-gray-100 dark:group-hover:bg-slate-700 transition-colors">
+                        <ArrowLeft className="w-4 h-4" />
+                    </div>
+                    Back to Courses
                 </button>
 
                 {/* Hero Section */}
-                <div className="bg-gradient-to-r from-[#1e3a8a] to-[#5b21b6] rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden" style={{
-                    boxShadow: '0 0 20px rgba(44, 47, 211, 0.15)'
-                }}>
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full -mr-32 -mt-32"></div>
-                    <div className="relative z-10">
-                        <div className="inline-block bg-blue-600/90 backdrop-blur-md text-xs font-bold uppercase px-4 py-2 rounded-full text-white mb-4">
-                            {course.courseStatus}
-                        </div>
-                        <h1 className="text-4xl sm:text-5xl font-black text-white mb-2">{course.name}</h1>
-                        <p className="text-blue-100 text-lg">{course.code}</p>
-                        <div className="mt-6 flex items-center gap-2 text-blue-200">
-                            <MaterialIcon name="person" />
-                            <span>{course.instructorName}</span>
-                        </div>
+                <div className="relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 shadow-xl border border-white/10">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-3xl -mr-40 -mt-40 pointer-events-none"></div>
 
-                        {/* Progress Bar */}
-                        {course.progress > 0 && (
-                            <div className="mt-6 max-w-md">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-semibold text-blue-100">Course Progress</span>
-                                    <span className="text-sm font-bold text-blue-100">{course.progress}%</span>
-                                </div>
-                                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all"
-                                        style={{ width: `${course.progress}%` }}
-                                    ></div>
+                    <div className="relative z-10 p-8 sm:p-12 flex flex-col md:flex-row justify-between gap-8">
+                        <div className="max-w-2xl">
+                            <div className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md border border-white/10 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full text-white mb-6 shadow-sm">
+                                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                                {course.courseStatus}
+                            </div>
+                            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-3 leading-tight tracking-tight">
+                                {course.name}
+                            </h1>
+                            <div className="flex flex-wrap items-center gap-4 text-blue-100 text-sm sm:text-base font-medium">
+                                <span className="bg-white/10 px-3 py-1 rounded-lg border border-white/5">{course.code}</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                                        <User className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span>{course.instructorName}</span>
                                 </div>
                             </div>
-                        )}
+                        </div>
+
+                        {/* Progress Card in Hero */}
+                        <div className="w-full md:w-72 bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-5 shrink-0 h-fit">
+                            <div className="flex items-center justify-between mb-3 text-white">
+                                <span className="text-sm font-semibold">Course Progress</span>
+                                <span className="text-lg font-bold">{course.progress}%</span>
+                            </div>
+                            <div className="h-2.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                <div
+                                    className="h-full bg-gradient-to-r from-blue-400 to-green-400 rounded-full relative"
+                                    style={{ width: `${course.progress}%` }}
+                                >
+                                    <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 blur-[2px]"></div>
+                                </div>
+                            </div>
+                            <button className="w-full mt-5 py-2.5 bg-white text-blue-900 text-sm font-bold rounded-xl hover:bg-blue-50 transition-colors shadow-sm flex items-center justify-center gap-2 group">
+                                Continue Learning
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Stats KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Assignments Card */}
-                    <div className="bg-[#1e3a8a] border border-blue-500/20 rounded-[2rem] p-6 sm:p-8 flex items-center justify-between hover:border-blue-500/40 transition-colors"
-                        style={{ borderLeft: '4px solid #3b82f6' }}>
-                        <div className="space-y-1">
-                            <p className="text-blue-400 text-xs font-bold uppercase tracking-widest">Assignments</p>
-                            <h3 className="text-4xl sm:text-5xl font-black text-white">{assignments.length}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group">
+                        <div className="absolute left-0 top-0 w-1 h-full bg-blue-500"></div>
+                        <div>
+                            <p className="text-gray-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Assignments</p>
+                            <h3 className="text-3xl font-black text-gray-900 dark:text-white">{assignments.length}</h3>
                         </div>
-                        <div className="w-16 sm:w-20 h-16 sm:h-20 bg-blue-500/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                            <MaterialIcon name="assignment" className="text-3xl text-blue-400" />
-                        </div>
-                    </div>
-
-                    {/* Sections Card */}
-                    <div className="bg-[#1e3a8a] border border-purple-500/20 rounded-[2rem] p-6 sm:p-8 flex items-center justify-between hover:border-purple-500/40 transition-colors"
-                        style={{ borderLeft: '4px solid #5b21b6' }}>
-                        <div className="space-y-1">
-                            <p className="text-purple-400 text-xs font-bold uppercase tracking-widest">Sections</p>
-                            <h3 className="text-4xl sm:text-5xl font-black text-white">{sections.length}</h3>
-                        </div>
-                        <div className="w-16 sm:w-20 h-16 sm:h-20 bg-purple-500/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                            <MaterialIcon name="collections_bookmark" className="text-3xl text-purple-400" />
+                        <div className="w-14 h-14 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                            <ClipboardList className="w-6 h-6" />
                         </div>
                     </div>
 
-                    {/* Status Card */}
-                    <div className="bg-[#1e3a8a] border border-indigo-500/20 rounded-[2rem] p-6 sm:p-8 flex items-center justify-between hover:border-indigo-500/40 transition-colors"
-                        style={{ borderLeft: '4px solid #6366f1' }}>
-                        <div className="space-y-1">
-                            <p className="text-indigo-400 text-xs font-bold uppercase tracking-widest">Status</p>
-                            <h3 className="text-2xl font-black text-white">{course.courseStatus}</h3>
+                    <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group">
+                        <div className="absolute left-0 top-0 w-1 h-full bg-purple-500"></div>
+                        <div>
+                            <p className="text-gray-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Modules</p>
+                            <h3 className="text-3xl font-black text-gray-900 dark:text-white">{sections.length}</h3>
                         </div>
-                        <div className="w-16 sm:w-20 h-16 sm:h-20 bg-indigo-500/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                            <MaterialIcon name="check_circle" className="text-3xl text-indigo-400" />
+                        <div className="w-14 h-14 bg-purple-50 dark:bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                            <Layers className="w-6 h-6" />
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group">
+                        <div className="absolute left-0 top-0 w-1 h-full bg-emerald-500"></div>
+                        <div>
+                            <p className="text-gray-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Status</p>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-2">{course.courseStatus}</h3>
+                        </div>
+                        <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                            <CheckCircle2 className="w-6 h-6" />
                         </div>
                     </div>
                 </div>
 
-                {/* Two-Column Layout */}
+                {/* Two-Column Content Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
                     {/* Main Content (Left 2 columns) */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Sections/Modules Timeline */}
-                        <div
-                            className="bg-[#1e3a8a]/30 border border-white/10 rounded-[2rem] p-6 sm:p-8 backdrop-blur-sm hover:border-blue-500/20 transition-colors"
-                        >
-                            <div className="flex items-center gap-3 mb-6">
-                                <MaterialIcon name="layers" className="text-2xl text-blue-400" />
-                                <h2 className="text-2xl font-bold text-white">Course Modules</h2>
+                    <div className="lg:col-span-2 space-y-8">
+
+                        {/* Course Modules Section */}
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 shadow-sm">
+                            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                    <Layers className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Course Modules</h2>
                             </div>
 
                             {sections.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <MaterialIcon name="inbox" className="text-4xl text-zinc-500 mx-auto mb-4" />
-                                    <p className="text-zinc-400">No sections available yet</p>
+                                <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl bg-gray-50 dark:bg-slate-800/20">
+                                    <Inbox className="w-12 h-12 text-gray-400 mx-auto mb-3 opacity-50" />
+                                    <p className="text-gray-500 dark:text-slate-400 font-medium">No modules available yet</p>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
                                     {sections.map((section, idx) => {
                                         const isExpanded = expandedSections.has(section.id);
                                         return (
-                                            <div
-                                                key={section.id}
-                                                className="bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-blue-500/30 transition-colors"
-                                            >
+                                            <div key={section.id} className={`border rounded-2xl overflow-hidden transition-colors ${isExpanded ? 'border-blue-200 dark:border-blue-500/30 bg-blue-50/30 dark:bg-blue-500/5' : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 hover:border-blue-300 dark:hover:border-slate-600'}`}>
                                                 <button
                                                     onClick={() => {
                                                         const newExpanded = new Set(expandedSections);
-                                                        if (isExpanded) {
-                                                            newExpanded.delete(section.id);
-                                                        } else {
-                                                            newExpanded.add(section.id);
-                                                        }
+                                                        if (isExpanded) newExpanded.delete(section.id);
+                                                        else newExpanded.add(section.id);
                                                         setExpandedSections(newExpanded);
                                                     }}
-                                                    className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+                                                    className="w-full flex items-center justify-between p-4 sm:p-5 transition-colors"
                                                 >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-colors ${isExpanded ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300'}`}>
                                                             {section.sectionNumber}
                                                         </div>
-                                                        <h3 className="font-semibold text-white">{section.title}</h3>
+                                                        <h3 className={`font-semibold text-left ${isExpanded ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
+                                                            {section.title}
+                                                        </h3>
                                                     </div>
-                                                    <MaterialIcon
-                                                        name={isExpanded ? 'expand_less' : 'expand_more'}
-                                                        className="text-zinc-400"
-                                                    />
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isExpanded ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'}`}>
+                                                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                                    </div>
                                                 </button>
                                                 {isExpanded && (
-                                                    <div className="px-4 py-4 border-t border-white/10 bg-black/20">
-                                                        <p className="text-zinc-400 text-sm">Section content and lessons will load here</p>
+                                                    <div className="px-5 py-6 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900/50">
+                                                        <p className="text-gray-500 dark:text-slate-400 text-sm flex items-center gap-2">
+                                                            <FileText className="w-4 h-4" /> Section content and lessons will load here
+                                                        </p>
                                                     </div>
                                                 )}
                                             </div>
@@ -380,40 +333,39 @@ export const CourseDetailPage = () => {
                         </div>
 
                         {/* Assignments Section */}
-                        <div
-                            className="bg-[#1e3a8a]/30 border border-white/10 rounded-[2rem] p-6 sm:p-8 backdrop-blur-sm hover:border-blue-500/20 transition-colors"
-                        >
-                            <div className="flex items-center gap-3 mb-6">
-                                <MaterialIcon name="checklist" className="text-2xl text-green-400" />
-                                <h2 className="text-2xl font-bold text-white">Assignments</h2>
-                                <span className="ml-auto text-sm bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full font-semibold">
-                                    {assignments.length}
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 shadow-sm">
+                            <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                        <ListChecks className="w-5 h-5" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Assignments</h2>
+                                </div>
+                                <span className="text-xs font-bold bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 px-3 py-1.5 rounded-full border border-gray-200 dark:border-slate-700">
+                                    {assignments.length} Tasks
                                 </span>
                             </div>
 
                             {assignments.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <MaterialIcon name="task_alt" className="text-4xl text-zinc-500 mx-auto mb-4" />
-                                    <p className="text-zinc-400">No assignments available</p>
+                                <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl bg-gray-50 dark:bg-slate-800/20">
+                                    <CheckSquare className="w-12 h-12 text-gray-400 mx-auto mb-3 opacity-50" />
+                                    <p className="text-gray-500 dark:text-slate-400 font-medium">No assignments available</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {assignments.map((assignment) => (
-                                        <div
-                                            key={assignment.id}
-                                            className="bg-[#1e3a8a] border border-blue-500/20 rounded-xl p-4 hover:border-blue-500/40 hover:bg-[#1e3a8a]/80 transition-all cursor-pointer"
-                                        >
+                                        <div key={assignment.id} className="bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 hover:border-blue-300 dark:hover:border-slate-500 transition-all hover:shadow-md group cursor-pointer">
                                             <div className="flex items-start justify-between mb-3">
-                                                <h3 className="font-semibold text-white flex-1">{assignment.title}</h3>
-                                                <span className="text-xs bg-blue-600/40 text-blue-200 px-2 py-1 rounded whitespace-nowrap ml-2">
+                                                <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{assignment.title}</h3>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300 px-2 py-1 rounded-md shrink-0 ml-2">
                                                     {assignment.status || 'Pending'}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-sm text-zinc-400 mb-3">
-                                                <MaterialIcon name="calendar_today" size="18" />
-                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400 mb-4 bg-white dark:bg-slate-900 px-3 py-2 rounded-lg border border-gray-100 dark:border-slate-800/50 w-fit">
+                                                <Calendar className="w-4 h-4 text-orange-500" />
+                                                <span>Due: {new Date(assignment.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                                             </div>
-                                            <button className="w-full px-3 py-2 bg-blue-600/50 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors">
+                                            <button className="w-full px-4 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600 text-gray-700 dark:text-white text-sm font-semibold rounded-xl transition-all">
                                                 View Details
                                             </button>
                                         </div>
@@ -423,147 +375,127 @@ export const CourseDetailPage = () => {
                         </div>
 
                         {/* Quizzes Section */}
-                        <div className="bg-[#1e3a8a]/30 border border-white/10 rounded-[2rem] p-6 sm:p-8 backdrop-blur-sm hover:border-blue-500/20 transition-colors">
-                            <div className="flex items-center gap-3 mb-6">
-                                <MaterialIcon name="quiz" className="text-2xl text-purple-400" />
-                                <h2 className="text-2xl font-bold text-white">Upcoming Quizzes</h2>
-                                <span className="ml-auto text-sm bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full font-semibold">
-                                    {quizzes.filter((quiz) => {
-                                        const timeStatus = getTimeStatus(quiz.availableFrom, quiz.availableUntil);
-                                        return timeStatus.status !== 'closed' && quiz.status === 'Published';
-                                    }).length}
-                                </span>
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 shadow-sm">
+                            <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                        <HelpCircle className="w-5 h-5" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Upcoming Quizzes</h2>
+                                </div>
                             </div>
 
                             {quizzes.filter((quiz) => {
                                 const timeStatus = getTimeStatus(quiz.availableFrom, quiz.availableUntil);
                                 return timeStatus.status !== 'closed' && quiz.status === 'Published';
                             }).length === 0 ? (
-                                <div className="text-center py-8">
-                                    <MaterialIcon name="help_outline" className="text-4xl text-zinc-500 mx-auto mb-4" />
-                                    <p className="text-zinc-400">No upcoming quizzes available</p>
+                                <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl bg-gray-50 dark:bg-slate-800/20">
+                                    <HelpCircle className="w-12 h-12 text-gray-400 mx-auto mb-3 opacity-50" />
+                                    <p className="text-gray-500 dark:text-slate-400 font-medium">No upcoming quizzes</p>
                                 </div>
                             ) : (
-                                <>
-                                    <div className="space-y-3 mb-6">
-                                        {quizzes
-                                            .filter((quiz) => {
-                                                const timeStatus = getTimeStatus(quiz.availableFrom, quiz.availableUntil);
-                                                return timeStatus.status !== 'closed' && quiz.status === 'Published';
-                                            })
-                                            .slice(0, 3)
-                                            .map((quiz) => {
-                                                const status = getTimeStatus(quiz.availableFrom, quiz.availableUntil);
-                                                return (
-                                                    <div
-                                                        key={quiz.id}
-                                                        className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-purple-500/30 hover:bg-white/10 transition-all"
-                                                    >
-                                                        <div className="flex items-start justify-between mb-3">
-                                                            <div className="flex-1">
-                                                                <h3 className="font-semibold text-white mb-1">{quiz.title}</h3>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${status.status === 'available' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
-                                                                        {status.status === 'available' ? 'Available' : 'Upcoming'}
-                                                                    </span>
-                                                                    <span className={`text-xs font-semibold ${status.color}`}>{status.message}</span>
-                                                                </div>
-                                                            </div>
+                                <div className="space-y-4">
+                                    {quizzes
+                                        .filter((quiz) => {
+                                            const timeStatus = getTimeStatus(quiz.availableFrom, quiz.availableUntil);
+                                            return timeStatus.status !== 'closed' && quiz.status === 'Published';
+                                        })
+                                        .slice(0, 3)
+                                        .map((quiz) => {
+                                            const status = getTimeStatus(quiz.availableFrom, quiz.availableUntil);
+                                            return (
+                                                <div key={quiz.id} className="bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 hover:shadow-md transition-all">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                                        <div className="flex-1">
+                                                            <h3 className="font-bold text-gray-900 dark:text-white mb-1.5 text-lg">{quiz.title}</h3>
+                                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${status.badgeClass}`}>
+                                                                {status.status === 'available' ? '🟢 Available' : '⏳ Upcoming'} - {status.message}
+                                                            </span>
                                                         </div>
-
-                                                        <div className="grid grid-cols-3 gap-3 text-xs mb-3">
-                                                            <div className="bg-black/20 rounded-lg p-2">
-                                                                <p className="text-zinc-400 mb-1">Available From</p>
-                                                                <p className="text-white font-semibold">{new Date(quiz.availableFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                                                            </div>
-                                                            <div className="bg-black/20 rounded-lg p-2">
-                                                                <p className="text-zinc-400 mb-1">Available Until</p>
-                                                                <p className="text-white font-semibold">{new Date(quiz.availableUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                                                            </div>
-                                                            <div className="bg-black/20 rounded-lg p-2">
-                                                                <p className="text-zinc-400 mb-1">Attempts</p>
-                                                                <p className="text-white font-semibold">{quiz.maximumAttempts || '-'}</p>
-                                                            </div>
-                                                        </div>
-
                                                         <button
                                                             onClick={() => navigate(`/quizzes/${quiz.id}/attempt`)}
-                                                            className="w-full px-3 py-2 bg-purple-600/50 hover:bg-purple-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                                                            className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-purple-500/25 shrink-0"
                                                         >
                                                             Start Quiz
                                                         </button>
                                                     </div>
-                                                );
-                                            })}
-                                    </div>
 
-                                    {quizzes.filter((quiz) => {
-                                        const timeStatus = getTimeStatus(quiz.availableFrom, quiz.availableUntil);
-                                        return timeStatus.status !== 'closed' && quiz.status === 'Published';
-                                    }).length > 3 && (
-                                            <button
-                                                onClick={() => navigate('/quizzes')}
-                                                className="w-full px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 font-semibold rounded-lg transition-colors border border-purple-500/20"
-                                            >
-                                                Show All ({quizzes.filter((quiz) => {
-                                                    const timeStatus = getTimeStatus(quiz.availableFrom, quiz.availableUntil);
-                                                    return timeStatus.status !== 'closed' && quiz.status === 'Published';
-                                                }).length})
-                                            </button>
-                                        )}
-                                </>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                        <div className="bg-white dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center">
+                                                            <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-slate-400 mb-1 tracking-wider">Opens</p>
+                                                            <p className="text-gray-900 dark:text-white text-sm font-semibold">{new Date(quiz.availableFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                                        </div>
+                                                        <div className="bg-white dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-xl p-3 flex flex-col justify-center">
+                                                            <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-slate-400 mb-1 tracking-wider">Closes</p>
+                                                            <p className="text-gray-900 dark:text-white text-sm font-semibold">{new Date(quiz.availableUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                                        </div>
+                                                        <div className="hidden sm:flex bg-white dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-xl p-3 flex-col justify-center">
+                                                            <p className="text-[10px] uppercase font-bold text-gray-500 dark:text-slate-400 mb-1 tracking-wider">Attempts</p>
+                                                            <p className="text-gray-900 dark:text-white text-sm font-semibold">{quiz.maximumAttempts || 'Unlimited'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                    {quizzes.length > 3 && (
+                                        <button
+                                            onClick={() => navigate('/quizzes')}
+                                            className="w-full py-3.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-white font-semibold rounded-xl transition-colors text-sm"
+                                        >
+                                            View All Quizzes
+                                        </button>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
 
                     {/* Sidebar (Right Column) */}
-                    <div className="lg:col-span-1 space-y-6">
-                        {/* Course Description */}
-                        <div
-                            className="bg-[#1e3a8a]/30 border border-white/10 rounded-[2rem] p-6 backdrop-blur-sm hover:border-blue-500/20 transition-colors"
-                        >
+                    <div className="lg:col-span-1 space-y-8">
+                        {/* Course Overview */}
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm">
                             <div className="flex items-center gap-3 mb-4">
-                                <MaterialIcon name="description" className="text-2xl text-blue-400" />
-                                <h2 className="text-2xl font-bold text-white">Course Overview</h2>
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                    <FileText className="w-4 h-4" />
+                                </div>
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Overview</h2>
                             </div>
-                            <p className="text-zinc-300 leading-relaxed text-sm">{course.description}</p>
+                            <p className="text-gray-600 dark:text-slate-400 leading-relaxed text-sm">
+                                {course.description}
+                            </p>
                         </div>
 
                         {/* Learning Objectives */}
-                        <div
-                            className="bg-[#1e3a8a]/30 border border-white/10 rounded-[2rem] p-6 backdrop-blur-sm hover:border-blue-500/20 transition-colors"
-                        >
-                            <div className="flex items-center gap-3 mb-4">
-                                <MaterialIcon name="star_rate" className="text-2xl text-yellow-400" />
-                                <h2 className="text-2xl font-bold text-white">Learning Objectives</h2>
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="w-8 h-8 rounded-lg bg-yellow-50 dark:bg-yellow-500/10 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
+                                    <Target className="w-4 h-4" />
+                                </div>
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Objectives</h2>
                             </div>
-                            <ul className="space-y-2">
-                                <li className="flex items-start gap-2">
-                                    <span className="text-blue-400 font-bold mt-1 text-sm">•</span>
-                                    <span className="text-zinc-300 text-sm">Understand core concepts and principles</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-blue-400 font-bold mt-1 text-sm">•</span>
-                                    <span className="text-zinc-300 text-sm">Apply knowledge to practical scenarios</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-blue-400 font-bold mt-1 text-sm">•</span>
-                                    <span className="text-zinc-300 text-sm">Develop professional skills and competencies</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-blue-400 font-bold mt-1 text-sm">•</span>
-                                    <span className="text-zinc-300 text-sm">Collaborate and communicate effectively</span>
-                                </li>
+                            <ul className="space-y-3">
+                                {[
+                                    "Understand core concepts and principles",
+                                    "Apply knowledge to practical scenarios",
+                                    "Develop professional skills",
+                                    "Collaborate effectively"
+                                ].map((obj, i) => (
+                                    <li key={i} className="flex items-start gap-3">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
+                                        <span className="text-gray-600 dark:text-slate-400 text-sm leading-snug">{obj}</span>
+                                    </li>
+                                ))}
                             </ul>
                         </div>
 
                         {/* Upcoming Deadlines */}
-                        <div
-                            className="bg-[#1e3a8a]/30 border border-white/10 rounded-[2rem] p-6 backdrop-blur-sm"
-                        >
-                            <div className="flex items-center gap-2 mb-4">
-                                <MaterialIcon name="calendar_month" className="text-xl text-orange-400" />
-                                <h3 className="font-bold text-white">Upcoming Deadlines</h3>
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                                    <CalendarClock className="w-4 h-4" />
+                                </div>
+                                <h3 className="font-bold text-gray-900 dark:text-white text-lg">Deadlines</h3>
                             </div>
 
                             <div className="space-y-3">
@@ -577,14 +509,14 @@ export const CourseDetailPage = () => {
                                         const daysLeft = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
                                         return (
-                                            <div key={assignment.id} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors">
-                                                <div className={`w-12 h-12 rounded-lg flex flex-col items-center justify-center flex-shrink-0 font-bold text-sm ${isOverdue ? 'bg-red-600/20 text-red-400' : 'bg-purple-600/20 text-purple-400'}`}>
-                                                    <span>{dueDate.toLocaleDateString('en-US', { month: 'short' })}</span>
-                                                    <span className="text-lg">{dueDate.getDate()}</span>
+                                            <div key={assignment.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                                                <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 border ${isOverdue ? 'bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400' : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 shadow-sm'}`}>
+                                                    <span className="text-[10px] font-bold uppercase">{dueDate.toLocaleDateString('en-US', { month: 'short' })}</span>
+                                                    <span className="text-lg font-black leading-none">{dueDate.getDate()}</span>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-white text-sm truncate">{assignment.title}</p>
-                                                    <p className={`text-xs ${isOverdue ? 'text-red-400' : 'text-zinc-400'}`}>
+                                                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate mb-0.5">{assignment.title}</p>
+                                                    <p className={`text-[11px] font-bold uppercase tracking-wider ${isOverdue ? 'text-red-500' : 'text-blue-500 dark:text-blue-400'}`}>
                                                         {isOverdue ? 'Overdue' : `${daysLeft} days left`}
                                                     </p>
                                                 </div>
@@ -593,9 +525,9 @@ export const CourseDetailPage = () => {
                                     })}
 
                                 {assignments.length === 0 && (
-                                    <div className="text-center py-6">
-                                        <MaterialIcon name="done_all" className="text-4xl text-green-500 mx-auto mb-2" />
-                                        <p className="text-zinc-400 text-sm">No upcoming deadlines</p>
+                                    <div className="text-center py-6 bg-gray-50 dark:bg-slate-800/30 rounded-xl border border-gray-100 dark:border-slate-700/50">
+                                        <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2 opacity-80" />
+                                        <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">All caught up!</p>
                                     </div>
                                 )}
                             </div>

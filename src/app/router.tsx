@@ -44,7 +44,6 @@ import { InstructorGradebookPage } from '@/routes/instructor/InstructorGradebook
 import { InstructorCalendarPage } from '@/routes/instructor/InstructorCalendarPage';
 import { InstructorAssignmentsPage } from '@/routes/instructor/InstructorAssignmentsPage';
 import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';
-import { CreateQuizPage } from '@/routes/instructor/CreateQuizPage';
 import { InstructorQuizQuestionBuilderPage } from '@/routes/instructor/InstructorQuizQuestionBuilderPage';
 import { InstructorQuizEditPage } from '@/routes/instructor/InstructorQuizEditPage';
 import { InstructorQuizUpdatePage } from '@/routes/instructor/InstructorQuizUpdatePage';
@@ -130,7 +129,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<InstructorAssignmentCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT} element={<InstructorAssignmentEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />
-                <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<CreateQuizPage />} />
+                <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS} element={<InstructorQuizQuestionBuilderPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_UPDATE} element={<InstructorQuizUpdatePage />} />
@@ -163,4 +162,3 @@ export const AppRouter = () => {
         </Routes>
     );
 };
-

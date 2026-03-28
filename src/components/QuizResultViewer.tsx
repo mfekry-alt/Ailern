@@ -1,20 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertCircle, HelpCircle, Trophy, RotateCcw } from 'lucide-react';
 import { attemptsService } from '@/api/services';
 import type { AttemptResult, StudentAnswer } from '@/api/services/attempts.service';
 
-/**
- * QuizResultViewer Component
- * 
- * Displays quiz results after submission including:
- * - Score and grade
- * - Question-by-question review
- * - Color-coded answers (correct/incorrect/pending)
- * - Explanations for each question
- * - Can filter by flagged questions
- * - Retry option if attempts remain
- */
 export const QuizResultViewer = () => {
     const { id: quizId, attemptId } = useParams<{ id: string; attemptId: string }>();
     const navigate = useNavigate();
@@ -38,13 +27,10 @@ export const QuizResultViewer = () => {
                 setIsLoading(true);
                 setError(null);
 
-                // Fetch result
                 const resultData = await attemptsService.getAttemptResult(attemptId);
                 setResult(resultData);
 
-                // Fetch questions for the attempt
                 const questionsData = await attemptsService.getAttemptQuestions(attemptId);
-                console.log('✓ Attempt questions loaded:', questionsData?.length || 0, 'questions');
                 setQuestions(questionsData || []);
             } catch (err) {
                 console.error('Failed to load result:', err);
@@ -59,14 +45,10 @@ export const QuizResultViewer = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin mb-4">
-                        <svg className="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                    </div>
-                    <p className="text-slate-400">Loading results...</p>
+            <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
+                <div className="flex flex-col items-center space-y-4">
+                    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+                    <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Calculating your results...</p>
                 </div>
             </div>
         );
@@ -74,12 +56,16 @@ export const QuizResultViewer = () => {
 
     if (error || !result) {
         return (
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <p className="text-slate-400 mb-6">{error || 'Failed to load results'}</p>
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 transition-colors duration-300">
+                <div className="bg-white dark:bg-slate-800/50 border border-red-200 dark:border-red-900/50 p-8 rounded-2xl max-w-md text-center shadow-xl backdrop-blur-sm">
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Oops!</h2>
+                    <p className="text-gray-500 dark:text-slate-400 mb-6">{error || 'Failed to load results'}</p>
                     <button
                         onClick={() => navigate('/quizzes')}
-                        className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors"
+                        className="w-full px-6 py-3 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                     >
                         Back to Quizzes
                     </button>
@@ -95,7 +81,6 @@ export const QuizResultViewer = () => {
     const correctCount = answers.filter((a) => a.isCorrect).length;
     const pendingCount = answers.filter((a) => a.isCorrect === undefined || a.isCorrect === null).length;
 
-    // Calculate percentage if not provided by API
     const percentage = result.percentage !== undefined && result.percentage !== null
         ? result.percentage
         : result.totalScore > 0
@@ -103,123 +88,159 @@ export const QuizResultViewer = () => {
             : 0;
 
     const getGrade = () => {
-        if (percentage >= 90) return 'A';
-        if (percentage >= 80) return 'B';
-        if (percentage >= 70) return 'C';
-        if (percentage >= 60) return 'D';
-        return 'F';
+        if (percentage >= 90) return { letter: 'A', color: 'text-emerald-500' };
+        if (percentage >= 80) return { letter: 'B', color: 'text-blue-500' };
+        if (percentage >= 70) return { letter: 'C', color: 'text-yellow-500' };
+        if (percentage >= 60) return { letter: 'D', color: 'text-orange-500' };
+        return { letter: 'F', color: 'text-red-500' };
     };
 
+    const gradeInfo = getGrade();
+
     return (
-        <div className="min-h-screen bg-slate-950">
-            {/* Header */}
-            <header className="sticky top-0 z-40 flex justify-between items-center px-6 h-16 bg-slate-900 border-b border-slate-800">
-                <button
-                    onClick={() => navigate('/quizzes')}
-                    className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                    Back
-                </button>
-                <h1 className="text-xl font-bold text-white">Quiz Results</h1>
-                <div className="w-10"></div>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans selection:bg-blue-500/30 pb-20">
+
+            {/* Sticky Header */}
+            <header className="sticky top-0 z-40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 shadow-sm transition-all duration-300">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                    <button
+                        onClick={() => navigate('/quizzes')}
+                        className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white transition-colors group"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 border border-transparent dark:border-slate-700 flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-slate-700 transition-colors">
+                            <ArrowLeft className="w-4 h-4" />
+                        </div>
+                        <span className="hidden sm:block">Back to Quizzes</span>
+                    </button>
+                    <h1 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-amber-500" /> Quiz Results
+                    </h1>
+                    <div className="w-8 sm:w-32"></div> {/* Spacer for center alignment */}
+                </div>
             </header>
 
-            <main className="max-w-6xl mx-auto px-4 py-12">
-                {/* Score Card */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-                    {/* Main score */}
-                    <div className="lg:col-span-2 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-8 text-white overflow-hidden relative">
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
-                        <div className="relative z-10">
-                            <p className="text-indigo-100 font-bold uppercase tracking-wider mb-2">Your Score</p>
-                            <div className="flex items-baseline gap-4 mb-6">
-                                <span className="text-6xl font-black">{result.score}</span>
-                                <span className="text-3xl font-bold text-indigo-100">/ {result.totalScore}</span>
+            <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fade-in">
+
+                {/* Top Statistics Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    {/* Main Score Card */}
+                    <div className="lg:col-span-2 relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 shadow-xl border border-white/10 p-8 sm:p-10">
+                        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+
+                        <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-8 text-center sm:text-left">
+                            <div>
+                                <p className="text-blue-100 font-bold uppercase tracking-widest text-xs mb-3 flex items-center justify-center sm:justify-start gap-2">
+                                    <CheckCircle2 className="w-4 h-4 text-green-300" /> Final Score
+                                </p>
+                                <div className="flex items-baseline justify-center sm:justify-start gap-2 mb-2">
+                                    <span className="text-7xl sm:text-8xl font-black text-white leading-none tracking-tight">{result.score}</span>
+                                    <span className="text-2xl sm:text-3xl font-bold text-blue-200">/ {result.totalScore}</span>
+                                </div>
+                                <p className="text-blue-100 font-medium text-lg">{percentage.toFixed(1)}% Correct</p>
                             </div>
-                            <p className="text-indigo-100 mb-4">{percentage.toFixed(1)}% Correct</p>
-                            <div className="w-full bg-white/20 h-3 rounded-full overflow-hidden">
-                                <div
-                                    className="bg-white h-full transition-all"
-                                    style={{ width: `${percentage}%` }}
-                                ></div>
+
+                            <div className="w-full sm:w-1/2 max-w-[240px]">
+                                <div className="flex justify-between text-xs font-bold text-blue-100 mb-2">
+                                    <span>Progress</span>
+                                    <span>{percentage.toFixed(0)}%</span>
+                                </div>
+                                <div className="w-full bg-black/20 h-3 rounded-full overflow-hidden border border-white/10">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-blue-300 to-green-300 rounded-full relative"
+                                        style={{ width: `${percentage}%` }}
+                                    >
+                                        <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/40 blur-[2px]"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Grade & Stats */}
-                    <div className="space-y-4">
-                        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6">
-                            <p className="text-slate-400 text-sm font-bold uppercase tracking-wider mb-2">Grade</p>
-                            <p className="text-5xl font-black text-emerald-400">{getGrade()}</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-lg p-4">
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Correct</p>
-                                <p className="text-2xl font-black text-emerald-400">{correctCount}</p>
+                    {/* Grade & Details Cards */}
+                    <div className="flex flex-col gap-4 sm:gap-6">
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Letter Grade</p>
+                                <p className={`text-5xl font-black ${gradeInfo.color}`}>{gradeInfo.letter}</p>
                             </div>
-                            <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-lg p-4">
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Pending</p>
-                                <p className="text-2xl font-black text-yellow-400">{pendingCount}</p>
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 ${gradeInfo.color}`}>
+                                <Trophy className="w-6 h-6" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 flex-1">
+                            <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
+                                <p className="text-gray-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">Correct</p>
+                                <p className="text-2xl sm:text-3xl font-black text-emerald-500">{correctCount}</p>
+                            </div>
+                            <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
+                                <p className="text-gray-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">Pending</p>
+                                <p className="text-2xl sm:text-3xl font-black text-amber-500">{pendingCount}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Answer Review */}
-                <div className="mb-12">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-white">Answer Review</h2>
-                        <label className="flex items-center gap-2 text-slate-300 cursor-pointer">
+                {/* Answer Review Section */}
+                <div className="space-y-6 pt-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-700/50 pb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                <HelpCircle className="w-5 h-5" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Answer Review</h2>
+                        </div>
+
+                        <label className="flex items-center gap-2 text-gray-600 dark:text-slate-300 cursor-pointer bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700/80 transition-colors">
                             <input
                                 type="checkbox"
                                 checked={showFlaggedOnly}
                                 onChange={(e) => setShowFlaggedOnly(e.target.checked)}
-                                className="w-4 h-4 rounded accent-indigo-500"
+                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
                             />
                             <span className="text-sm font-semibold">Show Flagged Only</span>
                         </label>
                     </div>
 
                     {questions.length === 0 ? (
-                        <div className="text-center py-12 bg-slate-800/30 rounded-2xl border border-slate-700/50">
-                            <p className="text-slate-400">No questions available for review</p>
+                        <div className="text-center py-16 bg-white dark:bg-slate-800/40 border border-dashed border-gray-200 dark:border-slate-700 rounded-[2rem]">
+                            <HelpCircle className="w-12 h-12 text-gray-400 mx-auto mb-3 opacity-50" />
+                            <p className="text-gray-500 dark:text-slate-400 font-medium">No questions available for review at this time.</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             {questions.map((question, idx) => (
                                 <div
                                     key={question.id}
-                                    className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6 overflow-hidden hover:border-indigo-500/30 transition-colors"
+                                    className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 overflow-hidden hover:border-blue-300 dark:hover:border-slate-500 transition-colors shadow-sm"
                                 >
-                                    {/* Question header */}
-                                    <div className="mb-4">
-                                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
-                                            Question {idx + 1} / {questions.length}
-                                        </p>
-                                        <p className="text-lg font-semibold text-white">{question.text}</p>
-                                    </div>
-
-                                    {/* Question type badge */}
-                                    <div className="mb-4">
-                                        <span className="inline-block px-3 py-1 bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-full">
-                                            {question.type || 'MCQ'}
-                                        </span>
+                                    {/* Question Header */}
+                                    <div className="mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-6">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded-full border border-blue-100 dark:border-blue-500/20">
+                                                Question {idx + 1} of {questions.length}
+                                            </span>
+                                            <span className="inline-block px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wider rounded-md border border-gray-200 dark:border-slate-600">
+                                                {question.type || 'MCQ'}
+                                            </span>
+                                        </div>
+                                        <p className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white leading-relaxed">{question.text}</p>
                                     </div>
 
                                     {/* Options */}
                                     {question.options && question.options.length > 0 && (
-                                        <div className="space-y-2 mb-4">
-                                            <p className="text-sm font-semibold text-slate-300 mb-3">Options:</p>
+                                        <div className="space-y-3">
                                             {question.options.map((option: any, optIdx: number) => (
                                                 <div
                                                     key={optIdx}
-                                                    className="flex items-start gap-3 p-3 bg-slate-900/50 rounded-lg hover:bg-slate-900/80 transition-colors"
+                                                    className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-800"
                                                 >
-                                                    <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-slate-400 flex items-center justify-center text-xs font-bold text-slate-300">
+                                                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center text-sm font-bold text-gray-500 dark:text-slate-400 shadow-sm">
                                                         {String.fromCharCode(65 + optIdx)}
                                                     </div>
-                                                    <span className="text-slate-300">{option.text}</span>
+                                                    <span className="text-gray-700 dark:text-slate-300 text-sm font-medium">{option.text}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -227,9 +248,9 @@ export const QuizResultViewer = () => {
 
                                     {/* Points info */}
                                     {question.points && (
-                                        <div className="mt-4 pt-4 border-t border-slate-700/50">
-                                            <p className="text-sm text-slate-400">
-                                                <span className="font-semibold text-slate-300">Points:</span> {question.points}
+                                        <div className="mt-6 pt-4 border-t border-gray-100 dark:border-slate-700/50 flex justify-end">
+                                            <p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider bg-gray-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
+                                                Points: <span className="text-gray-900 dark:text-white">{question.points}</span>
                                             </p>
                                         </div>
                                     )}
@@ -239,19 +260,19 @@ export const QuizResultViewer = () => {
                     )}
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-4 justify-center">
+                {/* Bottom Actions */}
+                <div className="pt-8 flex flex-col sm:flex-row gap-4 justify-center items-center border-t border-gray-200 dark:border-slate-700/50">
                     <button
                         onClick={() => navigate('/quizzes')}
-                        className="px-8 py-3 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-700 transition-colors"
+                        className="w-full sm:w-auto px-8 py-3.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-white rounded-xl font-bold transition-colors shadow-sm text-sm"
                     >
                         Back to Quizzes
                     </button>
                     <button
                         onClick={() => navigate(`/quizzes/${quizId}/attempt`)}
-                        className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors"
+                        className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2"
                     >
-                        Retry Quiz
+                        <RotateCcw className="w-4 h-4" /> Try Again
                     </button>
                 </div>
             </main>

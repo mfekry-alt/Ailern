@@ -240,7 +240,7 @@ export const QuizAttemptsPage = () => {
                                                     Date Taken
                                                 </p>
                                                 <p className="text-sm text-slate-200">
-                                                    {formatDate((attempt as any).startAt || attempt.startedAt)}                                                </p>
+                                                    {formatDate((attempt as any).startAt || (attempt as any).startedAt)}                                                </p>
                                             </div>
 
                                             <div className="col-span-2">

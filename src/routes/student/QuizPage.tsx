@@ -74,14 +74,15 @@ export const QuizPage = () => {
                 console.log('[Quiz] Quiz details loaded:', quiz.title);
 
                 // Step 2: Start a quiz attempt
-                console.log('[Quiz] Starting quiz attempt...');
-                const attempt = await attemptsService.startQuizAttempt(id);
-                setAttemptId(attempt.attemptId);
-                console.log('[Quiz] Attempt started with ID:', attempt.attemptId);
+                console.log('[Quiz] Starting or resuming quiz attempt...');
+                const attempt = await attemptsService.startOrResumeQuizAttempt(id);
+                const resolvedAttemptId = attempt.id;  // Backend sends 'id', not 'attemptId'
+                setAttemptId(resolvedAttemptId);
+                console.log('[Quiz] Active attempt ID:', resolvedAttemptId);
 
                 // Step 3: Fetch questions for this attempt
                 console.log('[Quiz] Fetching attempt questions...');
-                const attemptQuestions = await attemptsService.getAttemptQuestions(attempt.attemptId);
+                const attemptQuestions = await attemptsService.getAttemptQuestions(resolvedAttemptId);
                 console.log('[Quiz] Loaded', attemptQuestions.length, 'questions');
 
                 if (attemptQuestions.length > 0) {

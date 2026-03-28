@@ -56,13 +56,39 @@ const mockAssignment = {
 
 // Mock quiz attempt result
 const mockAttemptResult = {
-    attemptId: 'ba4caa3-3d70-4a06-8ac2-4989c0b6c',
     quizId: 'mock-quiz-id',
-    score: 75,
+    achievedScore: 75,
     totalScore: 100,
     percentage: 75,
     status: 'Graded',
     submittedAt: new Date().toISOString(),
+    attemptNumber: 1,
+    studentId: 1,
+    quizName: 'Test Quiz',
+    attemptResult: [
+        {
+            questionId: 'q1',
+            questionText: 'What is the capital of France?',
+            studentAnswer: 'Paris',
+            score: 10,
+            maxScore: 10,
+            options: [
+                { isCorrect: true, optionText: 'Paris' },
+                { isCorrect: false, optionText: 'Lyon' },
+            ],
+        },
+        {
+            questionId: 'q2',
+            questionText: 'What is 2 + 2?',
+            studentAnswer: '4',
+            score: 10,
+            maxScore: 10,
+            options: [
+                { isCorrect: true, optionText: '4' },
+                { isCorrect: false, optionText: '5' },
+            ],
+        },
+    ],
 };
 
 // Mock student answers for review
