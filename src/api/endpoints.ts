@@ -2,12 +2,14 @@ export const ENDPOINTS = {
     // Auth endpoints (based on API: /api/Auth/*)
     AUTH: {
         LOGIN: '/Auth/login',
+        REGISTER: '/Auth/register',
         REFRESH: '/Auth/refresh-token',
-        REVOKE_TOKEN: '/Auth/revoke-token',
+        REVOKE_TOKEN: '/auth/revoke-token',
         CONFIRM_EMAIL: '/Auth/confirm-email',
         RESEND_CONFIRMATION_EMAIL: '/Auth/resend-confirmation-email',
-        SEND_PASSWORD_RESET_EMAIL: '/Auth/send-password-reset-email', // NOSONAR
-        CHANGE_PASSWORD: '/Auth/change-password', // NOSONAR
+        FORGET_PASSWORD: '/auth/forget-password',
+        RESET_PASSWORD: '/auth/reset-password',
+        CHANGE_PASSWORD: '/auth/change-password',
     },
 
     // Students endpoints (based on API: /api/Auth/students/* and /api/Users/students/*)

@@ -46,6 +46,12 @@ export interface UserPasswordResetCommand {
     newPassword: string;
 }
 
+/** Logged-in change password — POST /api/auth/change-password (API uses these property names) */
+export interface ChangePasswordCommand {
+    currentPasswor: string;
+    newPasswor: string;
+}
+
 // ============================================================================
 // User Registration Types
 // ============================================================================
@@ -58,21 +64,13 @@ export interface CreateAdminCommand {
     phoneNumber?: string;
 }
 
-export interface CreateInstructorCommand {
+export interface RegisterCommand {
     fullName: string;
     userName: string;
     email: string;
     password: string;
-    phoneNumber?: string;
-}
-
-export interface CreateStudentCommand {
-    fullName: string;
-    userName: string;
-    email: string;
-    password: string;
-    phoneNumber?: string;
-    studentId: number;
+    role: 'Student' | 'Instructor';
+    jobTitle?: string;
 }
 
 // ============================================================================

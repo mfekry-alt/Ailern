@@ -54,6 +54,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     logout: () => {
         storage.remove(STORAGE_KEYS.USER);
         storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
+        storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
+        storage.remove(STORAGE_KEYS.EXPIRES_ON);
         storage.remove(STORAGE_KEYS.CSRF_TOKEN);
         set({ user: null, isAuthenticated: false });
     },

@@ -15,8 +15,10 @@ import type {
     ResendEmailConfirmationCommand,
     SendPasswordResetEmailCommand,
     UserPasswordResetCommand,
+    ChangePasswordCommand,
     EmailConfirmationParams,
     ApiResponse,
+    RegisterCommand,
 } from '@/types/api.types';
 
 /**
@@ -34,32 +36,9 @@ export const login = async (
 
     const tokenData = response.data.data!;
 
-    // DEBUG: Log the full login response to see if we're missing an ID field
-    console.log(' [Auth] Full login response:', JSON.stringify(response.data, null, 2));
-    console.log(' [Auth] Token data:', JSON.stringify(tokenData, null, 2));
-    console.log(' [Auth] Available fields:', Object.keys(tokenData));
-    console.log(' [Auth] Looking for numeric ID in:', {
-        id: (tokenData as any).id,
-        userId: (tokenData as any).userId,
-        instructorId: (tokenData as any).instructorId,
-        user: (tokenData as any).user,
-    });
-
-    // Store tokens
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
-
-    // Extract numeric ID from response
-    const numericId = tokenData.instructorId || tokenData.studentId || tokenData.id;
-
-    storage.set(STORAGE_KEYS.USER, {
-        id: numericId || tokenData.email,
-        userName: tokenData.userName,
-        email: tokenData.email,
-        role: tokenData.role,
-    });
-
-    console.log(' [Auth] Stored user with ID:', numericId || tokenData.email);
+    storage.set(STORAGE_KEYS.EXPIRES_ON, tokenData.expiresOn);
 
     return tokenData;
 };
@@ -119,22 +98,52 @@ export const resendConfirmationEmail = async (
 export const sendPasswordResetEmail = async (
     command: SendPasswordResetEmailCommand
 ): Promise<void> => {
-    await api.post<ApiResponse>(ENDPOINTS.AUTH.SEND_PASSWORD_RESET_EMAIL, command);
+    await api.post<ApiResponse>(ENDPOINTS.AUTH.FORGET_PASSWORD, command);
 };
 
 /**
- * Change/reset password
- * @param command - Password reset command with token
+ * Reset password using token from email link
  */
-export const changePassword = async (command: UserPasswordResetCommand): Promise<void> => {
+export const resetPasswordWithToken = async (
+    command: UserPasswordResetCommand
+): Promise<void> => {
+    await api.post<ApiResponse>(ENDPOINTS.AUTH.RESET_PASSWORD, command);
+};
+
+/**
+ * Change password while logged in — POST /api/auth/change-password
+ */
+export const changePassword = async (command: ChangePasswordCommand): Promise<void> => {
     await api.post<ApiResponse>(ENDPOINTS.AUTH.CHANGE_PASSWORD, command);
 };
 
 /**
- * Logout user (clears local storage)
+ * Register a new account
  */
-export const logout = (): void => {
+export const register = async (
+    data: Omit<RegisterCommand, 'userName'>
+): Promise<void> => {
+    await api.post<ApiResponse>(ENDPOINTS.AUTH.REGISTER, {
+        ...data,
+        userName: data.email,
+    });
+};
+
+/**
+ * Sign out: revoke refresh token on server, then clear local session.
+ */
+export const logout = async (): Promise<void> => {
+    const refreshToken = storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN);
+    if (refreshToken) {
+        try {
+            await revokeToken({ refresToken: refreshToken });
+        } catch {
+            // Still clear local session if revoke fails (e.g. offline, token already invalid)
+        }
+    }
     setAccessToken(null);
     storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
+    storage.remove(STORAGE_KEYS.EXPIRES_ON);
     storage.remove(STORAGE_KEYS.USER);
+    storage.remove(STORAGE_KEYS.CSRF_TOKEN);
 };

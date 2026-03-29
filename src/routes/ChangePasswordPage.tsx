@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui';
 import { ROUTES, ROLES } from '@/lib/constants';
 import { useAuth } from '@/hooks/useAuth';
+import { useChangePassword } from '@/features/auth/api';
 import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, CheckCircle, AlertCircle } from 'lucide-react';
 
 const changePasswordSchema = z
@@ -28,12 +29,12 @@ type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 export const ChangePasswordPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const changePassword = useChangePassword();
     const [error, setError] = useState<string>('');
     const [success, setSuccess] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const {
         register,
@@ -79,22 +80,12 @@ export const ChangePasswordPage = () => {
     const onSubmit = async (data: ChangePasswordFormData) => {
         setError('');
         setSuccess(false);
-        setIsSubmitting(true);
 
         try {
-            // Basic field presence check to use form data and satisfy TS noUnusedLocals
-            if (!data.currentPassword || !data.newPassword) {
-                throw new Error('Please fill in all required fields');
-            }
-            // TODO: Replace with actual API call
-            // await changePassword.mutateAsync({
-            //     currentPassword: data.currentPassword,
-            //     newPassword: data.newPassword,
-            // });
-
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
+            await changePassword.mutateAsync({
+                currentPassword: data.currentPassword,
+                newPassword: data.newPassword,
+            });
             setSuccess(true);
             reset();
             setTimeout(() => {
@@ -102,8 +93,6 @@ export const ChangePasswordPage = () => {
             }, 2000);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to change password. Please try again.');
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
@@ -256,10 +245,10 @@ export const ChangePasswordPage = () => {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={isSubmitting}
+                                        disabled={changePassword.isPending}
                                         className="w-full sm:w-1/2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {isSubmitting ? 'Changing Password...' : 'Change Password'}
+                                        {changePassword.isPending ? 'Changing Password...' : 'Change Password'}
                                     </button>
                                 </div>
                             </form>

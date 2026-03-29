@@ -23,7 +23,9 @@ export const normalizeRole = (role?: string | null): Role | string => {
 export const ROUTES = {
     HOME: '/',
     LOGIN: '/login',
+    SIGNUP: '/signup',
     FORGOT_PASSWORD: '/forgot-password',// NOSONAR
+    CONFIRM_EMAIL: '/confirm-email',
     VERIFY_EMAIL: '/verify-email',
     SET_PASSWORD: '/set-password',      // NOSONAR
     FORBIDDEN: '/403',
@@ -93,6 +95,7 @@ export const QUERY_KEYS = {
 export const STORAGE_KEYS = {
     ACCESS_TOKEN: 'access_token',
     REFRESH_TOKEN: 'refresh_token',
+    EXPIRES_ON: 'expires_on',
     USER: 'user',
     CSRF_TOKEN: 'csrf_token',
     QUIZ_BUILDER_DRAFT: 'quiz_builder_draft',
