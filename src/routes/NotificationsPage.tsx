@@ -1,229 +1,202 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui';
-import { Bell, BookOpen, MessageSquare, Award, UserCheck, XCircle } from 'lucide-react';
+import {
+    Bell, BookOpen, Award, UserCheck,
+    X, CheckCircle2, Megaphone, Clock, Search, SearchX,
+    Activity, Info, ChevronRight
+} from 'lucide-react';
+import { useAuthStore } from '@/features/auth/store';
 
 type NotificationType = 'all' | 'enrollment' | 'announcement' | 'assignment_grade' | 'quiz_grade' | 'course_update';
 
 interface Notification {
     id: number;
     title: string;
+    description: string;
     time: string;
     isRead: boolean;
-    icon: any;
-    iconBg: string;
-    iconColor: string;
     type: NotificationType;
+    role: 'instructor' | 'student' | 'all';
 }
 
-export const NotificationsPage = () => {
-    const [selectedType, setSelectedType] = useState<NotificationType>('all');
+const initialNotifications: Notification[] = [
+    { id: 1, title: 'New Student Enrolled', description: 'Sami Ahmad has enrolled in "Advanced React Mastery".', time: '2 mins ago', isRead: false, type: 'enrollment', role: 'instructor' },
+    { id: 2, title: 'New Course Announcement', description: 'The final project requirements have been updated for all students.', time: '1 hour ago', isRead: false, type: 'announcement', role: 'all' },
+    { id: 3, title: 'Assignment Graded', description: 'Your "Database Design" assignment has been reviewed by the instructor.', time: '3 hours ago', isRead: true, type: 'assignment_grade', role: 'student' },
+    { id: 4, title: 'Quiz Score Available', description: 'You scored 95% in the "Logic Gates" quiz. Great job!', time: 'Yesterday', isRead: true, type: 'quiz_grade', role: 'student' },
+    { id: 5, title: 'Course Content Updated', description: '3 new lectures added to "Machine Learning 101" module.', time: '2 days ago', isRead: true, type: 'course_update', role: 'all' },
+    { id: 6, title: 'Enrollment Request', description: 'Sara Ali is requesting to join your private session.', time: '3 days ago', isRead: true, type: 'enrollment', role: 'instructor' },
+];
 
-    const [notifications, setNotifications] = useState<Notification[]>([]);
+export const NotificationsPage = () => {
+    const user = useAuthStore((state) => state.user);
+    const userRole = user?.roles?.[0]?.toLowerCase() || 'instructor';
+
+    const [selectedType, setSelectedType] = useState<NotificationType>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
 
     const markAllAsRead = () => {
-        setNotifications(prev =>
-            prev.map(notification => ({ ...notification, isRead: true }))
-        );
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     };
 
-    const filteredNotifications = useMemo(() => {
-        if (selectedType === 'all') return notifications;
-        return notifications.filter(n => n.type === selectedType);
-    }, [notifications, selectedType]);
+    const deleteNotification = (id: number) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    };
 
-    const unreadCount = notifications.filter(n => !n.isRead).length;
-    const enrollmentCount = notifications.filter(n => n.type === 'enrollment').length;
-    const announcementCount = notifications.filter(n => n.type === 'announcement').length;
-    const assignmentGradeCount = notifications.filter(n => n.type === 'assignment_grade').length;
-    const quizGradeCount = notifications.filter(n => n.type === 'quiz_grade').length;
-    const courseUpdateCount = notifications.filter(n => n.type === 'course_update').length;
+    const finalFilteredNotifications = useMemo(() => {
+        return notifications.filter(n => {
+            const roleMatch = n.role === 'all' || n.role === userRole;
+            const typeMatch = selectedType === 'all' || n.type === selectedType;
+            const searchMatch = n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                n.description.toLowerCase().includes(searchQuery.toLowerCase());
+            return roleMatch && typeMatch && searchMatch;
+        });
+    }, [notifications, selectedType, searchQuery, userRole]);
+
+    const getIcon = (type: NotificationType) => {
+        switch (type) {
+            case 'enrollment': return { icon: UserCheck, color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
+            case 'announcement': return { icon: Megaphone, color: 'text-amber-500', bg: 'bg-amber-500/10' };
+            case 'assignment_grade': case 'quiz_grade': return { icon: Award, color: 'text-indigo-500', bg: 'bg-indigo-500/10' };
+            case 'course_update': return { icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-500/10' };
+            default: return { icon: Bell, color: 'text-slate-500', bg: 'bg-slate-500/10' };
+        }
+    };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="space-y-1">
-                    <h1 className="text-[30px] font-bold leading-[36px] text-gray-900 dark:text-zinc-100">
-                        Notifications
-                    </h1>
-                    <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400">
-                        Stay updated with your course activities.
-                    </p>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-8 lg:p-12 transition-colors duration-300 font-sans relative overflow-hidden">
+
+            <div className="max-w-7xl mx-auto relative z-10">
+
+                {/* Header Area */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
+                    <div>
+                        <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-4">
+                            <Bell className="w-10 h-10 text-blue-600" /> Notifications
+                        </h1>
+                        <p className="text-gray-500 dark:text-slate-400 font-semibold text-lg mt-1">
+                            Stay updated with your latest course activities.
+                        </p>
+                    </div>
+                    <button
+                        onClick={markAllAsRead}
+                        className="w-full md:w-auto px-6 py-3.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700 transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95"
+                    >
+                        <CheckCircle2 className="w-5 h-5" /> Mark all as read
+                    </button>
                 </div>
 
-                {/* Filter Tabs */}
-                <Card variant="elevated">
-                    <CardContent className="p-4">
-                        <div className="flex flex-wrap gap-2">
-                            {[
-                                { id: 'all' as NotificationType, label: 'All', count: notifications.length },
-                                { id: 'enrollment' as NotificationType, label: 'Enrollment', count: enrollmentCount },
-                                { id: 'announcement' as NotificationType, label: 'Announcements', count: announcementCount },
-                                { id: 'assignment_grade' as NotificationType, label: 'Assignment Grades', count: assignmentGradeCount },
-                                { id: 'quiz_grade' as NotificationType, label: 'Quiz Grades', count: quizGradeCount },
-                                { id: 'course_update' as NotificationType, label: 'Course Updates', count: courseUpdateCount },
-                            ].map((filter) => (
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-10 items-start">
+
+                    {/* LEFT COLUMN: Large Notifications List */}
+                    <div className="space-y-8">
+                        {/* Filter Pills - Larger */}
+                        <div className="flex overflow-x-auto custom-scrollbar gap-3 p-2 bg-white/40 dark:bg-slate-800/20 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-inner">
+                            {['all', 'enrollment', 'announcement', 'assignment_grade', 'course_update'].map((f) => (
                                 <button
-                                    key={filter.id}
-                                    onClick={() => setSelectedType(filter.id)}
-                                    className={`px-4 py-2 rounded-lg text-[14px] font-medium transition-colors ${selectedType === filter.id
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
+                                    key={f}
+                                    onClick={() => setSelectedType(f as any)}
+                                    className={`px-6 py-3 rounded-2xl text-xs font-black transition-all whitespace-nowrap uppercase tracking-widest ${selectedType === f
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                            : 'text-gray-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700'
                                         }`}
                                 >
-                                    {filter.label}
-                                    {filter.count > 0 && (
-                                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[12px] ${selectedType === filter.id
-                                            ? 'bg-blue-700 text-white'
-                                            : 'bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300'
-                                            }`}>
-                                            {filter.count}
-                                        </span>
-                                    )}
+                                    {f.replace('_', ' ')}
                                 </button>
                             ))}
                         </div>
-                    </CardContent>
-                </Card>
 
-                {/* Notifications Card */}
-                <Card variant="elevated" className="overflow-hidden">
-                    <CardContent className="p-0">
-                        {/* Header */}
-                        <div className="border-b border-gray-200 dark:border-zinc-700 h-[57px] flex items-center justify-between px-4">
-                            <h3 className="text-[18px] font-medium text-gray-900 dark:text-zinc-100">
-                                {selectedType === 'all' ? 'All Notifications' : selectedType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </h3>
-                            <button
-                                onClick={markAllAsRead}
-                                className="text-[14px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                            >
-                                Mark all as read
-                            </button>
-                        </div>
+                        <div className="space-y-4 animate-in fade-in slide-in-from-left-6 duration-700">
+                            {finalFilteredNotifications.length > 0 ? (
+                                finalFilteredNotifications.map((notif) => {
+                                    const config = getIcon(notif.type);
+                                    return (
+                                        <div
+                                            key={notif.id}
+                                            className={`group relative bg-white dark:bg-slate-800/40 backdrop-blur-md border rounded-[2rem] p-6 sm:p-8 transition-all hover:shadow-xl hover:border-blue-400/50 dark:hover:border-slate-500 flex items-start gap-6 overflow-hidden ${!notif.isRead ? 'border-blue-200 dark:border-blue-900/40 ring-1 ring-blue-500/10' : 'border-gray-200 dark:border-slate-700/50 opacity-90'
+                                                }`}
+                                        >
+                                            {/* الخط الأزرق الداخلي */}
+                                            {!notif.isRead && (
+                                                <div className="absolute left-0 top-0 bottom-0 w-2.5 bg-blue-600 shadow-[4px_0_15px_rgba(37,99,235,0.4)] z-20"></div>
+                                            )}
 
-                        {/* Notifications List */}
-                        <div className="max-h-[384px] overflow-auto">
-                            {filteredNotifications.map((notification) => {
-                                const IconComponent = notification.icon;
-                                return (
-                                    <div
-                                        key={notification.id}
-                                        className={`border-b border-gray-200 dark:border-zinc-700 last:border-b-0 ${notification.isRead ? 'bg-gray-50 dark:bg-zinc-900' : 'bg-blue-50 dark:bg-zinc-800'
-                                            }`}
-                                    >
-                                        <div className="p-4">
-                                            <div className="flex gap-4 items-start">
-                                                {/* Icon */}
-                                                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${notification.iconBg} shrink-0`}>
-                                                    <IconComponent className={`w-6 h-6 ${notification.iconColor}`} />
-                                                </div>
-
-                                                {/* Content */}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 leading-[20px] mb-1">
-                                                        {notification.title}
-                                                    </p>
-                                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400 leading-[20px]">
-                                                        {notification.time}
-                                                    </p>
-                                                </div>
-
-                                                {/* Unread Indicator */}
-                                                {!notification.isRead && (
-                                                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full shrink-0 mt-2"></div>
-                                                )}
+                                            <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-inner ${config.bg} ${config.color}`}>
+                                                <config.icon className="w-8 h-8" />
                                             </div>
+
+                                            <div className="flex-1 min-w-0 py-1">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h3 className={`text-lg sm:text-xl font-extrabold truncate ${notif.isRead ? 'text-gray-700 dark:text-slate-200' : 'text-gray-900 dark:text-white'}`}>
+                                                        {notif.title}
+                                                    </h3>
+                                                    <span className="text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-tighter mt-1 shrink-0 bg-gray-50 dark:bg-slate-900 px-2 py-1 rounded-md">{notif.time}</span>
+                                                </div>
+                                                <p className="text-base sm:text-lg text-gray-500 dark:text-slate-400 font-medium leading-relaxed">
+                                                    {notif.description}
+                                                </p>
+                                            </div>
+
+                                            <button
+                                                onClick={() => deleteNotification(notif.id)}
+                                                className="p-2.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            ) : (
+                                <div className="text-center py-32 bg-white/20 dark:bg-slate-800/10 rounded-[3rem] border border-dashed border-gray-200 dark:border-slate-700">
+                                    <SearchX className="w-20 h-20 text-gray-300 mx-auto mb-6 opacity-50" />
+                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">All caught up!</h3>
+                                    <p className="text-gray-500 text-lg mt-2">No notifications found matching your search.</p>
+                                </div>
+                            )}
                         </div>
-
-                        {/* Footer */}
-                        <div className="bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-700 h-[45px] flex items-center justify-center">
-                            <button className="text-[14px] font-medium text-blue-600 hover:text-blue-700 transition-colors">
-                                See All Notifications
-                            </button>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <Card variant="elevated">
-                        <CardContent className="p-4 text-center">
-                            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
-                                <Bell className="w-6 h-6 text-blue-600" />
-                            </div>
-                            <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">{unreadCount}</h3>
-                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">Unread</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card variant="elevated">
-                        <CardContent className="p-4 text-center">
-                            <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-2">
-                                <UserCheck className="w-6 h-6 text-green-600" />
-                            </div>
-                            <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">{enrollmentCount}</h3>
-                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">Enrollment</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card variant="elevated">
-                        <CardContent className="p-4 text-center">
-                            <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-full mx-auto mb-2">
-                                <MessageSquare className="w-6 h-6 text-yellow-600" />
-                            </div>
-                            <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">{announcementCount}</h3>
-                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">Announcements</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card variant="elevated">
-                        <CardContent className="p-4 text-center">
-                            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
-                                <Award className="w-6 h-6 text-blue-600" />
-                            </div>
-                            <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">{assignmentGradeCount}</h3>
-                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">Assignment Grades</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card variant="elevated">
-                        <CardContent className="p-4 text-center">
-                            <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mx-auto mb-2">
-                                <Award className="w-6 h-6 text-purple-600" />
-                            </div>
-                            <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">{quizGradeCount}</h3>
-                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">Quiz Grades</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card variant="elevated">
-                        <CardContent className="p-4 text-center">
-                            <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mx-auto mb-2">
-                                <BookOpen className="w-6 h-6 text-indigo-600" />
-                            </div>
-                            <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">{courseUpdateCount}</h3>
-                            <p className="text-[14px] text-gray-600 dark:text-zinc-400">Course Updates</p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Empty State */}
-                {filteredNotifications.length === 0 && (
-                    <div className="text-center py-12">
-                        <div className="flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-zinc-800 rounded-full mx-auto mb-4">
-                            <Bell className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <h3 className="text-[18px] font-medium text-gray-900 dark:text-zinc-100 mb-2">No notifications</h3>
-                        <p className="text-gray-600 dark:text-zinc-400">
-                            You're all caught up! Check back later for new updates.
-                        </p>
                     </div>
-                )}
+
+                    {/* RIGHT COLUMN: Sidebar (Search + Vertical Stats) */}
+                    <aside className="space-y-8 lg:sticky lg:top-12 animate-in fade-in slide-in-from-right-6 duration-700">
+
+                        {/* Enlarged Search Box */}
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md p-6 rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm">
+                            <label className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4 block ml-1">Search activity</label>
+                            <div className="relative group">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                <input
+                                    type="text"
+                                    placeholder="Keywords..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-gray-900 dark:text-white transition-all shadow-inner"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Summary Stats (Vertical & Large) */}
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md p-6 rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3 border-b border-gray-100 dark:border-slate-700 pb-4">
+                                <Activity className="w-4 h-4 text-blue-500" /> Dashboard Summary
+                            </h3>
+                            <div className="space-y-4">
+                                {[
+                                    { label: 'Unread Tasks', val: notifications.filter(n => !n.isRead).length, color: 'blue' },
+                                    { label: 'Enrollments', val: notifications.filter(n => n.type === 'enrollment').length, color: 'emerald' },
+                                    { label: 'News Alerts', val: notifications.filter(n => n.type === 'announcement').length, color: 'amber' },
+                                    { label: 'Grade Updates', val: notifications.filter(n => n.type.includes('grade')).length, color: 'indigo' },
+                                ].map((s, i) => (
+                                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/30 group hover:border-blue-400 transition-colors">
+                                        <span className="text-sm font-bold text-gray-600 dark:text-slate-400">{s.label}</span>
+                                        <span className={`text-xl font-black text-${s.color}-600 dark:text-${s.color}-400 bg-${s.color}-500/10 px-3 py-1 rounded-xl`}>
+                                            {s.val}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </aside>
+                </div>
             </div>
         </div>
     );

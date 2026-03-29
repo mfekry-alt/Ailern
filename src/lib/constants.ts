@@ -23,7 +23,9 @@ export const normalizeRole = (role?: string | null): Role | string => {
 export const ROUTES = {
     HOME: '/',
     LOGIN: '/login',
+    SIGNUP: '/signup',
     FORGOT_PASSWORD: '/forgot-password',// NOSONAR
+    CONFIRM_EMAIL: '/confirm-email',
     VERIFY_EMAIL: '/verify-email',
     SET_PASSWORD: '/set-password',      // NOSONAR
     FORBIDDEN: '/403',
@@ -31,6 +33,7 @@ export const ROUTES = {
 
     // Student routes
     DASHBOARD: '/dashboard',
+    MY_COURSES: '/my-courses',
     COURSES: '/courses',
     COURSE_DETAIL: '/courses/:id',
     LEARN: '/learn/:courseId/:lessonId',
@@ -50,14 +53,14 @@ export const ROUTES = {
     INSTRUCTOR_COURSE_NEW: '/instructor/courses/new',
     INSTRUCTOR_COURSE_EDIT: '/instructor/courses/:id/edit',
     INSTRUCTOR_COURSE_EDIT_CONTENT: '/instructor/courses/:id/content',
-    INSTRUCTOR_GRADEBOOK: '/instructor/gradebook',
-    INSTRUCTOR_STATISTICS: '/instructor/statistics',
+    INSTRUCTOR_GRADEBOOK: '/instructor/gradebook',   
     INSTRUCTOR_ASSIGNMENTS: '/instructor/assignments',
     INSTRUCTOR_ASSIGNMENT_CREATE: '/instructor/assignments/create',
     INSTRUCTOR_ASSIGNMENT_EDIT: '/instructor/assignments/:id/edit',
     INSTRUCTOR_SUBMISSIONS: '/instructor/assignments/:assignmentId/submissions',
     INSTRUCTOR_QUIZ_CREATE: '/courses/:courseId/quiz/create',
     INSTRUCTOR_QUIZ_QUESTIONS: '/instructor/quiz/questions',
+    INSTRUCTOR_STATISTICS: '/instructor/statistics',
     INSTRUCTOR_QUIZ_EDIT: '/instructor/quiz/:id/edit',
     INSTRUCTOR_QUIZ_UPDATE: '/instructor/quiz/:id/update',
     INSTRUCTOR_QUIZ_QUESTIONS_EDIT: '/instructor/quiz/:id/questions/edit',
@@ -93,10 +96,10 @@ export const QUERY_KEYS = {
 export const STORAGE_KEYS = {
     ACCESS_TOKEN: 'access_token',
     REFRESH_TOKEN: 'refresh_token',
+    EXPIRES_ON: 'expires_on',
     USER: 'user',
     CSRF_TOKEN: 'csrf_token',
     QUIZ_BUILDER_DRAFT: 'quiz_builder_draft',
     QUIZ_SETTINGS_DRAFT: 'quiz_settings_draft',
     QUIZ_EDIT_DRAFT: 'quiz_edit_draft',
 } as const;
-

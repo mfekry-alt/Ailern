@@ -77,13 +77,19 @@ export const useLogout = () => {
 
     return useMutation({
         mutationFn: async () => {
-            // Real API doesn't have logout endpoint, just clear local data
-            authService.logout();
+            await authService.logout();
         },
         onSettled: () => {
             logout();
             queryClient.clear();
         },
+    });
+};
+
+// Register mutation
+export const useRegister = () => {
+    return useMutation({
+        mutationFn: authService.register,
     });
 };
 
@@ -94,14 +100,25 @@ export const useForgotPassword = () => {
     });
 };
 
-// Reset password mutation - Uses real API
+// Reset password mutation (email link) — POST /api/auth/reset-password
 export const useResetPassword = () => {
     return useMutation({
         mutationFn: (data: { token: string; password: string; email: string }) =>
-            authService.changePassword({
+            authService.resetPasswordWithToken({
                 email: data.email,
                 token: data.token,
                 newPassword: data.password,
+            }),
+    });
+};
+
+// Change password while logged in — POST /api/auth/change-password
+export const useChangePassword = () => {
+    return useMutation({
+        mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+            authService.changePassword({
+                currentPassword: data.currentPassword,
+                newPassword: data.newPassword,
             }),
     });
 };

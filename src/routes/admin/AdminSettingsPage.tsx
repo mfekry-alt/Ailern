@@ -1,268 +1,323 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { ROUTES } from '@/lib/constants';
+import {
+    Settings, Globe, Shield, Mail, Server,
+    Save, Bell, Lock, Database, AlertTriangle,
+    CheckCircle2, RefreshCw
+} from 'lucide-react';
 
 export const AdminSettingsPage = () => {
-    const navigate = useNavigate();
-    const { user } = useAuth();
-    const [statusMessage, setStatusMessage] = useState<string>('');
+    const [activeTab, setActiveTab] = useState('general');
+    const [isSaving, setIsSaving] = useState(false);
+    const [statusMessage, setStatusMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
-    // Profile state
-    const [firstName, setFirstName] = useState<string>(user?.firstName || '');
-    const [lastName, setLastName] = useState<string>(user?.lastName || '');
-    const [email, setEmail] = useState<string>(user?.email || '');
-    const [phone, setPhone] = useState<string>('');
+    // --- System Settings State ---
+    const [settings, setSettings] = useState({
+        // General
+        platformName: 'Ailern Exam & LMS',
+        supportEmail: 'support@ailern.com',
+        timeZone: 'Africa/Cairo (EET)',
+        maxUploadSize: '50',
 
-    // Preferences
-    const [language, setLanguage] = useState<string>('en');
-    const [timezone, setTimezone] = useState<string>('UTC');
-    const [notifEmail, setNotifEmail] = useState<boolean>(true);
-    const [notifInApp, setNotifInApp] = useState<boolean>(true);
+        // Security
+        allowRegistration: true,
+        requireEmailVerification: true,
+        enforceTwoFactor: false,
+        sessionTimeout: '120', // minutes
 
-    // Security
-    const [mfaEnabled, setMfaEnabled] = useState<boolean>(false);
-    const [sessionTimeout, setSessionTimeout] = useState<number>(30);
-    const [requireUppercase, setRequireUppercase] = useState<boolean>(true);
-    const [requireMinLength, setRequireMinLength] = useState<boolean>(true);
+        // Email / SMTP
+        smtpHost: 'smtp.mailgun.org',
+        smtpPort: '587',
+        smtpUser: 'postmaster@ailern.com',
 
-    const handleSave = () => {
-        // Simulate save and show message
-        setStatusMessage('Profile settings saved.');
-        setTimeout(() => setStatusMessage(''), 3000);
+        // Advanced
+        maintenanceMode: false,
+        debugMode: false,
+    });
+
+    const showToast = (text: string, type: 'success' | 'error' = 'success') => {
+        setStatusMessage({ text, type });
+        setTimeout(() => setStatusMessage(null), 3000);
     };
 
+    const handleSave = () => {
+        setIsSaving(true);
+        // Simulate API Call
+        setTimeout(() => {
+            setIsSaving(false);
+            showToast('System settings updated successfully.');
+        }, 1000);
+    };
+
+    const handleClearCache = () => {
+        if (window.confirm('Are you sure you want to clear the system cache? This might temporarily slow down the platform.')) {
+            showToast('System cache cleared successfully.');
+        }
+    };
+
+    const handleChange = (field: string, value: string | boolean) => {
+        setSettings(prev => ({ ...prev, [field]: value }));
+    };
+
+    // --- UI Helpers ---
+    const ToggleSwitch = ({ label, description, checked, onChange }: { label: string, description: string, checked: boolean, onChange: (val: boolean) => void }) => (
+        <div className="flex items-center justify-between p-5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700/50 rounded-2xl transition-colors">
+            <div className="pr-4">
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white">{label}</h4>
+                <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 mt-1">{description}</p>
+            </div>
+            <button
+                onClick={() => onChange(!checked)}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${checked ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-700'}`}
+            >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 shadow-sm ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+        </div>
+    );
+
+    const tabs = [
+        { id: 'general', label: 'General', icon: Globe, desc: 'Basic platform info' },
+        { id: 'security', label: 'Security & Auth', icon: Shield, desc: 'Access control' },
+        { id: 'email', label: 'SMTP & Email', icon: Mail, desc: 'Notification server' },
+        { id: 'advanced', label: 'Advanced', icon: Server, desc: 'Maintenance & cache' },
+    ];
+
     return (
-        <div className="p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen">
-            <div className="flex flex-col gap-8 items-start w-full">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between w-full gap-3">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0a0f1d] p-4 sm:p-8 lg:p-10 transition-colors duration-300 font-sans pb-20 relative overflow-hidden">
+
+            {/* Ambient Background Glow */}
+            <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-slate-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+            <div className="max-w-[1920px] mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
+
+                {/* --- Toast Notification --- */}
+                {statusMessage && (
+                    <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4">
+                        <div className={`px-6 py-3 rounded-full border backdrop-blur-md font-bold text-sm flex items-center gap-2 shadow-xl ${statusMessage.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400'
+                            }`}>
+                            {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                            {statusMessage.text}
+                        </div>
+                    </div>
+                )}
+
+                {/* --- Header --- */}
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white dark:bg-slate-800/40 backdrop-blur-md p-6 sm:p-8 rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm">
                     <div>
-                        <h1 className="font-bold text-[36px] leading-[40px] tracking-[-0.9px] text-azure-8">
-                            Profile Settings
+                        <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+                            <Settings className="w-8 h-8 text-blue-600" /> System Settings
                         </h1>
-                        <p className="text-[16px] leading-[24px] text-azure-46 mt-2">
-                            Manage your admin profile, preferences, and security
+                        <p className="text-sm font-semibold text-gray-500 dark:text-slate-400 mt-2">
+                            Configure platform behavior, security protocols, and server variables.
                         </p>
-                        {statusMessage && (
-                            <div className="mt-4 w-full rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-[14px] text-green-800">
-                                {statusMessage}
+                    </div>
+                    <div className="w-full lg:w-auto">
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="w-full lg:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-500/25 text-sm active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            {isSaving ? 'Saving...' : 'Save All Changes'}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
+
+                    {/* --- Sidebar Navigation --- */}
+                    <aside className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2.5rem] p-6 shadow-sm h-fit">
+                        <div className="space-y-2">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left group ${activeTab === tab.id
+                                            ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 border shadow-sm'
+                                            : 'bg-transparent border-transparent text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800/50 border hover:border-gray-200 dark:hover:border-slate-700/50'
+                                        }`}
+                                >
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 group-hover:text-gray-700 dark:group-hover:text-slate-300'
+                                        }`}>
+                                        <tab.icon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold leading-tight">{tab.label}</p>
+                                        <p className="text-[10px] font-semibold opacity-70 uppercase tracking-widest mt-1">{tab.desc}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </aside>
+
+                    {/* --- Content Area --- */}
+                    <main className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2.5rem] p-8 sm:p-10 shadow-sm min-h-[500px]">
+
+                        {/* General Tab */}
+                        {activeTab === 'general' && (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                <div>
+                                    <h2 className="text-xl font-black text-gray-900 dark:text-white mb-1">General Details</h2>
+                                    <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">Update your platform's basic information.</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Platform Name</label>
+                                        <input
+                                            value={settings.platformName}
+                                            onChange={e => handleChange('platformName', e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/30 outline-none transition-all shadow-inner"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Support Email</label>
+                                        <input
+                                            value={settings.supportEmail}
+                                            onChange={e => handleChange('supportEmail', e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/30 outline-none transition-all shadow-inner"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Default Time Zone</label>
+                                        <select
+                                            value={settings.timeZone}
+                                            onChange={e => handleChange('timeZone', e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/30 outline-none transition-all shadow-inner appearance-none cursor-pointer"
+                                        >
+                                            <option>Africa/Cairo (EET)</option>
+                                            <option>UTC (Coordinated Universal Time)</option>
+                                            <option>America/New_York (EST)</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">Max Upload Size (MB)</label>
+                                        <input
+                                            type="number"
+                                            value={settings.maxUploadSize}
+                                            onChange={e => handleChange('maxUploadSize', e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/30 outline-none transition-all shadow-inner"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         )}
-                    </div>
-                    <button
-                        onClick={() => navigate(ROUTES.ADMIN)}
-                        className="px-4 py-2 bg-white dark:bg-zinc-900 border border-azure-88 dark:border-zinc-700 rounded-lg text-azure-8 dark:text-zinc-100 font-medium hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer"
-                    >
-                        Back to dashboard
-                    </button>
-                </div>
 
-                {/* Settings Sections */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-                    {/* Profile Information */}
-                    <div className="bg-white dark:bg-zinc-900 border border-azure-88 dark:border-zinc-700 rounded-lg p-6">
-                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 mb-4">
-                            Profile Information
-                        </h2>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold">
-                                    {firstName?.[0] || 'A'}{lastName?.[0] || ''}
-                                </div>
-                                <button className="px-4 py-2 bg-white dark:bg-zinc-900 border border-azure-88 dark:border-zinc-700 rounded-lg text-azure-8 dark:text-zinc-100 font-medium hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer">
-                                    Upload avatar
-                                </button>
-                            </div>
-                            <div className="grid sm:grid-cols-2 gap-4">
+                        {/* Security Tab */}
+                        {activeTab === 'security' && (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                                 <div>
-                                    <label htmlFor="firstName" className="block text-[14px] font-medium text-azure-8 mb-2">First Name</label>
-                                    <input
-                                        id="firstName"
-                                        type="text"
-                                        value={firstName}
-                                        onChange={(e) => setFirstName(e.target.value)}
-                                        className="w-full px-3 py-2 border border-azure-88 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-azure-50 focus:border-azure-50"
+                                    <h2 className="text-xl font-black text-gray-900 dark:text-white mb-1 flex items-center gap-2"><Lock className="w-5 h-5 text-blue-500" /> Security & Authentication</h2>
+                                    <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">Manage user access and safety protocols.</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <ToggleSwitch
+                                        label="Allow New Registrations"
+                                        description="Enable or disable public signups."
+                                        checked={settings.allowRegistration}
+                                        onChange={(val) => handleChange('allowRegistration', val)}
                                     />
-                                </div>
-                                <div>
-                                    <label htmlFor="lastName" className="block text-[14px] font-medium text-azure-8 mb-2">Last Name</label>
-                                    <input
-                                        id="lastName"
-                                        type="text"
-                                        value={lastName}
-                                        onChange={(e) => setLastName(e.target.value)}
-                                        className="w-full px-3 py-2 border border-azure-88 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-azure-50 focus:border-azure-50"
+                                    <ToggleSwitch
+                                        label="Require Email Verification"
+                                        description="Force users to verify emails before login."
+                                        checked={settings.requireEmailVerification}
+                                        onChange={(val) => handleChange('requireEmailVerification', val)}
                                     />
-                                </div>
-                            </div>
-                            <div className="grid sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="email" className="block text-[14px] font-medium text-azure-8 mb-2">Email</label>
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full px-3 py-2 border border-azure-88 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-azure-50 focus:border-azure-50"
+                                    <ToggleSwitch
+                                        label="Enforce 2FA (Admins)"
+                                        description="Require Two-Factor Auth for admin accounts."
+                                        checked={settings.enforceTwoFactor}
+                                        onChange={(val) => handleChange('enforceTwoFactor', val)}
                                     />
-                                </div>
-                                <div>
-                                    <label htmlFor="phone" className="block text-[14px] font-medium text-azure-8 mb-2">Phone</label>
-                                    <input
-                                        id="phone"
-                                        type="tel"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        className="w-full px-3 py-2 border border-azure-88 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-azure-50 focus:border-azure-50"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Preferences */}
-                    <div className="bg-white dark:bg-zinc-900 border border-azure-88 dark:border-zinc-700 rounded-lg p-6">
-                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 mb-4">
-                            Preferences
-                        </h2>
-                        <div className="space-y-4">
-                            <div className="grid sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="language" className="block text-[14px] font-medium text-azure-8 mb-2">Language</label>
-                                    <select
-                                        id="language"
-                                        value={language}
-                                        onChange={(e) => setLanguage(e.target.value)}
-                                        className="w-full px-3 py-2 border border-azure-88 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-azure-50 focus:border-azure-50"
-                                    >
-                                        <option value="en">English</option>
-                                        <option value="ar">Arabic</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label htmlFor="timezone" className="block text-[14px] font-medium text-azure-8 mb-2">Timezone</label>
-                                    <select
-                                        id="timezone"
-                                        value={timezone}
-                                        onChange={(e) => setTimezone(e.target.value)}
-                                        className="w-full px-3 py-2 border border-azure-88 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-azure-50 focus:border-azure-50"
-                                    >
-                                        <option value="UTC">UTC</option>
-                                        <option value="Africa/Cairo">Africa/Cairo</option>
-                                        <option value="Europe/London">Europe/London</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="block text-[14px] font-medium text-azure-8 mb-2">Notifications</div>
-                                <div className="flex items-center">
-                                    <input
-                                        id="notifEmail"
-                                        type="checkbox"
-                                        checked={notifEmail}
-                                        onChange={(e) => setNotifEmail(e.target.checked)}
-                                        className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
-                                    />
-                                    <label htmlFor="notifEmail" className="ml-2 text-[14px] text-azure-8 cursor-pointer">Email notifications</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        id="notifInApp"
-                                        type="checkbox"
-                                        checked={notifInApp}
-                                        onChange={(e) => setNotifInApp(e.target.checked)}
-                                        className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
-                                    />
-                                    <label htmlFor="notifInApp" className="ml-2 text-[14px] text-azure-8 cursor-pointer">In-app notifications</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Security */}
-                    <div className="bg-white dark:bg-zinc-900 border border-azure-88 dark:border-zinc-700 rounded-lg p-6">
-                        <h2 className="font-bold text-[24px] leading-[32px] tracking-[-0.6px] text-azure-8 mb-4">
-                            Security
-                        </h2>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <div className="block text-[14px] font-medium text-azure-8 mb-2">Multi-factor authentication (MFA)</div>
-                                <div className="flex items-center">
-                                    <input
-                                        id="mfaEnabled"
-                                        type="checkbox"
-                                        checked={mfaEnabled}
-                                        onChange={(e) => setMfaEnabled(e.target.checked)}
-                                        className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
-                                    />
-                                    <label htmlFor="mfaEnabled" className="ml-2 text-[14px] text-azure-8 cursor-pointer">Enable MFA</label>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label htmlFor="sessionTimeout" className="block text-[14px] font-medium text-azure-8 mb-2">Session Timeout (minutes)</label>
-                                <input
-                                    id="sessionTimeout"
-                                    type="number"
-                                    value={sessionTimeout}
-                                    onChange={(e) => setSessionTimeout(Number(e.target.value))}
-                                    className="w-full px-3 py-2 border border-azure-88 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-azure-50 focus:border-azure-50"
-                                />
-                            </div>
-
-                            <div>
-                                <div className="block text-[14px] font-medium text-azure-8 mb-2">Password Requirements</div>
-                                <div className="space-y-2">
-                                    <div className="flex items-center">
+                                    <div className="space-y-2 p-5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700/50 rounded-2xl">
+                                        <label className="block text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest">Session Timeout (Minutes)</label>
+                                        <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-3">Auto-logout inactive users.</p>
                                         <input
-                                            id="requireMinLength"
-                                            type="checkbox"
-                                            checked={requireMinLength}
-                                            onChange={(e) => setRequireMinLength(e.target.checked)}
-                                            className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
+                                            type="number"
+                                            value={settings.sessionTimeout}
+                                            onChange={e => handleChange('sessionTimeout', e.target.value)}
+                                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/30 outline-none transition-all"
                                         />
-                                        <label htmlFor="requireMinLength" className="ml-2 text-[14px] text-azure-8 cursor-pointer">Minimum 8 characters</label>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <input
-                                            id="requireUppercase"
-                                            type="checkbox"
-                                            checked={requireUppercase}
-                                            onChange={(e) => setRequireUppercase(e.target.checked)}
-                                            className="w-4 h-4 text-azure-50 border-azure-88 rounded focus:ring-azure-50 cursor-pointer"
-                                        />
-                                        <label htmlFor="requireUppercase" className="ml-2 text-[14px] text-azure-8 cursor-pointer">Require uppercase letter</label>
                                     </div>
                                 </div>
                             </div>
+                        )}
 
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    onClick={() => navigate(ROUTES.CHANGE_PASSWORD)}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium cursor-pointer"
-                                >
-                                    Change Password
-                                </button>
-                                <button
-                                    onClick={handleSave}
-                                    className="px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-azure-8 dark:text-zinc-300 rounded-md font-medium cursor-pointer"
-                                >
-                                    Save Security
-                                </button>
+                        {/* Email Tab */}
+                        {activeTab === 'email' && (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                <div>
+                                    <h2 className="text-xl font-black text-gray-900 dark:text-white mb-1 flex items-center gap-2"><Bell className="w-5 h-5 text-blue-500" /> SMTP Configuration</h2>
+                                    <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">Setup outbound email server for system notifications.</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">SMTP Host</label>
+                                        <input
+                                            value={settings.smtpHost}
+                                            onChange={e => handleChange('smtpHost', e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/30 outline-none transition-all shadow-inner font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">SMTP Port</label>
+                                        <input
+                                            type="number"
+                                            value={settings.smtpPort}
+                                            onChange={e => handleChange('smtpPort', e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/30 outline-none transition-all shadow-inner font-mono"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <label className="block text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1">SMTP Username / Email</label>
+                                        <input
+                                            value={settings.smtpUser}
+                                            onChange={e => handleChange('smtpUser', e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/30 outline-none transition-all shadow-inner font-mono"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 pt-4">
+                                        <button className="px-6 py-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-white font-bold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors border border-gray-200 dark:border-slate-700 shadow-sm">
+                                            Send Test Email
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        )}
 
-                {/* Save Button */}
-                <div className="flex justify-end w-full">
-                    <button
-                        onClick={handleSave}
-                        className="bg-azure-50 hover:bg-[#0b6dd4] text-white font-medium text-[14px] leading-5 px-6 py-2 rounded-md transition-colors shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer"
-                    >
-                        Save Settings
-                    </button>
+                        {/* Advanced Tab */}
+                        {activeTab === 'advanced' && (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                                <div>
+                                    <h2 className="text-xl font-black text-red-600 dark:text-red-400 mb-1 flex items-center gap-2"><Database className="w-5 h-5" /> Danger Zone & Advanced</h2>
+                                    <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">System critical operations. Proceed with caution.</p>
+                                </div>
+                                <div className="space-y-6">
+                                    <div className="p-6 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                        <div>
+                                            <h4 className="text-sm font-black text-amber-900 dark:text-amber-500 uppercase tracking-widest">Maintenance Mode</h4>
+                                            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400/80 mt-1">Temporarily disable public access to the platform. Admins can still login.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleChange('maintenanceMode', !settings.maintenanceMode)}
+                                            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0 focus:outline-none border-2 ${settings.maintenanceMode ? 'bg-amber-500 border-amber-500' : 'bg-amber-200 dark:bg-slate-800 border-transparent dark:border-slate-700'}`}
+                                        >
+                                            <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 shadow-md ${settings.maintenanceMode ? 'translate-x-7' : 'translate-x-1'}`} />
+                                        </button>
+                                    </div>
+
+                                    <div className="p-6 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                        <div>
+                                            <h4 className="text-sm font-black text-red-900 dark:text-red-500 uppercase tracking-widest">Clear System Cache</h4>
+                                            <p className="text-sm font-semibold text-red-700 dark:text-red-400/80 mt-1">Frees up server memory. Platform may be slightly slower for a few minutes.</p>
+                                        </div>
+                                        <button onClick={handleClearCache} className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors shadow-lg shadow-red-500/20 shrink-0">
+                                            Clear Cache
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
                 </div>
             </div>
         </div>

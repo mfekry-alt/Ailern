@@ -254,7 +254,7 @@ export const Header = () => {
                         src="/logo-removebg.png"
                         alt="Ailern"
                         className="left-3 absolute top-1/2 -translate-y-1/2 w-[80px] h-[80px] sm:w-[110px] sm:h-[110px] object-contain drop-shadow-md"
-                        style={{ imageRendering: 'high-quality' }}
+                       
                     />
                 </Link>
 

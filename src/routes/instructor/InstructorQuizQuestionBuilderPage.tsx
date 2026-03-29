@@ -5,7 +5,7 @@ import { storage } from '@/lib/storage';
 import { ArrowLeft, Plus, Trash2, CheckCircle2, Loader2, GripVertical, Sparkles, HelpCircle, Settings, XCircle, AlertTriangle } from 'lucide-react';
 import { useCreateQuiz } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
-import type { OptionRequest, QuestionRequest, QuestionType } from '@/types/api.types';
+import type { QuizOptionRequest, QuestionRequest, QuestionType } from '@/types/api.types';
 
 // ─── Local UI types ────────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ const convertQuestionRequestToUI = (q: QuestionRequest, uid: number): UIQuestion
 
 // ─── Payload builders ──────────────────────────────────────────────────────
 
-const buildPayloadOptions = (q: UIQuestion): OptionRequest[] =>
+const buildPayloadOptions = (q: UIQuestion): QuizOptionRequest[] =>
     q.options.map(o => ({ optionText: o.text, isCorrect: o.isCorrect }));
 
 const buildPayloadQuestion = (q: UIQuestion): QuestionRequest => ({
@@ -101,7 +101,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
     const location = useLocation();
     const settings = (location.state as any)?.settings;
 
-    const createQuizMutation = useCreateQuiz();
+    const createQuizMutation = useCreateQuiz(settings?.courseId || '');
     const isDraftQuiz = settings?.status === 'Draft';
 
     const [questions, setQuestions] = useState<UIQuestion[]>(() => (isDraftQuiz ? [] : [defaultQuestion(1)]));
@@ -273,6 +273,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
             description: settings.description?.trim() || settings.title?.trim() || 'Quiz',
             courseId: String(settings.courseId),
             maximumAttempts: settings.maximumAttempts,
+            attemptTimeLimit: Number(settings.attemptTimeLimit) || 0,
             status: settings.status,
             availableFrom: new Date(settings.availableFrom).toISOString(),
             availableUntil: new Date(settings.availableUntil).toISOString(),

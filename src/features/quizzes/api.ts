@@ -26,12 +26,12 @@ export const useQuiz = (id: string) =>
 /**
  * Create a new quiz
  */
-export const useCreateQuiz = () => {
+export const useCreateQuiz = (courseId: string) => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (cmd: CreateQuizCommand) => quizService.createQuiz(cmd),
-        onSuccess: (_data, vars) => {
-            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(vars.courseId) });
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseId) });
         },
     });
 };

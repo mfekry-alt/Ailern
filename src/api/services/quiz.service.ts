@@ -29,9 +29,10 @@ export interface GenerateQuizByAIPayload {
     query?: string;
 }
 
+// --- Helper Functions ---
 const unwrapApiResponse = <T>(payload: ApiResponse<T> | T): T => {
     if (payload && typeof payload === 'object' && 'data' in payload) {
-        return (payload).data as T;
+        return (payload as ApiResponse<T>).data as T;
     }
     return payload as T;
 };
@@ -58,23 +59,33 @@ const buildGenerateFormData = (payload: GenerateQuizByAIPayload): FormData => {
     return formData;
 };
 
+// --- Quiz CRUD Operations ---
+
 /**
  * Create a new quiz with questions
+ * Payload must match the exact schema expected by the backend
  */
 export const createQuiz = async (command: CreateQuizCommand): Promise<GetQuizDto> => {
-    const response = await api.post<ApiResponse<GetQuizDto>>(ENDPOINTS.QUIZZES.CREATE, command);
+    // 💡 إجبار إضافة الحقل حتى لو كان غير موجوداً في الـ Component
+    const payload = {
+        ...command,
+        attemptTimeLimit: command.attemptTimeLimit ?? 0
+    };
+
+    const response = await api.post<ApiResponse<GetQuizDto>>(ENDPOINTS.QUIZZES.CREATE, payload);
     return response.data.data!;
 };
 
 /**
  * Get all quizzes for a course
  */
-export const getCourseQuizzes = async (courseId: string): Promise<GetQuizDto[]> => {
+export const getCourseQuizzes = async (courseId: string | number): Promise<GetQuizDto[]> => {
     try {
-        const response = await api.get<ApiResponse<GetQuizDto[]> | GetQuizDto[]>(ENDPOINTS.QUIZZES.BY_COURSE(courseId));
+        const response = await api.get<ApiResponse<GetQuizDto[]> | GetQuizDto[]>(ENDPOINTS.QUIZZES.BY_COURSE(String(courseId)));
         const payload = response.data;
         return Array.isArray(payload) ? payload : (payload.data ?? []);
     } catch {
+        // Fallback endpoint if the primary one fails
         const response = await api.get<ApiResponse<GetQuizDto[]> | GetQuizDto[]>(ENDPOINTS.QUIZZES.LIST, {
             params: { courseId },
         });
@@ -98,7 +109,13 @@ export const updateQuiz = async (
     id: string,
     command: Partial<CreateQuizCommand>
 ): Promise<GetQuizDto> => {
-    const response = await api.put<ApiResponse<GetQuizDto>>(ENDPOINTS.QUIZZES.UPDATE(id), command);
+    // 💡 إجبار الحقل على التواجد لتجنب إسقاطه بواسطة المتصفح عند إرسال الـ JSON
+    const payload = {
+        ...command,
+        attemptTimeLimit: command.attemptTimeLimit ?? 0
+    };
+
+    const response = await api.put<ApiResponse<GetQuizDto>>(ENDPOINTS.QUIZZES.UPDATE(id), payload);
     return response.data.data!;
 };
 
@@ -109,8 +126,10 @@ export const deleteQuiz = async (id: string): Promise<void> => {
     await api.delete(ENDPOINTS.QUIZZES.DELETE(id));
 };
 
+// --- AI Generation Operations ---
+
 /**
- * Generate quiz questions using AI for a quiz
+ * Generate quiz questions using AI from files or text
  */
 export const generateQuizQuestionsByAI = async (quizId: string, payload: GenerateQuizByAIPayload): Promise<any> => {
     const formData = buildGenerateFormData(payload);
@@ -123,7 +142,7 @@ export const generateQuizQuestionsByAI = async (quizId: string, payload: Generat
 };
 
 /**
- * Quick AI Generation - Fixes "Function not implemented" error
+ * Quick AI Generation - Used for generating questions on the fly
  */
 export const generateAIQuestions = async (params: {
     topic: string;
@@ -131,7 +150,6 @@ export const generateAIQuestions = async (params: {
     count: number;
     context?: string;
 }): Promise<QuestionRequest[]> => {
-    // 💡 نقوم هنا بالنداء على الـ Endpoint الخاص بالـ Quick Generation
     const response = await api.post<ApiResponse<QuestionRequest[]>>('/Quizzes/quick-generate', params);
     return response.data.data || [];
 };

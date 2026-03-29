@@ -1,421 +1,460 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/Card';
-import { ArrowLeft, Save, Loader2, ArrowRight } from 'lucide-react';
-import { useQuiz, useUpdateQuiz } from '@/features/quizzes/api';
-import type { QuizStatus, QuestionRequest } from '@/types/api.types';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useUpdateQuiz, useQuiz } from '@/features/quizzes/api';
+import type { CreateQuizCommand } from '@/types/api.types';
 import { ROUTES } from '@/lib/constants';
+import {
+    ArrowLeft, AlertTriangle, Settings, CalendarClock,
+    Eye, Timer, Save, RefreshCw, Edit3, ListChecks
+} from 'lucide-react';
 
-interface QuizSettings {
-    title: string;
-    description: string;
-    availableUntil: string;
-    maximumAttempts: number;
-    status: QuizStatus;
-    availableFrom: string;
-    publishedDate: string;
-    courseId: string;
-    showResultOnClose: boolean;
-    shuffleQuestions: boolean;
-    shuffleOptions: boolean;
-}
-
-const inputCls =
-    'w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100';
-const labelCls = 'block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2';
-
-const PUBLISH_OPTIONS: { value: QuizStatus; title: string; desc: string }[] = [
-    { value: 'Draft', title: 'Save as Draft', desc: 'Not visible to students yet' },
-    { value: 'Published', title: 'Publish Immediately', desc: 'Visible to students right away' },
-    { value: 'Scheduled', title: 'Schedule', desc: 'Set a future publish date' },
-];
-
-const resolveQuizStatus = (quiz: unknown): QuizStatus => {
-    const status = (quiz as { quizStatus?: QuizStatus; status?: QuizStatus })?.quizStatus
-        ?? (quiz as { quizStatus?: QuizStatus; status?: QuizStatus })?.status;
-    return status ?? 'Draft';
-};
-
-/** Format an ISO/UTC date string to datetime-local input value (YYYY-MM-DDTHH:MM) */
-const toDatetimeLocal = (iso: string): string => {
-    if (!iso) return '';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '';
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-
-/** Convert datetime-local input value to ISO/UTC string for backend submission */
-const toISOString = (datetimeLocal: string): string => {
-    if (!datetimeLocal) return '';
-    // datetime-local values are in local timezone, convert to ISO string
-    const d = new Date(datetimeLocal);
-    if (Number.isNaN(d.getTime())) return '';
-    return d.toISOString();
-};
+const labelCls = 'block text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1';
+const getInputCls = (hasError: boolean) =>
+    `w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border rounded-xl focus:outline-none focus:ring-2 transition-all text-sm font-semibold text-gray-900 dark:text-white ${hasError
+        ? 'border-red-500 focus:ring-red-500/50'
+        : 'border-gray-200 dark:border-slate-700 focus:ring-blue-500/50'
+    }`;
 
 export const InstructorQuizEditPage = () => {
+    const { courseId, id } = useParams<{ courseId?: string; id: string }>();
+    const quizId = id; // تعريف الـ quizId لتوافق باقي الكود
     const navigate = useNavigate();
-    const { id } = useParams<{ id: string }>();
-    const { data: quiz, isLoading: quizLoading } = useQuiz(id ?? '');
-    const [error, setError] = useState('');
-    const [populated, setPopulated] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const [settings, setSettings] = useState<QuizSettings>({
+    // Fetch existing quiz data
+    const { data: quizData, isLoading: isFetchingQuiz, error: fetchError } = useQuiz(quizId || '');
+
+    // استنتاج الـ courseId الصحيح
+    const actualCourseId = courseId || quizData?.courseId?.toString() || '';
+
+    const updateQuizMutation = useUpdateQuiz(actualCourseId);
+
+    const [formData, setFormData] = useState<CreateQuizCommand>({
         title: '',
         description: '',
-        availableUntil: '',
+        courseId: actualCourseId,
         maximumAttempts: 1,
+        attemptTimeLimit: 0,
         status: 'Draft',
-        availableFrom: '',
-        publishedDate: '',
-        courseId: '',
-        showResultOnClose: false,
-        shuffleQuestions: false,
-        shuffleOptions: false,
+        availableFrom: new Date().toISOString(),
+        availableUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        publishedDate: undefined,
+        showResultOnClose: true,
+        shuffleQuestions: true,
+        shuffleOptions: true,
+        questions: [],
     });
 
-    const set = (patch: Partial<QuizSettings>) =>
-        setSettings(s => ({ ...s, ...patch }));
-
-    const updateQuiz = useUpdateQuiz(settings.courseId);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [saveAction, setSaveAction] = useState<'settings' | 'questions'>('settings');
 
     useEffect(() => {
-        if (quiz && !populated) {
-            setSettings({
-                title: quiz.title,
-                description: quiz.description ?? '',
-                availableUntil: toDatetimeLocal(quiz.availableUntil),
-                maximumAttempts: quiz.maximumAttempts,
-                status: resolveQuizStatus(quiz),
-                availableFrom: toDatetimeLocal(quiz.availableFrom),
-                publishedDate: quiz.publishedDate ? toDatetimeLocal(quiz.publishedDate) : '',
-                courseId: String(quiz.courseId),
-                showResultOnClose: quiz.showResultOnClose ?? false,
-                shuffleQuestions: quiz.shuffleQuestions ?? false,
-                shuffleOptions: quiz.shuffleOptions ?? false,
+        if (quizData) {
+            setFormData({
+                title: quizData.title,
+                description: quizData.description || '',
+                courseId: actualCourseId,
+                maximumAttempts: quizData.maximumAttempts,
+                attemptTimeLimit: quizData.attemptTimeLimit || 0,
+                status: quizData.status,
+                availableFrom: quizData.availableFrom,
+                availableUntil: quizData.availableUntil,
+                publishedDate: quizData.publishedDate || undefined,
+                showResultOnClose: quizData.showResultOnClose ?? true,
+                shuffleQuestions: quizData.shuffleQuestions ?? true,
+                shuffleOptions: quizData.shuffleOptions ?? true,
+                questions: quizData.questions ?? [],
             });
-            setPopulated(true);
         }
-    }, [quiz, populated]);
+    }, [quizData, actualCourseId]);
 
-    const validate = (): string | null => {
-        if (!settings.title.trim()) return 'Quiz title is required.';
-        if (settings.maximumAttempts < 1 || settings.maximumAttempts > 5)
-            return 'Attempts allowed must be between 1 and 5.';
-        if (!settings.availableFrom) return 'Available From date & time is required.';
-        if (!settings.availableUntil) return '"Available Until" is required.';
-        if (new Date(settings.availableUntil) <= new Date(settings.availableFrom))
-            return '"Available Until" must be after "Available From".';
-        if (settings.status === 'Scheduled') {
-            if (!settings.publishedDate) return 'Publish Date is required for scheduled quizzes.';
-            const pd = new Date(settings.publishedDate);
-            if (pd <= new Date()) return 'Publish Date must be in the future.';
-            if (pd >= new Date(settings.availableFrom))
-                return 'Publish Date must be before "Available From".';
+    useEffect(() => {
+        if (fetchError) {
+            setError('Failed to load quiz details.');
         }
-        return null;
+    }, [fetchError]);
+
+    const clearError = (field: string) => {
+        if (errors[field]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[field];
+                return newErrors;
+            });
+        }
     };
 
-    const handleNext = () => {
-        const err = validate();
-        if (err) { setError(err); return; }
-        setError('');
-
-        // Navigate to questions edit page with current settings in state
-        navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', id!), {
-            state: { settings, fromEdit: true },
-        });
+    // Formatter functions
+    const formatDateTimeForInput = (isoString: string) => {
+        if (!isoString) return '';
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
-    const handleSettingsOnly = () => {
-        const err = validate();
-        if (err) { setError(err); return; }
-        setError('');
+    const parseDateTimeInput = (inputValue: string) => {
+        if (!inputValue) return '';
+        return new Date(inputValue).toISOString();
+    };
 
-        if (!quiz || !Array.isArray(quiz.questions)) {
-            setError('Unable to load all existing questions for full update. Please continue to "Next: Edit Questions" and save from there.');
+    // Get current time string for "min" attributes
+    const nowLocalString = formatDateTimeForInput(new Date().toISOString());
+
+    // Validation Logic
+    const validateForm = (): boolean => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.title.trim()) newErrors.title = 'Title is required';
+        else if (formData.title.length > 255) newErrors.title = 'Title must be 255 characters or less';
+
+        const availableFrom = new Date(formData.availableFrom);
+        const availableUntil = new Date(formData.availableUntil);
+        const now = new Date();
+
+        // Allow 5 minutes grace period for current time to avoid strict blocks while filling the form
+        if (availableFrom.getTime() < (now.getTime() - 5 * 60000)) {
+            newErrors.availableFrom = 'Start date cannot be in the past.';
+        }
+
+        if (availableUntil <= availableFrom) {
+            newErrors.availableUntil = 'End date must be strictly AFTER the start date.';
+        }
+
+        if (formData.maximumAttempts < 1) newErrors.maximumAttempts = 'Attempts allowed must be at least 1';
+        if (formData.attemptTimeLimit < 0) newErrors.attemptTimeLimit = 'Time limit cannot be negative';
+
+        if (formData.status === 'Scheduled') {
+            if (!formData.publishedDate) {
+                newErrors.publishedDate = 'Published date is required when scheduling';
+            } else {
+                const published = new Date(formData.publishedDate);
+                if (published <= now) newErrors.publishedDate = 'Publish date must be in the future.';
+                if (published >= availableFrom) newErrors.publishedDate = 'Publish date must be BEFORE available from date.';
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSave = async (actionType: 'settings' | 'questions') => {
+        setSaveAction(actionType);
+
+        if (!validateForm()) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
 
-        const availableFrom = toISOString(settings.availableFrom);
-        const availableUntil = toISOString(settings.availableUntil);
-        const allQuestions: QuestionRequest[] = quiz.questions.map(q => ({
-            id: q.id,
-            questionType: q.questionType,
-            questionText: q.questionText,
-            mark: q.mark,
-            instructions: q.instructions,
-            explanation: q.explanation,
-            options: q.options.map(o => ({
-                optionText: o.optionText,
-                isCorrect: o.isCorrect,
-            })),
-        }));
+        try {
+            setError(null);
+            await updateQuizMutation.mutateAsync({
+                id: quizId!,
+                cmd: formData,
+            });
 
-        updateQuiz.mutate(
-            {
-                id: id!,
-                cmd: {
-                    title: settings.title,
-                    description: settings.description?.trim() || settings.title?.trim() || 'Quiz',
-                    // 🚨 تم إصلاح مشكلة الـ Number() هنا لتجنب إرسال NaN للباك إند إذا كان الـ ID عبارة عن String
-                    courseId: settings.courseId as any,
-                    maximumAttempts: settings.maximumAttempts,
-                    status: settings.status,
-                    availableFrom,
-                    availableUntil,
-                    publishedDate: settings.status === 'Scheduled' ? settings.publishedDate : undefined,
-                    showResultOnClose: settings.showResultOnClose,
-                    shuffleQuestions: settings.shuffleQuestions,
-                    shuffleOptions: settings.shuffleOptions,
-                    questions: allQuestions,
-                },
-            },
-            { onSuccess: () => { navigate(-1); } }
-        );
+            // Navigation based on user choice
+            if (actionType === 'settings') {
+                navigate(`/courses/${actualCourseId}/quizzes/${quizId}`);
+            } else {
+                // Navigate to the questions editor
+                navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', quizId!));
+            }
+        } catch (err: any) {
+            console.error('Failed to update quiz:', err);
+            setError(err.response?.data?.message || 'Failed to update quiz. Please try again.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
-
-    if (quizLoading) {
+    if (isFetchingQuiz) {
         return (
-            <div className="flex items-center justify-center min-h-96">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+                    <p className="text-gray-500 dark:text-slate-400 font-bold tracking-widest uppercase">Loading Quiz...</p>
+                </div>
             </div>
         );
     }
 
-    if (!quiz) {
+    if (!quizId || (!quizData && !isFetchingQuiz)) {
         return (
-            <div className="p-8 text-center text-gray-500 dark:text-zinc-400">
-                Quiz not found.
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-slate-800/50 p-8 max-w-md w-full rounded-[2rem] text-center shadow-xl border border-gray-200 dark:border-slate-700/50 backdrop-blur-md">
+                    <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-6 opacity-80" />
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Quiz Not Found</h1>
+                    <p className="text-gray-500 dark:text-slate-400 mb-8 font-medium">The quiz you are trying to update is missing or doesn't exist.</p>
+                    <button onClick={() => navigate(actualCourseId ? `/courses/${actualCourseId}/quizzes` : '/courses')} className="w-full px-6 py-4 bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-white font-bold rounded-2xl transition-colors hover:bg-gray-200 dark:hover:bg-slate-600">
+                        Back to Quizzes
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-6">
-                <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
-                >
-                    <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
-                </button>
-                <div>
-                    <h1 className="text-[28px] font-bold text-gray-900 dark:text-zinc-100">Update Quiz</h1>
-                    <p className="text-[14px] text-gray-500 dark:text-zinc-400">Update quiz settings</p>
-                </div>
-            </div>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans pb-24">
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4">
 
-            <Card variant="elevated">
-                <CardContent className="p-6 space-y-6">
-                    {error && (
-                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400 text-[14px]">
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Title */}
-                    <div>
-                        <label htmlFor="title" className={labelCls}>
-                            Quiz Title <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="title"
-                            type="text"
-                            value={settings.title}
-                            onChange={e => set({ title: e.target.value })}
-                            className={inputCls}
-                            placeholder="Enter quiz title"
-                        />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <label htmlFor="description" className={labelCls}>Description</label>
-                        <textarea
-                            id="description"
-                            value={settings.description}
-                            onChange={e => set({ description: e.target.value })}
-                            rows={3}
-                            className={inputCls}
-                            placeholder="Optional description"
-                        />
-                    </div>
-
-                    {/* Available From / Available Until */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="availableFrom" className={labelCls}>
-                                Available From <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="availableFrom"
-                                type="datetime-local"
-                                value={settings.availableFrom}
-                                onChange={e => set({ availableFrom: e.target.value })}
-                                min={new Date().toISOString().slice(0, 16)}
-                                className={inputCls}
-                            />
-                            <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
-                                When students can start the quiz.
-                            </p>
-                        </div>
-                        <div>
-                            <label htmlFor="availableUntil" className={labelCls}>
-                                Available Until <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="availableUntil"
-                                type="datetime-local"
-                                value={settings.availableUntil}
-                                onChange={e => set({ availableUntil: e.target.value })}
-                                min={settings.availableFrom || new Date().toISOString().slice(0, 16)}
-                                className={inputCls}
-                            />
-                            <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
-                                Last moment a student can enter the quiz.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Attempts Allowed */}
-                    <div>
-                        <label htmlFor="maximumAttempts" className={labelCls}>
-                            Attempts Allowed <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="maximumAttempts"
-                            type="number"
-                            min={1}
-                            max={5}
-                            value={settings.maximumAttempts}
-                            onChange={e => set({ maximumAttempts: Math.min(5, Math.max(1, Number.parseInt(e.target.value) || 1)) })}
-                            className={`${inputCls} max-w-xs`}
-                        />
-                        <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">1 – 5 attempts.</p>
-                    </div>
-
-                    {/* Publish Status */}
-                    <div>
-                        <div className={labelCls}>Publish Status</div>
-                        <div className="space-y-2">
-                            {PUBLISH_OPTIONS.map(opt => (
-                                <div
-                                    key={opt.value}
-                                    className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${settings.status === opt.value
-                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                        : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                        }`}
-                                >
-                                    <input
-                                        id={`status-${opt.value}`}
-                                        type="radio"
-                                        name="status"
-                                        value={opt.value}
-                                        checked={settings.status === opt.value}
-                                        onChange={() => set({ status: opt.value })}
-                                        className="w-4 h-4 text-blue-600 mt-0.5 cursor-pointer"
-                                    />
-                                    <label htmlFor={`status-${opt.value}`} className="cursor-pointer w-full">
-                                        <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">
-                                            {opt.title}
-                                        </div>
-                                        <div className="text-[12px] text-gray-600 dark:text-zinc-400">
-                                            {opt.desc}
-                                        </div>
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Scheduled: Publish Date */}
-                    {settings.status === 'Scheduled' && (
-                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                            <label htmlFor="publishedDate" className={labelCls}>
-                                Publish Date <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="publishedDate"
-                                type="datetime-local"
-                                value={settings.publishedDate}
-                                onChange={e => set({ publishedDate: e.target.value })}
-                                className={inputCls}
-                            />
-                            <p className="text-[12px] text-blue-700 dark:text-blue-400 mt-1">
-                                Must be in the future and <strong>before</strong> "Available From".
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Quiz Behavior Toggles */}
-                    <div>
-                        <div className={labelCls}>Quiz Behavior</div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {[
-                                { key: 'showResultOnClose' as const, label: 'Show results on close', desc: 'Show correct answers to students after the quiz ends' },
-                                { key: 'shuffleQuestions' as const, label: 'Shuffle questions', desc: 'Randomize the order of questions for each attempt' },
-                                { key: 'shuffleOptions' as const, label: 'Shuffle options', desc: 'Randomize the order of answer choices' },
-                            ].map(({ key, label, desc }) => (
-                                <div
-                                    key={key}
-                                    className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${settings[key]
-                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                        : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                        }`}
-                                >
-                                    <input
-                                        id={key}
-                                        type="checkbox"
-                                        checked={settings[key]}
-                                        onChange={e => set({ [key]: e.target.checked })}
-                                        className="w-4 h-4 text-blue-600 mt-0.5 cursor-pointer"
-                                    />
-                                    <label htmlFor={key} className="cursor-pointer w-full">
-                                        <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">{label}</div>
-                                        <div className="text-[12px] text-gray-600 dark:text-zinc-400">{desc}</div>
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex justify-between gap-3 pt-4 border-t border-gray-200 dark:border-zinc-700">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
                         <button
                             type="button"
-                            onClick={() => navigate(-1)}
-                            className="px-6 py-2 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                            onClick={() => navigate(`/courses/${actualCourseId}/quizzes/${quizId}`)}
+                            className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 shadow-sm"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
+                                 Update Quiz Details
+                            </h1>
+                            <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-1">
+                                Modify settings, fix timings, and adjust behavior rules.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Error Banner */}
+                {error && (
+                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-5 flex items-center gap-3 animate-in fade-in">
+                        <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+                        <p className="text-sm font-bold text-red-700 dark:text-red-400">{error}</p>
+                    </div>
+                )}
+
+                {/* Main Form Container */}
+                <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
+                    <div className="p-6 sm:p-8 space-y-8">
+
+                        {/* Basic Info */}
+                        <div className="space-y-5">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                                <Settings className="w-5 h-5 text-indigo-500" /> Basic Information
+                            </h3>
+                            <div>
+                                <label htmlFor="title" className={labelCls}>Quiz Title <span className="text-red-500">*</span></label>
+                                <input
+                                    id="title"
+                                    type="text"
+                                    value={formData.title}
+                                    onChange={e => { setFormData(p => ({ ...p, title: e.target.value })); clearError('title'); }}
+                                    className={getInputCls(!!errors.title)}
+                                    disabled={updateQuizMutation.isPending}
+                                />
+                                {errors.title && <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.title}</p>}
+                            </div>
+
+                            <div>
+                                <label htmlFor="description" className={labelCls}>Description</label>
+                                <textarea
+                                    id="description"
+                                    value={formData.description}
+                                    onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
+                                    rows={4}
+                                    className={`${getInputCls(false)} resize-none`}
+                                    disabled={updateQuizMutation.isPending}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Timing & Limits */}
+                        <div className="space-y-5 pt-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                                <CalendarClock className="w-5 h-5 text-blue-500" /> Timing & Limits
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label htmlFor="availableFrom" className={labelCls}>Available From <span className="text-red-500">*</span></label>
+                                    <input
+                                        id="availableFrom"
+                                        type="datetime-local"
+                                        min={nowLocalString}
+                                        value={formatDateTimeForInput(formData.availableFrom)}
+                                        onChange={e => { setFormData(p => ({ ...p, availableFrom: parseDateTimeInput(e.target.value) })); clearError('availableFrom'); clearError('availableUntil'); }}
+                                        className={getInputCls(!!errors.availableFrom)}
+                                        disabled={updateQuizMutation.isPending}
+                                    />
+                                    {errors.availableFrom && <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.availableFrom}</p>}
+                                </div>
+                                <div>
+                                    <label htmlFor="availableUntil" className={labelCls}>Available Until <span className="text-red-500">*</span></label>
+                                    <input
+                                        id="availableUntil"
+                                        type="datetime-local"
+                                        min={formatDateTimeForInput(formData.availableFrom) || nowLocalString}
+                                        value={formatDateTimeForInput(formData.availableUntil)}
+                                        onChange={e => { setFormData(p => ({ ...p, availableUntil: parseDateTimeInput(e.target.value) })); clearError('availableUntil'); }}
+                                        className={getInputCls(!!errors.availableUntil)}
+                                        disabled={updateQuizMutation.isPending}
+                                    />
+                                    {errors.availableUntil && <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.availableUntil}</p>}
+                                </div>
+
+                                {/* Maximum Attempts */}
+                                <div>
+                                    <label htmlFor="maximumAttempts" className={labelCls}>Attempts Allowed <span className="text-red-500">*</span></label>
+                                    <input
+                                        id="maximumAttempts"
+                                        type="number"
+                                        min={1}
+                                        max={5}
+                                        value={formData.maximumAttempts}
+                                        onChange={e => { setFormData(p => ({ ...p, maximumAttempts: parseInt(e.target.value) || 1 })); clearError('maximumAttempts'); }}
+                                        className={getInputCls(!!errors.maximumAttempts)}
+                                        disabled={updateQuizMutation.isPending}
+                                    />
+                                    {errors.maximumAttempts && <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.maximumAttempts}</p>}
+                                </div>
+
+                                {/* Duration / Time Limit */}
+                                <div>
+                                    <label htmlFor="attemptTimeLimit" className={labelCls}>Time Limit (Minutes) <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <Timer className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input
+                                            id="attemptTimeLimit"
+                                            type="number"
+                                            min={0}
+                                            value={formData.attemptTimeLimit}
+                                            onChange={e => { setFormData(p => ({ ...p, attemptTimeLimit: Math.max(0, parseInt(e.target.value) || 0) })); clearError('attemptTimeLimit'); }}
+                                            className={`${getInputCls(!!errors.attemptTimeLimit)} pl-12`}
+                                            disabled={updateQuizMutation.isPending}
+                                        />
+                                    </div>
+                                    {errors.attemptTimeLimit ? (
+                                        <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.attemptTimeLimit}</p>
+                                    ) : (
+                                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Set <strong>0</strong> for unlimited time.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Publish Status */}
+                        <div className="space-y-5 pt-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                                <Eye className="w-5 h-5 text-purple-500" /> Visibility Status
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {[
+                                    { value: 'Draft', title: 'Save as Draft', desc: 'Not visible to students yet' },
+                                    { value: 'Published', title: 'Published', desc: 'Visible to students right away' },
+                                    { value: 'Scheduled', title: 'Scheduled', desc: 'Set a future publish date' }
+                                ].map(opt => {
+                                    const isSelected = formData.status === opt.value;
+                                    return (
+                                        <label key={opt.value} className={`relative flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'}`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className={`font-bold text-sm ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'}`}>{opt.title}</span>
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>}
+                                                </div>
+                                            </div>
+                                            <span className={`text-xs font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-slate-400'}`}>{opt.desc}</span>
+                                            <input type="radio" name="status" value={opt.value} checked={isSelected} onChange={() => { setFormData(p => ({ ...p, status: opt.value as any })); clearError('publishedDate'); }} className="hidden" disabled={updateQuizMutation.isPending} />
+                                        </label>
+                                    );
+                                })}
+                            </div>
+
+                            {formData.status === 'Scheduled' && (
+                                <div className="p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl animate-in fade-in slide-in-from-top-2">
+                                    <label htmlFor="publishedDate" className={`${labelCls} !text-blue-700 dark:!text-blue-400`}>Publish Date & Time <span className="text-red-500">*</span></label>
+                                    <input
+                                        id="publishedDate"
+                                        type="datetime-local"
+                                        min={nowLocalString}
+                                        max={formatDateTimeForInput(formData.availableFrom)}
+                                        value={formData.publishedDate ? formatDateTimeForInput(formData.publishedDate) : ''}
+                                        onChange={e => { setFormData(p => ({ ...p, publishedDate: parseDateTimeInput(e.target.value) })); clearError('publishedDate'); }}
+                                        className={`${getInputCls(!!errors.publishedDate)} !bg-white dark:!bg-slate-900`}
+                                        disabled={updateQuizMutation.isPending}
+                                    />
+                                    {errors.publishedDate && <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.publishedDate}</p>}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Quiz Behavior */}
+                        <div className="space-y-5 pt-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                                <Settings className="w-5 h-5 text-emerald-500" /> Quiz Behavior
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {[
+                                    { key: 'showResultOnClose' as const, label: 'Show results on close', desc: 'Display correct answers after quiz' },
+                                    { key: 'shuffleQuestions' as const, label: 'Shuffle questions', desc: 'Randomize question order' },
+                                    { key: 'shuffleOptions' as const, label: 'Shuffle options', desc: 'Randomize answer choices' },
+                                ].map(({ key, label, desc }) => {
+                                    const isChecked = formData[key];
+                                    return (
+                                        <label key={key} className={`relative flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${isChecked ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' : 'border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'}`}>
+                                            <div className="flex-1">
+                                                <div className={`font-bold text-sm mb-1 ${isChecked ? 'text-emerald-900 dark:text-emerald-100' : 'text-gray-900 dark:text-white'}`}>{label}</div>
+                                                <div className={`text-xs font-medium ${isChecked ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-slate-400'}`}>{desc}</div>
+                                            </div>
+                                            <div className="pt-0.5">
+                                                <input type="checkbox" checked={isChecked as boolean} onChange={e => setFormData(p => ({ ...p, [key]: e.target.checked }))} className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" disabled={updateQuizMutation.isPending} />
+                                            </div>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Footer Actions with Choice */}
+                    <div className="p-6 sm:p-8 bg-gray-50/50 dark:bg-slate-900/50 border-t border-gray-200 dark:border-slate-700/50 flex flex-col lg:flex-row gap-4 justify-between items-center">
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/courses/${actualCourseId}/quizzes/${quizId}`)}
+                            disabled={updateQuizMutation.isPending}
+                            className="w-full lg:w-auto px-8 py-3.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold transition-all text-sm shadow-sm disabled:opacity-50"
                         >
                             Cancel
                         </button>
-                        <div className="flex gap-3">
+
+                        <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-3">
                             <button
                                 type="button"
-                                onClick={handleSettingsOnly}
-                                disabled={updateQuiz.isPending}
-                                className="flex items-center gap-2 px-6 py-2 border border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-500 font-medium text-[14px] rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 transition-colors cursor-pointer"
+                                onClick={() => handleSave('settings')}
+                                disabled={updateQuizMutation.isPending}
+                                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gray-900 hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl font-bold transition-all shadow-md active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                {updateQuiz.isPending
-                                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</>
-                                    : <><Save className="w-4 h-4" /> Update Settings Only</>
-                                }
+                                {updateQuizMutation.isPending && saveAction === 'settings' ? (
+                                    <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</>
+                                ) : (
+                                    <><Save className="w-4 h-4" /> Save Settings Only</>
+                                )}
                             </button>
+
                             <button
                                 type="button"
-                                onClick={handleNext}
-                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] rounded-lg transition-colors cursor-pointer"
+                                onClick={() => handleSave('questions')}
+                                disabled={updateQuizMutation.isPending}
+                                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                             >
-                                Next: Edit Questions <ArrowRight className="w-4 h-4" />
+                                {updateQuizMutation.isPending && saveAction === 'questions' ? (
+                                    <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</>
+                                ) : (
+                                    <><ListChecks className="w-4 h-4" /> Save & Edit Questions</>
+                                )}
                             </button>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 };
+
+export default InstructorQuizEditPage;

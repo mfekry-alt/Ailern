@@ -11,6 +11,8 @@ import { InstructorLayout } from './layouts/InstructorLayout';
 // Public pages
 import { HomePage } from '@/routes/HomePage';
 import { LoginPage } from '@/routes/LoginPage';
+import { SignupPage } from '@/routes/SignupPage';
+import { ConfirmEmailPage } from '@/routes/ConfirmEmailPage';
 import { ForgotPasswordPage } from '@/routes/ForgotPasswordPage';
 import { VerifyEmailPage } from '@/routes/VerifyEmailPage';
 import { SetPasswordPage } from '@/routes/SetPasswordPage';
@@ -21,10 +23,11 @@ import { NotificationsPage } from '@/routes/NotificationsPage';
 
 // Student pages
 import { DashboardPage } from '@/routes/student/DashboardPage';
+
 import { CoursesPage } from '@/routes/student/CoursesPage';
 import { CourseDetailPage } from '@/routes/student/CourseDetailPage';
 import { LessonPlayerPage } from '@/routes/student/LessonPlayerPage';
-import { ProfilePage } from '@/routes/student/ProfilePage';
+import { ProfilePage } from '@/routes/ProfilePage';
 import { AssignmentsPage } from '@/routes/student/AssignmentsPage';
 import { AssignmentDetailPage } from '@/routes/student/AssignmentDetailPage';
 import { QuizzesPage } from '@/routes/student/QuizzesPage';
@@ -38,11 +41,11 @@ import { InstructorDashboardPage } from '@/routes/instructor/InstructorDashboard
 import { InstructorCoursesPage } from '@/routes/instructor/InstructorCoursesPage';
 import { InstructorManageCoursePage } from '@/routes/instructor/InstructorManageCoursePage';
 import { InstructorCourseEditPage } from '@/routes/instructor/InstructorCourseEditPage';
+import { InstructorStatisticsPage } from '@/routes/instructor/InstructorStatisticsPage'; 
 import { InstructorCourseEditContentPage } from '@/routes/instructor/InstructorCourseEditContentPage';
 import { InstructorGradebookPage } from '@/routes/instructor/InstructorGradebookPage';
-import { InstructorStatisticsPage  } from '@/routes/instructor/InstructorStatisticsPage';
 import { InstructorAssignmentsPage } from '@/routes/instructor/InstructorAssignmentsPage';
-import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';
+import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';    
 import { InstructorQuizQuestionBuilderPage } from '@/routes/instructor/InstructorQuizQuestionBuilderPage';
 import { InstructorQuizEditPage } from '@/routes/instructor/InstructorQuizEditPage';
 import { InstructorQuizUpdatePage } from '@/routes/instructor/InstructorQuizUpdatePage';
@@ -72,9 +75,15 @@ export const AppRouter = () => {
                 }
             >
                 <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+                <Route path={ROUTES.SIGNUP} element={<SignupPage />} />
                 <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
                 <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
                 <Route path={ROUTES.SET_PASSWORD} element={<SetPasswordPage />} />
+            </Route>
+
+            {/* Confirm email (accessible whether logged in or not) */}
+            <Route element={<AuthLayout />}>
+                <Route path={ROUTES.CONFIRM_EMAIL} element={<ConfirmEmailPage />} />
             </Route>
 
             {/* Public routes */}
@@ -126,13 +135,13 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENTS} element={<InstructorAssignmentsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<InstructorAssignmentCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT} element={<InstructorAssignmentEditPage />} />
-                <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />
-                <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
+                <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />          
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS} element={<InstructorQuizQuestionBuilderPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />
+                <Route path={ROUTES.INSTRUCTOR_STATISTICS} element={<InstructorStatisticsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_UPDATE} element={<InstructorQuizUpdatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT} element={<InstructorQuizQuestionsEditPage />} />
-                <Route path={ROUTES.INSTRUCTOR_STATISTICS} element={<InstructorStatisticsPage />} />
+                <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
             </Route>

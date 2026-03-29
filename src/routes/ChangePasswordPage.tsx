@@ -6,7 +6,8 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui';
 import { ROUTES, ROLES } from '@/lib/constants';
 import { useAuth } from '@/hooks/useAuth';
-import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { useChangePassword } from '@/features/auth/api';
+import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, CheckCircle, AlertCircle } from 'lucide-react';
 
 const changePasswordSchema = z
     .object({
@@ -28,12 +29,12 @@ type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 export const ChangePasswordPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const changePassword = useChangePassword();
     const [error, setError] = useState<string>('');
     const [success, setSuccess] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const {
         register,
@@ -60,15 +61,12 @@ export const ChangePasswordPage = () => {
         if (/[^A-Za-z0-9]/.test(newPasswordValue)) score += 15;
 
         if (score >= 80) {
-            return { label: 'Strong', badge: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400', bar: 'bg-green-500', score };
+            return { label: 'Strong', badge: 'bg-green-100 text-green-800', bar: 'bg-green-500', score };
         }
         if (score >= 50) {
-            return { label: 'Medium', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400', bar: 'bg-amber-500', score };
+            return { label: 'Medium', badge: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500', score };
         }
-        if (newPasswordValue.length > 0) {
-            return { label: 'Weak', badge: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400', bar: 'bg-red-500', score };
-        }
-        return { label: 'Empty', badge: 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400', bar: 'bg-gray-200 dark:bg-slate-700', score: 0 };
+        return { label: 'Weak', badge: 'bg-red-100 text-red-800', bar: 'bg-red-500', score };
     })();
 
     const passwordRequirements = [
@@ -82,248 +80,211 @@ export const ChangePasswordPage = () => {
     const onSubmit = async (data: ChangePasswordFormData) => {
         setError('');
         setSuccess(false);
-        setIsSubmitting(true);
 
         try {
-            if (!data.currentPassword || !data.newPassword) {
-                throw new Error('Please fill in all required fields');
-            }
-
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
+            await changePassword.mutateAsync({
+                currentPassword: data.currentPassword,
+                newPassword: data.newPassword,
+            });
             setSuccess(true);
             reset();
             setTimeout(() => {
-                navigate(backRoute);
+                navigate(ROUTES.PROFILE);
             }, 2000);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to change password. Please try again.');
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans selection:bg-blue-500/30">
-            <div className="max-w-5xl mx-auto space-y-8">
-
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50 shadow-sm">
-                            <Lock className="w-7 h-7" />
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
+            <div className="max-w-5xl mx-auto space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Lock className="w-5 h-5 text-blue-600" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">{roleLabel} Security</p>
-                            </div>
-                            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Change Password</h1>
-                            <p className="text-gray-500 dark:text-slate-400 mt-1">Keep your account safe with a strong, unique password.</p>
+                            <p className="text-sm text-gray-600 dark:text-zinc-400">Security • {roleLabel} account</p>
+                            <h1 className="text-[30px] font-bold text-gray-900 dark:text-zinc-100 leading-tight">Change Password</h1>
+                            <p className="text-[16px] text-gray-600 dark:text-zinc-400">Keep your account safe with a strong, unique password.</p>
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={() => navigate(backRoute)}
-                        className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700/80 transition-all hover:shadow-sm w-full md:w-auto"
+                        className="inline-flex items-center justify-center px-4 py-3 text-[14px] font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to {backRoute === ROUTES.PROFILE ? 'Profile' : 'Dashboard'}
+                        Back to {backRoute === ROUTES.PROFILE ? 'profile' : 'dashboard'}
                     </button>
                 </div>
 
-                <div className="grid lg:grid-cols-[1.7fr_1fr] gap-6 xl:gap-8">
-                    {/* Main Form Form */}
-                    <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-gray-200 dark:border-slate-700/50 shadow-sm rounded-[2rem] overflow-hidden">
-                        <CardContent className="p-6 sm:p-8 space-y-8">
-
-                            {/* Alerts */}
+                <div className="grid lg:grid-cols-[1.7fr_1fr] gap-6">
+                    <Card variant="elevated">
+                        <CardContent className="p-6 space-y-6">
                             {error && (
-                                <div className="p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                                     <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                                 </div>
                             )}
 
                             {success && (
-                                <div className="p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-                                    <p className="text-sm text-green-700 dark:text-green-300">Password changed successfully! Redirecting securely...</p>
+                                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                    <p className="text-sm text-green-700 dark:text-green-300">Password changed successfully! Redirecting to profile...</p>
                                 </div>
                             )}
 
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                                <div className="space-y-2">
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Credentials</p>
+                                    <p className="text-sm text-gray-600 dark:text-zinc-400">Enter your current password, then choose a strong new one.</p>
+                                </div>
+
                                 <div className="space-y-6">
-                                    {/* Current Password */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Current Password</label>
+                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Current Password</label>
                                         <div className="relative">
                                             <input
                                                 type={showCurrentPassword ? 'text' : 'password'}
                                                 placeholder="Enter your current password"
-                                                className="w-full pl-4 pr-12 py-3 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all outline-none sm:text-sm"
+                                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 transition-all pr-10"
                                                 {...register('currentPassword')}
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
                                             >
                                                 {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                             </button>
                                         </div>
                                         {errors.currentPassword && (
-                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1.5">{errors.currentPassword.message}</p>
+                                            <p className="text-sm text-red-600 mt-1">{errors.currentPassword.message}</p>
                                         )}
                                     </div>
 
-                                    {/* Divider */}
-                                    <div className="h-px w-full bg-gray-100 dark:bg-slate-700/50"></div>
-
-                                    {/* New Password */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">New Password</label>
+                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">New Password</label>
                                         <div className="relative">
                                             <input
                                                 type={showNewPassword ? 'text' : 'password'}
-                                                placeholder="Enter your new password"
-                                                className="w-full pl-4 pr-12 py-3 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all outline-none sm:text-sm"
+                                                placeholder="Enter your new password (min. 8 characters)"
+                                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 transition-all pr-10"
                                                 {...register('newPassword')}
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowNewPassword(!showNewPassword)}
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
                                             >
                                                 {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                             </button>
                                         </div>
-
-                                        {/* Strength Bar */}
-                                        <div className="flex items-center gap-3 mt-3">
-                                            <div className="flex-1 h-1.5 bg-gray-100 dark:bg-slate-700/50 rounded-full overflow-hidden flex">
-                                                <div className={`h-full transition-all duration-500 ease-out ${passwordStrength.bar}`} style={{ width: `${passwordStrength.score}%` }}></div>
-                                            </div>
-                                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${passwordStrength.badge} transition-colors duration-300`}>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <span className={`text-xs font-semibold px-2 py-1 rounded-full ${passwordStrength.badge}`}>
                                                 {passwordStrength.label}
                                             </span>
+                                            <div className="flex-1 h-2 bg-gray-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                                                <div className={`h-full ${passwordStrength.bar}`} style={{ width: `${passwordStrength.score}%` }}></div>
+                                            </div>
                                         </div>
-
                                         {errors.newPassword && (
-                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1.5">{errors.newPassword.message}</p>
+                                            <p className="text-sm text-red-600 mt-1">{errors.newPassword.message}</p>
                                         )}
                                     </div>
 
-                                    {/* Confirm Password */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Confirm New Password</label>
+                                        <label className="block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2">Confirm New Password</label>
                                         <div className="relative">
                                             <input
                                                 type={showConfirmPassword ? 'text' : 'password'}
                                                 placeholder="Confirm your new password"
-                                                className="w-full pl-4 pr-12 py-3 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all outline-none sm:text-sm"
+                                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 transition-all pr-10"
                                                 {...register('confirmPassword')}
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
                                             >
                                                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                             </button>
                                         </div>
                                         {errors.confirmPassword && (
-                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1.5">{errors.confirmPassword.message}</p>
+                                            <p className="text-sm text-red-600 mt-1">{errors.confirmPassword.message}</p>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Password Requirements Checklist */}
-                                <div className="pt-4 border-t border-gray-100 dark:border-slate-700/50">
-                                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">Password must contain:</p>
+                                <div className="space-y-3">
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Password requirements</p>
                                     <div className="grid sm:grid-cols-2 gap-2">
                                         {passwordRequirements.map((item) => (
                                             <div
                                                 key={item.label}
-                                                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-colors ${item.met
-                                                        ? 'bg-green-50/50 dark:bg-green-500/10 border-green-200/50 dark:border-green-500/20 text-green-700 dark:text-green-400'
-                                                        : 'bg-gray-50/50 dark:bg-slate-900/30 border-gray-100 dark:border-slate-700/50 text-gray-600 dark:text-slate-400'
-                                                    }`}
+                                                className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800"
                                             >
                                                 {item.met ? (
-                                                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                                    <CheckCircle className="w-4 h-4 text-green-600" />
                                                 ) : (
-                                                    <div className="w-4 h-4 rounded-full border border-dashed border-gray-300 dark:border-slate-600 shrink-0" />
+                                                    <AlertCircle className="w-4 h-4 text-amber-500" />
                                                 )}
-                                                <span className="text-xs font-medium">{item.label}</span>
+                                                <span className="text-sm text-gray-700 dark:text-zinc-300">{item.label}</span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Actions */}
-                                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                                <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            reset();
-                                            navigate(backRoute);
-                                        }}
-                                        className="w-full sm:w-1/2 px-4 py-3 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-all text-sm"
+                                        onClick={() => navigate(ROUTES.PROFILE)}
+                                        className="w-full sm:w-1/2 px-4 py-3 bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-200 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={isSubmitting || passwordStrength.score < 80}
-                                        className="w-full sm:w-1/2 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none hover:-translate-y-0.5 text-sm"
+                                        disabled={changePassword.isPending}
+                                        className="w-full sm:w-1/2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {isSubmitting ? 'Updating Securely...' : 'Update Password'}
+                                        {changePassword.isPending ? 'Changing Password...' : 'Change Password'}
                                     </button>
                                 </div>
                             </form>
                         </CardContent>
                     </Card>
 
-                    {/* Security Sidebar */}
-                    <div className="space-y-6">
-                        <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-gray-200 dark:border-slate-700/50 shadow-sm rounded-[2rem] overflow-hidden">
-                            <CardContent className="p-6 sm:p-8 space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center border border-blue-100 dark:border-blue-800/30">
-                                        <ShieldCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Security Tips</h2>
-                                        <p className="text-xs text-gray-500 dark:text-slate-400">Keep your account safe</p>
-                                    </div>
+                    <Card variant="bordered">
+                        <CardContent className="p-6 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                                    <ShieldCheck className="w-5 h-5 text-blue-600" />
                                 </div>
-
-                                <div className="space-y-4 text-sm">
-                                    <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800">
-                                        <KeyRound className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                                        <p className="text-gray-600 dark:text-slate-300 leading-relaxed">Use a unique password you haven't used on other websites or accounts.</p>
-                                    </div>
-
-                                    <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800">
-                                        <Lock className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
-                                        <p className="text-gray-600 dark:text-slate-300 leading-relaxed">Avoid using personal information like birthdays or names in your password.</p>
-                                    </div>
-
-                                    <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800">
-                                        <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                                        <p className="text-gray-600 dark:text-slate-300 leading-relaxed">Always sign out when using a public or shared computer device.</p>
-                                    </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Security tips</p>
+                                    <p className="text-sm text-gray-600 dark:text-zinc-400">These reminders keep your account safe.</p>
                                 </div>
-
-                                <div className="rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-900/10 p-4">
-                                    <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed text-center">
-                                        If you suspect your account has been compromised, please contact support immediately.
-                                    </p>
+                            </div>
+                            <div className="space-y-3 text-sm text-gray-700 dark:text-zinc-300">
+                                <div className="flex items-start gap-2">
+                                    <KeyRound className="w-4 h-4 text-blue-600 mt-0.5" />
+                                    <p>Use a unique password you have not used on other accounts.</p>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                                <div className="flex items-start gap-2">
+                                    <ShieldCheck className="w-4 h-4 text-green-600 mt-0.5" />
+                                    <p>Turn on MFA in your profile settings for extra protection.</p>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5" />
+                                    <p>Sign out on shared devices after updating your password.</p>
+                                </div>
+                            </div>
+                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 p-4 text-sm text-gray-700 dark:text-zinc-300">
+                                If you did not request this change, please contact support immediately.
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>

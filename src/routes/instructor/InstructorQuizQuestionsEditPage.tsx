@@ -2,18 +2,20 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { ROUTES, STORAGE_KEYS } from '@/lib/constants';
 import { storage } from '@/lib/storage';
-import { Card, CardContent } from '@/components/ui/Card';
-import { ArrowLeft, Plus, Trash2, CheckCircle2, Loader2, GripVertical, Sparkles } from 'lucide-react';
+import {
+    ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
+    GripVertical, Sparkles, ListChecks, HelpCircle, AlertTriangle, Save
+} from 'lucide-react';
 import { useQuiz, useUpdateQuiz } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
-import type { OptionRequest, QuestionRequest, QuestionType, QuestionDto, OptionDto } from '@/types/api.types';
+import type { QuizOptionRequest, QuestionRequest, QuestionType, QuestionDto, OptionDto } from '@/types/api.types';
 
 // ─── Local UI types ────────────────────────────────────────────────────────
 
 interface UIOption {
     text: string;
     isCorrect: boolean;
-    backendId?: string;  // Preserve backend ID for updates
+    backendId?: string;
 }
 
 interface UIQuestion {
@@ -24,7 +26,7 @@ interface UIQuestion {
     mark: number;
     explanation: string;
     options: UIOption[];
-    backendId?: string;  // Preserve backend ID for updates
+    backendId?: string;
 }
 
 interface EditDraftData {
@@ -99,11 +101,11 @@ const convertQuestionDtoToUI = (dto: QuestionDto, uid: number): UIQuestion => ({
 
 // ─── Payload builders ──────────────────────────────────────────────────────
 
-const buildPayloadOptions = (q: UIQuestion): OptionRequest[] =>
+const buildPayloadOptions = (q: UIQuestion): QuizOptionRequest[] =>
     q.options.map(o => ({ optionText: o.text, isCorrect: o.isCorrect }));
 
 const buildPayloadQuestion = (q: UIQuestion): QuestionRequest => ({
-    id: q.backendId,  // Include ID for existing questions, undefined for new
+    id: q.backendId,
     questionType: q.type,
     questionText: q.text,
     mark: q.mark,
@@ -114,9 +116,8 @@ const buildPayloadQuestion = (q: UIQuestion): QuestionRequest => ({
 
 // ─── Shared style constants ────────────────────────────────────────────────
 
-const inputCls =
-    'w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100';
-const labelCls = 'block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2';
+const inputCls = 'w-full px-5 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm text-gray-900 dark:text-white transition-all outline-none';
+const labelCls = 'block text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1';
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
@@ -149,7 +150,6 @@ export const InstructorQuizQuestionsEditPage = () => {
             setQuestions(uiQuestions);
             setCounter(uiQuestions.length + 1);
         } else if (!isDraftQuiz) {
-            // For non-draft quizzes without questions, start with one question
             setQuestions([defaultQuestion(1)]);
             setCounter(2);
         }
@@ -196,9 +196,7 @@ export const InstructorQuizQuestionsEditPage = () => {
         setCounter(c => c + 1);
     };
 
-    const handleGenerateWithAI = () => {
-        setShowAIModal(true);
-    };
+    const handleGenerateWithAI = () => setShowAIModal(true);
 
     const handleAIGenerate = (generatedQuestions: QuestionRequest[]) => {
         if (!generatedQuestions.length) {
@@ -206,27 +204,12 @@ export const InstructorQuizQuestionsEditPage = () => {
             setShowAIModal(false);
             return;
         }
-
-        const newQuestions = generatedQuestions.map((q, idx) =>
-            convertQuestionRequestToUI(q, counter + idx)
-        );
-
+        const newQuestions = generatedQuestions.map((q, idx) => convertQuestionRequestToUI(q, counter + idx));
         setQuestions(qs => [...qs, ...newQuestions]);
         setCounter(c => c + newQuestions.length);
         setError('');
         setShowAIModal(false);
     };
-
-    if (showAIModal) {
-        return (
-            <AIQuestionGeneratorModal
-                isOpen={true}
-                quizId={quizId ?? undefined}
-                onClose={() => setShowAIModal(false)}
-                onGenerate={handleAIGenerate}
-            />
-        );
-    }
 
     const moveQuestion = (fromUid: number, toUid: number) => {
         if (fromUid === toUid) return;
@@ -242,9 +225,7 @@ export const InstructorQuizQuestionsEditPage = () => {
     };
 
     const changeType = (uid: number, type: QuestionType) => {
-        const options =
-            type === 'MCQ' ? makeMCQOptions() :
-                type === 'TrueFalse' ? makeTFOptions() : [];
+        const options = type === 'MCQ' ? makeMCQOptions() : type === 'TrueFalse' ? makeTFOptions() : [];
         updateQ(uid, { type, options });
     };
 
@@ -290,9 +271,7 @@ export const InstructorQuizQuestionsEditPage = () => {
     const validate = (): string | null => {
         if (isDraftQuiz) return null;
 
-        if (questions.length === 0) {
-            return 'At least one question is required for published or scheduled quizzes.';
-        }
+        if (questions.length === 0) return 'At least one question is required for published or scheduled quizzes.';
 
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
@@ -302,17 +281,13 @@ export const InstructorQuizQuestionsEditPage = () => {
             if (q.mark <= 0) return `${n}: Points must be greater than 0.`;
 
             if (q.type === 'MCQ') {
-                if (q.options.length < 3 || q.options.length > 5)
-                    return `${n}: MCQ must have 3–5 options.`;
-                if (q.options.some(o => !o.text.trim()))
-                    return `${n}: All option texts are required.`;
-                if (q.options.filter(o => o.isCorrect).length !== 1)
-                    return `${n}: Exactly one correct option is required.`;
+                if (q.options.length < 3 || q.options.length > 5) return `${n}: MCQ must have 3–5 options.`;
+                if (q.options.some(o => !o.text.trim())) return `${n}: All option texts are required.`;
+                if (q.options.filter(o => o.isCorrect).length !== 1) return `${n}: Exactly one correct option is required.`;
             }
 
             if (q.type === 'TrueFalse') {
-                if (q.options.filter(o => o.isCorrect).length !== 1)
-                    return `${n}: Select the correct answer (True or False).`;
+                if (q.options.filter(o => o.isCorrect).length !== 1) return `${n}: Select the correct answer (True or False).`;
             }
         }
         return null;
@@ -322,29 +297,25 @@ export const InstructorQuizQuestionsEditPage = () => {
 
     const handleSubmit = async () => {
         const err = validate();
-        if (err) { setError(err); return; }
+        if (err) {
+            setError(err);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
         setError('');
 
         const payloadQuestions = questions.map(buildPayloadQuestion);
 
         const payload = {
             title: settings?.title || quiz?.title,
-            // Backend currently validates description as required; keep UI optional with a safe fallback.
-            description:
-                settings?.description?.trim() ||
-                quiz?.description?.trim() ||
-                settings?.title?.trim() ||
-                quiz?.title?.trim() ||
-                'Quiz',
+            description: settings?.description?.trim() || quiz?.description?.trim() || settings?.title?.trim() || quiz?.title?.trim() || 'Quiz',
             courseId: Number(settings?.courseId || quiz?.courseId) as any,
             maximumAttempts: settings?.maximumAttempts ?? quiz?.maximumAttempts,
+            attemptTimeLimit: settings?.attemptTimeLimit ?? quiz?.attemptTimeLimit ?? 0,
             status: settings?.status || quiz?.status,
             availableFrom: settings?.availableFrom ? new Date(settings.availableFrom).toISOString() : quiz?.availableFrom,
             availableUntil: settings?.availableUntil ? new Date(settings.availableUntil).toISOString() : quiz?.availableUntil,
-            publishedDate:
-                settings?.status === 'Scheduled' && settings?.publishedDate
-                    ? new Date(settings.publishedDate).toISOString()
-                    : quiz?.publishedDate,
+            publishedDate: settings?.status === 'Scheduled' && settings?.publishedDate ? new Date(settings.publishedDate).toISOString() : quiz?.publishedDate,
             showResultOnClose: settings?.showResultOnClose ?? quiz?.showResultOnClose ?? false,
             shuffleQuestions: settings?.shuffleQuestions ?? quiz?.shuffleQuestions ?? false,
             shuffleOptions: settings?.shuffleOptions ?? quiz?.shuffleOptions ?? false,
@@ -352,441 +323,376 @@ export const InstructorQuizQuestionsEditPage = () => {
         };
 
         try {
-            await updateQuizMutation.mutateAsync({ id: quizId!, cmd: payload });
+            await updateQuizMutation.mutateAsync({ id: quizId!, cmd: payload as any });
             storage.remove(STORAGE_KEYS.QUIZ_EDIT_DRAFT);
             setSuccess(true);
             setTimeout(() => navigate(-2), 1500);
         } catch (e: any) {
             console.error('[UpdateQuiz] error:', e?.response?.status, e?.response?.data, e);
             const d = e?.response?.data;
-            const fieldErrors = d?.errors
-                ? Object.entries(d.errors as Record<string, string[]>)
-                    .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
-                    .join(' | ')
-                : null;
+            const fieldErrors = d?.errors ? Object.entries(d.errors as Record<string, string[]>).map(([field, msgs]) => `${field}: ${msgs.join(', ')}`).join(' | ') : null;
             const title = d?.message || d?.title;
-            const extracted = fieldErrors
-                ? (title ? `${title} — ${fieldErrors}` : fieldErrors)
-                : (title || e?.message || 'Failed to update quiz. Please try again.');
+            const extracted = fieldErrors ? (title ? `${title} — ${fieldErrors}` : fieldErrors) : (title || e?.message || 'Failed to update quiz. Please try again.');
             setError(extracted);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
 
-    if (quizLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-96">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            </div>
-        );
-    }
+    if (quizLoading) return (
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col items-center justify-center">
+            <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-4" />
+            <p className="text-gray-500 dark:text-slate-400 font-bold tracking-widest uppercase">Loading Editor...</p>
+        </div>
+    );
 
-    if (!quiz) {
-        return (
-            <div className="p-8 text-center text-gray-500 dark:text-zinc-400">
-                Quiz not found.
+    if (!quiz) return (
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800/50 p-8 max-w-md w-full rounded-[2rem] text-center shadow-xl border border-gray-200 dark:border-slate-700/50 backdrop-blur-md">
+                <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-6 opacity-80" />
+                <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Quiz Not Found</h1>
+                <p className="text-gray-500 dark:text-slate-400 mb-8 font-medium">The quiz you are trying to edit doesn't exist.</p>
+                <button onClick={() => navigate(-1)} className="w-full px-6 py-4 bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-white font-bold rounded-2xl transition-colors hover:bg-gray-200 dark:hover:bg-slate-600">
+                    Go Back
+                </button>
             </div>
-        );
-    }
+        </div>
+    );
 
     const isLoading = updateQuizMutation.isPending;
+    const currentStatus = settings?.status || quiz?.status;
     const statusBadgeClass =
-        (settings?.status || quiz?.status) === 'Published'
-            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-            : (settings?.status || quiz?.status) === 'Scheduled'
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300';
+        currentStatus === 'Published' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30' :
+            currentStatus === 'Scheduled' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 border-blue-200 dark:border-blue-500/30' :
+                'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300 border-gray-200 dark:border-slate-700';
 
     const isQuestionComplete = (q: UIQuestion): boolean => {
         if (!q.text.trim() || q.mark <= 0) return false;
-
         if (q.type === 'MCQ') {
             if (q.options.length < 3 || q.options.length > 5) return false;
             if (q.options.some(o => !o.text.trim())) return false;
             return q.options.filter(o => o.isCorrect).length === 1;
         }
-
-        if (q.type === 'TrueFalse') {
-            return q.options.filter(o => o.isCorrect).length === 1;
-        }
-
+        if (q.type === 'TrueFalse') return q.options.filter(o => o.isCorrect).length === 1;
         return true;
     };
 
     const scrollToQuestion = (uid: number) => {
-        document.getElementById(`question-card-${uid}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const el = document.getElementById(`question-card-${uid}`);
+        if (el) {
+            const y = el.getBoundingClientRect().top + window.scrollY - 100;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        }
     };
 
     const getQuestionName = (q: UIQuestion, idx: number): string => {
         const raw = q.text.trim();
-        if (!raw) return `Untitled Question ${idx + 1}`;
-        return raw.length > 44 ? `${raw.slice(0, 44)}...` : raw;
+        if (!raw) return `New Question ${idx + 1}`;
+        return raw.length > 35 ? `${raw.slice(0, 35)}...` : raw;
     };
-
-    // ── Render ────────────────────────────────────────────────────────────
 
     return (
         <>
-            <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-                <div className="space-y-6">
+            {showAIModal && (
+                <AIQuestionGeneratorModal
+                    isOpen={true}
+                    quizId={quizId ?? undefined}
+                    onClose={() => setShowAIModal(false)}
+                    onGenerate={handleAIGenerate}
+                />
+            )}
 
-                    {/* Header card */}
-                    <Card variant="elevated">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-[30px] font-bold text-gray-900 dark:text-zinc-100 mb-1">
-                                        Edit Quiz Questions
-                                    </h1>
-                                    <p className="text-[16px] text-gray-600 dark:text-zinc-400">
-                                        Step 2 of 2 — Edit questions for "{settings?.title || quiz.title}"
-                                    </p>
-                                    <div className="mt-3 flex flex-wrap items-center gap-3">
-                                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold ${statusBadgeClass}`}>
-                                            Status: {settings?.status || quiz.status}
-                                        </span>
-                                        {isDraftQuiz && (
-                                            <span className="text-[12px] text-slate-600 dark:text-zinc-400">
-                                                Draft quizzes can be saved without questions.
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setShowAIModal(true)}
-                                        className="flex items-center gap-2 px-4 py-2 border border-blue-300 dark:border-blue-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-[14px] font-medium text-blue-700 dark:text-blue-300"
-                                    >
-                                        <Sparkles className="w-4 h-4" /> Generate with AI
-                                    </button>
-                                    <button
-                                        onClick={() => navigate(-1)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-lg transition-colors"
-                                    >
-                                        <ArrowLeft className="w-4 h-4" /> Back
-                                    </button>
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans pb-32">
+
+                {/* --- Sticky Header --- */}
+                <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800 py-4 px-4 sm:px-8">
+                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => navigate(-1)} className="w-10 h-10 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0">
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
+                            <div>
+                                <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                                    <ListChecks className="w-6 h-6 text-blue-500" /> Edit Questions
+                                </h1>
+                                <div className="flex items-center gap-3 mt-1">
+                                    <span className="text-xs font-bold text-gray-500 dark:text-slate-400 max-w-[200px] sm:max-w-md truncate">
+                                        {settings?.title || quiz.title}
+                                    </span>
+                                    <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md border ${statusBadgeClass}`}>
+                                        {currentStatus}
+                                    </span>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                        <div className="w-full sm:w-auto">
+                            <button onClick={() => setShowAIModal(true)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 text-sm">
+                                <Sparkles className="w-4 h-4" /> AI Generator
+                            </button>
+                        </div>
+                    </div>
+                </header>
 
-                    {/* Feedback banners */}
+                <div className="max-w-7xl mx-auto p-4 sm:p-8">
+
+                    {/* Banners */}
                     {error && (
-                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                            <p className="text-[14px] text-red-700 dark:text-red-300 font-medium">{error}</p>
+                        <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-4">
+                            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                            <p className="text-sm font-bold text-red-700 dark:text-red-400">{error}</p>
                         </div>
                     )}
-
                     {success && (
-                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3">
-                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                            <p className="text-[14px] text-green-700 dark:text-green-300 font-medium">
-                                Quiz updated successfully! Redirecting...
-                            </p>
+                        <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Questions saved successfully! Redirecting...</p>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)] gap-6 items-start">
-                        <Card variant="elevated" className="xl:sticky xl:top-6">
-                            <CardContent className="p-4">
-                                <p className="text-[12px] font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-3">
-                                    Quiz Map
-                                </p>
-                                {questions.length === 0 ? (
-                                    <div className="rounded-lg border border-dashed border-gray-300 dark:border-zinc-700 p-3 text-[13px] text-gray-500 dark:text-zinc-400">
-                                        No questions yet.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2 max-h-[60vh] overflow-auto pr-1">
-                                        {questions.map((q, idx) => {
-                                            const complete = isQuestionComplete(q);
-                                            return (
-                                                <button
-                                                    key={q.uid}
-                                                    draggable
-                                                    onDragStart={() => setDraggedUid(q.uid)}
-                                                    onDragOver={e => e.preventDefault()}
-                                                    onDrop={e => {
-                                                        e.preventDefault();
-                                                        if (draggedUid !== null) moveQuestion(draggedUid, q.uid);
-                                                        setDraggedUid(null);
-                                                    }}
-                                                    onDragEnd={() => setDraggedUid(null)}
-                                                    onClick={() => scrollToQuestion(q.uid)}
-                                                    className={`w-full text-left rounded-lg border px-3 py-2 transition-colors ${complete
-                                                        ? 'border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
-                                                        : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'
-                                                        }`}
-                                                >
-                                                    <div className="flex items-start gap-2">
-                                                        <GripVertical className="w-3.5 h-3.5 mt-0.5 text-gray-400 dark:text-zinc-500" />
-                                                        <div className="min-w-0">
-                                                            <div className="text-[11px] text-gray-500 dark:text-zinc-400">Question {idx + 1}</div>
-                                                            <div className="text-[13px] font-medium text-gray-900 dark:text-zinc-100 truncate">{getQuestionName(q, idx)}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className={`text-[11px] ${complete ? 'text-green-700 dark:text-green-300' : 'text-gray-500 dark:text-zinc-400'}`}>
-                                                        {complete ? 'Complete' : 'Incomplete'}
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                    <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] gap-8 items-start">
 
+                        {/* --- Sidebar: Quiz Map --- */}
+                        <aside className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm xl:sticky xl:top-28 hidden md:block">
+                            <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100 dark:border-slate-700/50">
+                                <h3 className="text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <HelpCircle className="w-4 h-4" /> Question Map
+                                </h3>
+                                <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 text-xs font-bold px-2 py-1 rounded-lg">
+                                    {questions.length}
+                                </span>
+                            </div>
+
+                            {questions.length === 0 ? (
+                                <div className="text-center py-8 text-sm font-bold text-gray-400 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
+                                    No questions yet
+                                </div>
+                            ) : (
+                                <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar">
+                                    {questions.map((q, idx) => {
+                                        const complete = isQuestionComplete(q);
+                                        return (
+                                            <button
+                                                key={q.uid}
+                                                draggable
+                                                onDragStart={() => setDraggedUid(q.uid)}
+                                                onDragOver={e => e.preventDefault()}
+                                                onDrop={e => {
+                                                    e.preventDefault();
+                                                    if (draggedUid !== null) moveQuestion(draggedUid, q.uid);
+                                                    setDraggedUid(null);
+                                                }}
+                                                onDragEnd={() => setDraggedUid(null)}
+                                                onClick={() => scrollToQuestion(q.uid)}
+                                                className={`w-full text-left rounded-xl border p-3 transition-all flex items-start gap-2 group ${complete
+                                                        ? 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:hover:bg-emerald-500/10'
+                                                        : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700/50'
+                                                    }`}
+                                            >
+                                                <GripVertical className="w-4 h-4 text-gray-300 dark:text-slate-500 mt-1 cursor-grab group-hover:text-gray-500" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Q {idx + 1}</span>
+                                                        <span className={`w-2 h-2 rounded-full ${complete ? 'bg-emerald-500' : 'bg-red-400'}`}></span>
+                                                    </div>
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{getQuestionName(q, idx)}</p>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            <button onClick={addQuestion} className="w-full mt-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                                <Plus className="w-4 h-4" /> Add Blank
+                            </button>
+                        </aside>
+
+                        {/* --- Main Content: Questions Editor --- */}
                         <div className="space-y-6">
-                            {/* Questions */}
                             {questions.map((q, idx) => (
-                                <Card key={q.uid} variant="elevated" id={`question-card-${q.uid}`}>
-                                    <CardContent className="p-6 space-y-4">
+                                <div key={q.uid} id={`question-card-${q.uid}`} className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden relative">
+                                    {/* Accent Line */}
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
 
-                                        {/* Header */}
-                                        <div className="flex items-center justify-between">
+                                    <div className="p-6 sm:p-8 space-y-6 ml-2">
+
+                                        {/* Question Header */}
+                                        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700/50 pb-4">
                                             <div className="flex items-center gap-3">
-                                                <h3 className="text-[18px] font-semibold text-gray-900 dark:text-zinc-100">
+                                                <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg text-sm font-black uppercase tracking-widest">
                                                     Question {idx + 1}
-                                                </h3>
+                                                </div>
                                                 {isQuestionComplete(q) ? (
-                                                    <span className="text-[12px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full font-medium">
-                                                        Complete
+                                                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider flex items-center gap-1">
+                                                        <CheckCircle2 className="w-3 h-3" /> Ready
                                                     </span>
                                                 ) : (
-                                                    <span className="text-[12px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-medium">
-                                                        Incomplete
+                                                    <span className="text-[10px] bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider flex items-center gap-1">
+                                                        <AlertTriangle className="w-3 h-3" /> Incomplete
                                                     </span>
                                                 )}
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeQ(q.uid)}
-                                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                            >
+                                            <button onClick={() => removeQ(q.uid)} className="p-2.5 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-xl transition-colors" title="Delete Question">
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
 
-                                        {/* Type */}
-                                        <div>
-                                            <label className={labelCls}>Question Type</label>
-                                            <select
-                                                value={q.type}
-                                                onChange={e => changeType(q.uid, e.target.value as QuestionType)}
-                                                className={inputCls}
-                                            >
-                                                <option value="MCQ">Multiple Choice (MCQ)</option>
-                                                <option value="TrueFalse">True / False</option>
-                                                <option value="Written">Written Answer</option>
-                                            </select>
+                                        {/* Row 1: Type & Points */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className={labelCls}>Question Type</label>
+                                                <select value={q.type} onChange={e => changeType(q.uid, e.target.value as QuestionType)} className={`${inputCls} cursor-pointer`}>
+                                                    <option value="MCQ">Multiple Choice (MCQ)</option>
+                                                    <option value="TrueFalse">True / False</option>
+                                                    <option value="Written">Written Answer (Essay)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className={labelCls}>Points / Marks <span className="text-red-500">*</span></label>
+                                                <div className="relative">
+                                                    <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
+                                                    <input type="number" min="0.5" max="100" step="0.5" value={q.mark} onChange={e => updateQ(q.uid, { mark: parseFloat(e.target.value) || 1 })} className={`${inputCls} pl-11`} />
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        {/* Question text */}
+                                        {/* Question Text */}
                                         <div>
-                                            <label className={labelCls}>
-                                                Question Text <span className="text-red-500">*</span>
-                                                <span className="ml-2 font-normal text-gray-400 dark:text-zinc-500">
-                                                    ({q.text.length}/1500)
-                                                </span>
+                                            <label className="flex items-center justify-between mb-2">
+                                                <span className="text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1">Question Text <span className="text-red-500">*</span></span>
+                                                <span className="text-[10px] font-bold text-gray-400">{q.text.length} / 1500</span>
                                             </label>
                                             <textarea
                                                 rows={3}
                                                 maxLength={1500}
-                                                placeholder="Enter your question..."
+                                                placeholder="Type your question here..."
                                                 value={q.text}
                                                 onChange={e => updateQ(q.uid, { text: e.target.value })}
                                                 className={`${inputCls} resize-none`}
                                             />
                                         </div>
 
-                                        {/* Points */}
-                                        <div className="w-48">
-                                            <label className={labelCls}>
-                                                Points <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="0.5"
-                                                max="100"
-                                                step="0.5"
-                                                value={q.mark}
-                                                onChange={e =>
-                                                    updateQ(q.uid, { mark: parseFloat(e.target.value) || 1 })
-                                                }
-                                                className={inputCls}
-                                            />
-                                        </div>
+                                        {/* Options Area */}
+                                        <div className="bg-gray-50/50 dark:bg-slate-900/30 p-5 rounded-2xl border border-gray-100 dark:border-slate-800">
 
-                                        {/* MCQ options */}
-                                        {q.type === 'MCQ' && (
-                                            <div>
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <label className={`${labelCls} mb-0`}>
-                                                        Options <span className="text-red-500">*</span>
-                                                    </label>
-                                                    {q.options.length < 5 && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => addOption(q.uid)}
-                                                            className="text-[13px] text-blue-600 hover:text-blue-700 font-medium"
-                                                        >
-                                                            + Add Option
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {q.options.map((opt, i) => (
-                                                        <div key={i} className="flex items-center gap-2">
-                                                            <div
-                                                                draggable
-                                                                onDragStart={() => setDraggedOption({ uid: q.uid, idx: i })}
-                                                                onDragOver={e => e.preventDefault()}
-                                                                onDrop={() => {
-                                                                    if (draggedOption && draggedOption.uid === q.uid && draggedOption.idx !== i) {
-                                                                        moveOption(q.uid, draggedOption.idx, i);
-                                                                    }
-                                                                    setDraggedOption(null);
-                                                                }}
-                                                                onDragEnd={() => setDraggedOption(null)}
-                                                                className="cursor-move p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded"
-                                                            >
-                                                                <GripVertical className="w-4 h-4 text-gray-400" />
-                                                            </div>
-                                                            <span className="text-[14px] text-gray-600 dark:text-zinc-400 w-6">
-                                                                {String.fromCharCode(65 + i)}.
-                                                            </span>
-                                                            <input
-                                                                type="text"
-                                                                placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                                                                value={opt.text}
-                                                                onChange={e => updateOpt(q.uid, i, { text: e.target.value })}
-                                                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-[14px] bg-white dark:bg-zinc-800"
-                                                            />
-                                                            <input
-                                                                type="radio"
-                                                                name={`correct-${q.uid}`}
-                                                                checked={opt.isCorrect}
-                                                                onChange={() => setCorrect(q.uid, i)}
-                                                                className="w-4 h-4 text-blue-600"
-                                                            />
-                                                            <span className="text-[12px] text-gray-500 dark:text-zinc-500 w-16">
-                                                                Correct
-                                                            </span>
-                                                            {q.options.length > 3 && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeOption(q.uid, i)}
-                                                                    className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-2">
-                                                    Select the correct answer. You can have 3–5 options. Drag to reorder.
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* True/False options */}
-                                        {q.type === 'TrueFalse' && (
-                                            <div>
-                                                <label className={labelCls}>
-                                                    Correct Answer <span className="text-red-500">*</span>
-                                                </label>
-                                                <div className="space-y-2">
-                                                    {q.options.map((opt, i) => (
-                                                        <label key={i} className="flex items-center gap-3 p-3 border border-gray-300 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800">
-                                                            <input
-                                                                type="radio"
-                                                                name={`tf-${q.uid}`}
-                                                                checked={opt.isCorrect}
-                                                                onChange={() => setCorrect(q.uid, i)}
-                                                                className="w-4 h-4 text-blue-600"
-                                                            />
-                                                            <span className="text-[14px] font-medium">{opt.text}</span>
+                                            {q.type === 'MCQ' && (
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <label className="text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1">
+                                                            Answer Options <span className="text-red-500">*</span>
                                                         </label>
-                                                    ))}
+                                                        {q.options.length < 5 && (
+                                                            <button type="button" onClick={() => addOption(q.uid)} className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                                                <Plus className="w-3.5 h-3.5" /> Add Option
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        {q.options.map((opt, i) => (
+                                                            <div key={i} className={`flex items-center gap-3 p-2 pr-4 rounded-xl border-2 transition-all ${opt.isCorrect ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
+                                                                <div
+                                                                    draggable onDragStart={() => setDraggedOption({ uid: q.uid, idx: i })} onDragOver={e => e.preventDefault()}
+                                                                    onDrop={() => {
+                                                                        if (draggedOption && draggedOption.uid === q.uid && draggedOption.idx !== i) {
+                                                                            moveOption(q.uid, draggedOption.idx, i);
+                                                                        }
+                                                                        setDraggedOption(null);
+                                                                    }}
+                                                                    onDragEnd={() => setDraggedOption(null)}
+                                                                    className="cursor-move p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-gray-400"
+                                                                >
+                                                                    <GripVertical className="w-4 h-4" />
+                                                                </div>
+                                                                <span className="text-sm font-black text-gray-400 w-6">{String.fromCharCode(65 + i)}.</span>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                                                                    value={opt.text}
+                                                                    onChange={e => updateOpt(q.uid, i, { text: e.target.value })}
+                                                                    className="flex-1 bg-transparent outline-none text-sm font-semibold text-gray-900 dark:text-white py-2 placeholder-gray-400"
+                                                                />
+                                                                <label className="flex items-center gap-2 cursor-pointer pl-3 border-l border-gray-200 dark:border-slate-700">
+                                                                    <input type="radio" name={`correct-${q.uid}`} checked={opt.isCorrect} onChange={() => setCorrect(q.uid, i)} className="w-4 h-4 text-emerald-500 focus:ring-emerald-500" />
+                                                                    <span className={`text-xs font-bold uppercase tracking-wider ${opt.isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>Correct</span>
+                                                                </label>
+                                                                {q.options.length > 3 && (
+                                                                    <button type="button" onClick={() => removeOption(q.uid, i)} className="ml-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
+                                            )}
+
+                                            {q.type === 'TrueFalse' && (
+                                                <div>
+                                                    <label className="text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1 mb-4 block">
+                                                        Select Correct Answer <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <div className="flex gap-4">
+                                                        {q.options.map((opt, i) => (
+                                                            <label key={i} className={`flex-1 flex items-center justify-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${opt.isCorrect ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
+                                                                <input type="radio" name={`tf-${q.uid}`} checked={opt.isCorrect} onChange={() => setCorrect(q.uid, i)} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                                                                <span className={`font-bold text-lg ${opt.isCorrect ? 'text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-slate-300'}`}>{opt.text}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {q.type === 'Written' && (
+                                                <div className="text-center p-6 text-sm font-bold text-gray-500 dark:text-slate-400 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
+                                                    Students will be provided with a text area to write their answer. No options needed.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Instructions & Explanations */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-gray-100 dark:border-slate-700/50">
+                                            <div>
+                                                <label className={labelCls}>Instructions <span className="normal-case font-medium text-gray-400">(Optional)</span></label>
+                                                <textarea rows={2} placeholder="E.g., Select all that apply..." value={q.instructions} onChange={e => updateQ(q.uid, { instructions: e.target.value })} className={`${inputCls} resize-none`} />
                                             </div>
-                                        )}
-
-                                        {/* Instructions */}
-                                        <div>
-                                            <label className={labelCls}>
-                                                Instructions{' '}
-                                                <span className="font-normal text-gray-400 dark:text-zinc-500">(optional)</span>
-                                            </label>
-                                            <textarea
-                                                rows={2}
-                                                placeholder="Add student-facing instruction for this question..."
-                                                value={q.instructions}
-                                                onChange={e => updateQ(q.uid, { instructions: e.target.value })}
-                                                className={`${inputCls} resize-none`}
-                                            />
+                                            <div>
+                                                <label className={labelCls}>Explanation <span className="normal-case font-medium text-gray-400">(Optional)</span></label>
+                                                <textarea rows={2} placeholder="Shown to student after completion..." value={q.explanation} onChange={e => updateQ(q.uid, { explanation: e.target.value })} className={`${inputCls} resize-none`} />
+                                            </div>
                                         </div>
 
-                                        {/* Explanation */}
-                                        <div>
-                                            <label className={labelCls}>
-                                                Explanation{' '}
-                                                <span className="font-normal text-gray-400 dark:text-zinc-500">(optional)</span>
-                                            </label>
-                                            <textarea
-                                                rows={2}
-                                                placeholder="Explain the correct answer..."
-                                                value={q.explanation}
-                                                onChange={e => updateQ(q.uid, { explanation: e.target.value })}
-                                                className={`${inputCls} resize-none`}
-                                            />
-                                        </div>
-
-                                    </CardContent>
-                                </Card>
+                                    </div>
+                                </div>
                             ))}
 
-                            {/* Add question button */}
-                            <button
-                                onClick={addQuestion}
-                                className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg text-gray-600 dark:text-zinc-400 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                            >
-                                <Plus className="w-5 h-5" />
-                                <span className="text-[14px] font-medium">Add Question</span>
+                            {/* Add Large Button at Bottom */}
+                            <button onClick={addQuestion} className="w-full py-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-[2rem] text-gray-500 dark:text-slate-400 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all flex items-center justify-center gap-2 font-bold group">
+                                <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 flex items-center justify-center transition-colors">
+                                    <Plus className="w-5 h-5" />
+                                </div>
+                                Add New Question Manually
                             </button>
                         </div>
                     </div>
-
-                    {/* Submit button */}
-                    <Card variant="elevated">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div className="text-[14px] text-gray-600 dark:text-zinc-400">
-                                    {questions.length} question{questions.length !== 1 ? 's' : ''} •{' '}
-                                    {questions.reduce((sum, q) => sum + q.mark, 0)} total points
-                                </div>
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={isLoading}
-                                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
-                                >
-                                    {isLoading ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Updating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 className="w-4 h-4" />
-                                            Update Quiz
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
                 </div>
+
+                {/* --- Sticky Footer Actions --- */}
+                <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-gray-200 dark:border-slate-800 py-4 px-4 sm:px-8 z-40 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="text-sm font-bold text-gray-600 dark:text-slate-300 flex items-center gap-4">
+                            <span className="bg-gray-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">{questions.length} Questions</span>
+                            <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 px-3 py-1.5 rounded-lg">{questions.reduce((sum, q) => sum + q.mark, 0)} Total Points</span>
+                        </div>
+                        <div className="flex w-full sm:w-auto gap-3">
+                            <button onClick={() => navigate(-1)} disabled={isLoading} className="flex-1 sm:flex-none px-8 py-3.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-white rounded-xl font-bold transition-all text-sm hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-50">
+                                Cancel
+                            </button>
+                            <button onClick={handleSubmit} disabled={isLoading} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-10 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed">
+                                {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : <><Save className="w-4 h-4" /> Save Quiz Questions</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </>
     );

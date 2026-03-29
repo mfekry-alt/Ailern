@@ -46,6 +46,12 @@ export interface UserPasswordResetCommand {
     newPassword: string;
 }
 
+/** Logged-in change password — POST /api/auth/change-password (API uses these property names) */
+export interface ChangePasswordCommand {
+    currentPassword: string;
+    newPassword: string;
+}
+
 // ============================================================================
 // User Registration Types
 // ============================================================================
@@ -58,21 +64,13 @@ export interface CreateAdminCommand {
     phoneNumber?: string;
 }
 
-export interface CreateInstructorCommand {
+export interface RegisterCommand {
     fullName: string;
     userName: string;
     email: string;
     password: string;
-    phoneNumber?: string;
-}
-
-export interface CreateStudentCommand {
-    fullName: string;
-    userName: string;
-    email: string;
-    password: string;
-    phoneNumber?: string;
-    studentId: number;
+    role: 'Student' | 'Instructor';
+    jobTitle?: string;
 }
 
 // ============================================================================
@@ -269,7 +267,7 @@ export interface FileMetaData {
     contentType: string;
 }
 
-// Response DTOs for Assignments (not in swagger but returned by API)
+// Response DTOs for Assignments
 export interface GetAssignmentDto {
     id: number;
     title: string;
@@ -300,10 +298,6 @@ export interface GetAssignmentSubmissionDto {
 // Generic API Response Types
 // ============================================================================
 
-/**
- * Standard API response wrapper used by all endpoints
- * The actual data is in the 'data' field
- */
 export interface ApiResponse<T = any> {
     success: boolean;
     statusCode: number;
@@ -328,7 +322,7 @@ export interface ApiError {
 }
 
 // ============================================================================
-// Course Status Constants
+// Constants
 // ============================================================================
 
 export const CourseStatus = {
@@ -339,10 +333,6 @@ export const CourseStatus = {
 
 export type CourseStatus = typeof CourseStatus[keyof typeof CourseStatus];
 
-// ============================================================================
-// User Roles Constants
-// ============================================================================
-
 export const UserRole = {
     ADMIN: 'Admin',
     INSTRUCTOR: 'Instructor',
@@ -352,29 +342,45 @@ export const UserRole = {
 export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 // ============================================================================
-// Quiz Types
+// Quiz Types (Updated to support attemptTimeLimit & exact JSON payload)
 // ============================================================================
 
-export type QuizStatus = 'Draft' | 'Published' | 'Scheduled';
+export type QuizStatus = 'Draft' | 'Published' | 'Scheduled' | 'Archived';
 export type QuestionType = 'MCQ' | 'TrueFalse' | 'Written';
 
-// Request types (for creating/updating)
-export interface OptionRequest {
+// --- Request DTOs (For Creation/Updating) ---
+export interface QuizOptionRequest {
     optionText: string;
     isCorrect: boolean;
 }
 
 export interface QuestionRequest {
-    id?: string;           // uuid – omit for new questions, include for updates
+    id?: string;           // uuid - omit for new, include for updates
     questionText: string;
     questionType: QuestionType;
     mark: number;
     instructions?: string;
     explanation?: string;
-    options: OptionRequest[];
+    options?: QuizOptionRequest[];
 }
 
-// Response types (DTOs returned from API)
+export interface CreateQuizCommand {
+    title: string;
+    description?: string;
+    availableFrom: string;
+    availableUntil: string;
+    maximumAttempts: number;
+    attemptTimeLimit: number;   // Added Duration Field
+    showResultOnClose: boolean;
+    shuffleQuestions: boolean;
+    shuffleOptions: boolean;
+    courseId:  string | number;
+    status: QuizStatus;
+    publishedDate?: string | null;
+    questions: QuestionRequest[];
+}
+
+// --- Response DTOs (For Fetching) ---
 export interface OptionDto {
     id: string;
     optionText: string;
@@ -391,27 +397,13 @@ export interface QuestionDto {
     options: OptionDto[];
 }
 
-export interface CreateQuizCommand {
-    title: string;
-    description?: string;
-    courseId: string;
-    maximumAttempts: number;
-    status: QuizStatus;
-    availableFrom: string;
-    availableUntil: string;
-    publishedDate?: string;
-    showResultOnClose: boolean;
-    shuffleQuestions: boolean;
-    shuffleOptions: boolean;
-    questions: QuestionRequest[];
-}
-
 export interface GetQuizDto {
     id: string;
     title: string;
     description?: string;
     courseId: string | number;
     maximumAttempts: number;
+    attemptTimeLimit: number;  // Added Duration Field
     status: QuizStatus;
     availableFrom: string;
     availableUntil: string;
@@ -423,5 +415,5 @@ export interface GetQuizDto {
     showResultOnClose?: boolean;
     shuffleQuestions?: boolean;
     shuffleOptions?: boolean;
-    questions?: QuestionDto[];  // Optional: included when fetching single quiz
+    questions?: QuestionDto[]; // Optional: included when fetching a single quiz
 }

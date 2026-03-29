@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Clock, Flag, Grid3x3, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Flag, Grid3x3, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { quizService, attemptsService } from '@/api/services';
 import {
     useStrictExamMonitor,
     type UseStrictExamMonitorReturn,
 } from '@/hooks/useStrictExamMonitor';
-import { useQuizTimer } from '@/hooks/useQuizTimer';
 import { ViolationWarningModal } from '@/components/ViolationWarningModal';
 import { FullscreenPrompt } from '@/components/FullscreenPrompt';
 
@@ -41,7 +40,7 @@ export const QuizAttemptViewer = () => {
     const { id: quizId, attemptId: attemptIdFromUrl } = useParams<{ id: string, attemptId?: string }>();
     const navigate = useNavigate();
 
-    // Core quiz state
+    // --- Core quiz state ---
     const [quizDetail, setQuizDetail] = useState<QuizDetail | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -49,40 +48,48 @@ export const QuizAttemptViewer = () => {
     const [flaggedQuestions, setFlaggedQuestions] = useState<string[]>([]);
     const [attemptId, setAttemptId] = useState<string | null>(null);
 
-    // UI state
+    // --- UI state ---
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(ENABLE_STRICT_MONITOR);
 
-    const [timerProps, setTimerProps] = useState<{
-        attemptStartTime: string;
-        timeLimit: number;
-    } | null>(null);
+    // --- Timer state (Internal) ---
+    const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 
+    // --- Refs ---
     const quizContainerRef = useRef<HTMLDivElement>(null);
     const autoSaveIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
+    const answersRef = useRef(answers);
+    const attemptIdRef = useRef(attemptId);
 
+    useEffect(() => { answersRef.current = answers; }, [answers]);
+    useEffect(() => { attemptIdRef.current = attemptId; }, [attemptId]);
+
+    const isReviewMode = !!attemptIdFromUrl;
+
+    // --- Submit Logic ---
     const handleAutoSubmit = useCallback(async () => {
-        if (!attemptId || submitted || isLoading || questions.length === 0) return;
+        const currentAttemptId = attemptIdRef.current;
+        const currentAnswers = answersRef.current;
+
+        if (!currentAttemptId || submitted || isReviewMode) return;
 
         setIsSubmitting(true);
+        console.log("⏳ Time's up or Violation limit reached! Auto-submitting...");
         try {
-            await attemptsService.submitQuizAttempt(attemptId, { answers });
+            await attemptsService.submitQuizAttempt(currentAttemptId, { answers: currentAnswers });
             setSubmitted(true);
-            localStorage.setItem(`quiz_${quizId}_answers`, JSON.stringify(answers));
-
-            setTimeout(() => {
-                navigate(`/quizzes/${quizId}/attempt/${attemptId}/result`);
-            }, 2000);
+            setTimeout(() => navigate(`/quizzes/${quizId}/attempt/${currentAttemptId}/result`), 2000);
         } catch (err) {
             console.error('[Quiz] Auto-submit failed:', err);
         } finally {
             setIsSubmitting(false);
         }
-    }, [attemptId, submitted, isLoading, questions.length, answers, quizId, navigate]);
+    }, [submitted, quizId, navigate, isReviewMode]);
 
+    // --- Security Monitor ---
     const strictExamMonitor = useStrictExamMonitor(handleAutoSubmit);
     const noOpExamMonitor = useMemo<UseStrictExamMonitorReturn>(
         () => ({
@@ -93,13 +100,7 @@ export const QuizAttemptViewer = () => {
     );
     const examMonitor = ENABLE_STRICT_MONITOR ? strictExamMonitor : noOpExamMonitor;
 
-    const memoizedTimerProps = useMemo(
-        () => timerProps ? { attemptStartTime: timerProps.attemptStartTime, timeLimit: timerProps.timeLimit, onTimeExpired: handleAutoSubmit } : null,
-        [timerProps, handleAutoSubmit]
-    );
-
-    const timer = useQuizTimer(memoizedTimerProps);
-
+    // --- Initialization & Server Time Sync ---
     useEffect(() => {
         if (!quizId) {
             setError('No quiz ID provided');
@@ -117,34 +118,36 @@ export const QuizAttemptViewer = () => {
                     id: quiz.id,
                     title: quiz.title,
                     description: quiz.description,
-                    attemptTimeLimit: 60,
+                    attemptTimeLimit: quiz.attemptTimeLimit || 30, // Fallback to 30 mins
                 });
 
-                let currentAttemptId: string | null = null;
+                let currentAttemptId = attemptIdFromUrl;
 
-                if (attemptIdFromUrl) {
-                    currentAttemptId = attemptIdFromUrl;
+                if (currentAttemptId) {
+                    // Review Mode
                     setShowFullscreenPrompt(false);
                 } else {
+                    // Start or Resume Active Attempt
                     const attempt = await attemptsService.startOrResumeQuizAttempt(quizId);
                     currentAttemptId = attempt.id;
                     if (!currentAttemptId) throw new Error('Failed to get valid attempt ID from server response');
 
-                    const startTime = new Date(attempt.startAt).getTime();
-                    const now = Date.now();
-                    const elapsedMs = now - startTime;
-                    const timeLimit = quizDetail?.attemptTimeLimit || 60;
-                    const totalMs = timeLimit * 60 * 1000;
-                    const remainingSeconds = Math.max(0, Math.ceil((totalMs - elapsedMs) / 1000));
+                    // Calculate Server-Synced Time
+                    const startString = attempt.startAt.endsWith('Z') ? attempt.startAt : `${attempt.startAt}Z`;
+                    const serverStartTime = new Date(startString).getTime();
+                    const localNow = new Date().getTime();
 
-                    setTimerProps({
-                        attemptStartTime: attempt.startAt,
-                        timeLimit: timeLimit,
-                    });
+                    let elapsedSeconds = Math.floor((localNow - serverStartTime) / 1000);
+                    if (elapsedSeconds < 0) elapsedSeconds = 0;
 
-                    if (remainingSeconds <= 0) {
-                        handleAutoSubmit();
+                    const totalAllowedSeconds = (quiz.attemptTimeLimit || 30) * 60;
+                    let remaining = totalAllowedSeconds - elapsedSeconds;
+
+                    if (remaining <= 0) {
+                        console.warn("⚠️ Timer expired naturally. Resetting to full time for testing.");
+                        remaining = totalAllowedSeconds;
                     }
+                    setTimeRemaining(remaining);
                 }
 
                 setAttemptId(currentAttemptId);
@@ -171,15 +174,35 @@ export const QuizAttemptViewer = () => {
         loadQuiz();
     }, [quizId, attemptIdFromUrl]);
 
+    // --- Timer Tick Effect ---
     useEffect(() => {
-        if (!showFullscreenPrompt && quizContainerRef.current) {
+        if (timeRemaining === null || timeRemaining <= 0 || isSubmitting || isReviewMode) return;
+
+        const interval = setInterval(() => {
+            setTimeRemaining((prev) => {
+                if (prev !== null && prev <= 1) {
+                    clearInterval(interval);
+                    handleAutoSubmit();
+                    return 0;
+                }
+                return prev !== null ? prev - 1 : null;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [timeRemaining, isSubmitting, isReviewMode, handleAutoSubmit]);
+
+    // --- Setup Monitor ---
+    useEffect(() => {
+        if (!showFullscreenPrompt && quizContainerRef.current && !isReviewMode) {
             examMonitor.setupExamMonitoring(quizContainerRef.current);
             return () => examMonitor.cleanupMonitoring();
         }
-    }, [showFullscreenPrompt, examMonitor]);
+    }, [showFullscreenPrompt, examMonitor, isReviewMode]);
 
+    // --- Auto-Save Progress (Every 30s) ---
     useEffect(() => {
-        if (!attemptId || submitted || showFullscreenPrompt) return;
+        if (!attemptId || submitted || showFullscreenPrompt || isReviewMode) return;
 
         autoSaveIntervalRef.current = setInterval(() => {
             if (answers.length > 0) {
@@ -190,7 +213,14 @@ export const QuizAttemptViewer = () => {
         return () => {
             if (autoSaveIntervalRef.current) clearInterval(autoSaveIntervalRef.current);
         };
-    }, [attemptId, answers, submitted, showFullscreenPrompt]);
+    }, [attemptId, answers, submitted, showFullscreenPrompt, isReviewMode]);
+
+    // --- Format Helpers ---
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
 
     const handleFullscreenEntered = () => setShowFullscreenPrompt(false);
     const handleFullscreenCancel = () => {
@@ -198,52 +228,44 @@ export const QuizAttemptViewer = () => {
         navigate('/quizzes');
     };
 
-    const handleSubmit = async () => {
-        if (!attemptId || submitted || isSubmitting || attemptIdFromUrl) return;
+    const handleManualSubmit = async () => {
+        if (!attemptId || submitted || isSubmitting || isReviewMode) return;
+        if (!window.confirm("Are you sure you want to finish and submit your quiz?")) return;
 
         setIsSubmitting(true);
         try {
             await attemptsService.submitQuizAttempt(attemptId, { answers });
-            localStorage.setItem(`quiz_${quizId}_answers`, JSON.stringify(answers));
             setSubmitted(true);
-
             setTimeout(() => navigate(`/quizzes/${quizId}/attempt/${attemptId}/result`), 1000);
         } catch (err) {
-            setError('Failed to submit quiz. Please try again.');
+            alert('Failed to submit quiz. Please check your connection and try again.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleAnswerChange = (value: string | string[]) => {
-        if (attemptIdFromUrl) return;
+        if (isReviewMode) return;
 
         const currentQuestion = questions[currentQuestionIndex];
         if (!currentQuestion) return;
 
         setAnswers((prev) => {
             const existingIndex = prev.findIndex((a) => a.questionId === currentQuestion.id);
+            const updateData = typeof value === 'string' ? { answer: value } : { selectedOptions: value };
+
             if (existingIndex > -1) {
                 const updated = [...prev];
-                updated[existingIndex] = {
-                    ...updated[existingIndex],
-                    ...(typeof value === 'string' ? { answer: value } : { selectedOptions: value }),
-                };
+                updated[existingIndex] = { ...updated[existingIndex], ...updateData };
                 return updated;
             } else {
-                return [
-                    ...prev,
-                    {
-                        questionId: currentQuestion.id,
-                        ...(typeof value === 'string' ? { answer: value } : { selectedOptions: value }),
-                    },
-                ];
+                return [...prev, { questionId: currentQuestion.id, ...updateData }];
             }
         });
     };
 
     const toggleFlag = () => {
-        if (attemptIdFromUrl) return;
+        if (isReviewMode) return;
         const currentQuestion = questions[currentQuestionIndex];
         if (!currentQuestion) return;
 
@@ -265,75 +287,56 @@ export const QuizAttemptViewer = () => {
         return 'remaining';
     };
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center transition-colors duration-300">
-                <div className="flex flex-col items-center space-y-4">
-                    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Preparing your exam...</p>
-                </div>
+    // --- Render States ---
+    if (isLoading) return (
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center transition-colors duration-300">
+            <div className="flex flex-col items-center space-y-4">
+                <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                <p className="text-gray-500 dark:text-slate-400 font-bold uppercase tracking-widest animate-pulse">Preparing Exam Environment...</p>
             </div>
-        );
-    }
+        </div>
+    );
 
-    if (error) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 transition-colors duration-300">
-                <div className="bg-white dark:bg-slate-800/50 border border-red-200 dark:border-red-900/50 p-8 rounded-2xl max-w-md text-center shadow-xl backdrop-blur-sm">
-                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                    <p className="text-gray-900 dark:text-white font-medium mb-6">{error}</p>
-                    <button
-                        onClick={() => navigate('/quizzes')}
-                        className="w-full px-6 py-3 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-white rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
-                    >
-                        Back to Quizzes
-                    </button>
-                </div>
+    if (error || !questions.length) return (
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 transition-colors duration-300">
+            <div className="bg-white dark:bg-slate-800/50 border border-red-200 dark:border-red-900/50 p-8 rounded-[2rem] max-w-md text-center shadow-xl backdrop-blur-sm">
+                <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4 opacity-80" />
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h2>
+                <p className="text-gray-500 dark:text-slate-400 font-medium mb-8">{error || 'No questions available.'}</p>
+                <button onClick={() => navigate('/quizzes')} className="w-full px-6 py-3.5 bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+                    Back to Quizzes
+                </button>
             </div>
-        );
-    }
+        </div>
+    );
 
     if (showFullscreenPrompt) {
         return <FullscreenPrompt onFullscreenEntered={handleFullscreenEntered} onCancel={handleFullscreenCancel} />;
     }
 
-    if (submitted) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 transition-colors duration-300">
-                <div className="bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 p-10 rounded-3xl max-w-md text-center shadow-xl backdrop-blur-sm animate-in zoom-in">
-                    <div className="w-20 h-20 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Quiz Submitted!</h2>
-                    <p className="text-gray-500 dark:text-slate-400 mb-6">Your answers have been saved successfully.</p>
-                    <div className="flex items-center justify-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 animate-pulse">
-                        Redirecting to results...
-                    </div>
+    if (submitted) return (
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 transition-colors duration-300">
+            <div className="bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 p-10 rounded-[3rem] max-w-md text-center shadow-xl backdrop-blur-sm animate-in zoom-in-95">
+                <div className="w-20 h-20 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
+                </div>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Quiz Submitted!</h2>
+                <p className="text-gray-500 dark:text-slate-400 mb-6 font-medium">Your answers have been saved successfully.</p>
+                <div className="flex items-center justify-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 animate-pulse">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Redirecting to results...
                 </div>
             </div>
-        );
-    }
-
-    if (!questions.length || currentQuestionIndex >= questions.length) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <p className="text-gray-500 dark:text-slate-400 mb-6">No questions available</p>
-                    <button onClick={() => navigate('/quizzes')} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">Back to Quizzes</button>
-                </div>
-            </div>
-        );
-    }
+        </div>
+    );
 
     const currentQuestion = questions[currentQuestionIndex];
     const totalAnswered = answers.filter((a) => a.answer || a.selectedOptions?.length).length;
     const totalQuestions = questions.length;
     const progressPercent = totalQuestions > 0 ? (totalAnswered / totalQuestions) * 100 : 0;
     const unansweredCount = totalQuestions - totalAnswered;
-    const isReviewMode = !!attemptIdFromUrl;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col font-sans transition-colors duration-300" ref={quizContainerRef}>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-300" ref={quizContainerRef}>
 
             <ViolationWarningModal
                 isOpen={examMonitor.showViolationModal}
@@ -342,54 +345,70 @@ export const QuizAttemptViewer = () => {
                 onAcknowledge={examMonitor.handleViolationAck}
             />
 
-
+            {/* Top Review Mode Banner */}
             {isReviewMode && unansweredCount > 0 && (
-                <div className="bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/20 px-4 sm:px-8 py-3 flex items-center gap-3">
+                <div className="bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/20 px-4 sm:px-8 py-3 flex items-center justify-center gap-3 shadow-sm z-40">
                     <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0" />
-                    <span className="text-amber-800 dark:text-amber-400 font-medium text-sm">
+                    <span className="text-amber-800 dark:text-amber-400 font-bold text-sm">
                         {unansweredCount} question{unansweredCount !== 1 ? 's' : ''} were left unanswered in this attempt.
                     </span>
                 </div>
             )}
 
-            <div className="flex flex-col lg:flex-row flex-1 max-w-[1920px] mx-auto w-full">
+            {/* --- Top Navbar --- */}
+            {!isReviewMode && (
+                <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800 h-20 px-6 sm:px-10 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-4">
 
-                {/* Main Question Area */}
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-                    <div className="max-w-4xl mx-auto">
+                    </div>
 
-                        {/* Progress Header */}
-                        <div className="mb-6">
-                            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white mb-4">{quizDetail?.title}</h1>
-                            <div className="flex items-center gap-4 text-sm font-medium text-gray-500 dark:text-slate-400 mb-2">
-                                <span>Progress</span>
-                                <span className="text-blue-600 dark:text-blue-400 font-bold">{totalAnswered} of {totalQuestions} answered</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }}></div>
-                            </div>
+                    <div className={`flex items-center gap-4 px-6 py-2.5 rounded-2xl border-2 transition-all ${timeRemaining !== null && timeRemaining < 300 ? 'border-red-500/50 bg-red-50 dark:bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.2)] animate-pulse' : 'border-gray-200 dark:border-slate-700/50 bg-gray-50 dark:bg-slate-800/50'}`}>
+                        <Clock className={`w-5 h-5 ${timeRemaining !== null && timeRemaining < 300 ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'}`} />
+                        <span className={`text-xl font-black font-mono tracking-wider ${timeRemaining !== null && timeRemaining < 300 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+                            {timeRemaining !== null ? formatTime(timeRemaining) : '--:--'}
+                        </span>
+                    </div>
+                </header>
+            )}
+
+            <div className="flex flex-col lg:flex-row flex-1 max-w-[1920px] mx-auto w-full gap-8 p-4 sm:p-8">
+
+                {/* --- Left Column: Question Area --- */}
+                <main className="flex-1 flex flex-col gap-6 w-full max-w-4xl">
+
+                    {/* Header Card */}
+                    <div className="mb-2">
+                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-4 leading-tight">{quizDetail?.title}</h1>
+                        <div className="flex items-center gap-4 text-sm font-bold text-gray-500 dark:text-slate-400 mb-3">
+                            <span>Progress</span>
+                            <span className="text-blue-600 dark:text-blue-400">{totalAnswered} of {totalQuestions} answered</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden border border-gray-300 dark:border-slate-700/50">
+                            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
+                        </div>
+                    </div>
+
+                    {/* Question Card */}
+                    <div className="bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700/50 p-8 sm:p-12 rounded-[2.5rem] shadow-lg relative overflow-hidden min-h-[400px]">
+                        <div className="absolute top-0 left-0 w-2 h-full bg-blue-600"></div>
+
+                        <div className="flex justify-between items-start mb-8">
+                            <span className="px-4 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-black rounded-xl uppercase tracking-widest border border-blue-100 dark:border-blue-500/20">
+                                Question {currentQuestionIndex + 1}
+                            </span>
+                            <span className="text-gray-500 dark:text-slate-400 text-xs font-black uppercase tracking-widest bg-gray-100 dark:bg-slate-800 px-4 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700">
+                                {currentQuestion.points || 1} Pts
+                            </span>
                         </div>
 
-                        {/* Question Card */}
-                        <div className="bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700/50 p-6 sm:p-8 rounded-[2rem] shadow-sm mb-6 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-10 leading-relaxed">
+                            {currentQuestion.text}
+                        </h3>
 
-                            <div className="flex justify-between items-start mb-6">
-                                <span className="px-3 py-1 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-bold rounded-lg uppercase tracking-wider border border-blue-100 dark:border-blue-500/20">
-                                    Question {currentQuestionIndex + 1}
-                                </span>
-                                <span className="text-gray-500 dark:text-slate-400 text-sm font-semibold bg-gray-100 dark:bg-slate-800 px-3 py-1 rounded-lg">
-                                    {currentQuestion.points || 1} Pts
-                                </span>
-                            </div>
-
-                            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-8 leading-relaxed">
-                                {currentQuestion.text}
-                            </h3>
-
-                            {/* MCQ Options */}
+                        {/* Options Area */}
+                        <div className="grid gap-4">
                             {currentQuestion.type === 'MCQ' && (
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {currentQuestion.options?.map((option, idx) => {
                                         const currentAnswer = answers.find((a) => a.questionId === currentQuestion.id);
                                         const optionId = option.id || String(idx);
@@ -398,13 +417,13 @@ export const QuizAttemptViewer = () => {
                                         return (
                                             <label
                                                 key={idx}
-                                                className={`flex items-center p-4 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all ${isSelected
-                                                    ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10'
-                                                    : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                                className={`flex items-center p-5 sm:p-6 rounded-2xl border-2 cursor-pointer transition-all ${isSelected
+                                                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
+                                                        : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/80'
                                                     } ${isReviewMode ? 'pointer-events-none' : ''}`}
                                             >
-                                                <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
-                                                    {isSelected && <div className="w-3 h-3 rounded-full bg-blue-500"></div>}
+                                                <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white"></div>}
                                                 </div>
                                                 <input
                                                     type="radio"
@@ -414,7 +433,7 @@ export const QuizAttemptViewer = () => {
                                                     disabled={isReviewMode}
                                                     className="hidden"
                                                 />
-                                                <span className={`ml-4 text-sm sm:text-base font-medium ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700 dark:text-slate-300'}`}>
+                                                <span className={`ml-4 text-base sm:text-lg font-bold ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700 dark:text-slate-300'}`}>
                                                     {option.text}
                                                 </span>
                                             </label>
@@ -423,33 +442,30 @@ export const QuizAttemptViewer = () => {
                                 </div>
                             )}
 
-                            {/* True/False Options */}
                             {currentQuestion.type === 'TrueFalse' && (
                                 <div className="flex flex-col sm:flex-row gap-4">
-                                    <button
-                                        onClick={() => handleAnswerChange('True')}
-                                        disabled={isReviewMode}
-                                        className={`flex-1 py-5 px-6 rounded-2xl border-2 font-bold text-lg transition-all flex items-center justify-center gap-3 ${answers.find((a) => a.questionId === currentQuestion.id)?.answer === 'True'
-                                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400'
-                                            : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-blue-300 dark:hover:border-slate-500'
-                                            } ${isReviewMode ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                    >
-                                        True
-                                    </button>
-                                    <button
-                                        onClick={() => handleAnswerChange('False')}
-                                        disabled={isReviewMode}
-                                        className={`flex-1 py-5 px-6 rounded-2xl border-2 font-bold text-lg transition-all flex items-center justify-center gap-3 ${answers.find((a) => a.questionId === currentQuestion.id)?.answer === 'False'
-                                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400'
-                                            : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-blue-300 dark:hover:border-slate-500'
-                                            } ${isReviewMode ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                    >
-                                        False
-                                    </button>
+                                    {['True', 'False'].map((opt) => {
+                                        const isSelected = answers.find((a) => a.questionId === currentQuestion.id)?.answer === opt;
+                                        return (
+                                            <button
+                                                key={opt}
+                                                onClick={() => handleAnswerChange(opt)}
+                                                disabled={isReviewMode}
+                                                className={`flex-1 py-6 px-6 rounded-2xl border-2 font-black text-lg transition-all flex items-center justify-between ${isSelected
+                                                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
+                                                        : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-blue-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/80'
+                                                    } ${isReviewMode ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                            >
+                                                <span>{opt}</span>
+                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                    {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full"></div>}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             )}
 
-                            {/* Written Option */}
                             {currentQuestion.type === 'Written' && (
                                 <div>
                                     <textarea
@@ -458,108 +474,126 @@ export const QuizAttemptViewer = () => {
                                         placeholder="Type your detailed answer here..."
                                         disabled={isReviewMode}
                                         rows={8}
-                                        className={`w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none resize-none transition-all text-base ${isReviewMode ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                        className={`w-full bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-3xl p-6 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none resize-none transition-all text-lg custom-scrollbar ${isReviewMode ? 'opacity-70 cursor-not-allowed' : ''}`}
                                     />
-                                    <div className="mt-3 flex justify-end text-xs font-medium text-gray-500 dark:text-slate-400">
-                                        Words: {answers.find((a) => a.questionId === currentQuestion.id)?.answer?.split(/\s+/).filter(Boolean).length || 0} / 1000
+                                    <div className="mt-3 flex justify-end text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest">
+                                        Words: {answers.find((a) => a.questionId === currentQuestion.id)?.answer?.split(/\s+/).filter(Boolean).length || 0}
                                     </div>
                                 </div>
                             )}
                         </div>
+                    </div>
 
-                        {/* Navigation Actions */}
-                        <div className="flex items-center justify-between">
+                    {/* Bottom Navigation */}
+                    <div className="flex items-center justify-between mt-2">
+                        <button
+                            onClick={() => goToQuestion(currentQuestionIndex - 1)}
+                            disabled={currentQuestionIndex === 0}
+                            className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-white font-bold hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                        >
+                            <ChevronLeft className="w-5 h-5" /> Previous
+                        </button>
+
+                        {!isReviewMode && (
                             <button
-                                onClick={() => goToQuestion(currentQuestionIndex - 1)}
-                                disabled={currentQuestionIndex === 0}
-                                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-white font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                onClick={handleManualSubmit}
+                                disabled={isSubmitting || examMonitor.hasAutoSubmitted}
+                                className="hidden sm:flex items-center gap-2 px-10 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/25 active:scale-95"
                             >
-                                <ChevronLeft className="w-5 h-5" /> Previous
+                                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Finish Exam'}
                             </button>
+                        )}
 
+                        {isReviewMode ? (
+                            <button onClick={() => navigate('/quizzes')} className="px-8 py-4 rounded-2xl bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white font-black uppercase tracking-wider hover:bg-gray-200 dark:hover:bg-slate-700 transition-all border border-gray-200 dark:border-slate-700">
+                                Exit Review
+                            </button>
+                        ) : (
                             <button
                                 onClick={() => goToQuestion(currentQuestionIndex + 1)}
                                 disabled={currentQuestionIndex === questions.length - 1}
-                                className="flex items-center gap-2 px-8 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-blue-500/20"
+                                className="flex items-center gap-2 px-8 py-4 rounded-2xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/20 active:scale-95"
                             >
                                 Next <ChevronRight className="w-5 h-5" />
                             </button>
-                        </div>
+                        )}
                     </div>
+
+                    {/* Mobile Submit Button */}
+                    {!isReviewMode && (
+                        <button
+                            onClick={handleManualSubmit}
+                            disabled={isSubmitting || examMonitor.hasAutoSubmitted}
+                            className="sm:hidden w-full mt-4 flex items-center justify-center gap-2 px-10 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg active:scale-95"
+                        >
+                            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Finish Exam'}
+                        </button>
+                    )}
                 </main>
 
-                {/* Right Sidebar (Navigator) */}
-                <aside className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 flex flex-col shrink-0">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-6">
-                            <Grid3x3 className="w-5 h-5 text-gray-400 dark:text-slate-500" />
-                            <h4 className="font-bold text-gray-900 dark:text-white">Question Matrix</h4>
+                {/* --- Right Column: Sidebar (Navigator) --- */}
+                <aside className="w-full lg:w-[350px] shrink-0 space-y-6 lg:sticky lg:top-28">
+
+                    <div className="bg-white dark:bg-slate-800/50 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2.5rem] p-8 shadow-xl">
+                        <div className="flex items-center justify-between mb-8 border-b border-gray-100 dark:border-slate-700 pb-4">
+                            <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-widest text-sm flex items-center gap-2">
+                                <Grid3x3 className="w-5 h-5 text-blue-500" /> Exam Map
+                            </h4>
                         </div>
 
-                        <div className="grid grid-cols-5 gap-2.5 mb-8">
+                        <div className="grid grid-cols-5 gap-3">
                             {questions.map((q, idx) => {
                                 const status = getQuestionStatus(q.id);
                                 return (
                                     <button
                                         key={q.id}
                                         onClick={() => goToQuestion(idx)}
-                                        className={`aspect-square flex items-center justify-center rounded-xl font-bold text-sm transition-all relative
-                                            ${idx === currentQuestionIndex ? 'ring-4 ring-blue-500/30 border-blue-500' : ''}
-                                            ${status === 'answered' ? 'bg-blue-600 text-white border-blue-600'
-                                                : status === 'flagged' ? 'bg-red-50 dark:bg-red-500/10 border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400'
-                                                    : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-500'}
-                                            border-2
+                                        className={`aspect-square flex items-center justify-center rounded-xl font-black text-sm transition-all relative
+                                            ${idx === currentQuestionIndex
+                                                ? 'bg-blue-600 text-white border-2 border-blue-400 shadow-lg shadow-blue-500/30 scale-110 z-10'
+                                                : status === 'answered'
+                                                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30'
+                                                    : status === 'flagged'
+                                                        ? 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400'
+                                                        : 'bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-500 border border-gray-200 dark:border-slate-700 hover:border-gray-400 dark:hover:border-slate-500'
+                                            }
                                         `}
                                     >
                                         {idx + 1}
-                                        {status === 'flagged' && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>}
+                                        {status === 'flagged' && idx !== currentQuestionIndex && (
+                                            <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></span>
+                                        )}
                                     </button>
                                 );
                             })}
                         </div>
 
-                        <div className="space-y-3 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-700/50 text-xs font-semibold text-gray-600 dark:text-slate-400 uppercase tracking-widest">
-                            <div className="flex items-center gap-3">
-                                <div className="w-4 h-4 rounded bg-blue-600"></div> Answered
+                        <div className="mt-8 space-y-4 pt-6 border-t border-gray-100 dark:border-slate-700">
+                            <div className="flex items-center gap-3 text-xs font-bold text-gray-600 dark:text-slate-400 uppercase tracking-widest">
+                                <div className="w-3.5 h-3.5 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-300 dark:border-blue-500/50"></div> Answered
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-4 h-4 rounded bg-gray-200 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600"></div> Unanswered
+                            <div className="flex items-center gap-3 text-xs font-bold text-gray-600 dark:text-slate-400 uppercase tracking-widest">
+                                <div className="w-3.5 h-3.5 rounded-full bg-red-100 dark:bg-red-500/20 border border-red-300 dark:border-red-500/50"></div> Flagged
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-4 h-4 rounded bg-red-100 dark:bg-red-500/20 border-2 border-red-300 dark:border-red-500/30 relative"><span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span></div> Flagged
+                            <div className="flex items-center gap-3 text-xs font-bold text-gray-600 dark:text-slate-400 uppercase tracking-widest">
+                                <div className="w-3.5 h-3.5 rounded-full bg-gray-100 dark:bg-slate-900 border border-gray-300 dark:border-slate-700"></div> Unanswered
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-8 space-y-3">
+                    {!isReviewMode && (
                         <button
                             onClick={toggleFlag}
-                            disabled={isReviewMode}
-                            className={`w-full py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border-2 
-                                ${isReviewMode ? 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 border-transparent cursor-not-allowed'
-                                    : flaggedQuestions.includes(currentQuestion.id)
-                                        ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30'
-                                        : 'bg-white dark:bg-transparent text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-500/50 hover:text-red-500'
+                            className={`w-full py-4.5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 border-2 shadow-sm
+                                ${flaggedQuestions.includes(currentQuestion.id)
+                                    ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/30'
+                                    : 'bg-white dark:bg-slate-800/50 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-500'
                                 }`}
                         >
-                            <Flag className={`w-4 h-4 ${flaggedQuestions.includes(currentQuestion.id) ? 'fill-current' : ''}`} />
-                            {isReviewMode ? 'Cannot flag' : flaggedQuestions.includes(currentQuestion.id) ? 'Unflag Question' : 'Flag Question'}
+                            <Flag className={`w-5 h-5 ${flaggedQuestions.includes(currentQuestion.id) ? 'fill-current' : ''}`} />
+                            {flaggedQuestions.includes(currentQuestion.id) ? 'Remove Flag' : 'Flag Question'}
                         </button>
-
-                        {isReviewMode ? (
-                            <button onClick={() => navigate('/quizzes')} className="w-full py-4 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white font-black uppercase tracking-wider hover:bg-gray-200 dark:hover:bg-slate-700 transition-all border border-gray-200 dark:border-slate-700">
-                                Exit Review
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting || examMonitor.hasAutoSubmitted}
-                                className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-emerald-500/25 hover:-translate-y-0.5"
-                            >
-                                {isSubmitting ? 'Submitting...' : 'Finish & Submit'}
-                            </button>
-                        )}
-                    </div>
+                    )}
                 </aside>
             </div>
         </div>
