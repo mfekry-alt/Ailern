@@ -100,7 +100,7 @@ export const Header = () => {
         setShowSearchResults(true);
         try {
             // استخدام الرابط الخاص بالطالب بناءً على ה JSON الخاص بك
-            const res = await api.get('/Users/students/my-courses', {
+            const res = await api.get('/Users/students/courses', {
                 params: { search: query.trim() }
             });
 
@@ -192,7 +192,7 @@ export const Header = () => {
                 { label: 'Dashboard', path: ROUTES.INSTRUCTOR },
                 { label: 'Courses', path: ROUTES.INSTRUCTOR_COURSES },
                 { label: 'Assignments', path: ROUTES.INSTRUCTOR_ASSIGNMENTS },
-                { label: 'Calendar', path: '/instructor/calendar' },
+                { label: 'Statistics', path: '/instructor/statistics' },
             ];
         }
         if (user?.roles?.includes('Student')) {
@@ -239,18 +239,22 @@ export const Header = () => {
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 shadow-sm transition-all duration-300 px-6 py-3">
-            <div className="flex items-center justify-between w-full max-w-[1920px] mx-auto">
+        // 1. ثبتنا ارتفاع الهيدر باستخدام h-[72px] وشلنا الـ py
+        <header className="sticky top-0 z-50 w-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 shadow-sm transition-all duration-300 py-9 px-8 h-[72px]">
+            {/* 2. خلينا الـ div الداخلي يأخد h-full */}
+            <div className="flex items-center justify-between w-full h-full max-w-[1920px] mx-auto">
 
                 {/* Logo */}
                 <Link
                     to={user ? getDashboardRoute() : ROUTES.HOME}
-                    className="flex items-center gap-3 shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    // 3. عطينا الـ Link عرض ثابت عشان يحجز مكان للوجو، وخليناه relative
+                    className="relative flex items-center shrink-0 cursor-pointer hover:opacity-80 transition-opacity w-[80px] sm:w-[110px] h-full"
                 >
                     <img
-                        src="/logo-removebg.svg"
+                        src="/logo-removebg.png"
                         alt="Ailern"
-                        className="w-[60px] sm:w-[60px] h-auto object-contain drop-shadow-md"
+                        className="left-3 absolute top-1/2 -translate-y-1/2 w-[80px] h-[80px] sm:w-[110px] sm:h-[110px] object-contain drop-shadow-md"
+                        style={{ imageRendering: 'high-quality' }}
                     />
                 </Link>
 

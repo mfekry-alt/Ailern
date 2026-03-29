@@ -31,7 +31,6 @@ export const ROUTES = {
 
     // Student routes
     DASHBOARD: '/dashboard',
-    MY_COURSES: '/my-courses',
     COURSES: '/courses',
     COURSE_DETAIL: '/courses/:id',
     LEARN: '/learn/:courseId/:lessonId',
@@ -52,6 +51,7 @@ export const ROUTES = {
     INSTRUCTOR_COURSE_EDIT: '/instructor/courses/:id/edit',
     INSTRUCTOR_COURSE_EDIT_CONTENT: '/instructor/courses/:id/content',
     INSTRUCTOR_GRADEBOOK: '/instructor/gradebook',
+    INSTRUCTOR_STATISTICS: '/instructor/statistics',
     INSTRUCTOR_ASSIGNMENTS: '/instructor/assignments',
     INSTRUCTOR_ASSIGNMENT_CREATE: '/instructor/assignments/create',
     INSTRUCTOR_ASSIGNMENT_EDIT: '/instructor/assignments/:id/edit',

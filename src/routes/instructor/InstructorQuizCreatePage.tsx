@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/Card';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AlertTriangle, Settings, HelpCircle, CalendarClock, Eye } from 'lucide-react';
 import type { CreateQuizCommand, QuizStatus } from '@/types/api.types';
 import { ROUTES } from '@/lib/constants';
 
@@ -18,9 +17,14 @@ interface QuizSettings {
     shuffleOptions: boolean;
 }
 
-const inputCls =
-    'w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100';
-const labelCls = 'block text-[14px] font-medium text-gray-700 dark:text-zinc-300 mb-2';
+const labelCls = 'block text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1';
+
+// دالة لتحديد شكل الحقل بناءً على وجود خطأ أم لا
+const getInputCls = (hasError: boolean) =>
+    `w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border rounded-xl focus:outline-none focus:ring-2 transition-all text-sm font-semibold text-gray-900 dark:text-white ${hasError
+        ? 'border-red-500 focus:ring-red-500/50'
+        : 'border-gray-200 dark:border-slate-700 focus:ring-blue-500/50'
+    }`;
 
 const PUBLISH_OPTIONS: { value: QuizStatus; title: string; desc: string }[] = [
     { value: 'Draft', title: 'Save as Draft', desc: 'Not visible to students yet' },
@@ -57,7 +61,9 @@ const defaultDateRange = () => {
 export const InstructorQuizCreatePage = () => {
     const navigate = useNavigate();
     const { courseId } = useParams<{ courseId: string }>();
-    const [error, setError] = useState('');
+
+    // State للأخطاء منفصل لكل حقل
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [settings, setSettings] = useState<QuizSettings>(() => {
         const { availableFrom, availableUntil } = defaultDateRange();
@@ -78,30 +84,50 @@ export const InstructorQuizCreatePage = () => {
     const set = (patch: Partial<QuizSettings>) =>
         setSettings(s => ({ ...s, ...patch }));
 
-    const validate = (): string | null => {
-        if (!settings.title.trim()) return 'Quiz title is required.';
-        if (settings.title.length > 255) return 'Title must be 255 characters or less.';
-        if (settings.maximumAttempts < 1 || settings.maximumAttempts > 5)
-            return 'Attempts allowed must be between 1 and 5.';
-        if (!settings.availableFrom) return 'Available From date & time is required.';
-        if (!settings.availableUntil) return '"Available Until" is required.';
-        if (new Date(settings.availableUntil) <= new Date(settings.availableFrom))
-            return '"Available Until" must be after "Available From".';
-        if (settings.status === 'Scheduled') {
-            if (!settings.publishedDate) return 'Publish Date is required for scheduled quizzes.';
-            const pd = new Date(settings.publishedDate);
-            if (pd <= new Date()) return 'Publish Date must be in the future.';
-            if (pd >= new Date(settings.availableFrom))
-                return 'Publish Date must be before "Available From".';
+    // تنظيف الخطأ عند الكتابة في الحقل
+    const clearError = (field: string) => {
+        if (errors[field]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[field];
+                return newErrors;
+            });
         }
-        return null;
+    };
+
+    const validate = (): boolean => {
+        const newErrors: Record<string, string> = {};
+
+        if (!settings.title.trim()) newErrors.title = 'Quiz title is required.';
+        else if (settings.title.length > 255) newErrors.title = 'Title must be 255 characters or less.';
+
+        if (settings.maximumAttempts < 1 || settings.maximumAttempts > 5)
+            newErrors.maximumAttempts = 'Attempts allowed must be between 1 and 5.';
+
+        if (!settings.availableFrom) newErrors.availableFrom = 'Available From date & time is required.';
+
+        if (!settings.availableUntil) newErrors.availableUntil = '"Available Until" is required.';
+        else if (settings.availableFrom && new Date(settings.availableUntil) <= new Date(settings.availableFrom))
+            newErrors.availableUntil = '"Available Until" must be after "Available From".';
+
+        if (settings.status === 'Scheduled') {
+            if (!settings.publishedDate) newErrors.publishedDate = 'Publish Date is required for scheduled quizzes.';
+            else {
+                const pd = new Date(settings.publishedDate);
+                if (pd <= new Date()) newErrors.publishedDate = 'Publish Date must be in the future.';
+                if (settings.availableFrom && pd >= new Date(settings.availableFrom))
+                    newErrors.publishedDate = 'Publish Date must be before "Available From".';
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const buildCommand = (): CreateQuizCommand => {
         const availableFrom = toISOStringFromLocal(settings.availableFrom);
         const availableUntil = toISOStringFromLocal(settings.availableUntil);
-        const description =
-            settings.description?.trim() || settings.title.trim() || 'Quiz';
+        const description = settings.description?.trim() || settings.title.trim() || 'Quiz';
         return {
             title: settings.title.trim(),
             description,
@@ -121,14 +147,12 @@ export const InstructorQuizCreatePage = () => {
         };
     };
 
-    /** Step 1: go to question builder; API create runs there on final submit. */
     const handleNextToQuestions = () => {
-        const err = validate();
-        if (err) {
-            setError(err);
+        const isValid = validate();
+        if (!isValid) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
-        setError('');
         const cmd = buildCommand();
         navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS, {
             state: {
@@ -140,264 +164,285 @@ export const InstructorQuizCreatePage = () => {
 
     if (!courseId) {
         return (
-            <div className="p-8 max-w-lg mx-auto text-center">
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100 mb-2">
-                    Invalid request
-                </h1>
-                <p className="text-gray-500 dark:text-zinc-400 mb-6">Course ID is missing.</p>
-                <button
-                    type="button"
-                    onClick={() => navigate(ROUTES.INSTRUCTOR_COURSES)}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] rounded-lg cursor-pointer"
-                >
-                    Back to courses
-                </button>
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-slate-800/50 p-8 max-w-md w-full rounded-2xl text-center shadow-xl border border-gray-200 dark:border-slate-700">
+                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Invalid request</h1>
+                    <p className="text-gray-500 dark:text-slate-400 mb-6 text-sm">Course ID is missing from the URL.</p>
+                    <button
+                        type="button"
+                        onClick={() => navigate(ROUTES.INSTRUCTOR_COURSES)}
+                        className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-md"
+                    >
+                        Back to My Courses
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-            <div className="flex items-center gap-4 mb-6">
-                <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
-                >
-                    <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
-                </button>
-                <div>
-                    <h1 className="text-[28px] font-bold text-gray-900 dark:text-zinc-100">
-                        Create Quiz
-                    </h1>
-                    <p className="text-[14px] text-gray-500 dark:text-zinc-400">
-                        Set up timing, attempts, and behavior—then add questions.
-                    </p>
-                </div>
-            </div>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans pb-20">
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4">
 
-            <Card variant="elevated">
-                <CardContent className="p-6 space-y-6">
-                    {error && (
-                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400 text-[14px]">
-                            {error}
-                        </div>
-                    )}
-
+                {/* Header */}
+                <div className="flex items-center gap-4">
+                    <button
+                        type="button"
+                        onClick={() => navigate(-1)}
+                        className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 shadow-sm"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
                     <div>
-                        <label htmlFor="title" className={labelCls}>
-                            Quiz Title <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="title"
-                            type="text"
-                            value={settings.title}
-                            onChange={e => set({ title: e.target.value })}
-                            className={inputCls}
-                            placeholder="Enter quiz title"
-                        />
-                    </div>
-
-                    <div>
-                        <label htmlFor="description" className={labelCls}>
-                            Description
-                        </label>
-                        <textarea
-                            id="description"
-                            value={settings.description}
-                            onChange={e => set({ description: e.target.value })}
-                            rows={3}
-                            className={inputCls}
-                            placeholder="Optional description"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="availableFrom" className={labelCls}>
-                                Available From <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="availableFrom"
-                                type="datetime-local"
-                                value={settings.availableFrom}
-                                onChange={e => set({ availableFrom: e.target.value })}
-                                min={new Date().toISOString().slice(0, 16)}
-                                className={inputCls}
-                            />
-                            <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
-                                When students can start the quiz.
-                            </p>
-                        </div>
-                        <div>
-                            <label htmlFor="availableUntil" className={labelCls}>
-                                Available Until <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="availableUntil"
-                                type="datetime-local"
-                                value={settings.availableUntil}
-                                onChange={e => set({ availableUntil: e.target.value })}
-                                min={
-                                    settings.availableFrom ||
-                                    new Date().toISOString().slice(0, 16)
-                                }
-                                className={inputCls}
-                            />
-                            <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
-                                Last moment a student can enter the quiz.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label htmlFor="maximumAttempts" className={labelCls}>
-                            Attempts Allowed <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="maximumAttempts"
-                            type="number"
-                            min={1}
-                            max={5}
-                            value={settings.maximumAttempts}
-                            onChange={e =>
-                                set({
-                                    maximumAttempts: Math.min(
-                                        5,
-                                        Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                                    ),
-                                })
-                            }
-                            className={`${inputCls} max-w-xs`}
-                        />
-                        <p className="text-[12px] text-gray-500 dark:text-zinc-500 mt-1">
-                            1 – 5 attempts.
+                        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
+                            <HelpCircle className="w-8 h-8 text-blue-500" /> Create New Quiz
+                        </h1>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-1">
+                            Set up timing, attempts, and behavior—then add questions.
                         </p>
                     </div>
+                </div>
 
-                    <div>
-                        <div className={labelCls}>Publish Status</div>
-                        <div className="space-y-2">
-                            {PUBLISH_OPTIONS.map(opt => (
-                                <div
-                                    key={opt.value}
-                                    className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${
-                                        settings.status === opt.value
-                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                            : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                    }`}
-                                >
-                                    <input
-                                        id={`status-${opt.value}`}
-                                        type="radio"
-                                        name="status"
-                                        value={opt.value}
-                                        checked={settings.status === opt.value}
-                                        onChange={() => set({ status: opt.value })}
-                                        className="w-4 h-4 text-blue-600 mt-0.5 cursor-pointer"
-                                    />
-                                    <label
-                                        htmlFor={`status-${opt.value}`}
-                                        className="cursor-pointer w-full"
-                                    >
-                                        <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">
-                                            {opt.title}
-                                        </div>
-                                        <div className="text-[12px] text-gray-600 dark:text-zinc-400">
-                                            {opt.desc}
-                                        </div>
-                                    </label>
-                                </div>
-                            ))}
+                {/* Main Form Container */}
+                <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
+                    <div className="p-6 sm:p-8 space-y-8">
+
+                        {/* Basic Info */}
+                        <div className="space-y-5">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                                <Settings className="w-5 h-5 text-indigo-500" /> Basic Information
+                            </h3>
+                            <div>
+                                <label htmlFor="title" className={labelCls}>Quiz Title <span className="text-red-500">*</span></label>
+                                <input
+                                    id="title"
+                                    type="text"
+                                    value={settings.title}
+                                    onChange={e => { set({ title: e.target.value }); clearError('title'); }}
+                                    className={getInputCls(!!errors.title)}
+                                    placeholder="e.g. Midterm Examination - Chapter 1 to 5"
+                                />
+                                {errors.title && (
+                                    <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1">
+                                        <AlertTriangle className="w-3.5 h-3.5" /> {errors.title}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label htmlFor="description" className={labelCls}>Description (Optional)</label>
+                                <textarea
+                                    id="description"
+                                    value={settings.description}
+                                    onChange={e => set({ description: e.target.value })}
+                                    rows={3}
+                                    className={`${getInputCls(false)} resize-none`}
+                                    placeholder="Add instructions or guidelines for the students..."
+                                />
+                            </div>
                         </div>
+
+                        {/* Timing & Attempts */}
+                        <div className="space-y-5 pt-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                                <CalendarClock className="w-5 h-5 text-blue-500" /> Timing & Attempts
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label htmlFor="availableFrom" className={labelCls}>Available From <span className="text-red-500">*</span></label>
+                                    <input
+                                        id="availableFrom"
+                                        type="datetime-local"
+                                        value={settings.availableFrom}
+                                        onChange={e => { set({ availableFrom: e.target.value }); clearError('availableFrom'); }}
+                                        min={new Date().toISOString().slice(0, 16)}
+                                        className={getInputCls(!!errors.availableFrom)}
+                                    />
+                                    {errors.availableFrom ? (
+                                        <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1">
+                                            <AlertTriangle className="w-3.5 h-3.5" /> {errors.availableFrom}
+                                        </p>
+                                    ) : (
+                                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">When students can start.</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label htmlFor="availableUntil" className={labelCls}>Available Until <span className="text-red-500">*</span></label>
+                                    <input
+                                        id="availableUntil"
+                                        type="datetime-local"
+                                        value={settings.availableUntil}
+                                        onChange={e => { set({ availableUntil: e.target.value }); clearError('availableUntil'); }}
+                                        min={settings.availableFrom || new Date().toISOString().slice(0, 16)}
+                                        className={getInputCls(!!errors.availableUntil)}
+                                    />
+                                    {errors.availableUntil ? (
+                                        <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1">
+                                            <AlertTriangle className="w-3.5 h-3.5" /> {errors.availableUntil}
+                                        </p>
+                                    ) : (
+                                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Last moment a student can enter the quiz.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label htmlFor="maximumAttempts" className={labelCls}>Attempts Allowed <span className="text-red-500">*</span></label>
+                                <input
+                                    id="maximumAttempts"
+                                    type="number"
+                                    min={1}
+                                    max={5}
+                                    value={settings.maximumAttempts}
+                                    onChange={e => {
+                                        set({
+                                            maximumAttempts: Math.min(5, Math.max(1, Number.parseInt(e.target.value, 10) || 1)),
+                                        });
+                                        clearError('maximumAttempts');
+                                    }}
+                                    className={`${getInputCls(!!errors.maximumAttempts)} max-w-[200px]`}
+                                />
+                                {errors.maximumAttempts ? (
+                                    <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1">
+                                        <AlertTriangle className="w-3.5 h-3.5" /> {errors.maximumAttempts}
+                                    </p>
+                                ) : (
+                                    <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Between 1 and 5 attempts.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Publish Status */}
+                        <div className="space-y-5 pt-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                                <Eye className="w-5 h-5 text-purple-500" /> Visibility Status
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {PUBLISH_OPTIONS.map(opt => {
+                                    const isSelected = settings.status === opt.value;
+                                    return (
+                                        <label
+                                            key={opt.value}
+                                            className={`relative flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${isSelected
+                                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
+                                                    : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className={`font-bold text-sm ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'}`}>
+                                                    {opt.title}
+                                                </span>
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>}
+                                                </div>
+                                            </div>
+                                            <span className={`text-xs font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-slate-400'}`}>
+                                                {opt.desc}
+                                            </span>
+                                            <input
+                                                type="radio"
+                                                name="status"
+                                                value={opt.value}
+                                                checked={isSelected}
+                                                onChange={() => { set({ status: opt.value }); clearError('publishedDate'); }}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Scheduled Date Input */}
+                            {settings.status === 'Scheduled' && (
+                                <div className="p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl animate-in fade-in slide-in-from-top-2">
+                                    <label htmlFor="publishedDate" className={`${labelCls} !text-blue-700 dark:!text-blue-400`}>
+                                        Publish Date & Time <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        id="publishedDate"
+                                        type="datetime-local"
+                                        value={settings.publishedDate}
+                                        onChange={e => { set({ publishedDate: e.target.value }); clearError('publishedDate'); }}
+                                        className={`${getInputCls(!!errors.publishedDate)} !bg-white dark:!bg-slate-900`}
+                                    />
+                                    {errors.publishedDate ? (
+                                        <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1">
+                                            <AlertTriangle className="w-3.5 h-3.5" /> {errors.publishedDate}
+                                        </p>
+                                    ) : (
+                                        <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-2 ml-1">
+                                            Must be in the future and <strong>before</strong> "Available From" date.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Quiz Behavior */}
+                        <div className="space-y-5 pt-4">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                                <Settings className="w-5 h-5 text-emerald-500" /> Quiz Behavior
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {[
+                                    { key: 'showResultOnClose' as const, label: 'Show results on close', desc: 'Display correct answers after quiz ends' },
+                                    { key: 'shuffleQuestions' as const, label: 'Shuffle questions', desc: 'Randomize order of questions' },
+                                    { key: 'shuffleOptions' as const, label: 'Shuffle options', desc: 'Randomize order of answer choices' },
+                                ].map(({ key, label, desc }) => {
+                                    const isChecked = settings[key];
+                                    return (
+                                        <label
+                                            key={key}
+                                            className={`relative flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${isChecked
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
+                                                    : 'border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
+                                                }`}
+                                        >
+                                            <div className="flex-1">
+                                                <div className={`font-bold text-sm mb-1 ${isChecked ? 'text-emerald-900 dark:text-emerald-100' : 'text-gray-900 dark:text-white'}`}>
+                                                    {label}
+                                                </div>
+                                                <div className={`text-xs font-medium ${isChecked ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-slate-400'}`}>
+                                                    {desc}
+                                                </div>
+                                            </div>
+                                            <div className="pt-0.5">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={e => set({ [key]: e.target.checked })}
+                                                    className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                                />
+                                            </div>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                     </div>
 
-                    {settings.status === 'Scheduled' && (
-                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                            <label htmlFor="publishedDate" className={labelCls}>
-                                Publish Date <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="publishedDate"
-                                type="datetime-local"
-                                value={settings.publishedDate}
-                                onChange={e => set({ publishedDate: e.target.value })}
-                                className={inputCls}
-                            />
-                            <p className="text-[12px] text-blue-700 dark:text-blue-400 mt-1">
-                                Must be in the future and <strong>before</strong> &quot;Available
-                                From&quot;.
-                            </p>
-                        </div>
-                    )}
-
-                    <div>
-                        <div className={labelCls}>Quiz Behavior</div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {[
-                                {
-                                    key: 'showResultOnClose' as const,
-                                    label: 'Show results on close',
-                                    desc: 'Show correct answers to students after the quiz ends',
-                                },
-                                {
-                                    key: 'shuffleQuestions' as const,
-                                    label: 'Shuffle questions',
-                                    desc: 'Randomize the order of questions for each attempt',
-                                },
-                                {
-                                    key: 'shuffleOptions' as const,
-                                    label: 'Shuffle options',
-                                    desc: 'Randomize the order of answer choices',
-                                },
-                            ].map(({ key, label, desc }) => (
-                                <div
-                                    key={key}
-                                    className={`flex items-start gap-3 p-3 border rounded-lg transition-colors ${
-                                        settings[key]
-                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                            : 'border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800'
-                                    }`}
-                                >
-                                    <input
-                                        id={key}
-                                        type="checkbox"
-                                        checked={settings[key]}
-                                        onChange={e => set({ [key]: e.target.checked })}
-                                        className="w-4 h-4 text-blue-600 mt-0.5 cursor-pointer"
-                                    />
-                                    <label htmlFor={key} className="cursor-pointer w-full">
-                                        <div className="font-medium text-[14px] text-gray-900 dark:text-zinc-100">
-                                            {label}
-                                        </div>
-                                        <div className="text-[12px] text-gray-600 dark:text-zinc-400">
-                                            {desc}
-                                        </div>
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between gap-3 pt-4 border-t border-gray-200 dark:border-zinc-700">
+                    {/* Footer Actions */}
+                    <div className="p-6 sm:p-8 bg-gray-50/50 dark:bg-slate-900/50 border-t border-gray-200 dark:border-slate-700/50 flex flex-col sm:flex-row gap-4 justify-between items-center">
                         <button
                             type="button"
                             onClick={() => navigate(-1)}
-                            className="px-6 py-2 border border-gray-300 dark:border-zinc-600 text-gray-700 dark:text-zinc-300 font-medium text-[14px] rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                            className="w-full sm:w-auto px-8 py-3.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold transition-all text-sm shadow-sm"
                         >
                             Cancel
                         </button>
                         <button
                             type="button"
                             onClick={handleNextToQuestions}
-                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] rounded-lg transition-colors cursor-pointer"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95 text-sm"
                         >
-                            Next: Add questions
+                            Next: Add Questions
                             <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 };

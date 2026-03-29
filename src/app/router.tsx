@@ -21,7 +21,6 @@ import { NotificationsPage } from '@/routes/NotificationsPage';
 
 // Student pages
 import { DashboardPage } from '@/routes/student/DashboardPage';
-import { MyCoursesPage } from '@/routes/student/MyCoursesPage';
 import { CoursesPage } from '@/routes/student/CoursesPage';
 import { CourseDetailPage } from '@/routes/student/CourseDetailPage';
 import { LessonPlayerPage } from '@/routes/student/LessonPlayerPage';
@@ -41,7 +40,7 @@ import { InstructorManageCoursePage } from '@/routes/instructor/InstructorManage
 import { InstructorCourseEditPage } from '@/routes/instructor/InstructorCourseEditPage';
 import { InstructorCourseEditContentPage } from '@/routes/instructor/InstructorCourseEditContentPage';
 import { InstructorGradebookPage } from '@/routes/instructor/InstructorGradebookPage';
-import { InstructorCalendarPage } from '@/routes/instructor/InstructorCalendarPage';
+import { InstructorStatisticsPage  } from '@/routes/instructor/InstructorStatisticsPage';
 import { InstructorAssignmentsPage } from '@/routes/instructor/InstructorAssignmentsPage';
 import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';
 import { InstructorQuizQuestionBuilderPage } from '@/routes/instructor/InstructorQuizQuestionBuilderPage';
@@ -95,7 +94,6 @@ export const AppRouter = () => {
                 }
             >
                 <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
-                <Route path={ROUTES.MY_COURSES} element={<MyCoursesPage />} />
                 <Route path={ROUTES.COURSES} element={<CoursesPage />} />
                 <Route path={ROUTES.COURSE_DETAIL} element={<CourseDetailPage />} />
                 <Route path={ROUTES.LEARN} element={<LessonPlayerPage />} />
@@ -134,7 +132,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_UPDATE} element={<InstructorQuizUpdatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT} element={<InstructorQuizQuestionsEditPage />} />
-                <Route path="/instructor/calendar" element={<InstructorCalendarPage />} />
+                <Route path={ROUTES.INSTRUCTOR_STATISTICS} element={<InstructorStatisticsPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
             </Route>

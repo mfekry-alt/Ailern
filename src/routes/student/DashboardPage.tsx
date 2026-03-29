@@ -112,7 +112,7 @@ export const DashboardPage = () => {
                                 You have <strong className="text-white">{pendingTasks} tasks</strong> to catch up on. Ready to dive back into your learning journey?
                             </p>
                             <button
-                                onClick={() => navigate('/my-courses')}
+                                onClick={() => navigate('/courses')}
                                 className="mt-4 bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-bold text-base transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] flex items-center space-x-3 w-fit hover:-translate-y-1"
                             >
                                 <MaterialIcon name="play_circle" className="text-xl" />
@@ -162,7 +162,7 @@ export const DashboardPage = () => {
                                     Continue Learning
                                 </h2>
                                 <button
-                                    onClick={() => navigate('/my-courses')}
+                                    onClick={() => navigate('/courses')}
                                     className="text-slate-400 font-medium hover:text-blue-400 transition-colors text-sm flex items-center gap-1 group"
                                 >
                                     View All <MaterialIcon name="arrow_right_alt" className="group-hover:translate-x-1 transition-transform" />

@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import {
     Edit2, Trash2, Plus, Users, BookOpen, Clock, TrendingUp,
-    AlertCircle, CheckSquare, Calendar, Loader2
+    AlertCircle, CheckSquare, Calendar, Loader2, ArrowRight, LayoutGrid, Bell, AlertTriangle
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/Card';
 import { useInstructorCourses } from '@/features/courses/api';
 import { useAuthStore } from '@/features/auth/store';
 import type { GetAllCoursesDto } from '@/types/api.types';
@@ -16,22 +15,32 @@ interface Course {
     title: string;
     courseId: string;
     instructor: string;
-    status: 'Published';
-    statusColor: string;
-    statusBg: string;
+    status: string;
+    badgeBg: string;
+    badgeText: string;
     primaryAction?: string;
     secondaryAction?: string;
     enrollmentCount: number;
 }
 
-const getStatusConfig = (apiStatus: string): Pick<Course, 'status' | 'statusColor' | 'statusBg' | 'primaryAction' | 'secondaryAction'> => {
-    void apiStatus;
+const getStatusConfig = (apiStatus: string): Pick<Course, 'status' | 'badgeBg' | 'badgeText' | 'primaryAction' | 'secondaryAction'> => {
+    const isPublished = apiStatus?.toLowerCase() === 'published' || true; // Defaulting to true for now
+
+    if (isPublished) {
+        return {
+            status: 'Published',
+            badgeBg: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20',
+            badgeText: 'text-emerald-700 dark:text-emerald-400',
+            primaryAction: 'Manage',
+            secondaryAction: 'Edit',
+        };
+    }
+
     return {
-        status: 'Published',
-        statusColor: '#166534',
-        statusBg: '#dcfce7',
-        primaryAction: 'Go to Content',
-        secondaryAction: 'Edit',
+        status: apiStatus || 'Draft',
+        badgeBg: 'bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700',
+        badgeText: 'text-gray-700 dark:text-slate-300',
+        primaryAction: 'Edit Content',
     };
 };
 
@@ -49,13 +58,11 @@ const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
 };
 
 export const InstructorDashboardPage = () => {
+    const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
 
     const instructorId = useMemo(() => {
-        if (typeof user?.id === 'number') {
-            return user.id;
-        }
-
+        if (typeof user?.id === 'number') return user.id;
         const parsedId = Number(user?.id);
         return Number.isFinite(parsedId) && parsedId > 0 ? parsedId : undefined;
     }, [user?.id]);
@@ -64,7 +71,7 @@ export const InstructorDashboardPage = () => {
         data: coursesData,
         isLoading: isCoursesLoading,
         error: coursesError,
-    } = useInstructorCourses(instructorId, { PageNumber: 1, PageSize: 5 });
+    } = useInstructorCourses(instructorId, { PageNumber: 1, PageSize: 4 });
 
     const courses = useMemo(() => {
         if (!coursesData?.items) return [];
@@ -73,310 +80,265 @@ export const InstructorDashboardPage = () => {
 
     // Dashboard statistics
     const stats = [
-        { label: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100' },
-        { label: 'Active Courses', value: '0', icon: BookOpen, color: 'text-green-600', bgColor: 'bg-green-100' },
-        { label: 'Published Courses', value: '0', icon: Clock, color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
-        { label: 'Avg. Rating', value: '0.0', icon: TrendingUp, color: 'text-purple-600', bgColor: 'bg-purple-100' },
+        { label: 'Total Students', value: '128', icon: Users, color: 'blue' },
+        { label: 'Active Courses', value: coursesData?.items?.length.toString() || '0', icon: BookOpen, color: 'emerald' },
+        { label: 'Pending Grades', value: '12', icon: CheckSquare, color: 'amber' },
+        { label: 'Avg. Rating', value: '4.8', icon: TrendingUp, color: 'purple' },
     ];
 
-    // Recent notifications
-    const notifications: { id: number; message: string; time: string; type: string }[] = [];
+    // Mock Data for Widgets
+    const notifications = [
+        { id: 1, message: 'New student enrolled in "Data Structures".', time: '2 hours ago', type: 'info' },
+        { id: 2, message: 'System maintenance scheduled for tonight.', time: '5 hours ago', type: 'warning' },
+        { id: 3, message: 'Your course "React Basics" was approved!', time: '1 day ago', type: 'success' },
+    ];
 
-    // Submissions to grade
-    const submissionsToGrade: { id: number; course: string; assignment: string; submissions: number; dueDate: string }[] = [];
+    const submissionsToGrade = [
+        { id: 1, course: 'Machine Learning', assignment: 'Final Project Phase 1', submissions: 12, dueDate: '2024-03-10' },
+        { id: 2, course: 'Data Structures', assignment: 'Binary Trees Quiz', submissions: 5, dueDate: '2024-03-08' },
+    ];
 
-    // Upcoming deadlines
-    const upcomingDeadlines: { id: number; course: string; item: string; dueDate: string; daysLeft: number; priority: string }[] = [];
+    const upcomingDeadlines = [
+        { id: 1, course: 'Machine Learning', item: 'Midterm Grading', dueDate: '2024-03-12', daysLeft: 2, priority: 'high' },
+        { id: 2, course: 'Web Dev Bootcamp', item: 'Publish Week 4 Content', dueDate: '2024-03-15', daysLeft: 5, priority: 'medium' },
+    ];
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen text-gray-900 dark:text-zinc-100">
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans selection:bg-blue-500/30 pb-20">
+            <div className="max-w-7xl mx-auto space-y-8">
+
+                {/* Greeting Hero & Action */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-fade-in">
                     <div>
-                        <h1 className="text-[30px] font-bold leading-[36px]">
-                            Instructor Dashboard
+                        <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Instructor!</span> 👋
                         </h1>
-                        <p className="text-[16px] leading-[24px] text-gray-600 dark:text-zinc-400 mt-1">
-                            Manage your courses and track student progress
+                        <p className="text-gray-600 dark:text-slate-400 mt-2 text-lg">
+                            Here's what's happening with your courses today.
                         </p>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                        <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
-                            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] px-4 py-2.5 rounded-lg transition-colors shadow-sm">
-                                <Plus className="w-5 h-5" />
-                                Create New Course
-                            </button>
-                        </Link>
-                    </div>
+                    <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
+                        <button className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95">
+                            <Plus className="w-5 h-5" />
+                            Create New Course
+                        </button>
+                    </Link>
                 </div>
 
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {stats.map((stat) => {
-                        const IconComponent = stat.icon;
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-in fade-in slide-in-from-bottom-4">
+                    {stats.map((stat, idx) => {
+                        const Icon = stat.icon;
                         return (
-                            <Card key={stat.label} variant="elevated" className="bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800">
-                                <CardContent className="p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-[14px] font-medium text-gray-600 dark:text-zinc-400 mb-1">
-                                                {stat.label}
-                                            </p>
-                                            <p className="text-[24px] font-bold">
-                                                {stat.value}
-                                            </p>
-                                        </div>
-                                        <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                                            <IconComponent className={`w-6 h-6 ${stat.color}`} />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <div key={idx} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                                <div className={`absolute left-0 top-0 w-1.5 h-full bg-${stat.color}-500`}></div>
+                                <div>
+                                    <p className="text-gray-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
+                                    <h3 className="text-3xl font-black text-gray-900 dark:text-white">{stat.value}</h3>
+                                </div>
+                                <div className={`w-12 h-12 sm:w-14 sm:h-14 bg-${stat.color}-50 dark:bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center text-${stat.color}-600 dark:text-${stat.color}-400 group-hover:scale-110 transition-transform shrink-0`}>
+                                    <Icon className="w-6 h-6" />
+                                </div>
+                            </div>
                         );
                     })}
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-6">
-                    {/* My Courses */}
-                    <div className="lg:col-span-2">
-                        <Card variant="elevated" className="bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 h-full">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-[20px] font-bold">
-                                        My Courses
-                                    </h2>
-                                    <Link to={ROUTES.INSTRUCTOR_COURSES}>
-                                        <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-[14px]">
-                                            View All
-                                        </button>
-                                    </Link>
-                                </div>
+                {/* Main Content Grid */}
+                <div className="grid lg:grid-cols-3 gap-8">
 
-                                <div className="grid gap-4">
-                                    {isCoursesLoading && (
-                                        <div className="flex items-center justify-center py-8 text-gray-500 dark:text-zinc-400">
-                                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                            <span className="text-[14px]">Loading courses...</span>
-                                        </div>
-                                    )}
+                    {/* Left Column: My Courses (Takes up 2 columns) */}
+                    <div className="lg:col-span-2 space-y-8">
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 shadow-sm">
+                            <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <LayoutGrid className="w-5 h-5 text-blue-500" /> Recent Courses
+                                </h2>
+                                <Link to={ROUTES.INSTRUCTOR_COURSES}>
+                                    <button className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 group">
+                                        View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                </Link>
+                            </div>
 
-                                    {!isCoursesLoading && coursesError && (
-                                        <div className="text-center py-6">
-                                            <AlertCircle className="w-10 h-10 text-red-300 dark:text-red-700 mx-auto mb-3" />
-                                            <p className="text-[14px] text-red-600 dark:text-red-400">Failed to load courses</p>
-                                        </div>
-                                    )}
+                            <div className="grid gap-4">
+                                {isCoursesLoading && (
+                                    <div className="flex flex-col items-center justify-center py-10 text-gray-500 dark:text-slate-400">
+                                        <Loader2 className="w-8 h-8 animate-spin mb-3 text-blue-500" />
+                                        <span className="text-sm font-medium">Loading your courses...</span>
+                                    </div>
+                                )}
 
-                                    {!isCoursesLoading && !coursesError && courses.length === 0 ? (
-                                        <div className="text-center py-8">
-                                            <BookOpen className="w-10 h-10 text-gray-300 dark:text-zinc-700 mx-auto mb-3" />
-                                            <p className="text-[14px] text-gray-500 dark:text-zinc-400">No courses yet</p>
-                                            <p className="text-[12px] text-gray-400 dark:text-zinc-500 mt-1">Create your first course to get started</p>
-                                        </div>
-                                    ) : courses.map((course) => (
-                                        <div
-                                            key={course.id}
-                                            className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-4 hover:shadow-md transition-shadow"
-                                        >
-                                            <div className="flex justify-between items-start mb-3">
-                                                <h3 className="font-bold text-[16px] flex-1">
-                                                    {course.title}
-                                                </h3>
-                                                <div
-                                                    className="px-2.5 py-0.5 rounded-full shrink-0 ml-2"
-                                                    style={{ backgroundColor: course.statusBg }}
-                                                >
-                                                    <span
-                                                        className="font-medium text-[12px] leading-4"
-                                                        style={{ color: course.statusColor }}
-                                                    >
-                                                        {course.status}
-                                                    </span>
+                                {!isCoursesLoading && coursesError && (
+                                    <div className="text-center py-10 bg-red-50 dark:bg-red-500/10 rounded-2xl border border-dashed border-red-200 dark:border-red-500/30">
+                                        <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+                                        <p className="text-sm font-bold text-red-600 dark:text-red-400">Failed to load courses</p>
+                                    </div>
+                                )}
+
+                                {!isCoursesLoading && !coursesError && courses.length === 0 ? (
+                                    <div className="text-center py-10 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
+                                        <BookOpen className="w-10 h-10 text-gray-400 dark:text-slate-500 mx-auto mb-3" />
+                                        <p className="text-base font-bold text-gray-900 dark:text-white mb-1">No courses yet</p>
+                                        <p className="text-sm text-gray-500 dark:text-slate-400">Create your first course to start teaching.</p>
+                                    </div>
+                                ) : courses.map((course) => (
+                                    <div
+                                        key={course.id}
+                                        className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700/50 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-300 dark:hover:border-slate-500 transition-all group"
+                                    >
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-1.5">
+                                                <div className={`px-2.5 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${course.badgeBg} ${course.badgeText}`}>
+                                                    {course.status}
                                                 </div>
+                                                <span className="text-xs font-bold text-gray-400 dark:text-slate-500">ID: {course.courseId}</span>
                                             </div>
-
-                                            <div className="flex items-center gap-4 mb-3">
-                                                <p className="text-[14px] text-gray-600 dark:text-zinc-400">
-                                                    Course ID: {course.courseId}
-                                                </p>
-                                                <div className="flex items-center gap-4 text-[14px]">
-                                                    <span className="text-gray-600 dark:text-zinc-400">
-                                                        <span className="font-semibold text-gray-900 dark:text-zinc-100">Enrolled:</span> {course.enrollmentCount}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex gap-2">
-                                                    <Link to={ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id)}>
-                                                        <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-600 dark:text-zinc-400">
-                                                            <Edit2 className="w-4 h-4" />
-                                                        </button>
-                                                    </Link>
-                                                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-600 dark:text-zinc-400">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    {course.secondaryAction && (
-                                                        <button className="bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[12px] px-3 py-1.5 rounded-md transition-colors">
-                                                            {course.secondaryAction}
-                                                        </button>
-                                                    )}
-                                                    {course.primaryAction && (
-                                                        <Link to={ROUTES.INSTRUCTOR_COURSE_EDIT_CONTENT.replace(':id', course.id)}>
-                                                            <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] px-3 py-1.5 rounded-md transition-colors">
-                                                                {course.primaryAction}
-                                                            </button>
-                                                        </Link>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Notifications */}
-                    <div className="lg:col-span-1">
-                        <Card variant="elevated" className="bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 h-full">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-[20px] font-bold">
-                                        Notifications
-                                    </h2>
-                                    <AlertCircle className="w-5 h-5 text-gray-400" />
-                                </div>
-
-                                <div className="space-y-4">
-                                    {notifications.length === 0 ? (
-                                        <div className="text-center py-6">
-                                            <AlertCircle className="w-10 h-10 text-gray-300 dark:text-zinc-700 mx-auto mb-3" />
-                                            <p className="text-[14px] text-gray-500 dark:text-zinc-400">No notifications</p>
-                                        </div>
-                                    ) : notifications.map((notification) => (
-                                        <div key={notification.id} className="flex items-start gap-3">
-                                            <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${notification.type === 'info' ? 'bg-blue-600' :
-                                                notification.type === 'warning' ? 'bg-yellow-500' : 'bg-green-600'
-                                                }`}></div>
-                                            <div className="flex-1">
-                                                <p className="text-[14px] text-gray-900 dark:text-zinc-100 mb-1">
-                                                    {notification.message}
-                                                </p>
-                                                <p className="text-[12px] text-gray-500 dark:text-zinc-500">
-                                                    {notification.time}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <button className="w-full mt-6 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-[14px] py-2 border-t border-gray-100 dark:border-zinc-800">
-                                    View All
-                                </button>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-
-                {/* Pending Tasks Section */}
-                <div className="grid lg:grid-cols-2 gap-6">
-                    {/* Submissions to Grade */}
-                    <div className="lg:col-span-1">
-                        <Card variant="elevated" className="bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 h-full">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-[20px] font-bold">
-                                        To Grade
-                                    </h2>
-                                    <CheckSquare className="w-5 h-5 text-blue-600" />
-                                </div>
-
-                                <div className="space-y-4">
-                                    {submissionsToGrade.length === 0 ? (
-                                        <div className="text-center py-6">
-                                            <CheckSquare className="w-10 h-10 text-gray-300 dark:text-zinc-700 mx-auto mb-3" />
-                                            <p className="text-[14px] text-gray-500 dark:text-zinc-400">No submissions to grade</p>
-                                        </div>
-                                    ) : submissionsToGrade.map((submission) => (
-                                        <div key={submission.id} className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-900/30">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="flex-1">
-                                                    <p className="text-[13px] font-semibold text-gray-600 dark:text-zinc-400">
-                                                        {submission.course}
-                                                    </p>
-                                                    <p className="text-[14px] font-medium text-gray-900 dark:text-zinc-100 mt-1">
-                                                        {submission.assignment}
-                                                    </p>
-                                                </div>
-                                                <span className="bg-blue-600 text-white text-[12px] font-bold px-2.5 py-1 rounded-full">
-                                                    {submission.submissions}
-                                                </span>
-                                            </div>
-                                            <p className="text-[12px] text-gray-600 dark:text-zinc-400 mb-3">
-                                                Due: {new Date(submission.dueDate).toLocaleDateString()}
+                                            <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                {course.title}
+                                            </h3>
+                                            <p className="text-sm font-medium text-gray-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+                                                <Users className="w-4 h-4" /> {course.enrollmentCount} Enrolled Students
                                             </p>
-                                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-[12px] py-1.5 rounded-md transition-colors">
-                                                Grade Submissions
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0 border-t sm:border-t-0 border-gray-200 dark:border-slate-700 pt-4 sm:pt-0">
+                                            <Link to={ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id)}>
+                                                <button className="p-2 text-gray-500 hover:text-blue-600 bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-colors border border-gray-200 dark:border-slate-600 shadow-sm" title="Edit Settings">
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                            </Link>
+                                            {course.primaryAction && (
+                                                <Link to={ROUTES.INSTRUCTOR_COURSE_EDIT_CONTENT.replace(':id', course.id)}>
+                                                    <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-blue-500/25 active:scale-95 flex items-center gap-1">
+                                                        {course.primaryAction}
+                                                    </button>
+                                                </Link>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Grading Tasks */}
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 shadow-sm">
+                            <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <CheckSquare className="w-5 h-5 text-emerald-500" /> Tasks to Grade
+                                </h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                {submissionsToGrade.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <CheckSquare className="w-10 h-10 text-gray-300 dark:text-slate-600 mx-auto mb-3" />
+                                        <p className="text-sm font-medium text-gray-500 dark:text-slate-400">All caught up! No submissions pending.</p>
+                                    </div>
+                                ) : submissionsToGrade.map((submission) => (
+                                    <div key={submission.id} className="bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl p-4 border border-emerald-100 dark:border-emerald-800/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">{submission.course}</p>
+                                            <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">{submission.assignment}</h4>
+                                            <p className="text-xs font-medium text-gray-500 dark:text-slate-400 flex items-center gap-1">
+                                                <Calendar className="w-3 h-3" /> Due: {new Date(submission.dueDate).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <div className="text-center">
+                                                <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{submission.submissions}</p>
+                                                <p className="text-[9px] font-bold uppercase tracking-wider text-gray-500 mt-1">Pending</p>
+                                            </div>
+                                            <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-emerald-500/25 active:scale-95">
+                                                Grade Now
                                             </button>
                                         </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Upcoming Deadlines */}
-                    <div className="lg:col-span-1">
-                        <Card variant="elevated" className="bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 h-full">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-[20px] font-bold">
-                                        Deadlines
-                                    </h2>
-                                    <Calendar className="w-5 h-5 text-red-600" />
-                                </div>
+                    {/* Right Column: Notifications & Deadlines (Takes up 1 column) */}
+                    <div className="lg:col-span-1 space-y-8">
 
-                                <div className="space-y-3">
-                                    {upcomingDeadlines.length === 0 ? (
-                                        <div className="text-center py-6">
-                                            <Calendar className="w-10 h-10 text-gray-300 dark:text-zinc-700 mx-auto mb-3" />
-                                            <p className="text-[14px] text-gray-500 dark:text-zinc-400">No upcoming deadlines</p>
-                                        </div>
-                                    ) : upcomingDeadlines.map((deadline) => (
-                                        <div key={deadline.id} className={`rounded-lg p-3 border ${deadline.priority === 'high'
-                                            ? 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-900/30'
-                                            : 'bg-orange-50 border-orange-100 dark:bg-orange-900/20 dark:border-orange-900/30'
-                                            }`}>
-                                            <div className="flex justify-between items-start mb-1">
-                                                <p className="text-[13px] font-semibold text-gray-600 dark:text-zinc-300">
-                                                    {deadline.course}
-                                                </p>
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${deadline.priority === 'high'
-                                                    ? 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                                    : 'bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                                                    }`}>
-                                                    {deadline.daysLeft}d
-                                                </span>
-                                            </div>
-                                            <p className="text-[13px] font-medium text-gray-900 dark:text-zinc-100 mb-1">
-                                                {deadline.item}
+                        {/* Notifications Widget */}
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm">
+                            <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Bell className="w-5 h-5 text-purple-500" /> Notifications
+                                </h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                {notifications.length === 0 ? (
+                                    <div className="text-center py-6">
+                                        <Bell className="w-8 h-8 text-gray-300 dark:text-slate-600 mx-auto mb-2" />
+                                        <p className="text-xs text-gray-500 dark:text-slate-400">You're all caught up!</p>
+                                    </div>
+                                ) : notifications.map((notif) => (
+                                    <div key={notif.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${notif.type === 'info' ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' :
+                                                notif.type === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' :
+                                                    'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                                            }`}></div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-slate-200 leading-tight mb-1">
+                                                {notif.message}
                                             </p>
-                                            <p className="text-[11px] text-gray-600 dark:text-zinc-400">
-                                                Due: {new Date(deadline.dueDate).toLocaleDateString()}
+                                            <p className="text-xs font-semibold text-gray-400 dark:text-slate-500">
+                                                {notif.time}
                                             </p>
                                         </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Deadlines Widget */}
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm">
+                            <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-rose-500" /> Upcoming Deadlines
+                                </h2>
+                            </div>
+
+                            <div className="space-y-3">
+                                {upcomingDeadlines.length === 0 ? (
+                                    <div className="text-center py-6">
+                                        <Calendar className="w-8 h-8 text-gray-300 dark:text-slate-600 mx-auto mb-2" />
+                                        <p className="text-xs text-gray-500 dark:text-slate-400">No upcoming deadlines</p>
+                                    </div>
+                                ) : upcomingDeadlines.map((deadline) => (
+                                    <div key={deadline.id} className={`rounded-xl p-4 border ${deadline.priority === 'high'
+                                            ? 'bg-rose-50 border-rose-100 dark:bg-rose-500/10 dark:border-rose-500/20'
+                                            : 'bg-amber-50 border-amber-100 dark:bg-amber-500/10 dark:border-amber-500/20'
+                                        }`}>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <p className={`text-[10px] font-bold uppercase tracking-wider ${deadline.priority === 'high' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                                {deadline.course}
+                                            </p>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${deadline.priority === 'high'
+                                                    ? 'bg-rose-200 text-rose-800 dark:bg-rose-500/30 dark:text-rose-300'
+                                                    : 'bg-amber-200 text-amber-800 dark:bg-amber-500/30 dark:text-amber-300'
+                                                }`}>
+                                                {deadline.daysLeft} Days Left
+                                            </span>
+                                        </div>
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">
+                                            {deadline.item}
+                                        </p>
+                                        <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 flex items-center gap-1">
+                                            <Clock className="w-3 h-3" /> Due {new Date(deadline.dueDate).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
+
             </div>
         </div>
     );

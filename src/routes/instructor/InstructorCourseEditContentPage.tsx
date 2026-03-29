@@ -1,31 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import { useCourseQuizzes, useDeleteQuiz } from '@/features/quizzes/api';
 import { useCourse } from '@/features/courses/api';
 import { QUERY_KEYS } from '@/lib/constants';
 import { quizService } from '@/api/services';
 import {
-    Plus,
-    Eye,
-    Edit,
-    Trash2,
-    Upload,
-    Filter,
-    FileText,
-    Video,
-    Presentation,
-    HelpCircle,
-    Users,
-    Calendar,
-    BookOpen,
-    CheckCircle,
-    AlertCircle,
-    Mail,
-    Download,
-    UserCheck,
-    XCircle
+    Plus, Eye, Edit, Trash2, Upload, Filter, FileText, Video,
+    Presentation, HelpCircle, Users, Calendar, BookOpen, CheckCircle,
+    AlertCircle, Mail, Download, UserCheck, XCircle, Settings, ChevronRight, LayoutGrid, Loader2
 } from 'lucide-react';
 
 const initialLectures = [
@@ -79,7 +63,6 @@ const initialAssignments = [
     }
 ];
 
-
 const initialStudents = [
     { id: 'stu-1', name: 'Alex Kim', progress: '82%', assignments: 'B+', quizzes: 'A-', lastActive: 'Today' },
     { id: 'stu-2', name: 'Jordan Miles', progress: '91%', assignments: 'A', quizzes: 'A', lastActive: 'Yesterday' },
@@ -99,9 +82,12 @@ export const InstructorCourseEditContentPage = () => {
         const parsed = Number(courseId);
         return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     }, [courseId]);
+
     const quizzesCourseId = courseId ?? '';
     const { data: courseDetails, isLoading: courseLoading } = useCourse(numericCourseId ?? 0);
     const [activeTab, setActiveTab] = useState('Overview');
+
+    // Announcements State
     const [announcementTitle, setAnnouncementTitle] = useState('');
     const [announcementBody, setAnnouncementBody] = useState('');
     const [announcementPinned, setAnnouncementPinned] = useState(false);
@@ -132,7 +118,7 @@ export const InstructorCourseEditContentPage = () => {
     const [newGeneralMaterial, setNewGeneralMaterial] = useState({ name: '', type: 'PDF', size: '' });
     const [announcementAttachment, setAnnouncementAttachment] = useState<File | null>(null);
 
-    // Enrollment filters
+    // Filters & Pagination
     const [enrollFilterStatus, setEnrollFilterStatus] = useState<'all' | 'Pending' | 'Approved' | 'Rejected'>('all');
     const [enrollSearch, setEnrollSearch] = useState('');
     const [quizFilterStatus, setQuizFilterStatus] = useState<'all' | 'Published' | 'Draft' | 'Scheduled'>('all');
@@ -145,61 +131,43 @@ export const InstructorCourseEditContentPage = () => {
 
     const getTypeIcon = (type: string) => {
         switch (type) {
-            case 'Video':
-                return <Video className="w-4 h-4 text-red-500" />;
-            case 'PDF':
-                return <FileText className="w-4 h-4 text-red-600" />;
-            case 'PPT':
-                return <Presentation className="w-4 h-4 text-orange-500" />;
-            case 'Quiz':
-                return <HelpCircle className="w-4 h-4 text-blue-500" />;
-            default:
-                return <FileText className="w-4 h-4 text-gray-500" />;
+            case 'Video': return <Video className="w-4 h-4 text-red-500" />;
+            case 'PDF': return <FileText className="w-4 h-4 text-red-500" />;
+            case 'PPT': return <Presentation className="w-4 h-4 text-orange-500" />;
+            case 'Quiz': return <HelpCircle className="w-4 h-4 text-blue-500" />;
+            default: return <FileText className="w-4 h-4 text-gray-500" />;
         }
     };
 
     const getStatusBadge = (status: string) => {
         if (status === 'Published') {
-            return (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-green-100 text-green-800">
-                    Published
-                </span>
-            );
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">Published</span>;
         }
-
         if (status === 'Scheduled') {
-            return (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-blue-100 text-blue-800">
-                    Scheduled
-                </span>
-            );
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400">Scheduled</span>;
         }
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400">Draft</span>;
+    };
 
-        return (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-yellow-100 text-yellow-800">
-                Draft
-            </span>
-        );
+    const getEnrollStatusBadge = (status: string) => {
+        if (status === 'Approved') return <span className="text-[11px] font-bold uppercase tracking-wider bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400 px-2.5 py-1 rounded-md">Approved</span>;
+        if (status === 'Rejected') return <span className="text-[11px] font-bold uppercase tracking-wider bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400 px-2.5 py-1 rounded-md">Rejected</span>;
+        return <span className="text-[11px] font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400 px-2.5 py-1 rounded-md">Pending</span>;
     };
 
     const courseStats = useMemo(() => {
-        const createdAt = courseDetails?.createdAt
-            ? new Date(courseDetails.createdAt).toLocaleDateString()
-            : 'Mock';
-
+        const createdAt = courseDetails?.createdAt ? new Date(courseDetails.createdAt).toLocaleDateString() : '—';
         return [
-            { label: 'Course ID', value: courseDetails?.id?.toString() ?? 'Mock', icon: Users, color: 'text-blue-600' },
-            { label: 'Code', value: courseDetails?.code ?? 'Mock', icon: BookOpen, color: 'text-green-600' },
-            { label: 'Created At', value: createdAt, icon: Calendar, color: 'text-purple-600' },
-            { label: 'Status', value: courseDetails?.courseStatus ?? 'Mock', icon: FileText, color: 'text-orange-600' }
+            { label: 'Course ID', value: courseDetails?.id?.toString() ?? '—', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
+            { label: 'Course Code', value: courseDetails?.code ?? '—', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+            { label: 'Created At', value: createdAt, icon: Calendar, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' },
+            { label: 'Status', value: courseDetails?.courseStatus ?? 'Draft', icon: CheckCircle, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10' }
         ];
     }, [courseDetails]);
 
+    // Handlers
     const handleAddAnnouncement = () => {
-        if (!announcementTitle.trim() || !announcementBody.trim()) {
-            return;
-        }
-
+        if (!announcementTitle.trim() || !announcementBody.trim()) return;
         const newAnnouncement = {
             id: Date.now().toString(),
             title: announcementTitle,
@@ -207,7 +175,6 @@ export const InstructorCourseEditContentPage = () => {
             pinned: announcementPinned,
             attachmentName: announcementAttachment ? announcementAttachment.name : undefined,
         };
-
         setAnnouncements((prev) => [newAnnouncement, ...prev]);
         setAnnouncementTitle('');
         setAnnouncementBody('');
@@ -219,7 +186,6 @@ export const InstructorCourseEditContentPage = () => {
         setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, pinned: !a.pinned } : a)));
     };
 
-    // Lectures & Materials CRUD
     const addLecture = () => {
         if (!newLecture.title.trim() || !newLecture.week.trim() || !newLecture.length.trim()) return;
         if (newLecture.video && !newLecture.video.toLowerCase().endsWith('.mp4')) return;
@@ -228,9 +194,7 @@ export const InstructorCourseEditContentPage = () => {
         setNewLecture({ title: '', week: '', length: '', video: '' });
     };
 
-    const deleteLecture = (id: string) => {
-        setLectures((prev) => prev.filter((l) => l.id !== id));
-    };
+    const deleteLecture = (id: string) => setLectures((prev) => prev.filter((l) => l.id !== id));
 
     const addMaterialToLecture = (lectureId: string) => {
         if (!newLectureMaterial.name.trim() || !newLectureMaterial.size.trim()) return;
@@ -251,11 +215,8 @@ export const InstructorCourseEditContentPage = () => {
         setNewGeneralMaterial({ name: '', type: 'PDF', size: '' });
     };
 
-    const deleteGeneralMaterial = (id: string) => {
-        setGeneralMaterials((prev) => prev.filter((m) => m.id !== id));
-    };
+    const deleteGeneralMaterial = (id: string) => setGeneralMaterials((prev) => prev.filter((m) => m.id !== id));
 
-    // Students & Progress CSV
     const downloadStudentCSV = () => {
         const headers = ['Name', 'Progress', 'Assignments', 'Quizzes', 'Last Active'];
         const rows = students.map((s) => [s.name, s.progress, s.assignments, s.quizzes, s.lastActive].join(','));
@@ -269,7 +230,6 @@ export const InstructorCourseEditContentPage = () => {
         URL.revokeObjectURL(url);
     };
 
-    // Enrollment filtering and pagination
     const filteredEnrollments = useMemo(() => {
         return enrollmentRequests.filter((r) => {
             const statusOk = enrollFilterStatus === 'all' || r.status === enrollFilterStatus;
@@ -284,7 +244,6 @@ export const InstructorCourseEditContentPage = () => {
 
     const filteredQuizzes = useMemo(() => {
         const normalizedSearch = quizSearch.trim().toLowerCase();
-
         const filtered = courseQuizzes.filter((q) => {
             const apiStatus = String((q as any).quizStatus ?? (q as any).status ?? '').toLowerCase();
             const selectedStatus = quizFilterStatus.toLowerCase();
@@ -301,8 +260,6 @@ export const InstructorCourseEditContentPage = () => {
         });
     }, [courseQuizzes, quizFilterStatus, quizSortBy, quizSearch]);
 
-    // Some list endpoints return lightweight quiz data without full question stats.
-    // Fetch quiz details to display accurate Questions/Total points on cards.
     const quizDetailsQueries = useQueries({
         queries: courseQuizzes.map((quiz) => ({
             queryKey: QUERY_KEYS.QUIZ(String(quiz.id)),
@@ -314,22 +271,14 @@ export const InstructorCourseEditContentPage = () => {
 
     const quizStatsById = useMemo(() => {
         const stats = new Map<string, { questionsCount: number; totalPoints: number }>();
-
         courseQuizzes.forEach((quiz, index) => {
             const details = quizDetailsQueries[index]?.data as any;
             if (!details) return;
-
             const questions = Array.isArray(details.questions) ? details.questions : [];
-            const questionsCount = questions.length > 0
-                ? questions.length
-                : Number(details.questionsCount ?? 0);
-            const totalPoints = questions.length > 0
-                ? questions.reduce((sum: number, q: any) => sum + Number(q?.mark ?? 0), 0)
-                : Number(details.totalPoints ?? 0);
-
+            const questionsCount = questions.length > 0 ? questions.length : Number(details.questionsCount ?? 0);
+            const totalPoints = questions.length > 0 ? questions.reduce((sum: number, q: any) => sum + Number(q?.mark ?? 0), 0) : Number(details.totalPoints ?? 0);
             stats.set(String(quiz.id), { questionsCount, totalPoints });
         });
-
         return stats;
     }, [courseQuizzes, quizDetailsQueries]);
 
@@ -340,41 +289,48 @@ export const InstructorCourseEditContentPage = () => {
     const renderContent = () => {
         if (activeTab === 'Overview') {
             return (
-                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
-                    <div className="grid md:grid-cols-2 gap-6 p-6">
-                        <div className="space-y-4">
-                            <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Course overview</h3>
-                            <p className="text-gray-700 dark:text-zinc-300 leading-relaxed">
-                                {courseDetails?.description || 'Mock description: course content and outcomes will appear here.'}
+                <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="grid lg:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <LayoutGrid className="w-5 h-5 text-blue-500" /> Course Overview
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed bg-gray-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-gray-100 dark:border-slate-800">
+                                {courseDetails?.description || 'No description available. You can add a detailed description of your course content, objectives, and outcomes here.'}
                             </p>
-                            <ul className="list-disc list-inside text-gray-700 dark:text-zinc-300 space-y-2">
-                                <li>Weekly lectures with downloadable slides and readings</li>
-                                <li>Two major assignments and three graded quizzes</li>
-                                <li>Built-in announcements and enrollment approvals</li>
-                            </ul>
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-bold text-gray-900 dark:text-white">Quick Highlights</h4>
+                                <ul className="space-y-3 text-sm text-gray-600 dark:text-slate-400">
+                                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Weekly lectures with downloadable slides and readings</li>
+                                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div> Two major assignments and three graded quizzes</li>
+                                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Built-in announcements and enrollment approvals</li>
+                                </ul>
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
-                                <p className="text-sm text-gray-600 dark:text-zinc-400">Completion rate</p>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100 mt-1">76%</p>
-                                <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
-                                    <CheckCircle className="w-4 h-4" /> Up 4% this week
+                            <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 p-5">
+                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Completion Rate</p>
+                                <p className="text-4xl font-black text-gray-900 dark:text-white mb-2">76%</p>
+                                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                    <CheckCircle className="w-3.5 h-3.5" /> Up 4% this week
                                 </p>
                             </div>
-                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
-                                <p className="text-sm text-gray-600 dark:text-zinc-400">Average grade</p>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100 mt-1">B+</p>
-                                <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">Based on 3 graded items</p>
+                            <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 p-5">
+                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Average Grade</p>
+                                <p className="text-4xl font-black text-blue-600 dark:text-blue-400 mb-2">B+</p>
+                                <p className="text-xs font-semibold text-gray-500 dark:text-slate-400">Based on 3 graded items</p>
                             </div>
-                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
-                                <p className="text-sm text-gray-600 dark:text-zinc-400">Active students</p>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100 mt-1">38</p>
-                                <p className="text-sm text-blue-600 mt-1">7 pending enrollments</p>
+                            <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 p-5">
+                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Active Students</p>
+                                <p className="text-4xl font-black text-gray-900 dark:text-white mb-2">38</p>
+                                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">7 pending enrollments</p>
                             </div>
-                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
-                                <p className="text-sm text-gray-600 dark:text-zinc-400">Upcoming due dates</p>
-                                <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mt-1">Quiz 2 • Feb 28</p>
-                                <p className="text-sm text-gray-600 dark:text-zinc-400">Assignment 2 • Mar 05</p>
+                            <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 p-5">
+                                <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Next Deadline</p>
+                                <p className="text-lg font-bold text-gray-900 dark:text-white mb-1">Quiz 2</p>
+                                <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" /> Feb 28, 2024
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -384,117 +340,154 @@ export const InstructorCourseEditContentPage = () => {
 
         if (activeTab === 'Lectures & Materials') {
             return (
-                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
-                    <div className="p-6 space-y-6">
-                        <div className="space-y-4">
-                            <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Lectures</h3>
-                            {/* Add lecture form */}
-                            <div className="grid sm:grid-cols-4 gap-3 items-end">
-                                <input value={newLecture.title} onChange={(e) => setNewLecture({ ...newLecture, title: e.target.value })} placeholder="Title" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
-                                <input value={newLecture.week} onChange={(e) => setNewLecture({ ...newLecture, week: e.target.value })} placeholder="Week" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
-                                <input value={newLecture.length} onChange={(e) => setNewLecture({ ...newLecture, length: e.target.value })} placeholder="Length (mm:ss)" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
-                                <div className="flex gap-2">
-                                    <input value={newLecture.video} onChange={(e) => setNewLecture({ ...newLecture, video: e.target.value })} placeholder="Video filename.mp4" className="flex-1 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
-                                    <button onClick={addLecture} className="px-3 py-2 bg-blue-600 text-white rounded-lg">Add Lecture</button>
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                    {/* Add Lecture Card */}
+                    <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                            <Plus className="w-5 h-5 text-blue-500" /> Add New Lecture
+                        </h3>
+                        <div className="grid sm:grid-cols-12 gap-4 items-end">
+                            <div className="sm:col-span-3">
+                                <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 ml-1">Title</label>
+                                <input value={newLecture.title} onChange={(e) => setNewLecture({ ...newLecture, title: e.target.value })} placeholder="e.g. Intro to ML" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all" />
+                            </div>
+                            <div className="sm:col-span-2">
+                                <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 ml-1">Week</label>
+                                <input value={newLecture.week} onChange={(e) => setNewLecture({ ...newLecture, week: e.target.value })} placeholder="Week 1" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all" />
+                            </div>
+                            <div className="sm:col-span-2">
+                                <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 ml-1">Duration</label>
+                                <input value={newLecture.length} onChange={(e) => setNewLecture({ ...newLecture, length: e.target.value })} placeholder="45:00" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all" />
+                            </div>
+                            <div className="sm:col-span-3">
+                                <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 ml-1">Video File</label>
+                                <input value={newLecture.video} onChange={(e) => setNewLecture({ ...newLecture, video: e.target.value })} placeholder="video.mp4" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all" />
+                            </div>
+                            <div className="sm:col-span-2">
+                                <button onClick={addLecture} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm hover:shadow-blue-500/25 active:scale-95 text-sm">Add</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Lectures List */}
+                    <div className="space-y-4">
+                        {lectures.map((lecture) => (
+                            <div key={lecture.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 overflow-hidden relative group">
+                                <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-blue-400 to-indigo-600"></div>
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4 ml-2">
+                                    <div>
+                                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-100 dark:border-blue-500/20 mb-2 inline-block">
+                                            {lecture.week}
+                                        </span>
+                                        <h4 className="text-xl font-bold text-gray-900 dark:text-white">{lecture.title}</h4>
+                                        <p className="text-sm font-medium text-gray-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                                            <Video className="w-4 h-4 text-red-500" /> {lecture.video} • {lecture.length}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-900/50 p-1.5 rounded-xl border border-gray-100 dark:border-slate-800">
+                                        <button className="p-2 text-gray-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all" title="Preview"><Eye className="w-4 h-4" /></button>
+                                        <button className="p-2 text-gray-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all" title="Edit"><Edit className="w-4 h-4" /></button>
+                                        <button onClick={() => deleteLecture(lecture.id)} className="p-2 text-gray-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                </div>
+
+                                <div className="ml-2 pl-4 border-l-2 border-gray-100 dark:border-slate-700/50 space-y-3 mt-6">
+                                    {lecture.resources.map((res) => (
+                                        <div key={res.id} className="flex items-center justify-between bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-xl p-3 hover:border-blue-200 dark:hover:border-slate-600 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm">
+                                                    {getTypeIcon(res.type)}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{res.name}</p>
+                                                    <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">{res.type} • {res.size}</p>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => deleteLectureMaterial(lecture.id, res.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+                                                <XCircle className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {addMaterialForLectureId === lecture.id ? (
+                                        <div className="bg-blue-50/50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/20 rounded-xl p-4 mt-4">
+                                            <div className="grid sm:grid-cols-12 gap-3 items-end">
+                                                <div className="sm:col-span-5">
+                                                    <input value={newLectureMaterial.name} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, name: e.target.value })} placeholder="Material Name" className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white" />
+                                                </div>
+                                                <div className="sm:col-span-3">
+                                                    <select value={newLectureMaterial.type} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, type: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white">
+                                                        <option>PDF</option><option>PPT</option><option>DOC</option>
+                                                    </select>
+                                                </div>
+                                                <div className="sm:col-span-2">
+                                                    <input value={newLectureMaterial.size} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, size: e.target.value })} placeholder="Size" className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white" />
+                                                </div>
+                                                <div className="sm:col-span-2 flex gap-2">
+                                                    <button onClick={() => addMaterialToLecture(lecture.id)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition-all text-sm shadow-sm">Save</button>
+                                                    <button onClick={() => { setAddMaterialForLectureId(null); setNewLectureMaterial({ name: '', type: 'PDF', size: '' }); }} className="flex-1 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 font-bold py-2 rounded-lg transition-all text-sm">Cancel</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => setAddMaterialForLectureId(lecture.id)} className="flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mt-2 px-2 py-1 rounded-md hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors w-fit">
+                                            <Plus className="w-4 h-4" /> Add Material
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                            <div className="space-y-4">
-                                {lectures.map((lecture) => (
-                                    <div key={lecture.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="text-sm text-gray-600 dark:text-zinc-400">{lecture.week}</p>
-                                                <h4 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{lecture.title}</h4>
-                                                <p className="text-sm text-gray-600 dark:text-zinc-400">Video • {lecture.length}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button className="text-blue-600 text-sm font-medium flex items-center gap-1">
-                                                    <Eye className="w-4 h-4" /> Preview
-                                                </button>
-                                                <button className="text-blue-600 text-sm font-medium flex items-center gap-1">
-                                                    <Edit className="w-4 h-4" /> Edit
-                                                </button>
-                                                <button onClick={() => deleteLecture(lecture.id)} className="text-red-600 text-sm font-medium flex items-center gap-1">
-                                                    <Trash2 className="w-4 h-4" /> Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="mt-3 flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
-                                            <Video className="w-4 h-4 text-red-500" /> {lecture.video}
-                                        </div>
-                                        <div className="mt-4 grid sm:grid-cols-2 gap-2">
-                                            {lecture.resources.map((res) => (
-                                                <div key={res.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-md px-3 py-2">
-                                                    {getTypeIcon(res.type)}
-                                                    <div>
-                                                        <p className="font-medium text-gray-900 dark:text-zinc-100">{res.name}</p>
-                                                        <p className="text-gray-600 dark:text-zinc-400">{res.type} • {res.size}</p>
-                                                    </div>
-                                                    <button onClick={() => deleteLectureMaterial(lecture.id, res.id)} className="ml-auto text-red-600 text-xs">Delete</button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {/* Add material to lecture */}
-                                        {addMaterialForLectureId === lecture.id ? (
-                                            <div className="mt-3 grid sm:grid-cols-4 gap-2 items-end">
-                                                <input value={newLectureMaterial.name} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, name: e.target.value })} placeholder="Material name" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
-                                                <select value={newLectureMaterial.type} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, type: e.target.value })} className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100">
-                                                    <option>PDF</option>
-                                                    <option>PPT</option>
-                                                    <option>DOC</option>
-                                                </select>
-                                                <input value={newLectureMaterial.size} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, size: e.target.value })} placeholder="Size (e.g., 1.2 MB)" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => addMaterialToLecture(lecture.id)} className="px-3 py-2 bg-blue-600 text-white rounded-lg">Add</button>
-                                                    <button onClick={() => { setAddMaterialForLectureId(null); setNewLectureMaterial({ name: '', type: 'PDF', size: '' }); }} className="px-3 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-lg">Cancel</button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <button onClick={() => setAddMaterialForLectureId(lecture.id)} className="mt-3 text-sm text-blue-600 font-medium flex items-center gap-1">
-                                                <Plus className="w-4 h-4" /> Add material to lecture
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
+                        ))}
+                    </div>
+
+                    {/* General Materials Section */}
+                    <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8 mt-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <BookOpen className="w-5 h-5 text-indigo-500" /> General Course Materials
+                            </h3>
+                        </div>
+
+                        {/* Add General Material Form */}
+                        <div className="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700 mb-6">
+                            <div className="grid sm:grid-cols-12 gap-3 items-end">
+                                <div className="sm:col-span-5">
+                                    <input value={newGeneralMaterial.name} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, name: e.target.value })} placeholder="Document Name" className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-gray-900 dark:text-white" />
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <select value={newGeneralMaterial.type} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, type: e.target.value })} className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-gray-900 dark:text-white">
+                                        <option>PDF</option><option>PPT</option><option>DOC</option>
+                                    </select>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <input value={newGeneralMaterial.size} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, size: e.target.value })} placeholder="Size" className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-gray-900 dark:text-white" />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <button onClick={addGeneralMaterial} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm hover:shadow-indigo-500/25 active:scale-95 text-sm">Add File</button>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">General materials</h3>
-                                <button onClick={addGeneralMaterial} className="flex items-center gap-2 text-sm font-medium text-blue-600">
-                                    <Plus className="w-4 h-4" /> Add material
-                                </button>
-                            </div>
-                            <div className="grid sm:grid-cols-3 gap-3">
-                                <input value={newGeneralMaterial.name} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, name: e.target.value })} placeholder="Material name" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
-                                <select value={newGeneralMaterial.type} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, type: e.target.value })} className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100">
-                                    <option>PDF</option>
-                                    <option>PPT</option>
-                                    <option>DOC</option>
-                                </select>
-                                <input value={newGeneralMaterial.size} onChange={(e) => setNewGeneralMaterial({ ...newGeneralMaterial, size: e.target.value })} placeholder="Size (e.g., 1.0 MB)" className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
-                            </div>
-                            <div className="grid md:grid-cols-3 gap-3">
-                                {generalMaterials.map((mat) => (
-                                    <div key={mat.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex items-start gap-3">
-                                        {getTypeIcon(mat.type)}
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-gray-900 dark:text-zinc-100">{mat.name}</p>
-                                            <p className="text-sm text-gray-600 dark:text-zinc-400">{mat.type} • {mat.size}</p>
-                                            <div className="mt-2 flex items-center gap-2">
-                                                {getStatusBadge(mat.status)}
-                                                <button className="text-sm text-blue-600 flex items-center gap-1">
-                                                    <Edit className="w-4 h-4" /> Edit
-                                                </button>
-                                                <button onClick={() => deleteGeneralMaterial(mat.id)} className="text-sm text-red-600 flex items-center gap-1">
-                                                    <Trash2 className="w-4 h-4" /> Delete
-                                                </button>
-                                            </div>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {generalMaterials.map((mat) => (
+                                <div key={mat.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 flex flex-col group hover:border-indigo-300 dark:hover:border-slate-500 transition-colors shadow-sm">
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-slate-900 flex items-center justify-center shrink-0 border border-gray-100 dark:border-slate-800">
+                                            {getTypeIcon(mat.type)}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-gray-900 dark:text-white truncate">{mat.name}</p>
+                                            <p className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mt-0.5">{mat.type} • {mat.size}</p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="mt-auto flex items-center justify-between border-t border-gray-100 dark:border-slate-700 pt-3">
+                                        {getStatusBadge(mat.status)}
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
+                                            <button onClick={() => deleteGeneralMaterial(mat.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -503,40 +496,52 @@ export const InstructorCourseEditContentPage = () => {
 
         if (activeTab === 'Assignments') {
             return (
-                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
-                    <div className="p-6 space-y-4">
+                <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-indigo-500" /> Course Assignments
+                        </h3>
+                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE)} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-blue-500/25 active:scale-95">
+                            <Plus className="w-4 h-4" /> New Assignment
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
                         {courseAssignments.map((assignment) => (
-                            <div key={assignment.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex flex-col gap-3">
-                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                                    <div>
-                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Due {assignment.due}</p>
-                                        <h4 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{assignment.title}</h4>
-                                        <p className="text-sm text-gray-600 dark:text-zinc-400">Weight {assignment.weight} • Attempts {assignment.attempts}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
+                            <div key={assignment.id} className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-blue-300 dark:hover:border-slate-500 transition-colors">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-1.5">
                                         {getStatusBadge(assignment.status)}
-                                        <span className="text-sm text-gray-600 dark:text-zinc-400">{assignment.submissions} submissions</span>
+                                        <p className="text-xs font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1">
+                                            <Calendar className="w-3.5 h-3.5" /> Due {new Date(assignment.due).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                        </p>
+                                    </div>
+                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white">{assignment.title}</h4>
+                                    <div className="flex gap-4 mt-2 text-sm text-gray-600 dark:text-slate-400 font-medium">
+                                        <span>Weight: {assignment.weight}</span>
+                                        <span>•</span>
+                                        <span>{assignment.attempts} Attempts Allowed</span>
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <button className="text-sm font-medium text-blue-600 flex items-center gap-1">
-                                        <Edit className="w-4 h-4" /> Edit
-                                    </button>
-                                    <button
-                                        onClick={() => navigate(ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', assignment.id))}
-                                        className="text-sm font-medium text-blue-600 flex items-center gap-1"
-                                    >
-                                        <Eye className="w-4 h-4" /> View submissions
-                                    </button>
-                                    <button className="text-sm font-medium text-red-600 flex items-center gap-1">
-                                        <Trash2 className="w-4 h-4" /> Delete
-                                    </button>
+                                <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 bg-white dark:bg-slate-800 p-2 rounded-xl border border-gray-100 dark:border-slate-700">
+                                    <div className="text-center px-4 border-r border-gray-100 dark:border-slate-700 hidden sm:block">
+                                        <p className="text-xl font-black text-gray-900 dark:text-white leading-none">{assignment.submissions}</p>
+                                        <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mt-1">Submissions</p>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', assignment.id))} className="p-2.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors" title="View Submissions">
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                        <button className="p-2.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-colors" title="Edit">
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button className="p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors" title="Delete">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
-                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE)} className="w-full border border-dashed border-gray-300 dark:border-zinc-700 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-zinc-800">
-                            <Plus className="w-4 h-4" /> New assignment
-                        </button>
                     </div>
                 </div>
             );
@@ -544,166 +549,171 @@ export const InstructorCourseEditContentPage = () => {
 
         if (activeTab === 'Quizzes') {
             return (
-                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
-                    <div className="p-6 space-y-6">
-                        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-                            <div className="flex items-center gap-2">
-                                <Filter className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
-                                <select
-                                    value={quizFilterStatus}
-                                    onChange={(e) => setQuizFilterStatus(e.target.value as 'all' | 'Published' | 'Draft' | 'Scheduled')}
-                                    className="px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                >
-                                    <option value="all">All Statuses</option>
-                                    <option value="Published">Published</option>
-                                    <option value="Draft">Draft</option>
-                                    <option value="Scheduled">Scheduled</option>
-                                </select>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <label className="text-sm text-gray-700 dark:text-zinc-300">Sort by</label>
-                                <select
-                                    value={quizSortBy}
-                                    onChange={(e) => setQuizSortBy(e.target.value as 'title' | 'date' | 'submissions')}
-                                    className="px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                >
-                                    <option value="date">Date</option>
-                                    <option value="title">Title</option>
-                                    <option value="submissions">Submissions</option>
-                                </select>
-                            </div>
-                            <div className="flex-1 max-w-md">
-                                <input
-                                    value={quizSearch}
-                                    onChange={(e) => setQuizSearch(e.target.value)}
-                                    placeholder="Search quizzes..."
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-                                />
-                            </div>
-                        </div>
-
-                        {quizzesLoading ? (
-                            <p className="text-center py-6 text-gray-500 dark:text-zinc-400">Loading quizzes...</p>
-                        ) : filteredQuizzes.length === 0 ? (
-                            <p className="text-center py-6 text-gray-500 dark:text-zinc-400">No quizzes found</p>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {filteredQuizzes.map((quiz) => (
-                                    <div key={quiz.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex flex-col gap-3">
-                                        <div>
-                                            <h4 className="text-base font-semibold text-gray-900 dark:text-zinc-100 line-clamp-2">{quiz.title}</h4>
-                                        </div>
-                                        <div className="flex items-start justify-between gap-3">
-                                            {(() => {
-                                                const stats = quizStatsById.get(String(quiz.id));
-                                                const questionsCount = Number(stats?.questionsCount ?? (quiz as any).questionsCount ?? 0);
-                                                const totalPoints = Number(stats?.totalPoints ?? (quiz as any).totalPoints ?? 0);
-
-                                                return (
-                                                    <div className="text-xs text-gray-600 dark:text-zinc-400 space-y-1">
-                                                        <p>Questions: {questionsCount}</p>
-                                                        <p>Total points: {totalPoints}</p>
-                                                    </div>
-                                                );
-                                            })()}
-                                            <div>{getStatusBadge(String((quiz as any).quizStatus ?? (quiz as any).status ?? 'Draft'))}</div>
-                                        </div>
-                                        <div className="flex items-center gap-1 pt-2 border-t border-gray-200 dark:border-zinc-700">
-                                            <button
-                                                onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))}
-                                                className="flex-1 text-xs text-blue-600 font-medium flex items-center justify-center gap-1 py-1"
-                                            >
-                                                <Edit className="w-3 h-3" /> Edit
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (window.confirm('Are you sure you want to delete this quiz?')) {
-                                                        deleteQuizMutation.mutate(quiz.id);
-                                                    }
-                                                }}
-                                                className="flex-1 text-xs text-red-600 font-medium flex items-center justify-center gap-1 py-1"
-                                            >
-                                                <Trash2 className="w-3 h-3" /> Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        <button onClick={() => navigate(`/courses/${quizzesCourseId}/quiz/create`)} className="w-full border border-dashed border-gray-300 dark:border-zinc-700 text-blue-600 font-medium py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-zinc-800">
-                            <Plus className="w-4 h-4" /> Create quiz
+                <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <HelpCircle className="w-5 h-5 text-purple-500" /> Course Quizzes
+                        </h3>
+                        <button onClick={() => navigate(`/courses/${quizzesCourseId}/quiz/create`)} className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-purple-500/25 active:scale-95">
+                            <Plus className="w-4 h-4" /> Create Quiz
                         </button>
                     </div>
+
+                    {/* Filters Toolbar */}
+                    <div className="bg-gray-50 dark:bg-slate-900/50 p-3 rounded-2xl border border-gray-200 dark:border-slate-700 flex flex-col md:flex-row gap-3 mb-6">
+                        <div className="flex-1 relative">
+                            <Filter className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                            <select
+                                value={quizFilterStatus}
+                                onChange={(e) => setQuizFilterStatus(e.target.value as any)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 appearance-none"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="Published">Published</option>
+                                <option value="Draft">Draft</option>
+                                <option value="Scheduled">Scheduled</option>
+                            </select>
+                        </div>
+                        <div className="flex-1 relative">
+                            <select
+                                value={quizSortBy}
+                                onChange={(e) => setQuizSortBy(e.target.value as any)}
+                                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 appearance-none"
+                            >
+                                <option value="date">Sort by Date</option>
+                                <option value="title">Sort by Title</option>
+                                <option value="submissions">Sort by Submissions</option>
+                            </select>
+                        </div>
+                        <div className="flex-[2]">
+                            <input
+                                value={quizSearch}
+                                onChange={(e) => setQuizSearch(e.target.value)}
+                                placeholder="Search quizzes by title..."
+                                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-gray-900 dark:text-white"
+                            />
+                        </div>
+                    </div>
+
+                    {quizzesLoading ? (
+                        <div className="py-12 flex flex-col items-center">
+                            <Loader2 className="w-8 h-8 text-purple-500 animate-spin mb-3" />
+                            <p className="text-gray-500 dark:text-slate-400 font-medium">Loading quizzes...</p>
+                        </div>
+                    ) : filteredQuizzes.length === 0 ? (
+                        <div className="text-center py-16 bg-gray-50 dark:bg-slate-800/20 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
+                            <HelpCircle className="w-12 h-12 text-gray-400 mx-auto mb-3 opacity-50" />
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No quizzes found</h3>
+                            <p className="text-sm text-gray-500 dark:text-slate-400">Try adjusting your search or filter criteria.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {filteredQuizzes.map((quiz) => {
+                                const stats = quizStatsById.get(String(quiz.id));
+                                const questionsCount = Number(stats?.questionsCount ?? (quiz as any).questionsCount ?? 0);
+                                const totalPoints = Number(stats?.totalPoints ?? (quiz as any).totalPoints ?? 0);
+
+                                return (
+                                    <div key={quiz.id} className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col group hover:shadow-md hover:border-purple-300 dark:hover:border-slate-500 transition-all">
+                                        <div className="flex justify-between items-start mb-3">
+                                            {getStatusBadge(String((quiz as any).quizStatus ?? (quiz as any).status ?? 'Draft'))}
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                                <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
+                                                <button onClick={() => { if (window.confirm('Delete this quiz permanently?')) deleteQuizMutation.mutate(quiz.id); }} className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
+                                        </div>
+                                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4 line-clamp-2">{quiz.title}</h4>
+                                        <div className="mt-auto grid grid-cols-2 gap-2 border-t border-gray-200 dark:border-slate-700 pt-4">
+                                            <div className="text-center bg-white dark:bg-slate-800 rounded-xl p-2 border border-gray-100 dark:border-slate-700">
+                                                <p className="text-[10px] font-bold uppercase text-gray-500 dark:text-slate-400">Questions</p>
+                                                <p className="text-lg font-black text-gray-900 dark:text-white">{questionsCount}</p>
+                                            </div>
+                                            <div className="text-center bg-white dark:bg-slate-800 rounded-xl p-2 border border-gray-100 dark:border-slate-700">
+                                                <p className="text-[10px] font-bold uppercase text-gray-500 dark:text-slate-400">Total Pts</p>
+                                                <p className="text-lg font-black text-purple-600 dark:text-purple-400">{totalPoints}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             );
         }
 
         if (activeTab === 'Announcements') {
             return (
-                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
-                    <div className="p-6 space-y-6">
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                    {/* Create Announcement */}
+                    <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                            <Mail className="w-5 h-5 text-amber-500" /> Broadcast Announcement
+                        </h3>
                         <div className="space-y-4">
-                            <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Post an announcement</h3>
                             <input
                                 value={announcementTitle}
                                 onChange={(e) => setAnnouncementTitle(e.target.value)}
-                                placeholder="Title"
-                                className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                                placeholder="Subject / Title"
+                                className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-5 py-3.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-gray-900 dark:text-white transition-all"
                             />
                             <textarea
                                 value={announcementBody}
                                 onChange={(e) => setAnnouncementBody(e.target.value)}
-                                placeholder="Write your announcement..."
+                                placeholder="Write your message to students here..."
                                 rows={4}
-                                className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                                className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-gray-900 dark:text-white transition-all resize-none"
                             />
-                            <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
-                                <input
-                                    type="checkbox"
-                                    checked={announcementPinned}
-                                    onChange={(e) => setAnnouncementPinned(e.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                                />
-                                Pin announcement
-                            </label>
-                            <div className="flex items-center gap-3">
-                                <label className="text-sm text-gray-700 dark:text-zinc-300">Attachment (optional)</label>
-                                <input type="file" onChange={(e) => setAnnouncementAttachment(e.target.files?.[0] || null)} className="text-sm" />
-                            </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                                <div className="flex items-center gap-4 w-full sm:w-auto">
+                                    <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-slate-300 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={announcementPinned}
+                                            onChange={(e) => setAnnouncementPinned(e.target.checked)}
+                                            className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500"
+                                        />
+                                        Pin to top
+                                    </label>
+                                    <div className="h-6 w-px bg-gray-300 dark:bg-slate-600 hidden sm:block"></div>
+                                    <label className="flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+                                        <Upload className="w-4 h-4" /> Attach File
+                                        <input type="file" className="hidden" onChange={(e) => setAnnouncementAttachment(e.target.files?.[0] || null)} />
+                                    </label>
+                                    {announcementAttachment && <span className="text-xs text-gray-500 truncate max-w-[100px]">{announcementAttachment.name}</span>}
+                                </div>
                                 <button
                                     onClick={handleAddAnnouncement}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg"
+                                    className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-amber-500/25 active:scale-95 text-sm"
                                 >
-                                    Post announcement
+                                    Publish Now
                                 </button>
-                                <button className="text-gray-700 dark:text-zinc-300 font-medium">Cancel</button>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="space-y-3">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Recent announcements</h3>
+                    {/* Announcements List */}
+                    <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Recent Announcements</h3>
+                        <div className="space-y-4">
                             {announcements.map((item) => (
-                                <div key={item.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex items-start gap-3">
-                                    {item.pinned ? (
-                                        <AlertCircle className="w-5 h-5 text-orange-500 mt-0.5" />
-                                    ) : (
-                                        <Mail className="w-5 h-5 text-blue-500 mt-0.5" />
-                                    )}
+                                <div key={item.id} className={`p-5 rounded-2xl border transition-all flex flex-col sm:flex-row gap-4 ${item.pinned ? 'bg-amber-50/50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/30' : 'bg-gray-50 dark:bg-slate-900/50 border-gray-100 dark:border-slate-800'}`}>
                                     <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-gray-900 dark:text-zinc-100">{item.title}</p>
-                                            {item.pinned && <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Pinned</span>}
+                                        <div className="flex items-center gap-2 mb-2">
+                                            {item.pinned && <span className="bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Pinned</span>}
+                                            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">{item.date}</span>
                                         </div>
-                                        <p className="text-sm text-gray-600 dark:text-zinc-400">{item.date} {item.attachmentName && `• Attachment: ${item.attachmentName}`}</p>
+                                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{item.title}</h4>
+                                        {item.attachmentName && <p className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1 mt-2"><FileText className="w-3.5 h-3.5" /> Attached: {item.attachmentName}</p>}
                                     </div>
-                                    <button onClick={() => togglePinAnnouncement(item.id)} className="text-sm text-blue-600 flex items-center gap-1 mr-2">
-                                        <Edit className="w-4 h-4" /> {item.pinned ? 'Unpin' : 'Pin'}
-                                    </button>
-                                    <button className="text-sm text-red-600 flex items-center gap-1">
-                                        <Trash2 className="w-4 h-4" /> Delete
-                                    </button>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <button onClick={() => togglePinAnnouncement(item.id)} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs font-bold text-gray-600 dark:text-slate-300 hover:text-amber-600 transition-colors">
+                                            {item.pinned ? 'Unpin' : 'Pin'}
+                                        </button>
+                                        <button className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -714,171 +724,189 @@ export const InstructorCourseEditContentPage = () => {
 
         if (activeTab === 'Students & Progress') {
             return (
-                <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
-                    <div className="p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Progress overview</h3>
-                            <button onClick={downloadStudentCSV} className="flex items-center gap-2 text-sm font-medium text-blue-600">
-                                <Download className="w-4 h-4" /> Export CSV
-                            </button>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-gray-50 dark:bg-zinc-800">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Student</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Progress</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Assignments</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Quizzes</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Last active</th>
-                                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-zinc-300">Actions</th>
+                <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Users className="w-5 h-5 text-blue-500" /> Student Progress
+                        </h3>
+                        <button onClick={downloadStudentCSV} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold text-sm transition-all shadow-sm">
+                            <Download className="w-4 h-4" /> Export Report
+                        </button>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-700/50 bg-white dark:bg-slate-900">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700/50">
+                                <tr>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Student Name</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Completion</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Assignments</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Quizzes</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Last Active</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                                {students.map((student) => (
+                                    <tr key={student.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                                                    {student.name.charAt(0)}
+                                                </div>
+                                                <span className="font-bold text-gray-900 dark:text-white">{student.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-16 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-emerald-500" style={{ width: student.progress }}></div>
+                                                </div>
+                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{student.progress}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4"><span className="px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold text-xs border border-blue-100 dark:border-blue-500/20">{student.assignments}</span></td>
+                                        <td className="px-6 py-4"><span className="px-2 py-1 rounded-md bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 font-bold text-xs border border-purple-100 dark:border-purple-500/20">{student.quizzes}</span></td>
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-slate-400">{student.lastActive}</td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors" title="View Profile">
+                                                <Eye className="w-5 h-5" />
+                                            </button>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {students.map((student) => (
-                                        <tr key={student.id} className="border-b border-gray-200 dark:border-zinc-700">
-                                            <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-zinc-100">{student.name}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">{student.progress}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">{student.assignments}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">{student.quizzes}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-700 dark:text-zinc-300">{student.lastActive}</td>
-                                            <td className="px-4 py-3 text-sm">
-                                                <button className="text-blue-600 font-medium flex items-center gap-1">
-                                                    <Eye className="w-4 h-4" /> View
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             );
         }
 
-        return (
-            <div className="bg-white dark:bg-zinc-900 rounded-b-lg border border-gray-200 dark:border-zinc-700 border-t-0 shadow-sm overflow-hidden">
-                <div className="p-6 space-y-4">
-                    {/* Filters */}
-                    <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-                        <div className="flex items-center gap-2">
-                            <label className="text-sm text-gray-700 dark:text-zinc-300">Status</label>
-                            <select value={enrollFilterStatus} onChange={(e) => { setEnrollFilterStatus(e.target.value as any); setEnrollPage(1); }} className="px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100">
-                                <option value="all">All</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Approved">Approved</option>
-                                <option value="Rejected">Rejected</option>
-                            </select>
+        if (activeTab === 'Enrollments Requests') {
+            return (
+                <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="flex flex-col md:flex-row gap-4 mb-8">
+                        <div className="flex-1 bg-gray-50 dark:bg-slate-900/50 p-2 rounded-2xl border border-gray-200 dark:border-slate-700 flex gap-2">
+                            {['all', 'Pending', 'Approved', 'Rejected'].map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => { setEnrollFilterStatus(status as any); setEnrollPage(1); }}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all capitalize ${enrollFilterStatus === status ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-800'}`}
+                                >
+                                    {status}
+                                </button>
+                            ))}
                         </div>
                         <div className="flex-1">
-                            <input value={enrollSearch} onChange={(e) => { setEnrollSearch(e.target.value); setEnrollPage(1); }} placeholder="Search student name..." className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100" />
+                            <input
+                                value={enrollSearch}
+                                onChange={(e) => { setEnrollSearch(e.target.value); setEnrollPage(1); }}
+                                placeholder="Search by student name..."
+                                className="w-full h-full px-5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white text-sm font-semibold"
+                            />
                         </div>
                     </div>
-                    {pagedEnrollments.map((req) => (
-                        <div key={req.id} className="border border-gray-200 dark:border-zinc-700 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-700 font-semibold">
-                                    {req.name.charAt(0)}
+
+                    <div className="space-y-4">
+                        {pagedEnrollments.map((req) => (
+                            <div key={req.id} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md transition-shadow">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-gray-700 dark:text-white font-black text-lg shadow-inner">
+                                        {req.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 dark:text-white">{req.name}</h4>
+                                        <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 mt-0.5">{req.email} • Requested {req.requestedAt}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-semibold text-gray-900 dark:text-zinc-100">{req.name}</p>
-                                    <p className="text-sm text-gray-600 dark:text-zinc-400">{req.email}</p>
-                                    <p className="text-sm text-gray-600 dark:text-zinc-400">Requested {req.requestedAt}</p>
+                                <div className="flex items-center gap-3">
+                                    {getEnrollStatusBadge(req.status)}
+                                    {req.status === 'Pending' && (
+                                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 p-1.5 rounded-xl border border-gray-100 dark:border-slate-700">
+                                            <button onClick={() => setEnrollmentStatus(req.id, 'Approved')} className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm">
+                                                <CheckCircle className="w-3.5 h-3.5" /> Approve
+                                            </button>
+                                            <button onClick={() => setEnrollmentStatus(req.id, 'Rejected')} className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm">
+                                                <XCircle className="w-3.5 h-3.5" /> Reject
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                {req.status === 'Approved' && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Approved</span>}
-                                {req.status === 'Rejected' && <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">Rejected</span>}
-                                {req.status === 'Pending' && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Pending</span>}
-                                <button onClick={() => setEnrollmentStatus(req.id, 'Approved')} className="text-sm text-green-700 border border-green-200 rounded-md px-3 py-1 flex items-center gap-1">
-                                    <UserCheck className="w-4 h-4" /> Approve
-                                </button>
-                                <button onClick={() => setEnrollmentStatus(req.id, 'Rejected')} className="text-sm text-red-700 border border-red-200 rounded-md px-3 py-1 flex items-center gap-1">
-                                    <XCircle className="w-4 h-4" /> Reject
-                                </button>
+                        ))}
+                        {pagedEnrollments.length === 0 && (
+                            <div className="text-center py-12 text-gray-500 dark:text-slate-400 font-medium">
+                                No requests found.
                             </div>
-                        </div>
-                    ))}
+                        )}
+                    </div>
+
                     {/* Pagination */}
-                    <div className="flex items-center justify-between pt-2">
-                        <div className="text-sm text-gray-600 dark:text-zinc-400">Page {enrollPage} of {totalEnrollPages}</div>
-                        <div className="flex gap-2">
-                            <button onClick={() => setEnrollPage(Math.max(1, enrollPage - 1))} disabled={enrollPage === 1} className="px-3 py-1 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm disabled:opacity-50 text-gray-900 dark:text-zinc-100">Previous</button>
-                            {Array.from({ length: totalEnrollPages }, (_, i) => i + 1).map((p) => (
-                                <button key={p} onClick={() => setEnrollPage(p)} className={`px-3 py-1 rounded-lg text-sm ${p === enrollPage ? 'bg-blue-600 text-white' : 'border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100'}`}>{p}</button>
-                            ))}
-                            <button onClick={() => setEnrollPage(Math.min(totalEnrollPages, enrollPage + 1))} disabled={enrollPage === totalEnrollPages} className="px-3 py-1 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm disabled:opacity-50 text-gray-900 dark:text-zinc-100">Next</button>
+                    {totalEnrollPages > 1 && (
+                        <div className="flex items-center justify-between mt-8 border-t border-gray-100 dark:border-slate-800 pt-6">
+                            <span className="text-sm font-semibold text-gray-500 dark:text-slate-400">Page {enrollPage} of {totalEnrollPages}</span>
+                            <div className="flex gap-2">
+                                <button onClick={() => setEnrollPage(Math.max(1, enrollPage - 1))} disabled={enrollPage === 1} className="px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-700 dark:text-white disabled:opacity-50 transition-colors hover:bg-gray-100 dark:hover:bg-slate-700/80">Prev</button>
+                                <button onClick={() => setEnrollPage(Math.min(totalEnrollPages, enrollPage + 1))} disabled={enrollPage === totalEnrollPages} className="px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-700 dark:text-white disabled:opacity-50 transition-colors hover:bg-gray-100 dark:hover:bg-slate-700/80">Next</button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
-            </div>
-        );
+            );
+        }
+
+        return null;
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
-                <div>
-                    <h1 className="text-[36px] font-bold text-gray-900 dark:text-zinc-100">
-                        {courseLoading ? 'Loading course...' : (courseDetails?.name || 'Course Content')}
-                    </h1>
-                    <p className="text-[18px] text-gray-600 dark:text-zinc-400 mt-1">
-                        {courseDetails?.code || (courseId ? `Course #${courseId}` : 'Mock course')}
-                    </p>
-                </div>
-                <div className="flex gap-3">
-                    <button className="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-medium text-[16px] px-6 py-3 rounded-lg transition-colors">
-                        <Upload className="w-5 h-5" />
-                        Upload Content
-                    </button>
-                    <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[16px] px-6 py-3 rounded-lg transition-colors">
-                        <Plus className="w-5 h-5" />
-                        Add Content
-                    </button>
-                </div>
-            </div>
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans selection:bg-blue-500/30 pb-20">
+            <div className="max-w-7xl mx-auto space-y-8">
 
-            {/* Course Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                {courseStats.map((stat) => {
-                    const Icon = stat.icon;
-                    return (
-                        <div key={stat.label} className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-200 dark:border-zinc-700">
-                            <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center`}>
-                                    <Icon className={`w-5 h-5 ${stat.color}`} />
-                                </div>
-                                <div>
-                                    <p className="text-[20px] font-bold text-gray-900 dark:text-zinc-100">{stat.value}</p>
-                                    <p className="text-[14px] text-gray-600 dark:text-zinc-400">{stat.label}</p>
-                                </div>
-                            </div>
+                {/* Page Header */}
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-fade-in">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 shadow-sm">
+                            <ChevronRight className="w-5 h-5 rotate-180" />
+                        </button>
+                        <div>
+                            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                                {courseLoading ? 'Loading Course...' : (courseDetails?.name || 'Manage Course Content')}
+                            </h1>
+                            <p className="text-gray-500 dark:text-slate-400 font-semibold mt-1">
+                                {courseDetails?.code || (courseId ? `Course #${courseId}` : 'Mock Course')}
+                            </p>
                         </div>
-                    );
-                })}
-            </div>
+                    </div>
+                    <div className="flex gap-3 w-full lg:w-auto">
+                        <button className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/80 text-gray-700 dark:text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-sm">
+                            <Settings className="w-4 h-4" /> Settings
+                        </button>
+                        <button className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-blue-500/25 active:scale-95">
+                            <Upload className="w-4 h-4" /> Publish Content
+                        </button>
+                    </div>
+                </div>
 
-            {/* Navigation Tabs */}
-            <div className="bg-white dark:bg-zinc-900 rounded-t-lg border border-gray-200 dark:border-zinc-700">
-                <div className="flex px-6">
+                {/* Tabs Navigation (Pills Style) */}
+                <div className="flex overflow-x-auto custom-scrollbar gap-2 p-2 bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[1.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm">
                     {tabs.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-6 py-4 text-[16px] font-medium transition-colors border-b-2 ${activeTab === tab
-                                ? 'text-blue-600 border-blue-600'
-                                : 'text-gray-600 dark:text-zinc-400 border-transparent hover:text-blue-600 hover:border-gray-300'
+                            className={`px-5 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === tab
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50'
                                 }`}
                         >
                             {tab}
                         </button>
                     ))}
                 </div>
-            </div>
 
-            {renderContent()}
+                {/* Main Content Area */}
+                {renderContent()}
+
+            </div>
         </div>
     );
 };
