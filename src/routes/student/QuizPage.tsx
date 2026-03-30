@@ -19,6 +19,10 @@ interface Question {
     type: 'MCQ' | 'TrueFalse' | 'Written';
     options?: { id: string; text: string; optionNumber?: number }[];
     points?: number;
+    // 💡 حقول الاستجابة القادمة من السيرفر
+    studentOptionNumber?: number | null;
+    studentBooleanAnswer?: string | null;
+    studentWrittenAnswer?: string | null;
 }
 
 interface LocalAnswer {
@@ -51,14 +55,19 @@ export const QuizPage = () => {
     useEffect(() => { answersRef.current = answers; }, [answers]);
     useEffect(() => { attemptIdRef.current = attemptId; }, [attemptId]);
 
-    const formatAnswersForBackend = (localAnswers: LocalAnswer[]): { answers: ApiQuestionAttempt[] } => {
+    const formatAnswersForBackend = (currentAnswers: any[]): { answers: ApiQuestionAttempt[] } => {
         return {
-            answers: localAnswers.map(ans => ({
-                questionId: ans.questionId,
-                optionNumber: ans.type === 'MCQ' ? Number(ans.value) : null,
-                booleanAnswer: ans.type === 'TrueFalse' ? String(ans.value) : null,
-                writtenAnswer: ans.type === 'Written' ? String(ans.value) : null,
-            }))
+            answers: currentAnswers.map(ans => {
+                const question = questions.find(q => q.id === ans.questionId);
+                const value = ans.value || ans.answer || ans.selectedOptions?.[0];
+
+                return {
+                    questionId: ans.questionId,
+                    optionNumber: question?.type === 'MCQ' ? Number(value) : null,
+                    booleanAnswer: question?.type === 'TrueFalse' ? String(value) : null,
+                    writtenAnswer: question?.type === 'Written' ? String(value) : null,
+                };
+            })
         };
     };
 
@@ -79,8 +88,24 @@ export const QuizPage = () => {
                 setAttemptId(attempt.id);
 
                 const attemptQuestions = await getAttemptQuestions(attempt.id);
+
                 if (attemptQuestions.length > 0) {
                     setQuestions(attemptQuestions as Question[]);
+
+                    // 💡 هنا بنسحب إجابات السيرفر ونعبي الـ State عشان تظهر فوراً
+                    const preFilledAnswers: LocalAnswer[] = attemptQuestions.map((q: any) => {
+                        let val: string | number | undefined = undefined;
+                        if (q.type === 'MCQ' && q.studentOptionNumber != null) val = q.studentOptionNumber;
+                        if (q.type === 'TrueFalse' && q.studentBooleanAnswer != null) val = q.studentBooleanAnswer;
+                        if (q.type === 'Written' && q.studentWrittenAnswer != null) val = q.studentWrittenAnswer;
+
+                        return val !== undefined ? { questionId: q.id, value: val, type: q.type } : null;
+                    }).filter(Boolean) as LocalAnswer[];
+
+                    if (preFilledAnswers.length > 0) {
+                        setAnswers(preFilledAnswers);
+                    }
+
                 } else {
                     setError('No questions available for this attempt.');
                     return;
@@ -114,7 +139,9 @@ export const QuizPage = () => {
 
         setIsSubmitting(true);
         try {
-            await submitQuizAttempt(currentAttemptId, formatAnswersForBackend(currentAnswers));
+            const payload = formatAnswersForBackend(currentAnswers);
+            await saveAttemptProgress(currentAttemptId, payload); // Save first
+            await submitQuizAttempt(currentAttemptId);            // Submit without payload
             navigate(`/student/quizzes/${id}/result/${currentAttemptId}`);
         } catch (err) {
             navigate(`/student/quizzes/${id}/result/${currentAttemptId}`);
@@ -147,7 +174,7 @@ export const QuizPage = () => {
             } finally {
                 setIsSaving(false);
             }
-        }, 45000);
+        }, 30000);
         return () => clearInterval(autoSave);
     }, [answers, attemptId]);
 
@@ -155,7 +182,7 @@ export const QuizPage = () => {
         if (!currentQuestion) return;
         setAnswers(prev => {
             const idx = prev.findIndex(a => a.questionId === currentQuestion.id);
-            const entry = { questionId: currentQuestion.id, value, type: currentQuestion.type };
+            const entry: LocalAnswer = { questionId: currentQuestion.id, value, type: currentQuestion.type };
             if (idx > -1) {
                 const updated = [...prev];
                 updated[idx] = entry;
@@ -173,13 +200,17 @@ export const QuizPage = () => {
     };
 
     const handleManualSubmit = async () => {
-        if (!attemptId || !window.confirm("Finish and submit your exam?")) return;
+        if (!attemptId) return;
+        if (!window.confirm("Are you sure you want to finish and submit your quiz?")) return;
+
         setIsSubmitting(true);
         try {
-            await submitQuizAttempt(attemptId, formatAnswersForBackend(answers));
+            const payload = formatAnswersForBackend(answers);
+            await saveAttemptProgress(attemptId, payload); // Save first
+            await submitQuizAttempt(attemptId);            // Submit without payload
             navigate(`/student/quizzes/${id}/result/${attemptId}`);
         } catch (err) {
-            alert("Submission failed. Check connection.");
+            console.error('Submit failed:', err);
             setIsSubmitting(false);
         }
     };
@@ -353,6 +384,7 @@ export const QuizPage = () => {
                                 );
                             })}
                         </div>
+
                         <div className="mt-8 pt-6 border-t border-slate-800 space-y-3">
                             <div className="flex items-center gap-3 text-[9px] font-black uppercase text-slate-500 tracking-widest">
                                 <div className="w-3 h-3 rounded-full bg-indigo-600"></div> Current
@@ -361,16 +393,9 @@ export const QuizPage = () => {
                                 <div className="w-3 h-3 rounded-md bg-indigo-500/20 border border-indigo-500/40"></div> Answered
                             </div>
                             <div className="flex items-center gap-3 text-[9px] font-black uppercase text-slate-500 tracking-widest">
-                                <div className="w-3 h-3 rounded-md bg-red-500/20 border border-red-500/40"></div> Flagged for Review
+                                <div className="w-3 h-3 rounded-md bg-red-500/20 border border-red-500/40"></div> Flagged
                             </div>
                         </div>
-                    </div>
-
-                    <div className="p-6 bg-indigo-500/5 border border-indigo-500/10 rounded-[2rem] flex items-start gap-4">
-                        <ShieldAlert className="w-6 h-6 text-indigo-500 shrink-0" />
-                        <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-wider">
-                            Your session is secure. Closing this tab will not lose your progress as everything is auto-saved to our servers.
-                        </p>
                     </div>
                 </aside>
             </div>

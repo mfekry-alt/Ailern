@@ -8,8 +8,8 @@ import {
 } from '@/hooks/useStrictExamMonitor';
 import { ViolationWarningModal } from '@/components/ViolationWarningModal';
 import { FullscreenPrompt } from '@/components/FullscreenPrompt';
+import type { QuestionAttempt as ApiQuestionAttempt } from '@/api/services/attempts.service';
 
-// Set to true to re-enable strict exam monitoring.
 const ENABLE_STRICT_MONITOR = false;
 
 interface Question {
@@ -17,10 +17,12 @@ interface Question {
     text: string;
     type: 'MCQ' | 'TrueFalse' | 'Written';
     instructions?: string;
-    options?: { id: string; text: string }[];
+    options?: { id: string; text: string; optionNumber?: number }[];
     points?: number;
-    writtenAnswer?: string;
-    booleanAnswer?: boolean;
+    // حقول المراجعة القادمة من السيرفر
+    studentOptionNumber?: number | null;
+    studentBooleanAnswer?: string | null;
+    studentWrittenAnswer?: string | null;
 }
 
 interface QuestionAttempt {
@@ -54,8 +56,6 @@ export const QuizAttemptViewer = () => {
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(ENABLE_STRICT_MONITOR);
-
-    // --- Timer state (Internal) ---
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 
     // --- Refs ---
@@ -69,6 +69,23 @@ export const QuizAttemptViewer = () => {
 
     const isReviewMode = !!attemptIdFromUrl;
 
+    // 💡 دالة تحويل الإجابات قبل الإرسال للسيرفر
+    const formatAnswersForBackend = (currentAnswers: QuestionAttempt[]): { answers: ApiQuestionAttempt[] } => {
+        return {
+            answers: currentAnswers.map(ans => {
+                const question = questions.find(q => q.id === ans.questionId);
+                const value = ans.answer || ans.selectedOptions?.[0];
+
+                return {
+                    questionId: ans.questionId,
+                    optionNumber: question?.type === 'MCQ' ? Number(value) : null,
+                    booleanAnswer: question?.type === 'TrueFalse' ? String(value) : null,
+                    writtenAnswer: question?.type === 'Written' ? String(value) : null,
+                };
+            })
+        };
+    };
+
     // --- Submit Logic ---
     const handleAutoSubmit = useCallback(async () => {
         const currentAttemptId = attemptIdRef.current;
@@ -77,9 +94,14 @@ export const QuizAttemptViewer = () => {
         if (!currentAttemptId || submitted || isReviewMode) return;
 
         setIsSubmitting(true);
-        console.log("⏳ Time's up or Violation limit reached! Auto-submitting...");
+        console.log("⏳ Auto-submitting...");
         try {
-            await attemptsService.submitQuizAttempt(currentAttemptId, { answers: currentAnswers });
+            const payload = formatAnswersForBackend(currentAnswers);
+            // 1. Save Progress first
+            await attemptsService.saveAttemptProgress(currentAttemptId, payload);
+            // 2. Submit Final (Takes 1 argument only!)
+            await attemptsService.submitQuizAttempt(currentAttemptId);
+
             setSubmitted(true);
             setTimeout(() => navigate(`/quizzes/${quizId}/attempt/${currentAttemptId}/result`), 2000);
         } catch (err) {
@@ -87,9 +109,8 @@ export const QuizAttemptViewer = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [submitted, quizId, navigate, isReviewMode]);
+    }, [submitted, quizId, navigate, isReviewMode, questions]);
 
-    // --- Security Monitor ---
     const strictExamMonitor = useStrictExamMonitor(handleAutoSubmit);
     const noOpExamMonitor = useMemo<UseStrictExamMonitorReturn>(
         () => ({
@@ -100,7 +121,7 @@ export const QuizAttemptViewer = () => {
     );
     const examMonitor = ENABLE_STRICT_MONITOR ? strictExamMonitor : noOpExamMonitor;
 
-    // --- Initialization & Server Time Sync ---
+    // --- Initialization ---
     useEffect(() => {
         if (!quizId) {
             setError('No quiz ID provided');
@@ -118,21 +139,18 @@ export const QuizAttemptViewer = () => {
                     id: quiz.id,
                     title: quiz.title,
                     description: quiz.description,
-                    attemptTimeLimit: quiz.attemptTimeLimit || 30, // Fallback to 30 mins
+                    attemptTimeLimit: quiz.attemptTimeLimit || 30,
                 });
 
                 let currentAttemptId = attemptIdFromUrl;
 
                 if (currentAttemptId) {
-                    // Review Mode
                     setShowFullscreenPrompt(false);
                 } else {
-                    // Start or Resume Active Attempt
                     const attempt = await attemptsService.startOrResumeQuizAttempt(quizId);
                     currentAttemptId = attempt.id;
                     if (!currentAttemptId) throw new Error('Failed to get valid attempt ID from server response');
 
-                    // Calculate Server-Synced Time
                     const startString = attempt.startAt.endsWith('Z') ? attempt.startAt : `${attempt.startAt}Z`;
                     const serverStartTime = new Date(startString).getTime();
                     const localNow = new Date().getTime();
@@ -144,7 +162,6 @@ export const QuizAttemptViewer = () => {
                     let remaining = totalAllowedSeconds - elapsedSeconds;
 
                     if (remaining <= 0) {
-                        console.warn("⚠️ Timer expired naturally. Resetting to full time for testing.");
                         remaining = totalAllowedSeconds;
                     }
                     setTimeRemaining(remaining);
@@ -152,20 +169,35 @@ export const QuizAttemptViewer = () => {
 
                 setAttemptId(currentAttemptId);
 
+                // Fetch Questions
                 const questionsData = await attemptsService.getAttemptQuestions(currentAttemptId);
                 if (!questionsData || questionsData.length === 0) {
-                    setError('This quiz has no questions available. Please contact your instructor.');
+                    setError('This quiz has no questions available.');
                 } else {
                     setQuestions(questionsData);
+
+                    // 💡 لو في وضع المراجعة، نعبي الإجابات اللي راجعة من السيرفر عشان تظهر للطالب
+                    if (currentAttemptId === attemptIdFromUrl) {
+                        const previousAnswers: QuestionAttempt[] = questionsData.map((q: any) => {
+                            let val = undefined;
+                            if (q.type === 'MCQ' && q.studentOptionNumber != null) val = String(q.studentOptionNumber);
+                            if (q.type === 'TrueFalse' && q.studentBooleanAnswer != null) val = String(q.studentBooleanAnswer);
+                            if (q.type === 'Written' && q.studentWrittenAnswer != null) val = String(q.studentWrittenAnswer);
+
+                            return {
+                                questionId: q.id,
+                                answer: q.type !== 'MCQ' && val ? val : undefined,
+                                selectedOptions: q.type === 'MCQ' && val ? [val] : undefined
+                            };
+                        }).filter(a => a.answer !== undefined || a.selectedOptions !== undefined);
+
+                        setAnswers(previousAnswers);
+                    }
                 }
             } catch (err: any) {
-                if (err.response?.status === 403) {
-                    setError('You have reached the maximum number of attempts allowed for this quiz.');
-                } else if (err.response?.status === 400) {
-                    setError('This attempt is no longer available or has expired.');
-                } else {
-                    setError(`Failed to load quiz: ${err.message || 'Please try again.'}`);
-                }
+                if (err.response?.status === 403) setError('You have reached the maximum number of attempts allowed.');
+                else if (err.response?.status === 400) setError('This attempt is no longer available or has expired.');
+                else setError(`Failed to load quiz: ${err.message || 'Please try again.'}`);
             } finally {
                 setIsLoading(false);
             }
@@ -192,30 +224,22 @@ export const QuizAttemptViewer = () => {
         return () => clearInterval(interval);
     }, [timeRemaining, isSubmitting, isReviewMode, handleAutoSubmit]);
 
-    // --- Setup Monitor ---
-    useEffect(() => {
-        if (!showFullscreenPrompt && quizContainerRef.current && !isReviewMode) {
-            examMonitor.setupExamMonitoring(quizContainerRef.current);
-            return () => examMonitor.cleanupMonitoring();
-        }
-    }, [showFullscreenPrompt, examMonitor, isReviewMode]);
-
-    // --- Auto-Save Progress (Every 30s) ---
+    // --- Auto-Save Progress ---
     useEffect(() => {
         if (!attemptId || submitted || showFullscreenPrompt || isReviewMode) return;
 
         autoSaveIntervalRef.current = setInterval(() => {
             if (answers.length > 0) {
-                attemptsService.saveAttemptProgress(attemptId, { answers }).catch(console.error);
+                const payload = formatAnswersForBackend(answers);
+                attemptsService.saveAttemptProgress(attemptId, payload).catch(console.error);
             }
         }, 30000);
 
         return () => {
             if (autoSaveIntervalRef.current) clearInterval(autoSaveIntervalRef.current);
         };
-    }, [attemptId, answers, submitted, showFullscreenPrompt, isReviewMode]);
+    }, [attemptId, answers, submitted, showFullscreenPrompt, isReviewMode, questions]);
 
-    // --- Format Helpers ---
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
@@ -234,7 +258,12 @@ export const QuizAttemptViewer = () => {
 
         setIsSubmitting(true);
         try {
-            await attemptsService.submitQuizAttempt(attemptId, { answers });
+            const payload = formatAnswersForBackend(answers);
+            // 1. Save Progress first
+            await attemptsService.saveAttemptProgress(attemptId, payload);
+            // 2. Submit Final (Takes 1 argument only!)
+            await attemptsService.submitQuizAttempt(attemptId);
+
             setSubmitted(true);
             setTimeout(() => navigate(`/quizzes/${quizId}/attempt/${attemptId}/result`), 1000);
         } catch (err) {
@@ -411,16 +440,16 @@ export const QuizAttemptViewer = () => {
                                 <div className="space-y-4">
                                     {currentQuestion.options?.map((option, idx) => {
                                         const currentAnswer = answers.find((a) => a.questionId === currentQuestion.id);
-                                        const optionId = option.id || String(idx);
-                                        const isSelected = currentAnswer?.selectedOptions?.includes(optionId);
+                                        const optionId = String(option.optionNumber || option.id || idx);
+                                        const isSelected = currentAnswer?.selectedOptions?.includes(optionId) || currentAnswer?.answer === optionId;
 
                                         return (
                                             <label
                                                 key={idx}
                                                 className={`flex items-center p-5 sm:p-6 rounded-2xl border-2 cursor-pointer transition-all ${isSelected
-                                                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
-                                                        : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/80'
-                                                    } ${isReviewMode ? 'pointer-events-none' : ''}`}
+                                                    ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
+                                                    : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/80'
+                                                    } ${isReviewMode ? 'pointer-events-none opacity-90' : ''}`}
                                             >
                                                 <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
                                                     {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white"></div>}
@@ -436,6 +465,11 @@ export const QuizAttemptViewer = () => {
                                                 <span className={`ml-4 text-base sm:text-lg font-bold ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700 dark:text-slate-300'}`}>
                                                     {option.text}
                                                 </span>
+                                                {isReviewMode && isSelected && (
+                                                    <span className="ml-auto text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-100 dark:bg-blue-500/20 px-2 py-1 rounded-md">
+                                                        Your Answer
+                                                    </span>
+                                                )}
                                             </label>
                                         );
                                     })}
@@ -451,14 +485,21 @@ export const QuizAttemptViewer = () => {
                                                 key={opt}
                                                 onClick={() => handleAnswerChange(opt)}
                                                 disabled={isReviewMode}
-                                                className={`flex-1 py-6 px-6 rounded-2xl border-2 font-black text-lg transition-all flex items-center justify-between ${isSelected
-                                                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
-                                                        : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-blue-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/80'
-                                                    } ${isReviewMode ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                                className={`relative flex-1 py-6 px-6 rounded-2xl border-2 font-black text-lg transition-all flex items-center justify-between ${isSelected
+                                                    ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
+                                                    : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-blue-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/80'
+                                                    } ${isReviewMode ? 'cursor-default opacity-90' : ''}`}
                                             >
                                                 <span>{opt}</span>
-                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
-                                                    {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full"></div>}
+                                                <div className="flex items-center gap-3">
+                                                    {isReviewMode && isSelected && (
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-100 dark:bg-blue-500/20 px-2 py-1 rounded-md">
+                                                            Your Answer
+                                                        </span>
+                                                    )}
+                                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                        {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full"></div>}
+                                                    </div>
                                                 </div>
                                             </button>
                                         );
@@ -474,11 +515,13 @@ export const QuizAttemptViewer = () => {
                                         placeholder="Type your detailed answer here..."
                                         disabled={isReviewMode}
                                         rows={8}
-                                        className={`w-full bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-3xl p-6 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none resize-none transition-all text-lg custom-scrollbar ${isReviewMode ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                        className={`w-full bg-gray-50 dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-3xl p-6 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none resize-none transition-all text-lg custom-scrollbar ${isReviewMode ? 'opacity-90 cursor-default' : ''}`}
                                     />
-                                    <div className="mt-3 flex justify-end text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest">
-                                        Words: {answers.find((a) => a.questionId === currentQuestion.id)?.answer?.split(/\s+/).filter(Boolean).length || 0}
-                                    </div>
+                                    {!isReviewMode && (
+                                        <div className="mt-3 flex justify-end text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest">
+                                            Words: {answers.find((a) => a.questionId === currentQuestion.id)?.answer?.split(/\s+/).filter(Boolean).length || 0}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
