@@ -262,7 +262,7 @@ export const InstructorAssignmentsPage = () => {
                                         <Edit className="w-4 h-4 mx-auto" />
                                     </button>
                                     <button
-                                        onClick={() => deleteAssignment(assignment.id)}
+                                        onClick={() => deleteMutation.mutate(parseInt(assignment.id))}
                                         className="flex-1 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shadow-sm"
                                     >
                                         <Trash2 className="w-4 h-4 mx-auto" />

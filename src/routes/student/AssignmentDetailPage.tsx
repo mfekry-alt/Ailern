@@ -46,7 +46,7 @@ export const AssignmentDetailPage = () => {
             instructions: assignment.instructions || 'No detailed instructions provided.',
             files: assignment.files || [],
             status,
-            points: assignment.points || 100, // Using assignment points or default 100
+            points: 100, // Default points value
             allowedFileTypes: ['PDF', 'DOC', 'DOCX', 'ZIP'], // Default allowed types
             maxFileSize: '10 MB', // Default max size
         };

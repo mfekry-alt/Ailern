@@ -214,7 +214,7 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
         setErrorSubmit(null);
         try {
             const payload: SaveAttemptPayload = { answers };
-            await attemptsService.submitQuizAttempt(attemptId, payload);
+            await attemptsService.submitQuizAttempt(attemptId);
 
             // Clear auto-save timer on successful submission
             if (autoSaveTimerRef.current) {

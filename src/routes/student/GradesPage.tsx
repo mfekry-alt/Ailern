@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui';
 import {
     Award, BookOpen, Download, Eye, Clock, CheckCircle, AlertCircle,
-    Target, GraduationCap, ChevronDown, Inbox, MessageSquare, X
+    Target, GraduationCap, ChevronDown, Inbox, MessageSquare, X, User
 } from 'lucide-react';
 
 interface Grade {
