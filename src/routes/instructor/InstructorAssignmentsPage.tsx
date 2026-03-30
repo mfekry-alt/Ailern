@@ -7,6 +7,7 @@ import {
     CheckCircle, AlertCircle, Calendar, Loader2, Search, Trash2,
     ChevronDown, Filter, MoreVertical, CheckCircle2, LayoutGrid, X
 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import {
     getInstructorAssignments,
     deleteAssignment,
@@ -132,14 +133,7 @@ export const InstructorAssignmentsPage = () => {
         { label: 'To Grade', value: assignments.reduce((s, a) => s + (a.submissions - a.graded), 0), icon: Clock, color: 'orange' }
     ];
 
-    if (isLoading) return (
-        <div className="min-h-screen flex items-center justify-center dark:bg-slate-900 transition-colors">
-            <div className="flex flex-col items-center gap-4">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
-                <p className="text-gray-500 animate-pulse font-medium">Loading assignments...</p>
-            </div>
-        </div>
-    );
+    if (isLoading) return <LoadingSpinner />;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans pb-20">

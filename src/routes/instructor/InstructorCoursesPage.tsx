@@ -9,6 +9,7 @@ import { ParallaxTiltCard } from '@/components/ui';
 import { useInstructorCourses, useDeleteCourse } from '@/features/courses/api';
 import { useAuthStore } from '@/features/auth/store';
 import type { GetAllCoursesDto } from '@/types/api.types';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // --- Interfaces ---
 interface Course {
@@ -183,14 +184,7 @@ export const InstructorCoursesPage = () => {
     };
 
     if (isLoading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
-                <div className="flex flex-col items-center space-y-4">
-                    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Loading your courses...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     if (error) {

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { getMyStudentCourses } from '@/api/services/student.service';
 import { getCourseAssignmentsForStudent } from '@/api/services/assignment.service';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import type { GetAssignmentDto, GetCourseDto } from '@/types/api.types';
 
 interface Assignment {
@@ -233,12 +234,7 @@ export const AssignmentsPage = () => {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
-                <div className="flex flex-col items-center space-y-4">
-                    <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
-                    <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Loading assignments...</p>
-                </div>
-            </div>
+            <LoadingSpinner />
         );
     }
 

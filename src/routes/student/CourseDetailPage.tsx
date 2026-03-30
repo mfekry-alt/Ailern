@@ -10,6 +10,7 @@ import {
     ChevronDown, ChevronUp, HelpCircle, FileText, Target, CalendarClock,
     Inbox, CheckSquare, Calendar, ArrowRight, ListChecks
 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Helper: Calculate days/hours until quiz is available or closes
 const getTimeStatus = (availableFrom: string, availableUntil: string) => {
@@ -111,14 +112,7 @@ export const CourseDetailPage = () => {
 
     // --- Render: Loading State ---
     if (loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
-                <div className="flex flex-col items-center space-y-4">
-                    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Loading course space...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     // --- Render: Error State ---

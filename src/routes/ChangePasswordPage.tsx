@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui';
 import { ROUTES, ROLES } from '@/lib/constants';
 import { useAuth } from '@/hooks/useAuth';
 import { useChangePassword } from '@/features/auth/api';
-import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, CheckCircle, AlertCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const changePasswordSchema = z
     .object({
@@ -61,12 +61,12 @@ export const ChangePasswordPage = () => {
         if (/[^A-Za-z0-9]/.test(newPasswordValue)) score += 15;
 
         if (score >= 80) {
-            return { label: 'Strong', badge: 'bg-green-100 text-green-800', bar: 'bg-green-500', score };
+            return { label: 'Strong', badge: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', bar: 'bg-green-500', score };
         }
         if (score >= 50) {
-            return { label: 'Medium', badge: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500', score };
+            return { label: 'Medium', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', bar: 'bg-amber-500', score };
         }
-        return { label: 'Weak', badge: 'bg-red-100 text-red-800', bar: 'bg-red-500', score };
+        return { label: 'Weak', badge: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', bar: 'bg-red-500', score };
     })();
 
     const passwordRequirements = [
@@ -97,12 +97,12 @@ export const ChangePasswordPage = () => {
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
             <div className="max-w-5xl mx-auto space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Lock className="w-5 h-5 text-blue-600" />
+                        <div className="w-11 h-11 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                            <Lock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
                             <p className="text-sm text-gray-600 dark:text-zinc-400">Security • {roleLabel} account</p>
@@ -113,7 +113,7 @@ export const ChangePasswordPage = () => {
                     <button
                         type="button"
                         onClick={() => navigate(backRoute)}
-                        className="inline-flex items-center justify-center px-4 py-3 text-[14px] font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800"
+                        className="inline-flex items-center justify-center px-4 py-3 text-[14px] font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                     >
                         Back to {backRoute === ROUTES.PROFILE ? 'profile' : 'dashboard'}
                     </button>
@@ -123,13 +123,15 @@ export const ChangePasswordPage = () => {
                     <Card variant="elevated">
                         <CardContent className="p-6 space-y-6">
                             {error && (
-                                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3 animate-in fade-in">
+                                    <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
                                     <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                                 </div>
                             )}
 
                             {success && (
-                                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3 animate-in fade-in">
+                                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
                                     <p className="text-sm text-green-700 dark:text-green-300">Password changed successfully! Redirecting to profile...</p>
                                 </div>
                             )}
@@ -147,7 +149,7 @@ export const ChangePasswordPage = () => {
                                             <input
                                                 type={showCurrentPassword ? 'text' : 'password'}
                                                 placeholder="Enter your current password"
-                                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 transition-all pr-10"
+                                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-zinc-100 transition-all pr-10"
                                                 {...register('currentPassword')}
                                             />
                                             <button
@@ -159,7 +161,7 @@ export const ChangePasswordPage = () => {
                                             </button>
                                         </div>
                                         {errors.currentPassword && (
-                                            <p className="text-sm text-red-600 mt-1">{errors.currentPassword.message}</p>
+                                            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.currentPassword.message}</p>
                                         )}
                                     </div>
 
@@ -169,7 +171,7 @@ export const ChangePasswordPage = () => {
                                             <input
                                                 type={showNewPassword ? 'text' : 'password'}
                                                 placeholder="Enter your new password (min. 8 characters)"
-                                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 transition-all pr-10"
+                                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-zinc-100 transition-all pr-10"
                                                 {...register('newPassword')}
                                             />
                                             <button
@@ -181,15 +183,15 @@ export const ChangePasswordPage = () => {
                                             </button>
                                         </div>
                                         <div className="flex items-center gap-3 mt-2">
-                                            <span className={`text-xs font-semibold px-2 py-1 rounded-full ${passwordStrength.badge}`}>
+                                            <span className={`text-xs font-semibold px-2 py-1 rounded-full ${passwordStrength.badge} transition-colors`}>
                                                 {passwordStrength.label}
                                             </span>
-                                            <div className="flex-1 h-2 bg-gray-100 dark:bg-zinc-700 rounded-full overflow-hidden">
-                                                <div className={`h-full ${passwordStrength.bar}`} style={{ width: `${passwordStrength.score}%` }}></div>
+                                            <div className="flex-1 h-2 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-gray-200 dark:border-zinc-700">
+                                                <div className={`h-full ${passwordStrength.bar} transition-all duration-300`} style={{ width: `${passwordStrength.score}%` }}></div>
                                             </div>
                                         </div>
                                         {errors.newPassword && (
-                                            <p className="text-sm text-red-600 mt-1">{errors.newPassword.message}</p>
+                                            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.newPassword.message}</p>
                                         )}
                                     </div>
 
@@ -199,7 +201,7 @@ export const ChangePasswordPage = () => {
                                             <input
                                                 type={showConfirmPassword ? 'text' : 'password'}
                                                 placeholder="Confirm your new password"
-                                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-500 dark:text-zinc-300 transition-all pr-10"
+                                                className="w-full px-[13px] py-[15px] text-[14px] bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-zinc-100 transition-all pr-10"
                                                 {...register('confirmPassword')}
                                             />
                                             <button
@@ -211,7 +213,7 @@ export const ChangePasswordPage = () => {
                                             </button>
                                         </div>
                                         {errors.confirmPassword && (
-                                            <p className="text-sm text-red-600 mt-1">{errors.confirmPassword.message}</p>
+                                            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.confirmPassword.message}</p>
                                         )}
                                     </div>
                                 </div>
@@ -222,14 +224,17 @@ export const ChangePasswordPage = () => {
                                         {passwordRequirements.map((item) => (
                                             <div
                                                 key={item.label}
-                                                className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800"
+                                                className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${item.met
+                                                        ? 'border-green-200 bg-green-50 dark:border-green-900/30 dark:bg-green-900/10 text-green-700 dark:text-green-400'
+                                                        : 'border-gray-200 bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300'
+                                                    }`}
                                             >
                                                 {item.met ? (
-                                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
                                                 ) : (
-                                                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                                                    <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
                                                 )}
-                                                <span className="text-sm text-gray-700 dark:text-zinc-300">{item.label}</span>
+                                                <span className="text-sm">{item.label}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -246,41 +251,47 @@ export const ChangePasswordPage = () => {
                                     <button
                                         type="submit"
                                         disabled={changePassword.isPending}
-                                        className="w-full sm:w-1/2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full sm:w-1/2 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
-                                        {changePassword.isPending ? 'Changing Password...' : 'Change Password'}
+                                        {changePassword.isPending ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" /> Changing...
+                                            </>
+                                        ) : (
+                                            'Change Password'
+                                        )}
                                     </button>
                                 </div>
                             </form>
                         </CardContent>
                     </Card>
 
-                    <Card variant="bordered">
+                    <Card variant="bordered" className="h-fit">
                         <CardContent className="p-6 space-y-4">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                                    <ShieldCheck className="w-5 h-5 text-blue-600" />
+                                <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                                    <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Security tips</p>
-                                    <p className="text-sm text-gray-600 dark:text-zinc-400">These reminders keep your account safe.</p>
+                                    <p className="text-sm text-gray-600 dark:text-zinc-400">Keep your account safe.</p>
                                 </div>
                             </div>
                             <div className="space-y-3 text-sm text-gray-700 dark:text-zinc-300">
                                 <div className="flex items-start gap-2">
-                                    <KeyRound className="w-4 h-4 text-blue-600 mt-0.5" />
+                                    <KeyRound className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                                     <p>Use a unique password you have not used on other accounts.</p>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <ShieldCheck className="w-4 h-4 text-green-600 mt-0.5" />
+                                    <ShieldCheck className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
                                     <p>Turn on MFA in your profile settings for extra protection.</p>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5" />
+                                    <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                                     <p>Sign out on shared devices after updating your password.</p>
                                 </div>
                             </div>
-                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 p-4 text-sm text-gray-700 dark:text-zinc-300">
+                            <div className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50 p-4 text-sm text-gray-700 dark:text-zinc-300 text-center">
                                 If you did not request this change, please contact support immediately.
                             </div>
                         </CardContent>

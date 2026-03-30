@@ -4,6 +4,7 @@ import { ROUTES } from '@/lib/constants';
 import { Loader2 } from 'lucide-react';
 import { useCreateCourse, useUpdateCourse, useCourse } from '@/features/courses/api';
 import { handleApiError } from '@/api/client';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export const InstructorCourseEditPage = () => {
     const { id } = useParams();
@@ -94,14 +95,7 @@ export const InstructorCourseEditPage = () => {
     };
 
     if (!isNew && isLoading) {
-        return (
-            <div className="px-32 py-8 max-w-[1920px] mx-auto bg-gray-50 dark:bg-zinc-950 min-h-screen">
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                    <span className="ml-3 text-gray-600 dark:text-zinc-400 text-[16px]">Loading course...</span>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     return (

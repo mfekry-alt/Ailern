@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ROUTES, ROLES } from '@/lib/constants';
 import { ProtectedRoute, RequireRole, GuestOnly } from '@/lib/guards';
-
 // Layouts
 import { MainLayout } from './layouts/MainLayout';
 import { AuthLayout } from './layouts/AuthLayout';
@@ -14,7 +13,6 @@ import { LoginPage } from '@/routes/LoginPage';
 import { SignupPage } from '@/routes/SignupPage';
 import { ConfirmEmailPage } from '@/routes/ConfirmEmailPage';
 import { ForgotPasswordPage } from '@/routes/ForgotPasswordPage';
-import { VerifyEmailPage } from '@/routes/VerifyEmailPage';
 import { SetPasswordPage } from '@/routes/SetPasswordPage';
 import { ChangePasswordPage } from '@/routes/ChangePasswordPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
@@ -62,6 +60,7 @@ import { AdminUserEditPage } from '@/routes/admin/AdminUserEditPage';
 import { AdminCoursesPage } from '@/routes/admin/AdminCoursesPage';
 import { AdminReportsPage } from '@/routes/admin/AdminReportsPage';
 import { AdminSettingsPage } from '@/routes/admin/AdminSettingsPage';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export const AppRouter = () => {
     return (
@@ -77,7 +76,6 @@ export const AppRouter = () => {
                 <Route path={ROUTES.LOGIN} element={<LoginPage />} />
                 <Route path={ROUTES.SIGNUP} element={<SignupPage />} />
                 <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-                <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
                 <Route path={ROUTES.SET_PASSWORD} element={<SetPasswordPage />} />
             </Route>
 

@@ -7,6 +7,7 @@ import {
     Users, BookOpen, TrendingUp, CheckCircle, Download,
     Settings, BarChart3, MessageSquare, Award, Activity, ShieldCheck
 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import {
     LineChart, Line, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -90,14 +91,7 @@ export const AdminDashboardPage = () => {
         document.body.removeChild(link);
     };
 
-    if (isLoadingCourses) return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#0a0f1d] flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
-                <p className="text-gray-500 dark:text-slate-400 font-bold tracking-widest uppercase">Loading Dashboard...</p>
-            </div>
-        </div>
-    );
+    if (isLoadingCourses) return <LoadingSpinner />;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0a0f1d] p-4 sm:p-8 lg:p-10 transition-colors duration-300 font-sans pb-20 relative overflow-hidden">

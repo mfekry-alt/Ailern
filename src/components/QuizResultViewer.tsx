@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, AlertCircle, HelpCircle, Trophy, RotateCcw, Lock } from 'lucide-react';
 import { attemptsService, quizService } from '@/api/services';
 import type { AttemptResult, StudentAnswer } from '@/api/services/attempts.service';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export const QuizResultViewer = () => {
     const { id: quizId, attemptId } = useParams<{ id: string; attemptId: string }>();
@@ -58,14 +59,7 @@ export const QuizResultViewer = () => {
     }, [attemptId, quizId]);
 
     if (isLoading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
-                <div className="flex flex-col items-center space-y-4">
-                    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Calculating your results...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     if (error || !result) {
