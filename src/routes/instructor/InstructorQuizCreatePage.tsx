@@ -69,7 +69,7 @@ export const InstructorQuizCreatePage = () => {
             description: '',
             availableUntil,
             maximumAttempts: 1,
-            attemptTimeLimit: 0,
+            attemptTimeLimit: 5,
             status: 'Draft',
             availableFrom,
             publishedDate: '',
@@ -100,8 +100,8 @@ export const InstructorQuizCreatePage = () => {
         if (settings.maximumAttempts < 1 || settings.maximumAttempts > 5)
             newErrors.maximumAttempts = 'Attempts allowed must be between 1 and 5.';
 
-        if (settings.attemptTimeLimit === '' || Number(settings.attemptTimeLimit) < 0)
-            newErrors.attemptTimeLimit = 'Time limit cannot be negative.';
+        if (settings.attemptTimeLimit === '' || Number(settings.attemptTimeLimit) < 5)
+            newErrors.attemptTimeLimit = 'Time limit must be at least 5 minutes.';
 
         if (!settings.availableFrom) newErrors.availableFrom = 'Available From date & time is required.';
 
@@ -113,7 +113,8 @@ export const InstructorQuizCreatePage = () => {
             if (!settings.publishedDate) newErrors.publishedDate = 'Publish Date is required for scheduled quizzes.';
             else {
                 const pd = new Date(settings.publishedDate);
-                if (pd <= new Date()) newErrors.publishedDate = 'Publish Date must be in the future.';
+                const now = new Date();
+                if (pd <= now) newErrors.publishedDate = 'Publish Date must be in the future and cannot be in the past.';
                 if (settings.availableFrom && pd >= new Date(settings.availableFrom))
                     newErrors.publishedDate = 'Publish Date must be before "Available From".';
             }
@@ -237,17 +238,17 @@ export const InstructorQuizCreatePage = () => {
                                         <input
                                             id="attemptTimeLimit"
                                             type="number"
-                                            min={0}
+                                            min={5}
                                             value={settings.attemptTimeLimit}
                                             onChange={e => {
                                                 const val = e.target.value;
-                                                set({ attemptTimeLimit: val === '' ? '' : Math.max(0, Number.parseInt(val, 10)) });
+                                                set({ attemptTimeLimit: val === '' ? '' : Math.max(5, Number.parseInt(val, 10)) });
                                                 clearError('attemptTimeLimit');
                                             }}
                                             className={`${getInputCls(!!errors.attemptTimeLimit)} pl-11`}
                                         />
                                     </div>
-                                    {errors.attemptTimeLimit ? <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.attemptTimeLimit}</p> : <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Set <strong>0</strong> for unlimited time.</p>}
+                                    {errors.attemptTimeLimit ? <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.attemptTimeLimit}</p> : <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Minimum <strong>5</strong> minutes required.</p>}
                                 </div>
                             </div>
                         </div>
@@ -277,7 +278,7 @@ export const InstructorQuizCreatePage = () => {
                             {settings.status === 'Scheduled' && (
                                 <div className="p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl animate-in fade-in slide-in-from-top-2">
                                     <label htmlFor="publishedDate" className={`${labelCls} !text-blue-700 dark:!text-blue-400`}>Publish Date & Time <span className="text-red-500">*</span></label>
-                                    <input id="publishedDate" type="datetime-local" value={settings.publishedDate} onChange={e => { set({ publishedDate: e.target.value }); clearError('publishedDate'); }} className={`${getInputCls(!!errors.publishedDate)} !bg-white dark:!bg-slate-900`} />
+                                    <input id="publishedDate" type="datetime-local" value={settings.publishedDate} onChange={e => { set({ publishedDate: e.target.value }); clearError('publishedDate'); }} min={new Date().toISOString().slice(0, 16)} className={`${getInputCls(!!errors.publishedDate)} !bg-white dark:!bg-slate-900`} />
                                     {errors.publishedDate ? <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.publishedDate}</p> : <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-2 ml-1">Must be in the future and <strong>before</strong> "Available From" date.</p>}
                                 </div>
                             )}

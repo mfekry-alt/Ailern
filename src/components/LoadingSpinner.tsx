@@ -1,5 +1,5 @@
 // components/LoadingSpinner.tsx
-export const LoadingSpinner = () => (
+export const LoadingSpinner = ( ) => (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 transition-colors duration-300">
         <div className="flex flex-col items-center space-y-5">
             {/* اللودر البنفسجي */}
@@ -9,7 +9,7 @@ export const LoadingSpinner = () => (
 
             {/* كلمة التحميل */}
             <p className="text-purple-500/80 dark:text-purple-400/80 font-bold text-sm tracking-widest animate-pulse">
-                Loading...
+                Loading...{}
             </p>
         </div>
     </div>

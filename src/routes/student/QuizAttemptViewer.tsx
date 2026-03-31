@@ -214,10 +214,7 @@ export const QuizAttemptViewer = () => {
 
         loadQuiz();
 
-        // 🛡️ إعادة تعيين الحارس لو المكون اتعمله Unmount (عشان لو خرج ورجع تاني)
-        return () => {
-            hasStartedInitialization.current = false;
-        };
+        // 🚫 تم حذف دالة الـ return () => cleanup من هنا لضمان عمل الحماية مع React Strict Mode
     }, [quizId, attemptIdFromUrl]);
 
     // --- Timer Tick Effect ---

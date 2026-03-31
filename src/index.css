@@ -304,3 +304,16 @@ html {
 .hero-float-badge {
   animation: heroFloat 3s ease-in-out infinite;
 }
+/* تغيير لون تحديد النص في الموقع كله */
+::selection {
+  background-color: rgba(147, 51, 234, 0.3);
+  /* لون بنفسجي شفاف */
+  color: white;
+  /* لون النص وقت التحديد */
+}
+
+/* للمتصفحات القديمة مثل Firefox */
+::-moz-selection {
+  background-color: rgba(147, 51, 234, 0.3);
+  color: white;
+}

@@ -114,12 +114,24 @@ export const getCourseQuizzes = async (courseId: string | number): Promise<GetQu
     }
 };
 
-/**
- * Get a single quiz by ID
- */
+// أضف | undefined عشان الـ check اللي تحت يشتغل صح
+let activeQuizPromises: Record<string, Promise<GetQuizDto> | undefined> = {};
+
 export const getQuiz = async (id: string): Promise<GetQuizDto> => {
-    const response = await api.get<ApiResponse<GetQuizDto>>(ENDPOINTS.QUIZZES.GET(id));
-    return response.data.data!;
+    if (activeQuizPromises[id]) {
+        return activeQuizPromises[id];
+    }
+
+    activeQuizPromises[id] = (async () => {
+        try {
+            const response = await api.get<ApiResponse<GetQuizDto>>(ENDPOINTS.QUIZZES.GET(id));
+            return response.data.data!;
+        } finally {
+            delete activeQuizPromises[id];
+        }
+    })();
+
+    return activeQuizPromises[id];
 };
 
 /**

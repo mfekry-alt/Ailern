@@ -1,4 +1,5 @@
-import { Play, Lock, Calendar, Zap, AlertCircle, Clock, FileText, History, Timer } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Play, Lock, Calendar, Zap, AlertCircle, Clock, FileText, History, Timer, Loader2 } from 'lucide-react';
 import type { GetQuizDto } from '@/types/api.types';
 import type { StartAttemptResponse } from '@/api/services/attempts.service';
 
@@ -20,7 +21,46 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
         return new Date(normalizedDate);
     };
 
+    // Use the provided parser or fallback to default
     const parser = parseServerDate || defaultParseDate;
+
+    const [isAvailable, setIsAvailable] = useState(false);
+
+    // دالة لفحص الحالة الحالية
+    const checkAvailability = useCallback(() => {
+        const now = new Date();
+        const from = quiz.availableFrom ? parser(quiz.availableFrom) : null;
+        const until = quiz.availableUntil ? parser(quiz.availableUntil) : null;
+
+        // متاح لو مفيش تواريخ، أو لو الوقت الحالي بين البداية والنهاية
+        if (!from && !until) {
+            setIsAvailable(true);
+        } else if (from && until) {
+            setIsAvailable(now >= from && now <= until);
+        } else if (from) {
+            setIsAvailable(now >= from);
+        } else if (until) {
+            setIsAvailable(now <= until);
+        }
+    }, [quiz.availableFrom, quiz.availableUntil, parser]);
+
+    useEffect(() => {
+        checkAvailability(); // فحص أول ما الكارت يظهر
+
+        // عمل Timer يشتغل كل ثانية لو الكويز لسه "Upcoming"
+        const timer = setInterval(() => {
+            const now = new Date();
+            const from = quiz.availableFrom ? parser(quiz.availableFrom) : null;
+
+            if (from && now >= from) {
+                checkAvailability();
+                clearInterval(timer); // وقف التايمر أول ما يفتح
+            }
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [quiz.availableFrom, checkAvailability, parser]);
+
     const now = new Date();
     const availableFrom = quiz.availableFrom ? parser(quiz.availableFrom) : null;
     const availableUntil = quiz.availableUntil ? parser(quiz.availableUntil) : null;
@@ -32,9 +72,6 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
     // Get question count and duration from quiz data
     const questionCount = quiz.questionsCount || 0;
     const duration = (quiz as any).attemptTimeLimit || 0; // Use 'any' if attemptTimeLimit isn't in GetQuizDto yet
-
-    // Check if student has active attempt (new field from API)
-    const hasActiveAttempt = quiz.hasActiveAttempt ?? false;
 
     // Calculate status
     const isNotStarted = availableFrom && now < availableFrom;
@@ -124,7 +161,8 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
     const StatusIcon = status.icon;
 
     // Determine if button should be disabled
-    const isDisabled = isNotStarted || isExpired || isNotPublished || isExhausted || isNoAvailableFrom || isLoading;
+    // نعتمد على isAvailable اللي بتتحكم في التايمر عشان الزرار يفتح لوحده
+    const isDisabled = !isAvailable || isNotPublished || isExhausted || isLoading;
 
     // Get disable reason for tooltip
     const getDisableReason = () => {
@@ -225,7 +263,7 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
                         </div>
                     </div>
 
-                    {/* Metric 3: Duration (Replaced Completed) */}
+                    {/* Metric 3: Duration */}
                     <div className="flex flex-col items-center gap-2">
                         <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center">
                             <Timer className="w-5 h-5 text-purple-400" />
@@ -247,16 +285,21 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
             <div className="p-4 sm:p-6 bg-slate-900/30 border-t border-slate-800/50 flex flex-col sm:flex-row gap-3 shrink-0">
                 <div className="flex-1 relative group/tooltip">
                     <button
-                        onClick={() => !isDisabled && onStartQuiz(quiz.id)}
                         disabled={isDisabled}
-                        className={`w-full py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sm 
-                            ${isDisabled
-                                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                                : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 hover:shadow-purple-500/25 hover:-translate-y-0.5 active:scale-95'
+                        onClick={() => onStartQuiz(quiz.id)}
+                        className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${!isDisabled
+                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/25 active:scale-95'
+                            : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
                             }`}
                     >
-                        <Play className="w-4 h-4" />
-                        {isLoading ? 'Starting...' : 'Start Quiz'}
+                        {isLoading ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <>
+                                <Play className="w-5 h-5 fill-current" />
+                                {!isDisabled ? 'Start Quiz...' : 'Start Quiz'}
+                            </>
+                        )}
                     </button>
 
                     {/* Tooltip for disable reason */}

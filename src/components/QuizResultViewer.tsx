@@ -1,9 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, AlertCircle, HelpCircle, Trophy, RotateCcw, Lock } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertCircle, HelpCircle, Trophy, RotateCcw, Lock, Clock } from 'lucide-react';
 import { attemptsService, quizService } from '@/api/services';
 import type { AttemptResult, StudentAnswer } from '@/api/services/attempts.service';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+
+const formatTimeSpent = (seconds: number): string => {
+    if (seconds < 1) return '< 1 sec';
+    if (seconds < 60) return `${Math.round(seconds)} sec`;
+    if (seconds < 3600) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.round(seconds % 60);
+        return secs === 0 ? `${mins} min` : `${mins} min ${secs} sec`;
+    }
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
+};
 
 export const QuizResultViewer = () => {
     const { id: quizId, attemptId } = useParams<{ id: string; attemptId: string }>();
@@ -14,6 +27,7 @@ export const QuizResultViewer = () => {
     const [questions, setQuestions] = useState<any[]>([]);
     const [quiz, setQuiz] = useState<any>(null);
     const [attemptsCount, setAttemptsCount] = useState<number>(0);
+    const [timeSpent, setTimeSpent] = useState<number>(0);
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -32,17 +46,18 @@ export const QuizResultViewer = () => {
                 setError(null);
 
                 // جلب كل البيانات المطلوبة في نفس الوقت لتسريع التحميل
-                const [resultData, questionsData, quizData, allAttempts] = await Promise.all([
+                const [resultData, questionsData, attemptsData, quizData] = await Promise.all([
                     attemptsService.getAttemptResult(attemptId),
                     attemptsService.getAttemptQuestions(attemptId),
-                    quizService.getQuiz(quizId),
-                    attemptsService.getQuizAttempts(quizId)
+                    attemptsService.getQuizAttempts(quizId),
+                    quizService.getQuiz(quizId)
                 ]);
 
                 setResult(resultData);
                 setQuestions(questionsData || []);
+                setTimeSpent(resultData?.timeSpent || 0);
+                setAttemptsCount(attemptsData?.length || 0);
                 setQuiz(quizData);
-                setAttemptsCount(allAttempts.length);
 
                 // لو السيرفر بيرجع الـ answers مع الـ result، ممكن تسيفها هنا
                 // setAnswers(resultData.answers || []); 
@@ -180,6 +195,12 @@ export const QuizResultViewer = () => {
                                     <p className="text-gray-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">Pending</p>
                                     <p className="text-2xl sm:text-3xl font-black text-amber-500">{pendingCount}</p>
                                 </div>
+                                <div className="col-span-2 bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex flex-col justify-center items-center text-center">
+                                    <p className="text-gray-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 flex items-center justify-center gap-1">
+                                        <Clock className="w-3 h-3" /> Time Spent
+                                    </p>
+                                    <p className="text-xl sm:text-2xl font-black text-blue-500">{formatTimeSpent(timeSpent)}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -240,13 +261,13 @@ export const QuizResultViewer = () => {
                                                     <div
                                                         key={optIdx}
                                                         className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${isSelected
-                                                                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 shadow-md'
-                                                                : 'bg-gray-50 dark:bg-slate-900/50 border-gray-100 dark:border-slate-800'
+                                                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 shadow-md'
+                                                            : 'bg-gray-50 dark:bg-slate-900/50 border-gray-100 dark:border-slate-800'
                                                             }`}
                                                     >
                                                         <div className={`flex-shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center text-sm font-bold shadow-sm ${isSelected
-                                                                ? 'bg-blue-600 text-white border-blue-700'
-                                                                : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400'
+                                                            ? 'bg-blue-600 text-white border-blue-700'
+                                                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400'
                                                             }`}>
                                                             {String.fromCharCode(65 + optIdx)}
                                                         </div>

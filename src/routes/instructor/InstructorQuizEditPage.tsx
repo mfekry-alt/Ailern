@@ -126,14 +126,14 @@ export const InstructorQuizEditPage = () => {
         }
 
         if (formData.maximumAttempts < 1) newErrors.maximumAttempts = 'Attempts allowed must be at least 1';
-        if (formData.attemptTimeLimit < 0) newErrors.attemptTimeLimit = 'Time limit cannot be negative';
+        if (formData.attemptTimeLimit < 5) newErrors.attemptTimeLimit = 'Time limit must be at least 5 minutes.';
 
         if (formData.status === 'Scheduled') {
             if (!formData.publishedDate) {
                 newErrors.publishedDate = 'Published date is required when scheduling';
             } else {
                 const published = new Date(formData.publishedDate);
-                if (published <= now) newErrors.publishedDate = 'Publish date must be in the future.';
+                if (published <= now) newErrors.publishedDate = 'Publish date must be in the future and cannot be in the past.';
                 if (published >= availableFrom) newErrors.publishedDate = 'Publish date must be BEFORE available from date.';
             }
         }
@@ -213,7 +213,7 @@ export const InstructorQuizEditPage = () => {
                         </button>
                         <div>
                             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-                                 Update Quiz Details
+                                Update Quiz Details
                             </h1>
                             <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-1">
                                 Modify settings, fix timings, and adjust behavior rules.
@@ -322,9 +322,9 @@ export const InstructorQuizEditPage = () => {
                                         <input
                                             id="attemptTimeLimit"
                                             type="number"
-                                            min={0}
+                                            min={5}
                                             value={formData.attemptTimeLimit}
-                                            onChange={e => { setFormData(p => ({ ...p, attemptTimeLimit: Math.max(0, parseInt(e.target.value) || 0) })); clearError('attemptTimeLimit'); }}
+                                            onChange={e => { setFormData(p => ({ ...p, attemptTimeLimit: Math.max(5, parseInt(e.target.value) || 5) })); clearError('attemptTimeLimit'); }}
                                             className={`${getInputCls(!!errors.attemptTimeLimit)} pl-12`}
                                             disabled={updateQuizMutation.isPending}
                                         />
@@ -332,7 +332,7 @@ export const InstructorQuizEditPage = () => {
                                     {errors.attemptTimeLimit ? (
                                         <p className="text-red-500 text-xs font-bold mt-2 ml-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> {errors.attemptTimeLimit}</p>
                                     ) : (
-                                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Set <strong>0</strong> for unlimited time.</p>
+                                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Minimum <strong>5</strong> minutes required.</p>
                                     )}
                                 </div>
                             </div>

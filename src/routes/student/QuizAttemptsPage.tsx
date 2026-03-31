@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Award, ChevronRight, AlertCircle, Loader2, CheckCircle2, History, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Clock, Award, ChevronRight, AlertCircle, Loader2, CheckCircle2, History, LayoutGrid, Zap } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import { getQuizAttempts, type StartAttemptResponse } from '@/api/services/attempts.service';
@@ -46,6 +46,19 @@ export const QuizAttemptsPage = () => {
         if (s === 'submitted' || s === 'graded') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
         if (s === 'inprogress') return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
         return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+    };
+
+    const formatTimeSpent = (seconds?: number): string => {
+        if (!seconds || seconds < 1) return '< 1 sec';
+        if (seconds < 60) return `${Math.round(seconds)} sec`;
+        if (seconds < 3600) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.round(seconds % 60);
+            return secs === 0 ? `${mins} min` : `${mins} min ${secs} sec`;
+        }
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
     };
 
     if (isLoading) return (
@@ -138,10 +151,16 @@ export const QuizAttemptsPage = () => {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-8 lg:pl-8">
+                                        <div className="grid grid-cols-3 gap-6 lg:gap-8 lg:pl-8">
                                             <div>
                                                 <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Started</p>
                                                 <p className="text-sm font-bold text-slate-300">{formatDate(attempt.startAt)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                                    <Zap className="w-3 h-3" /> Time Spent
+                                                </p>
+                                                <p className="text-sm font-bold text-slate-300">{formatTimeSpent(attempt.timeSpent)}</p>
                                             </div>
                                             <div className="flex items-center justify-end">
                                                 <ChevronRight className="w-6 h-6 text-slate-700 group-hover:text-indigo-500 transition-all" />
