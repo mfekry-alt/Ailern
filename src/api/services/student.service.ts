@@ -79,41 +79,40 @@ export const getMyStudentAssignments = async (
     return results.flat(); 
 };
 
-/**
- * Get all quizzes for the student across all enrolled courses
- */
 export const getMyStudentQuizzes = async (
     courseId?: number,
-    preFetchedCourses?: GetStudentCoursesDto[],
-    paginationParams?: PaginationParams
+    preFetchedCourses?: GetStudentCoursesDto[]
 ): Promise<GetQuizDto[]> => {
+    // 1. لو بنجيب كويزات كورس واحد بس
     if (courseId) {
-        const res = await getCourseQuizzes(courseId.toString());
-        // Extract items safely
-        const data = (res as any)?.data ?? res;
-        if (Array.isArray(data)) return data;
-        if (data?.items && Array.isArray(data.items)) return data.items;
-        return [];
+        const res = await getCourseQuizzes(courseId.toString()) as any;
+        const data = res?.data ?? res;
+        const items = Array.isArray(data) ? data : (data?.items ?? []);
+
+        return items as GetQuizDto[];
     }
 
-    const courses = preFetchedCourses ?? await getMyStudentCourses(paginationParams);
+    const courses = preFetchedCourses ?? await getMyStudentCourses({ PageNumber: 1, PageSize: 100 });
 
     if (courses.length === 0) return [];
 
     const promises = courses.map(course =>
         getCourseQuizzes(course.id.toString())
             .then((res: any) => {
-
                 const data = res?.data ?? res;
-                if (Array.isArray(data)) return data;
-                if (data?.items && Array.isArray(data.items)) return data.items;
-                return [];
+                const items = Array.isArray(data) ? data : (data?.items ?? []);
+
+                // السحر هنا: بنضيف اسم الكورس لكل كويز راجع
+                return items.map((quiz: any) => ({
+                    ...quiz,
+                    courseName: course.name // بنضيف حقل جديد اسمه courseName
+                }));
             })
             .catch(() => [])
     );
 
     const results = await Promise.all(promises);
-    return results.flat(); 
+    return results.flat();
 };
 
 export interface StudentDashboardData {

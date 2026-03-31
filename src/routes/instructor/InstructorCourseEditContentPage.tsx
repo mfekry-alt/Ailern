@@ -244,7 +244,8 @@ export const InstructorCourseEditContentPage = () => {
 
     const filteredQuizzes = useMemo(() => {
         const normalizedSearch = quizSearch.trim().toLowerCase();
-        const filtered = courseQuizzes.filter((q) => {
+        const quizArray = Array.isArray(courseQuizzes) ? courseQuizzes : [];
+        const filtered = quizArray.filter((q) => {
             const apiStatus = String((q as any).quizStatus ?? (q as any).status ?? '').toLowerCase();
             const selectedStatus = quizFilterStatus.toLowerCase();
             const statusOk = quizFilterStatus === 'all' || apiStatus === selectedStatus;
@@ -261,7 +262,7 @@ export const InstructorCourseEditContentPage = () => {
     }, [courseQuizzes, quizFilterStatus, quizSortBy, quizSearch]);
 
     const quizDetailsQueries = useQueries({
-        queries: courseQuizzes.map((quiz) => ({
+        queries: (Array.isArray(courseQuizzes) ? courseQuizzes : []).map((quiz) => ({
             queryKey: QUERY_KEYS.QUIZ(String(quiz.id)),
             queryFn: () => quizService.getQuiz(String(quiz.id)),
             enabled: !!quiz.id,
@@ -271,7 +272,8 @@ export const InstructorCourseEditContentPage = () => {
 
     const quizStatsById = useMemo(() => {
         const stats = new Map<string, { questionsCount: number; totalPoints: number }>();
-        courseQuizzes.forEach((quiz, index) => {
+        const quizArray = Array.isArray(courseQuizzes) ? courseQuizzes : [];
+        quizArray.forEach((quiz, index) => {
             const details = quizDetailsQueries[index]?.data as any;
             if (!details) return;
             const questions = Array.isArray(details.questions) ? details.questions : [];

@@ -1,14 +1,12 @@
-import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, Award, ChevronRight, AlertCircle, Loader2, CheckCircle2, History, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Clock, Award, ChevronRight, AlertCircle, Loader2, CheckCircle2, History, LayoutGrid } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { getQuizAttempts, getStudentAnswers, type StartAttemptResponse } from '@/api/services/attempts.service';
+import { getQuizAttempts, type StartAttemptResponse } from '@/api/services/attempts.service';
 
 export const QuizAttemptsPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [unansweredCounts, setUnansweredCounts] = useState<Record<string, number>>({});
 
     // 1. جلب تفاصيل الكويز
     const { data: quiz, isLoading: quizLoading } = useQuery({
@@ -26,38 +24,6 @@ export const QuizAttemptsPage = () => {
         queryFn: () => getQuizAttempts(id!),
         enabled: !!id,
     });
-
-    // 3. حساب الأسئلة غير المجابة
-    useEffect(() => {
-        const loadUnansweredCounts = async () => {
-            if (!quiz?.questions || !attempts.length) return;
-
-            const totalQuestions = quiz.questions.length;
-            const counts: Record<string, number> = {};
-
-            for (const attempt of attempts) {
-                // استخدام id بدلاً من attemptId لأن StartAttemptResponse تستخدم id
-                const attId = attempt.id;
-                const status = String(attempt.status).toLowerCase().replace('-', '');
-                const isFinished = status === 'submitted' || status === 'graded';
-
-                if (isFinished && attId) {
-                    try {
-                        const studentAnswers = await getStudentAnswers(attId);
-                        const answeredCount = studentAnswers.filter(a =>
-                            (a.studentAnswer && String(a.studentAnswer).trim() !== '') || (a.points !== undefined && a.points !== null)
-                        ).length;
-                        counts[attId] = Math.max(0, totalQuestions - answeredCount);
-                    } catch (error) {
-                        counts[attId] = 0;
-                    }
-                }
-            }
-            setUnansweredCounts(counts);
-        };
-
-        loadUnansweredCounts();
-    }, [quiz, attempts]);
 
     const isLoading = quizLoading || attemptsLoading;
 

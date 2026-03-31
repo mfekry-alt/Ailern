@@ -157,9 +157,14 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-indigo-500"></div>
                 )}
                 <div className="flex justify-between items-start gap-4 mb-3">
-                    <h3 className="text-xl font-bold text-white leading-tight line-clamp-2 group-hover:text-purple-400 transition-colors">
-                        {quiz.title}
-                    </h3>
+                    <div className="flex-1">
+                        <h3 className="text-xl font-bold text-white leading-tight line-clamp-2 group-hover:text-purple-400 transition-colors">
+                            {quiz.title}
+                        </h3>
+                        {quiz.courseName && (
+                            <p className="text-xs font-semibold text-slate-400 mt-1 truncate">{quiz.courseName}</p>
+                        )}
+                    </div>
                     <div className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap border ${status.badgeBg}`}>
                         {StatusIcon && <StatusIcon className="w-3.5 h-3.5" />}
                         {status.label}

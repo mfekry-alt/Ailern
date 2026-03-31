@@ -64,6 +64,9 @@ export const QuizAttemptViewer = () => {
     const answersRef = useRef(answers);
     const attemptIdRef = useRef(attemptId);
 
+    // 🛡️ درع الحماية لمنع تكرار الريكويست في React Strict Mode
+    const hasStartedInitialization = useRef(false);
+
     useEffect(() => { answersRef.current = answers; }, [answers]);
     useEffect(() => { attemptIdRef.current = attemptId; }, [attemptId]);
 
@@ -99,7 +102,7 @@ export const QuizAttemptViewer = () => {
             const payload = formatAnswersForBackend(currentAnswers);
             // 1. Save Progress first
             await attemptsService.saveAttemptProgress(currentAttemptId, payload);
-            // 2. Submit Final (Takes 1 argument only!)
+            // 2. Submit Final
             await attemptsService.submitQuizAttempt(currentAttemptId);
 
             setSubmitted(true);
@@ -128,6 +131,12 @@ export const QuizAttemptViewer = () => {
             setIsLoading(false);
             return;
         }
+
+        // 🛡️ السحر هنا: لو الكود اشتغل قبل كده، اعمل return فوراً ومتبعتش حاجة للسيرفر
+        if (hasStartedInitialization.current) {
+            return;
+        }
+        hasStartedInitialization.current = true;
 
         const loadQuiz = async () => {
             try {
@@ -204,6 +213,11 @@ export const QuizAttemptViewer = () => {
         };
 
         loadQuiz();
+
+        // 🛡️ إعادة تعيين الحارس لو المكون اتعمله Unmount (عشان لو خرج ورجع تاني)
+        return () => {
+            hasStartedInitialization.current = false;
+        };
     }, [quizId, attemptIdFromUrl]);
 
     // --- Timer Tick Effect ---
@@ -261,7 +275,7 @@ export const QuizAttemptViewer = () => {
             const payload = formatAnswersForBackend(answers);
             // 1. Save Progress first
             await attemptsService.saveAttemptProgress(attemptId, payload);
-            // 2. Submit Final (Takes 1 argument only!)
+            // 2. Submit Final
             await attemptsService.submitQuizAttempt(attemptId);
 
             setSubmitted(true);

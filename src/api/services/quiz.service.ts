@@ -81,16 +81,36 @@ export const createQuiz = async (command: CreateQuizCommand): Promise<GetQuizDto
  */
 export const getCourseQuizzes = async (courseId: string | number): Promise<GetQuizDto[]> => {
     try {
-        const response = await api.get<ApiResponse<GetQuizDto[]> | GetQuizDto[]>(ENDPOINTS.QUIZZES.BY_COURSE(String(courseId)));
+        const response = await api.get<any>(ENDPOINTS.QUIZZES.BY_COURSE(String(courseId)));
+
+        // التعامل مع الرد سواء كان مصفوفة مباشرة أو كائن مغلف
         const payload = response.data;
-        return Array.isArray(payload) ? payload : (payload.data ?? []);
-    } catch {
-        // Fallback endpoint if the primary one fails
-        const response = await api.get<ApiResponse<GetQuizDto[]> | GetQuizDto[]>(ENDPOINTS.QUIZZES.LIST, {
+
+        // 1. لو الداتا جوه data.items (زي ما ظاهر في الصورة الأخيرة)
+        if (payload?.data?.items && Array.isArray(payload.data.items)) {
+            return payload.data.items;
+        }
+
+        // 2. لو الداتا جوه data مباشرة
+        if (payload?.data && Array.isArray(payload.data)) {
+            return payload.data;
+        }
+
+        // 3. لو الرد مصفوفة مباشرة
+        if (Array.isArray(payload)) {
+            return payload;
+        }
+
+        return [];
+    } catch (error) {
+        console.error('Fetch quizzes failed, trying fallback...', error);
+        // Fallback endpoint
+        const response = await api.get<any>(ENDPOINTS.QUIZZES.LIST, {
             params: { courseId },
         });
         const payload = response.data;
-        return Array.isArray(payload) ? payload : (payload.data ?? []);
+        const data = payload?.data?.items ?? payload?.data ?? payload;
+        return Array.isArray(data) ? data : [];
     }
 };
 

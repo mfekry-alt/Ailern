@@ -402,6 +402,7 @@ export interface GetQuizDto {
     title: string;
     description?: string;
     courseId: string | number;
+    courseName?: string;
     maximumAttempts: number;
     attemptTimeLimit: number;  // Added Duration Field
     status: QuizStatus;

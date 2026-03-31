@@ -6,10 +6,9 @@ import { getMyStudentQuizzes } from '@/api/services/student.service';
 import { QuizCard } from '@/components/QuizCard';
 import type { GetQuizDto } from '@/types/api.types';
 
-// Parse server dates correctly by treating them as UTC if they don't have timezone info
+// Parse server dates correctly
 const parseServerDate = (dateString?: string): Date => {
     if (!dateString) return new Date();
-    // Add 'Z' suffix if not present to ensure the browser interprets it as UTC
     const normalizedDate = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
     return new Date(normalizedDate);
 };
@@ -17,7 +16,6 @@ const parseServerDate = (dateString?: string): Date => {
 export const QuizzesPage = () => {
     const navigate = useNavigate();
     const [filterStatus, setFilterStatus] = useState('all');
-    // filterCourse is declared but never used in the UI, I'll keep it just in case you need it later.
     const [filterCourse, setFilterCourse] = useState('all');
     const [showStats, setShowStats] = useState(true);
     const [startingQuizId, setStartingQuizId] = useState<string | null>(null);
@@ -30,7 +28,6 @@ export const QuizzesPage = () => {
         },
     });
 
-    // Determine quiz computed status with proper timezone handling
     const getQuizComputedStatus = (quiz: GetQuizDto) => {
         const now = new Date();
         const from = parseServerDate(quiz.availableFrom);
@@ -42,19 +39,17 @@ export const QuizzesPage = () => {
         return 'available';
     };
 
+    // Logic الفلترة - اتأكد إنه بيقرأ الحالتين مع بعض
     const filteredQuizzes = useMemo(() => {
-        return quizzesData.filter((quiz) => {
-            if (filterStatus !== 'all' && getQuizComputedStatus(quiz) !== filterStatus) {
-                return false;
-            }
-            return true;
+        return quizzesData.filter((quiz: any) => {
+            const statusMatch = filterStatus === 'all' || getQuizComputedStatus(quiz) === filterStatus;
+            const courseMatch = filterCourse === 'all' || quiz.courseName === filterCourse;
+            return statusMatch && courseMatch;
         });
-    }, [quizzesData, filterStatus]);
+    }, [quizzesData, filterStatus, filterCourse]);
 
-    // Calculate stats for KPI Cards
     const rawStats = {
         total: quizzesData.length,
-        // Used studentAttemptCount instead of submissionsCount based on your new API fields
         completed: quizzesData.filter((q) => (q.studentAttemptCount || 0) > 0).length,
         pending: quizzesData.filter(
             (q) => (q.studentAttemptCount || 0) === 0 && getQuizComputedStatus(q) === 'available'
@@ -69,7 +64,14 @@ export const QuizzesPage = () => {
         { id: 'stat-completed', label: 'Completed', value: rawStats.completed, icon: CheckCircle, color: 'purple' },
     ];
 
-    // Handle start/resume quiz
+    const courseNames = useMemo(() => {
+        const uniqueCourses = new Set<string>();
+        quizzesData.forEach((quiz: any) => {
+            if (quiz.courseName) uniqueCourses.add(quiz.courseName);
+        });
+        return Array.from(uniqueCourses).sort();
+    }, [quizzesData]);
+
     const handleStartQuiz = async (quizId: string) => {
         setStartingQuizId(quizId);
         try {
@@ -82,12 +84,10 @@ export const QuizzesPage = () => {
         }
     };
 
-    // Handle view attempts
     const handleViewAttempts = (quizId: string) => {
         navigate(`/quizzes/${quizId}/attempts`);
     };
 
-    // Loading State
     if (isLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
@@ -99,7 +99,6 @@ export const QuizzesPage = () => {
         );
     }
 
-    // Error State
     if (error) {
         return (
             <div className="min-h-screen p-4 sm:p-6 lg:p-8 flex items-center justify-center bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
@@ -140,7 +139,6 @@ export const QuizzesPage = () => {
                 {/* Stats Cards */}
                 {showStats && (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-in fade-in slide-in-from-top-4">
-                        {/* ✅ ADDED UNIQUE KEY TO STATS MAP */}
                         {stats.map((stat) => {
                             const Icon = stat.icon;
                             return (
@@ -159,36 +157,70 @@ export const QuizzesPage = () => {
                     </div>
                 )}
 
-                {/* Filters */}
-                <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-2 flex flex-wrap gap-2 shadow-sm w-fit relative z-10">
-                    {/* ✅ KEY IS ALREADY HERE, BUT MADE SURE IT'S PERFECT */}
-                    {['all', 'available', 'upcoming', 'expired'].map((status) => (
-                        <button
-                            key={`filter-${status}`}
-                            onClick={() => setFilterStatus(status)}
-                            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all capitalize ${filterStatus === status
-                                ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25'
-                                : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50'
-                                }`}
-                        >
-                            {status === 'all' ? 'All Quizzes' : status}
-                        </button>
-                    ))}
+                {/* Filters Row */}
+                <div className="flex flex-col lg:flex-row gap-4 items-center justify-between w-full">
+
+                    {/* 1. Status Filters (على الشمال) */}
+                    <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-2 flex flex-wrap gap-2 shadow-sm relative z-10">
+                        {['all', 'available', 'upcoming', 'expired'].map((status) => (
+                            <button
+                                key={`filter-status-${status}`}
+                                onClick={() => setFilterStatus(status)}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all capitalize ${filterStatus === status
+                                    ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25'
+                                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50'
+                                    }`}
+                            >
+                                {status === 'all' ? 'All Quizzes' : status}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* 2. Course Filters (على اليمين) */}
+                    {courseNames.length > 0 && (
+                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-2 flex flex-wrap gap-2 shadow-sm relative z-10">
+                            {/* أسماء الكورسات تظهر الأول */}
+                            {courseNames.map((course) => (
+                                <button
+                                    key={`filter-course-${course}`}
+                                    onClick={() => setFilterCourse(course)}
+                                    className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all truncate max-w-[150px] ${filterCourse === course
+                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+                                        : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50'
+                                        }`}
+                                    title={course}
+                                >
+                                    {course}
+                                </button>
+                            ))}
+                            {/* زرار All Courses يظهر في الآخر (أقصى اليمين) */}
+                            <button
+                                onClick={() => setFilterCourse('all')}
+                                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all capitalize ${filterCourse === 'all'
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+                                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50'
+                                    }`}
+                            >
+                                All Courses
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Quiz Grid */}
                 {filteredQuizzes.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* ✅ THE MOST IMPORTANT KEY IS HERE */}
-                        {filteredQuizzes.map((quiz) => (
-                            <QuizCard
-                                key={`quiz-${quiz.id}`}
-                                quiz={quiz}
-                                onStartQuiz={handleStartQuiz}
-                                onViewAttempts={handleViewAttempts}
-                                isLoading={startingQuizId === quiz.id}
-                                parseServerDate={parseServerDate}
-                            />
+                        {filteredQuizzes.map((quiz: any) => (
+                            <div key={`quiz-container-${quiz.id}`}>
+                                {/* تم حذف الـ span الخاص بـ courseName من هنا */}
+                                <QuizCard
+                                    quiz={quiz}
+                                    onStartQuiz={handleStartQuiz}
+                                    onViewAttempts={handleViewAttempts}
+                                    isLoading={startingQuizId === quiz.id}
+                                    parseServerDate={parseServerDate}
+                                />
+                            </div>
                         ))}
                     </div>
                 ) : (
@@ -199,16 +231,8 @@ export const QuizzesPage = () => {
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No quizzes found</h3>
                         <p className="text-gray-500 dark:text-slate-400 text-sm max-w-sm mb-6">
-                            You don't have any quizzes matching the "{filterStatus}" filter.
+                            You don't have any quizzes matching these filters.
                         </p>
-                        {filterStatus !== 'all' && (
-                            <button
-                                onClick={() => setFilterStatus('all')}
-                                className="px-6 py-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-bold rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
-                            >
-                                View All Quizzes
-                            </button>
-                        )}
                     </div>
                 )}
             </div>
