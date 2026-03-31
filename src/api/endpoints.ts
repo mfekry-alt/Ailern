@@ -78,6 +78,7 @@ export const ENDPOINTS = {
         JOB_STATUS: (jobId: string) => `/Quizzes/job/${jobId}`,
         GET_ATTEMPTS: (quizId: string) => `/Quizzes/${quizId}/attempts`,
         GET_SUBMISSIONS: (quizId: string) => `/Quizzes/${quizId}/submissions`,
+        
     },
 
     // Sections endpoints

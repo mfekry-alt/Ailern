@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Loader2, BrainCircuit, CheckCircle, Clock, AlertCircle, HelpCircle, LayoutGrid } from 'lucide-react';
 import { getMyStudentQuizzes } from '@/api/services/student.service';
-import { getQuizAttempts, type StartAttemptResponse } from '@/api/services/attempts.service';
 import { QuizCard } from '@/components/QuizCard';
 import type { GetQuizDto } from '@/types/api.types';
 
@@ -18,6 +17,7 @@ const parseServerDate = (dateString?: string): Date => {
 export const QuizzesPage = () => {
     const navigate = useNavigate();
     const [filterStatus, setFilterStatus] = useState('all');
+    // filterCourse is declared but never used in the UI, I'll keep it just in case you need it later.
     const [filterCourse, setFilterCourse] = useState('all');
     const [showStats, setShowStats] = useState(true);
     const [startingQuizId, setStartingQuizId] = useState<string | null>(null);
@@ -28,22 +28,6 @@ export const QuizzesPage = () => {
             const data = await getMyStudentQuizzes();
             return Array.isArray(data) ? data : [];
         },
-    });
-
-    // Fetch attempts for all quizzes in parallel
-    const attemptsQueries = useQueries({
-        queries: quizzesData.map((quiz) => ({
-            queryKey: ['quiz-attempts', quiz.id],
-            queryFn: () => getQuizAttempts(quiz.id),
-            enabled: !!quiz.id && !isLoading,
-        })),
-    });
-
-    // Map attempts by quiz ID for easy lookup
-    const attemptsByQuizId = new Map<string, StartAttemptResponse[]>();
-    quizzesData.forEach((quiz, index) => {
-        const attemptsData = attemptsQueries[index]?.data ?? [];
-        attemptsByQuizId.set(quiz.id, Array.isArray(attemptsData) ? attemptsData : []);
     });
 
     // Determine quiz computed status with proper timezone handling
@@ -70,18 +54,19 @@ export const QuizzesPage = () => {
     // Calculate stats for KPI Cards
     const rawStats = {
         total: quizzesData.length,
-        completed: quizzesData.filter((q) => (q.submissionsCount || 0) > 0).length,
+        // Used studentAttemptCount instead of submissionsCount based on your new API fields
+        completed: quizzesData.filter((q) => (q.studentAttemptCount || 0) > 0).length,
         pending: quizzesData.filter(
-            (q) => (q.submissionsCount || 0) === 0 && getQuizComputedStatus(q) === 'available'
+            (q) => (q.studentAttemptCount || 0) === 0 && getQuizComputedStatus(q) === 'available'
         ).length,
         available: quizzesData.filter((q) => getQuizComputedStatus(q) === 'available').length,
     };
 
     const stats = [
-        { label: 'Total Quizzes', value: rawStats.total, icon: LayoutGrid, color: 'blue' },
-        { label: 'Available Now', value: rawStats.available, icon: Clock, color: 'emerald' },
-        { label: 'Pending Action', value: rawStats.pending, icon: AlertCircle, color: 'amber' },
-        { label: 'Completed', value: rawStats.completed, icon: CheckCircle, color: 'purple' },
+        { id: 'stat-total', label: 'Total Quizzes', value: rawStats.total, icon: LayoutGrid, color: 'blue' },
+        { id: 'stat-available', label: 'Available Now', value: rawStats.available, icon: Clock, color: 'emerald' },
+        { id: 'stat-pending', label: 'Pending Action', value: rawStats.pending, icon: AlertCircle, color: 'amber' },
+        { id: 'stat-completed', label: 'Completed', value: rawStats.completed, icon: CheckCircle, color: 'purple' },
     ];
 
     // Handle start/resume quiz
@@ -155,10 +140,11 @@ export const QuizzesPage = () => {
                 {/* Stats Cards */}
                 {showStats && (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-in fade-in slide-in-from-top-4">
-                        {stats.map((stat, idx) => {
+                        {/* ✅ ADDED UNIQUE KEY TO STATS MAP */}
+                        {stats.map((stat) => {
                             const Icon = stat.icon;
                             return (
-                                <div key={idx} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group">
+                                <div key={stat.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group">
                                     <div className={`absolute left-0 top-0 w-1 h-full bg-${stat.color}-500`}></div>
                                     <div>
                                         <p className="text-gray-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
@@ -175,13 +161,14 @@ export const QuizzesPage = () => {
 
                 {/* Filters */}
                 <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-2 flex flex-wrap gap-2 shadow-sm w-fit relative z-10">
+                    {/* ✅ KEY IS ALREADY HERE, BUT MADE SURE IT'S PERFECT */}
                     {['all', 'available', 'upcoming', 'expired'].map((status) => (
                         <button
-                            key={status}
+                            key={`filter-${status}`}
                             onClick={() => setFilterStatus(status)}
                             className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all capitalize ${filterStatus === status
-                                    ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25'
-                                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50'
+                                ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25'
+                                : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50'
                                 }`}
                         >
                             {status === 'all' ? 'All Quizzes' : status}
@@ -192,14 +179,14 @@ export const QuizzesPage = () => {
                 {/* Quiz Grid */}
                 {filteredQuizzes.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* ✅ THE MOST IMPORTANT KEY IS HERE */}
                         {filteredQuizzes.map((quiz) => (
                             <QuizCard
-                                key={quiz.id}
+                                key={`quiz-${quiz.id}`}
                                 quiz={quiz}
                                 onStartQuiz={handleStartQuiz}
                                 onViewAttempts={handleViewAttempts}
                                 isLoading={startingQuizId === quiz.id}
-                                attempts={attemptsByQuizId.get(quiz.id) ?? []}
                                 parseServerDate={parseServerDate}
                             />
                         ))}

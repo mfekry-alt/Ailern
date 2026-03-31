@@ -25,14 +25,16 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
     const availableFrom = quiz.availableFrom ? parser(quiz.availableFrom) : null;
     const availableUntil = quiz.availableUntil ? parser(quiz.availableUntil) : null;
 
-    // Count completed (submitted) attempts from API data
-    const submittedAttempts = attempts.filter(a => a.status === 'Submitted').length;
-    const completedAttempts = submittedAttempts > 0 ? submittedAttempts : (quiz.submissionsCount || 0);
+    // Use studentAttemptCount from API (new field), fallback to submissionsCount
+    const completedAttempts = quiz.studentAttemptCount ?? (quiz.submissionsCount || 0);
     const remainingAttempts = quiz.maximumAttempts - completedAttempts;
 
     // Get question count and duration from quiz data
     const questionCount = quiz.questionsCount || 0;
     const duration = (quiz as any).attemptTimeLimit || 0; // Use 'any' if attemptTimeLimit isn't in GetQuizDto yet
+
+    // Check if student has active attempt (new field from API)
+    const hasActiveAttempt = quiz.hasActiveAttempt ?? false;
 
     // Calculate status
     const isNotStarted = availableFrom && now < availableFrom;

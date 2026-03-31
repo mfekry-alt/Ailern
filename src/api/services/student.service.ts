@@ -17,15 +17,20 @@ import { getCourseQuizzes } from './quiz.service';
 
 /**
  * Get student's enrolled courses
- * @param params - Pagination parameters
+ * @param params - Pagination parameters (defaults to pageNo=1, pageSize=4)
  * @returns List of student's courses
  */
 export const getMyStudentCourses = async (
     params?: PaginationParams
 ): Promise<GetStudentCoursesDto[]> => {
+    const paginationParams: PaginationParams = {
+        PageNumber: 1,
+        PageSize: 4,
+        ...params
+    };
     const response = await api.get<ApiResponse<GetStudentCoursesDto[]>>(
         ENDPOINTS.STUDENTS.MY_COURSES,
-        { params }
+        { params: paginationParams }
     );
     const payload = response.data?.data ?? response.data;
     if (Array.isArray(payload)) {
@@ -39,46 +44,76 @@ export const getMyStudentCourses = async (
 
 /**
  * Get all assignments for the student across all enrolled courses
- * @param courseId - Optional course ID to filter by
  */
 export const getMyStudentAssignments = async (
-    courseId?: number
+    courseId?: number,
+    preFetchedCourses?: GetStudentCoursesDto[],
+    paginationParams?: PaginationParams
 ): Promise<GetAssignmentDto[]> => {
     if (courseId) {
-        return getCourseAssignmentsForStudent(courseId);
+        const res = await getCourseAssignmentsForStudent(courseId, paginationParams);
+        // Extract items safely
+        const data = (res as any)?.data ?? res;
+        if (Array.isArray(data)) return data;
+        if (data?.items && Array.isArray(data.items)) return data.items;
+        return [];
     }
 
-    // specific endpoint for all assignments not available, aggregate from courses
-    const courses = await getMyStudentCourses();
+    const courses = preFetchedCourses ?? await getMyStudentCourses(paginationParams);
+
+    if (courses.length === 0) return [];
+
     const promises = courses.map(course =>
-        getCourseAssignmentsForStudent(course.id)
-            .catch(() => []) // Silently fail for individual course errors
-    );
-
-    const results = await Promise.all(promises);
-    return results.flat();
-};
-
-/**
- * Get all quizzes for the student across all enrolled courses
- * @param courseId - Optional course ID to filter by
- */
-export const getMyStudentQuizzes = async (
-    courseId?: number
-): Promise<GetQuizDto[]> => {
-    if (courseId) {
-        // Cast to string as quiz service expects string ID currently
-        return getCourseQuizzes(courseId.toString());
-    }
-
-    const courses = await getMyStudentCourses();
-    const promises = courses.map(course =>
-        getCourseQuizzes(course.id.toString())
+        getCourseAssignmentsForStudent(course.id, paginationParams)
+            .then((res: any) => {
+                // استخراج الداتا الحقيقية من الـ Object
+                const data = res?.data ?? res;
+                if (Array.isArray(data)) return data;
+                if (data?.items && Array.isArray(data.items)) return data.items;
+                return [];
+            })
             .catch(() => [])
     );
 
     const results = await Promise.all(promises);
-    return results.flat();
+    return results.flat(); 
+};
+
+/**
+ * Get all quizzes for the student across all enrolled courses
+ */
+export const getMyStudentQuizzes = async (
+    courseId?: number,
+    preFetchedCourses?: GetStudentCoursesDto[],
+    paginationParams?: PaginationParams
+): Promise<GetQuizDto[]> => {
+    if (courseId) {
+        const res = await getCourseQuizzes(courseId.toString());
+        // Extract items safely
+        const data = (res as any)?.data ?? res;
+        if (Array.isArray(data)) return data;
+        if (data?.items && Array.isArray(data.items)) return data.items;
+        return [];
+    }
+
+    const courses = preFetchedCourses ?? await getMyStudentCourses(paginationParams);
+
+    if (courses.length === 0) return [];
+
+    const promises = courses.map(course =>
+        getCourseQuizzes(course.id.toString())
+            .then((res: any) => {
+
+                const data = res?.data ?? res;
+                if (Array.isArray(data)) return data;
+                if (data?.items && Array.isArray(data.items)) return data.items;
+                return [];
+            })
+            .catch(() => [])
+    );
+
+    const results = await Promise.all(promises);
+    return results.flat(); 
 };
 
 export interface StudentDashboardData {
@@ -98,18 +133,18 @@ export interface StudentDashboardData {
  */
 export const getStudentDashboardData = async (): Promise<StudentDashboardData> => {
     try {
+        // 1. Fetch courses ONLY ONCE
         const courses = await getMyStudentCourses().catch(() => []);
 
-        // If course fetch failed or empty, we can't really get assignments/quizzes easily 
-        // without iterating them, or if specific endpoints don't exist.
-        // We'll proceed with empty lists if courses fail.
         let assignments: GetAssignmentDto[] = [];
         let quizzes: GetQuizDto[] = [];
 
+        // 2. If we have courses, fetch assignments and quizzes by PASSING the courses
         if (courses.length > 0) {
             const [fetchedAssignments, fetchedQuizzes] = await Promise.all([
-                getMyStudentAssignments().catch(() => []),
-                getMyStudentQuizzes().catch(() => [])
+                // Pass undefined for courseId, but pass the courses array as the second argument
+                getMyStudentAssignments(undefined, courses).catch(() => []),
+                getMyStudentQuizzes(undefined, courses).catch(() => [])
             ]);
             assignments = fetchedAssignments;
             quizzes = fetchedQuizzes;
@@ -148,4 +183,3 @@ export const getStudentDashboardData = async (): Promise<StudentDashboardData> =
         };
     }
 };
-

@@ -374,7 +374,7 @@ export interface CreateQuizCommand {
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
     shuffleOptions: boolean;
-    courseId:  string | number;
+    courseId: string | number;
     status: QuizStatus;
     publishedDate?: string | null;
     questions: QuestionRequest[];
@@ -411,6 +411,8 @@ export interface GetQuizDto {
     publishedAt?: string | null;
     submissionsCount?: number;
     questionsCount?: number;
+    studentAttemptCount?: number;
+    hasActiveAttempt?: boolean;
     createdAt: string;
     showResultOnClose?: boolean;
     shuffleQuestions?: boolean;
