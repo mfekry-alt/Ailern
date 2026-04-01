@@ -126,6 +126,7 @@ export const InstructorCourseEditContentPage = () => {
     const [quizSearch, setQuizSearch] = useState('');
     const [enrollPage, setEnrollPage] = useState(1);
     const enrollPageSize = 5;
+    const quizDetailsQueries: any[] = [];
 
     const tabs = ['Overview', 'Lectures & Materials', 'Assignments', 'Quizzes', 'Announcements', 'Students & Progress', 'Enrollments Requests'];
 
@@ -260,15 +261,6 @@ export const InstructorCourseEditContentPage = () => {
             return new Date((b as any).createdAt ?? 0).getTime() - new Date((a as any).createdAt ?? 0).getTime();
         });
     }, [courseQuizzes, quizFilterStatus, quizSortBy, quizSearch]);
-
-    const quizDetailsQueries = useQueries({
-        queries: (Array.isArray(courseQuizzes) ? courseQuizzes : []).map((quiz) => ({
-            queryKey: QUERY_KEYS.QUIZ(String(quiz.id)),
-            queryFn: () => quizService.getQuiz(String(quiz.id)),
-            enabled: !!quiz.id,
-            staleTime: 60_000,
-        })),
-    });
 
     const quizStatsById = useMemo(() => {
         const stats = new Map<string, { questionsCount: number; totalPoints: number }>();

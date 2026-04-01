@@ -559,7 +559,7 @@ export const QuizAttemptViewer = () => {
                         )}
 
                         {isReviewMode ? (
-                            <button onClick={() => navigate('/quizzes')} className="px-8 py-4 rounded-2xl bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white font-black uppercase tracking-wider hover:bg-gray-200 dark:hover:bg-slate-700 transition-all border border-gray-200 dark:border-slate-700">
+                            <button onClick={() => navigate(-1)} className="px-8 py-4 rounded-2xl bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white font-black uppercase tracking-wider hover:bg-gray-200 dark:hover:bg-slate-700 transition-all border border-gray-200 dark:border-slate-700">
                                 Exit Review
                             </button>
                         ) : (

@@ -330,7 +330,10 @@ export const InstructorQuizQuestionsEditPage = () => {
         } catch (e: any) {
             console.error('[UpdateQuiz] error:', e?.response?.status, e?.response?.data, e);
             const d = e?.response?.data;
-            const fieldErrors = d?.errors ? Object.entries(d.errors as Record<string, string[]>).map(([field, msgs]) => `${field}: ${msgs.join(', ')}`).join(' | ') : null;
+            // Filter out nested array errors like Questions[0].Options
+            const fieldErrors = d?.errors ? Object.entries(d.errors as Record<string, string[]>)
+                .filter(([field]) => !field.includes('['))
+                .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`).join(' | ') : null;
             const title = d?.message || d?.title;
             const extracted = fieldErrors ? (title ? `${title} — ${fieldErrors}` : fieldErrors) : (title || e?.message || 'Failed to update quiz. Please try again.');
             setError(extracted);
@@ -483,8 +486,8 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                 onDragEnd={() => setDraggedUid(null)}
                                                 onClick={() => scrollToQuestion(q.uid)}
                                                 className={`w-full text-left rounded-xl border p-3 transition-all flex items-start gap-2 group ${complete
-                                                        ? 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:hover:bg-emerald-500/10'
-                                                        : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700/50'
+                                                    ? 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:hover:bg-emerald-500/10'
+                                                    : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700/50'
                                                     }`}
                                             >
                                                 <GripVertical className="w-4 h-4 text-gray-300 dark:text-slate-500 mt-1 cursor-grab group-hover:text-gray-500" />

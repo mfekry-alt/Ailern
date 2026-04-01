@@ -5,7 +5,7 @@ import type { CreateQuizCommand } from '@/types/api.types';
 import { ROUTES } from '@/lib/constants';
 import {
     ArrowLeft, AlertTriangle, Settings, CalendarClock,
-    Eye, Timer, Save, RefreshCw, Edit3, ListChecks
+    Eye, Timer, Save, RefreshCw, Edit3, ListChecks, FileArchive
 } from 'lucide-react';
 
 const labelCls = 'block text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1';
@@ -17,16 +17,20 @@ const getInputCls = (hasError: boolean) =>
 
 export const InstructorQuizEditPage = () => {
     const { courseId, id } = useParams<{ courseId?: string; id: string }>();
-    const quizId = id; // تعريف الـ quizId لتوافق باقي الكود
+    const quizId = id;
     const navigate = useNavigate();
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<{ message: string; errors?: Record<string, string[]> } | null>(null);
+
+    // 💡 حالة جديدة عشان نعرض رسالة للمدرس إننا رجعناله مسودة
+    const [restoredFromDraft, setRestoredFromDraft] = useState(false);
 
     // Fetch existing quiz data
     const { data: quizData, isLoading: isFetchingQuiz, error: fetchError } = useQuiz(quizId || '');
 
-    // استنتاج الـ courseId الصحيح
-    const actualCourseId = courseId || quizData?.courseId?.toString() || '';
+    // مفتاح الحفظ في الـ Local Storage (مميز لكل كويز)
+    const DRAFT_KEY = `quiz_draft_${quizId}`;
 
+    const actualCourseId = courseId || quizData?.courseId?.toString() || '';
     const updateQuizMutation = useUpdateQuiz(actualCourseId);
 
     const [formData, setFormData] = useState<CreateQuizCommand>({
@@ -48,8 +52,24 @@ export const InstructorQuizEditPage = () => {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [saveAction, setSaveAction] = useState<'settings' | 'questions'>('settings');
 
+    // 1️⃣ استرجاع البيانات (Load Data)
     useEffect(() => {
         if (quizData) {
+            // محاولة جلب المسودة المحفوظة
+            const savedDraft = localStorage.getItem(DRAFT_KEY);
+
+            if (savedDraft) {
+                try {
+                    const parsedDraft = JSON.parse(savedDraft);
+                    setFormData(parsedDraft);
+                    setRestoredFromDraft(true);
+                    return; // لو لقينا مسودة، استخدمها ومتكملش قراءة من الداتابيز
+                } catch (e) {
+                    console.error('Failed to parse draft', e);
+                }
+            }
+
+            // لو مفيش مسودة، اقرأ البيانات العادية من السيرفر
             setFormData({
                 title: quizData.title,
                 description: quizData.description || '',
@@ -66,11 +86,24 @@ export const InstructorQuizEditPage = () => {
                 questions: quizData.questions ?? [],
             });
         }
-    }, [quizData, actualCourseId]);
+    }, [quizData, actualCourseId, DRAFT_KEY]);
+
+    // 2️⃣ الحفظ التلقائي (Auto-Save to LocalStorage)
+    useEffect(() => {
+        // مش هنحفظ حاجة إلا لو البيانات الأصلية حملت
+        if (!quizData) return;
+
+        // بنستخدم Debounce عشان منعملش حفظ مع كل حرف بالضبط (بياخد ثانية تأخير)
+        const timeoutId = setTimeout(() => {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+        }, 1000);
+
+        return () => clearTimeout(timeoutId);
+    }, [formData, quizData, DRAFT_KEY]);
 
     useEffect(() => {
         if (fetchError) {
-            setError('Failed to load quiz details.');
+            setError({ message: 'Failed to load quiz details.' });
         }
     }, [fetchError]);
 
@@ -102,10 +135,8 @@ export const InstructorQuizEditPage = () => {
         return new Date(inputValue).toISOString();
     };
 
-    // Get current time string for "min" attributes
     const nowLocalString = formatDateTimeForInput(new Date().toISOString());
 
-    // Validation Logic
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
 
@@ -116,7 +147,6 @@ export const InstructorQuizEditPage = () => {
         const availableUntil = new Date(formData.availableUntil);
         const now = new Date();
 
-        // Allow 5 minutes grace period for current time to avoid strict blocks while filling the form
         if (availableFrom.getTime() < (now.getTime() - 5 * 60000)) {
             newErrors.availableFrom = 'Start date cannot be in the past.';
         }
@@ -152,21 +182,40 @@ export const InstructorQuizEditPage = () => {
 
         try {
             setError(null);
-            await updateQuizMutation.mutateAsync({
-                id: quizId!,
-                cmd: formData,
-            });
 
-            // Navigation based on user choice
             if (actionType === 'settings') {
-                navigate(`/courses/${actualCourseId}/quizzes/${quizId}`);
+                const payload = {
+                    ...formData,
+                    questions: formData.questions && formData.questions.length > 0
+                        ? formData.questions
+                        : (quizData?.questions || []),
+                };
+
+                await updateQuizMutation.mutateAsync({
+                    id: quizId!,
+                    cmd: payload,
+                });
+
+                // 3️⃣ مسح المسودة بعد الحفظ الناجح
+                localStorage.removeItem(DRAFT_KEY);
+                setRestoredFromDraft(false);
+
+                navigate(`/instructor/courses/${actualCourseId}/content`);
             } else {
-                // Navigate to the questions editor
+                // 3️⃣ مسح المسودة عشان هيروح يكمل في صفحة الأسئلة
+                localStorage.removeItem(DRAFT_KEY);
+                setRestoredFromDraft(false);
+
                 navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', quizId!));
             }
         } catch (err: any) {
             console.error('Failed to update quiz:', err);
-            setError(err.response?.data?.message || 'Failed to update quiz. Please try again.');
+            const apiErrors = err.response?.data?.errors;
+            const message = err.response?.data?.message || 'Failed to update quiz. Please try again.';
+            setError({
+                message,
+                errors: apiErrors,
+            });
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
@@ -189,7 +238,7 @@ export const InstructorQuizEditPage = () => {
                     <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-6 opacity-80" />
                     <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Quiz Not Found</h1>
                     <p className="text-gray-500 dark:text-slate-400 mb-8 font-medium">The quiz you are trying to update is missing or doesn't exist.</p>
-                    <button onClick={() => navigate(actualCourseId ? `/courses/${actualCourseId}/quizzes` : '/courses')} className="w-full px-6 py-4 bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-white font-bold rounded-2xl transition-colors hover:bg-gray-200 dark:hover:bg-slate-600">
+                    <button onClick={() => navigate(actualCourseId ? `/instructor/courses/${actualCourseId}/content` : '/instructor/courses')} className="w-full px-6 py-4 bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-white font-bold rounded-2xl transition-colors hover:bg-gray-200 dark:hover:bg-slate-600">
                         Back to Quizzes
                     </button>
                 </div>
@@ -206,7 +255,7 @@ export const InstructorQuizEditPage = () => {
                     <div className="flex items-center gap-4">
                         <button
                             type="button"
-                            onClick={() => navigate(`/courses/${actualCourseId}/quizzes/${quizId}`)}
+                            onClick={() => navigate(-1)}
                             className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 shadow-sm"
                         >
                             <ArrowLeft className="w-5 h-5" />
@@ -222,11 +271,51 @@ export const InstructorQuizEditPage = () => {
                     </div>
                 </div>
 
+                {/* Draft Restored Banner */}
+                {restoredFromDraft && (
+                    <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl p-4 flex items-center justify-between animate-in fade-in">
+                        <div className="flex items-center gap-3">
+                            <FileArchive className="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0" />
+                            <p className="text-sm font-bold text-amber-800 dark:text-amber-400">
+                                Unsaved changes were restored from your last session.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                localStorage.removeItem(DRAFT_KEY);
+                                setRestoredFromDraft(false);
+                                window.location.reload(); // Reload to get fresh data
+                            }}
+                            className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 hover:underline"
+                        >
+                            Discard Draft
+                        </button>
+                    </div>
+                )}
+
                 {/* Error Banner */}
                 {error && (
-                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-5 flex items-center gap-3 animate-in fade-in">
-                        <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-                        <p className="text-sm font-bold text-red-700 dark:text-red-400">{error}</p>
+                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-5 animate-in fade-in">
+                        <div className="flex items-start gap-3 mb-3">
+                            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                            <p className="text-sm font-bold text-red-700 dark:text-red-400">{error.message}</p>
+                        </div>
+                        {error.errors && Object.keys(error.errors).length > 0 && (
+                            <div className="ml-8 space-y-2 border-t border-red-200 dark:border-red-500/20 pt-3 mt-3">
+                                {Object.entries(error.errors).map(([field, messages]) => {
+                                    const formattedField = field.replace(/Questions\[(\d+)\]/g, (match, p1) => `Question ${parseInt(p1) + 1} `).replace(/\./g, ' ');
+                                    return (
+                                        <div key={field} className="space-y-1">
+                                            <p className="text-xs font-semibold text-red-600 dark:text-red-300 uppercase tracking-wide">{formattedField}</p>
+                                            {Array.isArray(messages) && messages.map((msg, idx) => (
+                                                <p key={idx} className="text-xs text-red-600 dark:text-red-300 leading-relaxed">• {msg}</p>
+                                            ))}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -416,7 +505,11 @@ export const InstructorQuizEditPage = () => {
                     <div className="p-6 sm:p-8 bg-gray-50/50 dark:bg-slate-900/50 border-t border-gray-200 dark:border-slate-700/50 flex flex-col lg:flex-row gap-4 justify-between items-center">
                         <button
                             type="button"
-                            onClick={() => navigate(`/courses/${actualCourseId}/quizzes/${quizId}`)}
+                            onClick={() => {
+                                // مسح الـ Draft لو داس إلغاء عشان ميرجعش ليه تاني لو مدخلش يعدل بجد
+                                localStorage.removeItem(DRAFT_KEY);
+                                navigate(-1);
+                            }}
                             disabled={updateQuizMutation.isPending}
                             className="w-full lg:w-auto px-8 py-3.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold transition-all text-sm shadow-sm disabled:opacity-50"
                         >
@@ -444,7 +537,7 @@ export const InstructorQuizEditPage = () => {
                                 className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                             >
                                 {updateQuizMutation.isPending && saveAction === 'questions' ? (
-                                    <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</>
+                                    <><RefreshCw className="w-4 h-4 animate-spin" /> Moving...</>
                                 ) : (
                                     <><ListChecks className="w-4 h-4" /> Save & Edit Questions</>
                                 )}

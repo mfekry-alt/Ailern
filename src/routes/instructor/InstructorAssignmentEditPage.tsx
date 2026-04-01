@@ -5,7 +5,6 @@ import { ArrowLeft, Save, Upload, X, FileText, Loader2, Settings, CalendarClock,
 import { useAssignment, useUpdateAssignment } from '@/features/assignments/api';
 import { useInstructorCourses } from '@/features/courses/api';
 import { handleApiError } from '@/api/client';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 const inputCls =
     'w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed';
@@ -123,7 +122,14 @@ export const InstructorAssignmentEditPage = () => {
     };
 
     if (isLoading) {
-        return <LoadingSpinner />;
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center transition-colors duration-300">
+                <div className="flex flex-col items-center space-y-4">
+                    <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Loading assignment details...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
