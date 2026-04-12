@@ -1,3 +1,5 @@
+import { updateAssignment } from "./services/assignment.service";
+
 export const ENDPOINTS = {
     // Auth endpoints (based on API: /api/Auth/*)
     AUTH: {
@@ -74,11 +76,11 @@ export const ENDPOINTS = {
         BY_COURSE: (courseId: string) => `/courses/${courseId}/quizzes`,
         LIST: '/Quizzes',
         GENERATE_BY_AI: (quizId: string) => `/Quizzes/${quizId}/generate-by-ai`,
+        UPSERT_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/questions`,
         GENERATE_FILES: (quizId: string) => `/Quizzes/${quizId}/generate-questions-files`,
         JOB_STATUS: (jobId: string) => `/Quizzes/job/${jobId}`,
         GET_ATTEMPTS: (quizId: string) => `/Quizzes/${quizId}/attempts`,
         GET_SUBMISSIONS: (quizId: string) => `/Quizzes/${quizId}/submissions`,
-        
     },
 
     // Sections endpoints

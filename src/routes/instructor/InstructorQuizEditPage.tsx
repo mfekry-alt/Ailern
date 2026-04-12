@@ -141,7 +141,7 @@ export const InstructorQuizEditPage = () => {
         const newErrors: Record<string, string> = {};
 
         if (!formData.title.trim()) newErrors.title = 'Title is required';
-        else if (formData.title.length > 255) newErrors.title = 'Title must be 255 characters or less';
+        else if (formData.title.length > 200) newErrors.title = 'Title must be 200 characters or less';
 
         const availableFrom = new Date(formData.availableFrom);
         const availableUntil = new Date(formData.availableUntil);
@@ -154,8 +154,8 @@ export const InstructorQuizEditPage = () => {
         if (availableUntil <= availableFrom) {
             newErrors.availableUntil = 'End date must be strictly AFTER the start date.';
         }
-
-        if (formData.maximumAttempts < 1) newErrors.maximumAttempts = 'Attempts allowed must be at least 1';
+        if ((formData.description ?? '').length > 2000)
+            newErrors.description = 'Description must be 2000 characters or less.';        if (formData.maximumAttempts < 1) newErrors.maximumAttempts = 'Attempts allowed must be at least 1';
         if (formData.attemptTimeLimit < 5) newErrors.attemptTimeLimit = 'Time limit must be at least 5 minutes.';
 
         if (formData.status === 'Scheduled') {

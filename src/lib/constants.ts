@@ -53,7 +53,7 @@ export const ROUTES = {
     INSTRUCTOR_COURSE_NEW: '/instructor/courses/new',
     INSTRUCTOR_COURSE_EDIT: '/instructor/courses/:id/edit',
     INSTRUCTOR_COURSE_EDIT_CONTENT: '/instructor/courses/:id/content',
-    INSTRUCTOR_GRADEBOOK: '/instructor/gradebook',   
+    INSTRUCTOR_GRADEBOOK: '/instructor/gradebook',
     INSTRUCTOR_ASSIGNMENTS: '/instructor/assignments',
     INSTRUCTOR_ASSIGNMENT_CREATE: '/instructor/assignments/create',
     INSTRUCTOR_ASSIGNMENT_EDIT: '/instructor/assignments/:id/edit',
@@ -85,12 +85,18 @@ export const QUERY_KEYS = {
     ENROLLMENT: (id: string) => ['enrollment', id],
     QUIZZES: (courseId: string) => ['quizzes', courseId],
     QUIZ: (id: string) => ['quiz', id],
+    QUIZ_SUBMISSIONS: (quizId: string, status?: string) => status
+        ? ['quiz-submissions', quizId, status]
+        : ['quiz-submissions', quizId],
     USERS: ['users'],
     USER: (id: string) => ['user', id],
     ASSIGNMENTS: ['assignments'],
     ASSIGNMENT: (id: number) => ['assignment', id],
     INSTRUCTOR_ASSIGNMENTS: ['instructor-assignments'],
     ASSIGNMENT_SUBMISSIONS: (assignmentId: number) => ['assignment-submissions', assignmentId],
+    ATTEMPTS: (quizId: string) => ['attempts', quizId],
+    ATTEMPT: (attemptId: string) => ['attempt', attemptId],
+    ATTEMPT_GRADE: (attemptId: string) => ['attempt-grade', attemptId],
 } as const;
 
 export const STORAGE_KEYS = {

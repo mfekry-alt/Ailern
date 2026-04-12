@@ -3,7 +3,7 @@
  */
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
-import type { CreateQuizCommand, GetQuizDto, ApiResponse, QuestionRequest } from '@/types/api.types';
+import type { CreateQuizCommand, GetQuizDto, ApiResponse, QuestionRequest, QuestionDto } from '@/types/api.types';
 
 export interface QuizGenerationFile {
     id: string;
@@ -200,4 +200,94 @@ export const getQuizGenerationJob = async (jobId: string): Promise<any> => {
 export const getQuizGenerationFiles = async (quizId: string): Promise<any> => {
     const response = await api.get<ApiResponse<any>>(ENDPOINTS.QUIZZES.GENERATE_FILES(quizId));
     return unwrapApiResponse(response.data);
+};
+
+// --- Question Management ---
+
+/**
+ * Upsert (create/update) questions for a quiz
+ * Allows updating questions independently without updating the entire quiz
+ * PUT /api/Quizzes/{id}/questions
+ */
+export const upsertQuizQuestions = async (
+    quizId: string,
+    questions: QuestionRequest[]
+): Promise<QuestionDto[]> => {
+    const response = await api.put<ApiResponse<QuestionDto[]>>(
+        ENDPOINTS.QUIZZES.UPSERT_QUESTIONS(quizId),
+        questions
+    );
+    return response.data.data || unwrapApiResponse(response.data) || [];
+};
+
+// --- Submission Management ---
+
+/**
+ * Get quiz submissions (for instructor grading)
+ * Filters submissions by status and supports pagination
+ * GET /api/Quizzes/{id}/submissions
+ */
+export const getQuizSubmissions = async (
+    quizId: string,
+    status?: 'InProgress' | 'Submitted' | 'Reviewed',
+    pageNo: number = 1,
+    pageSize: number = 10
+): Promise<any> => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    params.append('pageNo', String(pageNo));
+    params.append('pageSize', String(pageSize));
+
+    const queryString = params.toString();
+    const endpoint = ENDPOINTS.QUIZZES.GET_SUBMISSIONS(quizId);
+    const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+    try {
+        const response = await api.get<any>(url);
+
+        // Handle multiple response formats
+        const payload = response.data;
+
+        // 1. Paginated result with items
+        if (payload?.items && Array.isArray(payload.items)) {
+            return payload;
+        }
+
+        // 2. Direct data array (not paginated)
+        if (payload?.data && Array.isArray(payload.data)) {
+            if (payload.data.items) {
+                return payload.data; // Already paginated format
+            }
+            // Convert to paginated format
+            return {
+                items: payload.data,
+                totalResults: payload.data.length,
+                pagesCount: 1,
+                start: 0,
+                end: payload.data.length - 1,
+            };
+        }
+
+        // 3. Array directly
+        if (Array.isArray(payload)) {
+            return {
+                items: payload,
+                totalResults: payload.length,
+                pagesCount: 1,
+                start: 0,
+                end: payload.length - 1,
+            };
+        }
+
+        return {
+            items: [],
+            totalResults: 0,
+            pagesCount: 0,
+            start: 0,
+            end: 0,
+        };
+    } catch (error) {
+        console.error('Error fetching quiz submissions:', error);
+        throw error;
+    }
 };

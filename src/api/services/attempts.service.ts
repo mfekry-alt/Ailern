@@ -9,7 +9,7 @@ import type { ApiResponse } from '@/types/api.types';
 
 export interface QuestionAttempt {
     questionId: string;
-    optionNumber?: number | null;
+    optionId?: string | null;
     booleanAnswer?: string | null;
     writtenAnswer?: string | null;
 }
@@ -179,11 +179,11 @@ export const getAttemptQuestions = async (attemptId: string): Promise<any[]> => 
                 type: q.type || q.questionType || 'MCQ',
                 points: q.mark || q.points || 1,
                 options: (q.options || []).map((opt: any) => ({
-                    id: String(opt.id || opt.optionNumber),
+                    id: String(opt.id || opt.optionId),
                     text: opt.option || opt.optionText || opt.text || '',
-                    optionNumber: opt.optionNumber
+                    optionId: opt.id || opt.optionId
                 })),
-                studentOptionNumber: q.optionNumber,
+                studentOptionId: q.optionId,
                 studentBooleanAnswer: q.booleanAnswer,
                 studentWrittenAnswer: q.writtenAnswer
             }));
@@ -250,13 +250,48 @@ export const getStudentAnswers = async (attemptId: string): Promise<StudentAnswe
         return resultsArray.map((item: any) => ({
             questionId: String(item.questionId || ''),
             questionText: item.questionText || item.question || '',
-            studentAnswer: item.studentAnswer || item.booleanAnswer || String(item.optionNumber || ''),
+            studentAnswer: item.studentAnswer || item.booleanAnswer || String(item.optionId || ''),
             correctAnswer: item.correctAnswer || item.correctOptionText,
             isCorrect: item.score > 0 || item.isCorrect,
             points: item.score || item.pointsAchieved || 0,
             possiblePoints: item.maxScore || item.possiblePoints || 1
         }));
+
     } catch (error) {
         return [];
+    }
+};
+
+// ─── Grading Operations ───────────────────────────────────────────────────
+
+export interface GradeEntry {
+    questionId: string;
+    score: number;
+    feedback?: string;
+}
+
+export interface GradeSubmissionPayload {
+    grades: GradeEntry[];
+    status: 'Submitted' | 'Reviewed';
+}
+
+/**
+ * Grade a quiz submission (instructor operation)
+ * Updates grades for specific questions in a submitted attempt
+ * PUT /api/Attempts/{attemptId}/grade
+ */
+export const gradeSubmission = async (
+    attemptId: string,
+    payload: GradeSubmissionPayload
+): Promise<any> => {
+    try {
+        const response = await api.put<ApiResponse<any>>(
+            ENDPOINTS.ATTEMPTS.GRADE(attemptId),
+            payload
+        );
+        return response.data?.data || response.data;
+    } catch (error) {
+        console.error('Error grading submission:', error);
+        throw error;
     }
 };

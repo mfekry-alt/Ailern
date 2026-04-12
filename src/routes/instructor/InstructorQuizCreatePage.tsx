@@ -95,11 +95,12 @@ export const InstructorQuizCreatePage = () => {
         const newErrors: Record<string, string> = {};
 
         if (!settings.title.trim()) newErrors.title = 'Quiz title is required.';
-        else if (settings.title.length > 255) newErrors.title = 'Title must be 255 characters or less.';
+        else if (settings.title.length > 200) newErrors.title = 'Title must be 200 characters or less.';
 
         if (settings.maximumAttempts < 1 || settings.maximumAttempts > 5)
             newErrors.maximumAttempts = 'Attempts allowed must be between 1 and 5.';
 
+        if (settings.description.length > 2000) newErrors.description = 'Description must be 2000 characters or less.';
         if (settings.attemptTimeLimit === '' || Number(settings.attemptTimeLimit) < 5)
             newErrors.attemptTimeLimit = 'Time limit must be at least 5 minutes.';
 

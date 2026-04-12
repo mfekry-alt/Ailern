@@ -39,11 +39,11 @@ import { InstructorDashboardPage } from '@/routes/instructor/InstructorDashboard
 import { InstructorCoursesPage } from '@/routes/instructor/InstructorCoursesPage';
 import { InstructorManageCoursePage } from '@/routes/instructor/InstructorManageCoursePage';
 import { InstructorCourseEditPage } from '@/routes/instructor/InstructorCourseEditPage';
-import { InstructorStatisticsPage } from '@/routes/instructor/InstructorStatisticsPage'; 
+import { InstructorStatisticsPage } from '@/routes/instructor/InstructorStatisticsPage';
 import { InstructorCourseEditContentPage } from '@/routes/instructor/InstructorCourseEditContentPage';
 import { InstructorGradebookPage } from '@/routes/instructor/InstructorGradebookPage';
 import { InstructorAssignmentsPage } from '@/routes/instructor/InstructorAssignmentsPage';
-import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';    
+import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';
 import { InstructorQuizQuestionBuilderPage } from '@/routes/instructor/InstructorQuizQuestionBuilderPage';
 import { InstructorQuizEditPage } from '@/routes/instructor/InstructorQuizEditPage';
 import { InstructorQuizQuestionsEditPage } from '@/routes/instructor/InstructorQuizQuestionsEditPage';
@@ -132,7 +132,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENTS} element={<InstructorAssignmentsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<InstructorAssignmentCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT} element={<InstructorAssignmentEditPage />} />
-                <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />          
+                <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS} element={<InstructorQuizQuestionBuilderPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_STATISTICS} element={<InstructorStatisticsPage />} />

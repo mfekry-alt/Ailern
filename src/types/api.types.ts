@@ -420,3 +420,55 @@ export interface GetQuizDto {
     shuffleOptions?: boolean;
     questions?: QuestionDto[]; // Optional: included when fetching a single quiz
 }
+
+// ============================================================================
+// Quiz Submission & Grading Types
+// ============================================================================
+
+export type AttemptStatus = 'InProgress' | 'Submitted' | 'Reviewed';
+
+export interface QuizSubmission {
+    id: string;
+    attemptId: string;
+    studentId: string;
+    studentName?: string;
+    studentEmail?: string;
+    quizId: string;
+    quizTitle?: string;
+    status: AttemptStatus;
+    submittedAt?: string;
+    score?: number;
+    totalScore?: number;
+    percentage?: number;
+    timeSpent?: number;
+    attemptNumber?: number;
+}
+
+export interface QuizSubmissionsResult extends PaginationResult<QuizSubmission> {
+    totalResults: number;
+    pagesCount: number;
+    start: number;
+    end: number;
+    items: QuizSubmission[];
+}
+
+export interface GradeQuestionEntry {
+    questionId: string;
+    score: number;
+    feedback?: string;
+}
+
+export interface GradeSubmissionCommand {
+    grades: GradeQuestionEntry[];
+    status: 'Submitted' | 'Reviewed';
+}
+
+export interface GradeSubmissionResult {
+    attemptId: string;
+    quizId: string;
+    score: number;
+    totalScore: number;
+    percentage: number;
+    status: AttemptStatus;
+    gradesApplied: number;
+}

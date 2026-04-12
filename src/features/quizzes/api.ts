@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/lib/constants';
-import { quizService } from '@/api/services';
-import type { CreateQuizCommand } from '@/types/api.types';
+import { quizService, attemptsService } from '@/api/services';
+import type { CreateQuizCommand, QuestionRequest, QuestionDto } from '@/types/api.types';
+import type { GradeSubmissionPayload } from '@/api/services/attempts.service';
 
 /**
  * Fetch all quizzes for a course
@@ -60,6 +61,56 @@ export const useDeleteQuiz = (courseId: string) => {
         mutationFn: (id: string) => quizService.deleteQuiz(id),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseId) });
+        },
+    });
+};
+
+/**
+ * Upsert (create/update) questions for a quiz
+ * Allows updating just the questions without updating entire quiz
+ */
+export const useUpsertQuizQuestions = (quizId: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (questions: QuestionRequest[]) =>
+            quizService.upsertQuizQuestions(quizId, questions),
+        onSuccess: () => {
+            // Invalidate the quiz query to refetch full quiz data
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZ(quizId) });
+        },
+    });
+};
+
+/**
+ * Fetch quiz submissions for instructor grading
+ * Supports filtering by status and pagination
+ */
+export const useQuizSubmissions = (
+    quizId: string,
+    status?: 'InProgress' | 'Submitted' | 'Reviewed',
+    pageNo: number = 1,
+    pageSize: number = 10
+) =>
+    useQuery({
+        queryKey: QUERY_KEYS.QUIZ_SUBMISSIONS(quizId, status),
+        queryFn: () => quizService.getQuizSubmissions(quizId, status, pageNo, pageSize),
+        enabled: !!quizId,
+    });
+
+/**
+ * Grade a quiz submission
+ * Allows instructor to assign scores and feedback to submitted attempts
+ */
+export const useGradeSubmission = (quizId: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ attemptId, payload }: { attemptId: string; payload: GradeSubmissionPayload }) =>
+            attemptsService.gradeSubmission(attemptId, payload),
+        onSuccess: (_data, vars) => {
+            // Invalidate related queries
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZ_SUBMISSIONS(quizId) });
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.ATTEMPT_GRADE(vars.attemptId) });
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.ATTEMPT(vars.attemptId) });
         },
     });
 };
