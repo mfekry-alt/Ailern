@@ -15,7 +15,7 @@ const fadeInStyle = `
 export const LoadingSpinner = () => (
     <div 
         className="fixed inset-0 flex items-center justify-center"
-        style={{ backgroundColor: 'oklch(20.8% 0.042 265.755)', zIndex: 9999 }}
+        style={{ backgroundColor: 'oklch(20.8% 0.042 265.755)', zIndex: 99 }}
     >
         <style>{fadeInStyle}</style>
         {/* Container with padding and centering */}
