@@ -3,7 +3,7 @@
  */
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
-import type { CreateQuizCommand, GetQuizDto, ApiResponse, QuestionRequest, QuestionDto } from '@/types/api.types';
+import type { QuizRequest, GetQuizDto, ApiResponse, QuestionUpsertRequest, QuestionDto } from '@/types/api.types';
 
 export interface QuizGenerationFile {
     id: string;
@@ -65,7 +65,7 @@ const buildGenerateFormData = (payload: GenerateQuizByAIPayload): FormData => {
  * Create a new quiz with questions
  * Payload must match the exact schema expected by the backend
  */
-export const createQuiz = async (command: CreateQuizCommand): Promise<GetQuizDto> => {
+export const createQuiz = async (command: QuizRequest): Promise<GetQuizDto> => {
     // 💡 إجبار إضافة الحقل حتى لو كان غير موجوداً في الـ Component
     const payload = {
         ...command,
@@ -139,7 +139,7 @@ export const getQuiz = async (id: string): Promise<GetQuizDto> => {
  */
 export const updateQuiz = async (
     id: string,
-    command: Partial<CreateQuizCommand>
+    command: Partial<QuizRequest>
 ): Promise<GetQuizDto> => {
     // 💡 إجبار الحقل على التواجد لتجنب إسقاطه بواسطة المتصفح عند إرسال الـ JSON
     const payload = {
@@ -181,8 +181,8 @@ export const generateAIQuestions = async (params: {
     difficulty: "Easy" | "Medium" | "Hard";
     count: number;
     context?: string;
-}): Promise<QuestionRequest[]> => {
-    const response = await api.post<ApiResponse<QuestionRequest[]>>('/Quizzes/quick-generate', params);
+}): Promise<QuestionUpsertRequest[]> => {
+    const response = await api.post<ApiResponse<QuestionUpsertRequest[]>>('/Quizzes/quick-generate', params);
     return response.data.data || [];
 };
 
@@ -211,7 +211,7 @@ export const getQuizGenerationFiles = async (quizId: string): Promise<any> => {
  */
 export const upsertQuizQuestions = async (
     quizId: string,
-    questions: QuestionRequest[]
+    questions: QuestionUpsertRequest[]
 ): Promise<QuestionDto[]> => {
     const response = await api.put<ApiResponse<QuestionDto[]>>(
         ENDPOINTS.QUIZZES.UPSERT_QUESTIONS(quizId),

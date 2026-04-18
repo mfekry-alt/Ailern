@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/lib/constants';
 import { quizService, attemptsService } from '@/api/services';
-import type { CreateQuizCommand, QuestionRequest, QuestionDto } from '@/types/api.types';
+import type { QuizRequest, QuestionUpsertRequest } from '@/types/api.types';
 import type { GradeSubmissionPayload } from '@/api/services/attempts.service';
 
 /**
@@ -30,7 +30,7 @@ export const useQuiz = (id: string) =>
 export const useCreateQuiz = (courseId: string) => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (cmd: CreateQuizCommand) => quizService.createQuiz(cmd),
+        mutationFn: (cmd: QuizRequest) => quizService.createQuiz(cmd),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseId) });
         },
@@ -43,7 +43,7 @@ export const useCreateQuiz = (courseId: string) => {
 export const useUpdateQuiz = (courseId: string) => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, cmd }: { id: string; cmd: Partial<import('@/types/api.types').CreateQuizCommand> }) =>
+        mutationFn: ({ id, cmd }: { id: string; cmd: Partial<QuizRequest> }) =>
             quizService.updateQuiz(id, cmd),
         onSuccess: (_data, vars) => {
             qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseId) });
@@ -72,7 +72,7 @@ export const useDeleteQuiz = (courseId: string) => {
 export const useUpsertQuizQuestions = (quizId: string) => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (questions: QuestionRequest[]) =>
+        mutationFn: (questions: QuestionUpsertRequest[]) =>
             quizService.upsertQuizQuestions(quizId, questions),
         onSuccess: () => {
             // Invalidate the quiz query to refetch full quiz data

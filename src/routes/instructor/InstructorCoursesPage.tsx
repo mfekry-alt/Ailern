@@ -139,7 +139,7 @@ const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DC
                 </button>
 
                 {course.primaryAction && (
-                    <Link to={`/instructor/courses/${course.id}/content`} className="flex-1" onClick={(e) => e.stopPropagation()}>
+                    <Link to={`/instructor/courses/${course.id}/manage`} className="flex-1" onClick={(e) => e.stopPropagation()}>
                         <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm py-3 px-4 rounded-xl transition-all shadow-sm hover:shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95">
                             {course.primaryAction}
                             <ArrowRight className="w-4 h-4" />

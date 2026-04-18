@@ -6,9 +6,9 @@ import {
     ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
     GripVertical, Sparkles, ListChecks, HelpCircle, AlertTriangle, Save
 } from 'lucide-react';
-import { useQuiz, useUpdateQuiz } from '@/features/quizzes/api';
+import { useQuiz, useUpsertQuizQuestions } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
-import type { QuizOptionRequest, QuestionRequest, QuestionType, QuestionDto, OptionDto } from '@/types/api.types';
+import type { OptionRequest, QuestionUpsertRequest, QuestionType, QuestionDto, OptionDto } from '@/types/api.types';
 
 // ─── Local UI types ────────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ const defaultQuestion = (uid: number): UIQuestion => ({
     options: makeMCQOptions(),
 });
 
-const convertQuestionRequestToUI = (q: QuestionRequest, uid: number): UIQuestion => {
+const convertQuestionRequestToUI = (q: QuestionUpsertRequest, uid: number): UIQuestion => {
     const options = q.options?.length
         ? q.options.map(o => ({ text: o.optionText, isCorrect: o.isCorrect }))
         : q.questionType === 'TrueFalse'
@@ -101,10 +101,10 @@ const convertQuestionDtoToUI = (dto: QuestionDto, uid: number): UIQuestion => ({
 
 // ─── Payload builders ──────────────────────────────────────────────────────
 
-const buildPayloadOptions = (q: UIQuestion): QuizOptionRequest[] =>
+const buildPayloadOptions = (q: UIQuestion): OptionRequest[] =>
     q.options.map(o => ({ optionText: o.text, isCorrect: o.isCorrect }));
 
-const buildPayloadQuestion = (q: UIQuestion): QuestionRequest => ({
+const buildPayloadQuestion = (q: UIQuestion): QuestionUpsertRequest => ({
     id: q.backendId,
     questionType: q.type,
     questionText: q.text,
@@ -128,7 +128,7 @@ export const InstructorQuizQuestionsEditPage = () => {
     const settings = (location.state as any)?.settings;
 
     const { data: quiz, isLoading: quizLoading } = useQuiz(quizId ?? '');
-    const updateQuizMutation = useUpdateQuiz(settings?.courseId ?? quiz?.courseId ?? '');
+    const upsertQuestionsMutation = useUpsertQuizQuestions(quizId ?? '');
     const isDraftQuiz = settings?.status === 'Draft' || quiz?.status === 'Draft';
 
     const [questions, setQuestions] = useState<UIQuestion[]>([]);
@@ -198,7 +198,7 @@ export const InstructorQuizQuestionsEditPage = () => {
 
     const handleGenerateWithAI = () => setShowAIModal(true);
 
-    const handleAIGenerate = (generatedQuestions: QuestionRequest[]) => {
+    const handleAIGenerate = (generatedQuestions: QuestionUpsertRequest[]) => {
         if (!generatedQuestions.length) {
             setError('AI generation returned no questions. Please try again.');
             setShowAIModal(false);
@@ -306,36 +306,18 @@ export const InstructorQuizQuestionsEditPage = () => {
 
         const payloadQuestions = questions.map(buildPayloadQuestion);
 
-        const payload = {
-            title: settings?.title || quiz?.title,
-            description: settings?.description?.trim() || quiz?.description?.trim() || settings?.title?.trim() || quiz?.title?.trim() || 'Quiz',
-            courseId: Number(settings?.courseId || quiz?.courseId) as any,
-            maximumAttempts: settings?.maximumAttempts ?? quiz?.maximumAttempts,
-            attemptTimeLimit: settings?.attemptTimeLimit ?? quiz?.attemptTimeLimit ?? 0,
-            status: settings?.status || quiz?.status,
-            availableFrom: settings?.availableFrom ? new Date(settings.availableFrom).toISOString() : quiz?.availableFrom,
-            availableUntil: settings?.availableUntil ? new Date(settings.availableUntil).toISOString() : quiz?.availableUntil,
-            publishedDate: settings?.status === 'Scheduled' && settings?.publishedDate ? new Date(settings.publishedDate).toISOString() : quiz?.publishedDate,
-            showResultOnClose: settings?.showResultOnClose ?? quiz?.showResultOnClose ?? false,
-            shuffleQuestions: settings?.shuffleQuestions ?? quiz?.shuffleQuestions ?? false,
-            shuffleOptions: settings?.shuffleOptions ?? quiz?.shuffleOptions ?? false,
-            questions: payloadQuestions,
-        };
-
         try {
-            await updateQuizMutation.mutateAsync({ id: quizId!, cmd: payload as any });
+            await upsertQuestionsMutation.mutateAsync(payloadQuestions);
             storage.remove(STORAGE_KEYS.QUIZ_EDIT_DRAFT);
             setSuccess(true);
-            setTimeout(() => navigate(-2), 1500);
+            setTimeout(() => navigate(-1), 1500);
         } catch (e: any) {
-            console.error('[UpdateQuiz] error:', e?.response?.status, e?.response?.data, e);
+            console.error('[UpsertQuestions] error:', e?.response?.status, e?.response?.data, e);
             const d = e?.response?.data;
-            // Filter out nested array errors like Questions[0].Options
             const fieldErrors = d?.errors ? Object.entries(d.errors as Record<string, string[]>)
-                .filter(([field]) => !field.includes('['))
                 .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`).join(' | ') : null;
             const title = d?.message || d?.title;
-            const extracted = fieldErrors ? (title ? `${title} — ${fieldErrors}` : fieldErrors) : (title || e?.message || 'Failed to update quiz. Please try again.');
+            const extracted = fieldErrors ? (title ? `${title} — ${fieldErrors}` : fieldErrors) : (title || e?.message || 'Failed to save questions. Please try again.');
             setError(extracted);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -361,7 +343,7 @@ export const InstructorQuizQuestionsEditPage = () => {
         </div>
     );
 
-    const isLoading = updateQuizMutation.isPending;
+    const isLoading = upsertQuestionsMutation.isPending;
     const currentStatus = settings?.status || quiz?.status;
     const statusBadgeClass =
         currentStatus === 'Published' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30' :

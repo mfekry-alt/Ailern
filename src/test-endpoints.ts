@@ -3,7 +3,7 @@
  * Run this in the browser console after starting the dev server
  */
 
-const API_URL = 'https://ailern.runasp.net/api';
+const API_URL = 'https://localhost:7080/api';
 
 interface TestResult {
     endpoint: string;

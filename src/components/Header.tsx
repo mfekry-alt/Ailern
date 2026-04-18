@@ -190,9 +190,7 @@ export const Header = () => {
         if (user?.roles?.includes('Instructor')) {
             return [
                 { label: 'Dashboard', path: ROUTES.INSTRUCTOR },
-                { label: 'Courses', path: ROUTES.INSTRUCTOR_COURSES },
-                { label: 'Assignments', path: ROUTES.INSTRUCTOR_ASSIGNMENTS },
-                { label: 'Statistics', path: '/instructor/statistics' },
+                { label: 'My Courses', path: ROUTES.INSTRUCTOR_COURSES },
             ];
         }
         if (user?.roles?.includes('Student')) {

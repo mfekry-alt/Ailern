@@ -1,685 +1,685 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>API Endpoint Tester - Ailern LMS</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            min-height: 100vh;
-        }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        min-height: 100vh;
+      }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
 
-        h1 {
-            color: white;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2.5rem;
-        }
+      h1 {
+        color: white;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2.5rem;
+      }
 
-        .test-section {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
+      .test-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
 
-        .test-section h2 {
-            color: #333;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #667eea;
-            padding-bottom: 10px;
-        }
+      .test-section h2 {
+        color: #333;
+        margin-bottom: 20px;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 10px;
+      }
 
-        .test-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 15px;
-        }
+      .test-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+      }
 
-        .test-item {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 15px;
-            transition: all 0.3s ease;
-        }
+      .test-item {
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        transition: all 0.3s ease;
+      }
 
-        .test-item:hover {
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-        }
+      .test-item:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+      }
 
-        .test-item h3 {
-            color: #495057;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
+      .test-item h3 {
+        color: #495057;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+      }
 
-        .credentials {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 5px;
-            padding: 8px;
-            margin-bottom: 10px;
-            font-size: 0.85rem;
-        }
+      .credentials {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 5px;
+        padding: 8px;
+        margin-bottom: 10px;
+        font-size: 0.85rem;
+      }
 
-        button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            width: 100%;
-            transition: all 0.3s ease;
-        }
+      button {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+      }
 
-        button:hover {
-            background: #5568d3;
-            transform: scale(1.02);
-        }
+      button:hover {
+        background: #5568d3;
+        transform: scale(1.02);
+      }
 
-        button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-        }
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+      }
 
-        .result {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 0.9rem;
-            word-wrap: break-word;
-        }
+      .result {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        word-wrap: break-word;
+      }
 
-        .result.success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
+      .result.success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
 
-        .result.error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
+      .result.error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+      }
 
-        .result.loading {
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
+      .result.loading {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+      }
 
-        .summary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+      .summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
 
-        .summary h2 {
-            margin-bottom: 15px;
-            border: none;
-            color: white;
-        }
+      .summary h2 {
+        margin-bottom: 15px;
+        border: none;
+        color: white;
+      }
 
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
+      .stats {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
 
-        .stat-item {
-            background: rgba(255,255,255,0.2);
-            padding: 15px 30px;
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
-        }
+      .stat-item {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 15px 30px;
+        border-radius: 8px;
+        backdrop-filter: blur(10px);
+      }
 
-        .stat-item h3 {
-            font-size: 2rem;
-            margin-bottom: 5px;
-        }
+      .stat-item h3 {
+        font-size: 2rem;
+        margin-bottom: 5px;
+      }
 
-        .stat-item p {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
+      .stat-item p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
 
-        code {
-            background: #f1f3f5;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-        }
+      code {
+        background: #f1f3f5;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+      }
 
-        .run-all-btn {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            font-size: 1.2rem;
-            padding: 15px 30px;
-            margin-bottom: 20px;
-        }
+      .run-all-btn {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        font-size: 1.2rem;
+        padding: 15px 30px;
+        margin-bottom: 20px;
+      }
 
-        .run-all-btn:hover {
-            background: linear-gradient(135deg, #0f8678 0%, #2fd86f 100%);
-        }
+      .run-all-btn:hover {
+        background: linear-gradient(135deg, #0f8678 0%, #2fd86f 100%);
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>🧪 API Endpoint Tester</h1>
+      <h1>🧪 API Endpoint Tester</h1>
 
-        <div class="summary" id="summary" style="display: none;">
-            <h2>📊 Test Summary</h2>
-            <div class="stats">
-                <div class="stat-item">
-                    <h3 id="passedCount">0</h3>
-                    <p>✅ Passed</p>
-                </div>
-                <div class="stat-item">
-                    <h3 id="failedCount">0</h3>
-                    <p>❌ Failed</p>
-                </div>
-                <div class="stat-item">
-                    <h3 id="totalCount">0</h3>
-                    <p>📝 Total Tests</p>
-                </div>
-            </div>
+      <div class="summary" id="summary" style="display: none">
+        <h2>📊 Test Summary</h2>
+        <div class="stats">
+          <div class="stat-item">
+            <h3 id="passedCount">0</h3>
+            <p>✅ Passed</p>
+          </div>
+          <div class="stat-item">
+            <h3 id="failedCount">0</h3>
+            <p>❌ Failed</p>
+          </div>
+          <div class="stat-item">
+            <h3 id="totalCount">0</h3>
+            <p>📝 Total Tests</p>
+          </div>
         </div>
+      </div>
 
-        <button class="run-all-btn" onclick="runAllTests()">🚀 Run All Tests</button>
+      <button class="run-all-btn" onclick="runAllTests()">🚀 Run All Tests</button>
 
-        <div class="test-section">
-            <h2>🔐 Authentication Tests</h2>
-            <div class="test-grid">
-                <div class="test-item">
-                    <h3>Admin Login</h3>
-                    <div class="credentials">
-                        <code>admin@gmail.com</code><br>
-                        <code>P@ssw0rd!</code>
-                    </div>
-                    <button onclick="testAdminLogin()">Test Admin Login</button>
-                    <div id="admin-login-result"></div>
-                </div>
-
-                <div class="test-item">
-                    <h3>Instructor Login</h3>
-                    <div class="credentials">
-                        <code>instructor@gmail.com</code><br>
-                        <code>P@ssw0rd!</code>
-                    </div>
-                    <button onclick="testInstructorLogin()">Test Instructor Login</button>
-                    <div id="instructor-login-result"></div>
-                </div>
-
-                <div class="test-item">
-                    <h3>Student Login</h3>
-                    <div class="credentials">
-                        <code>student@gmail.com</code><br>
-                        <code>P@ssw0rd!</code>
-                    </div>
-                    <button onclick="testStudentLogin()">Test Student Login</button>
-                    <div id="student-login-result"></div>
-                </div>
-
-                <div class="test-item">
-                    <h3>Invalid Credentials</h3>
-                    <div class="credentials">
-                        Should return 401 error
-                    </div>
-                    <button onclick="testInvalidLogin()">Test Invalid Login</button>
-                    <div id="invalid-login-result"></div>
-                </div>
+      <div class="test-section">
+        <h2>🔐 Authentication Tests</h2>
+        <div class="test-grid">
+          <div class="test-item">
+            <h3>Admin Login</h3>
+            <div class="credentials">
+              <code>admin@gmail.com</code><br />
+              <code>P@ssw0rd!</code>
             </div>
-        </div>
+            <button onclick="testAdminLogin()">Test Admin Login</button>
+            <div id="admin-login-result"></div>
+          </div>
 
-        <div class="test-section">
-            <h2>📚 Course Endpoints</h2>
-            <div class="test-grid">
-                <div class="test-item">
-                    <h3>Get All Courses</h3>
-                    <button onclick="testGetCourses()">Get Courses</button>
-                    <div id="get-courses-result"></div>
-                </div>
-
-                <div class="test-item">
-                    <h3>Get Available Courses</h3>
-                    <button onclick="testAvailableCourses()">Get Available</button>
-                    <div id="available-courses-result"></div>
-                </div>
-
-                <div class="test-item">
-                    <h3>Get Course by ID</h3>
-                    <button onclick="testGetCourseById()">Get Course #1</button>
-                    <div id="get-course-id-result"></div>
-                </div>
-
-                <div class="test-item">
-                    <h3>Create Course (Auth Required)</h3>
-                    <button onclick="testCreateCourse()">Create Course</button>
-                    <div id="create-course-result"></div>
-                </div>
+          <div class="test-item">
+            <h3>Instructor Login</h3>
+            <div class="credentials">
+              <code>instructor@gmail.com</code><br />
+              <code>P@ssw0rd!</code>
             </div>
-        </div>
+            <button onclick="testInstructorLogin()">Test Instructor Login</button>
+            <div id="instructor-login-result"></div>
+          </div>
 
-        <div class="test-section">
-            <h2>👤 User & Password Endpoints</h2>
-            <div class="test-grid">
-                <div class="test-item">
-                    <h3>Password Reset Request</h3>
-                    <button onclick="testPasswordReset()">Request Reset</button>
-                    <div id="password-reset-result"></div>
-                </div>
-
-                <div class="test-item">
-                    <h3>Refresh Token</h3>
-                    <button onclick="testRefreshToken()">Refresh Token</button>
-                    <div id="refresh-token-result"></div>
-                </div>
-
-                <div class="test-item">
-                    <h3>Student Registration</h3>
-                    <button onclick="testStudentRegistration()">Register Student</button>
-                    <div id="student-reg-result"></div>
-                </div>
-
-                <div class="test-item">
-                    <h3>Resend Confirmation</h3>
-                    <button onclick="testResendConfirmation()">Resend Email</button>
-                    <div id="resend-confirm-result"></div>
-                </div>
+          <div class="test-item">
+            <h3>Student Login</h3>
+            <div class="credentials">
+              <code>student@gmail.com</code><br />
+              <code>P@ssw0rd!</code>
             </div>
+            <button onclick="testStudentLogin()">Test Student Login</button>
+            <div id="student-login-result"></div>
+          </div>
+
+          <div class="test-item">
+            <h3>Invalid Credentials</h3>
+            <div class="credentials">Should return 401 error</div>
+            <button onclick="testInvalidLogin()">Test Invalid Login</button>
+            <div id="invalid-login-result"></div>
+          </div>
         </div>
+      </div>
+
+      <div class="test-section">
+        <h2>📚 Course Endpoints</h2>
+        <div class="test-grid">
+          <div class="test-item">
+            <h3>Get All Courses</h3>
+            <button onclick="testGetCourses()">Get Courses</button>
+            <div id="get-courses-result"></div>
+          </div>
+
+          <div class="test-item">
+            <h3>Get Available Courses</h3>
+            <button onclick="testAvailableCourses()">Get Available</button>
+            <div id="available-courses-result"></div>
+          </div>
+
+          <div class="test-item">
+            <h3>Get Course by ID</h3>
+            <button onclick="testGetCourseById()">Get Course #1</button>
+            <div id="get-course-id-result"></div>
+          </div>
+
+          <div class="test-item">
+            <h3>Create Course (Auth Required)</h3>
+            <button onclick="testCreateCourse()">Create Course</button>
+            <div id="create-course-result"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h2>👤 User & Password Endpoints</h2>
+        <div class="test-grid">
+          <div class="test-item">
+            <h3>Password Reset Request</h3>
+            <button onclick="testPasswordReset()">Request Reset</button>
+            <div id="password-reset-result"></div>
+          </div>
+
+          <div class="test-item">
+            <h3>Refresh Token</h3>
+            <button onclick="testRefreshToken()">Refresh Token</button>
+            <div id="refresh-token-result"></div>
+          </div>
+
+          <div class="test-item">
+            <h3>Student Registration</h3>
+            <button onclick="testStudentRegistration()">Register Student</button>
+            <div id="student-reg-result"></div>
+          </div>
+
+          <div class="test-item">
+            <h3>Resend Confirmation</h3>
+            <button onclick="testResendConfirmation()">Resend Email</button>
+            <div id="resend-confirm-result"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-        const API_URL = 'http://localhost:5173/api'; // MSW will intercept this
-        let testResults = [];
-        let accessToken = '';
+      const API_URL = 'https://localhost:7080/api'; // MSW will intercept this
+      let testResults = [];
+      let accessToken = '';
 
-        function showResult(elementId, status, message, data = null) {
-            const el = document.getElementById(elementId);
-            el.className = `result ${status}`;
-            el.innerHTML = `<strong>${status.toUpperCase()}:</strong> ${message}`;
-            if (data) {
-                el.innerHTML += `<br><small>${JSON.stringify(data, null, 2).substring(0, 200)}...</small>`;
-            }
+      function showResult(elementId, status, message, data = null) {
+        const el = document.getElementById(elementId);
+        el.className = `result ${status}`;
+        el.innerHTML = `<strong>${status.toUpperCase()}:</strong> ${message}`;
+        if (data) {
+          el.innerHTML += `<br><small>${JSON.stringify(data, null, 2).substring(0, 200)}...</small>`;
         }
+      }
 
-        function updateSummary() {
-            const passed = testResults.filter(r => r.status === 'success').length;
-            const failed = testResults.filter(r => r.status === 'error').length;
-            document.getElementById('passedCount').textContent = passed;
-            document.getElementById('failedCount').textContent = failed;
-            document.getElementById('totalCount').textContent = testResults.length;
-            document.getElementById('summary').style.display = 'block';
+      function updateSummary() {
+        const passed = testResults.filter((r) => r.status === 'success').length;
+        const failed = testResults.filter((r) => r.status === 'error').length;
+        document.getElementById('passedCount').textContent = passed;
+        document.getElementById('failedCount').textContent = failed;
+        document.getElementById('totalCount').textContent = testResults.length;
+        document.getElementById('summary').style.display = 'block';
+      }
+
+      async function testAdminLogin() {
+        const resultId = 'admin-login-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'admin@gmail.com', password: 'P@ssw0rd!' }),
+          });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            accessToken = data.data?.accessToken || '';
+            showResult(resultId, 'success', `Logged in as ${data.data?.role}`, data.data);
+            testResults.push({ name: 'Admin Login', status: 'success' });
+          } else {
+            showResult(resultId, 'error', data.message || 'Login failed', data);
+            testResults.push({ name: 'Admin Login', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Admin Login', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testAdminLogin() {
-            const resultId = 'admin-login-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: 'admin@gmail.com', password: 'P@ssw0rd!' })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    accessToken = data.data?.accessToken || '';
-                    showResult(resultId, 'success', `Logged in as ${data.data?.role}`, data.data);
-                    testResults.push({name: 'Admin Login', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', data.message || 'Login failed', data);
-                    testResults.push({name: 'Admin Login', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Admin Login', status: 'error'});
-                updateSummary();
-            }
+      async function testInstructorLogin() {
+        const resultId = 'instructor-login-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'instructor@gmail.com', password: 'P@ssw0rd!' }),
+          });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            showResult(resultId, 'success', `Logged in as ${data.data?.role}`, data.data);
+            testResults.push({ name: 'Instructor Login', status: 'success' });
+          } else {
+            showResult(resultId, 'error', data.message || 'Login failed', data);
+            testResults.push({ name: 'Instructor Login', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Instructor Login', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testInstructorLogin() {
-            const resultId = 'instructor-login-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: 'instructor@gmail.com', password: 'P@ssw0rd!' })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showResult(resultId, 'success', `Logged in as ${data.data?.role}`, data.data);
-                    testResults.push({name: 'Instructor Login', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', data.message || 'Login failed', data);
-                    testResults.push({name: 'Instructor Login', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Instructor Login', status: 'error'});
-                updateSummary();
-            }
+      async function testStudentLogin() {
+        const resultId = 'student-login-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'student@gmail.com', password: 'P@ssw0rd!' }),
+          });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            showResult(resultId, 'success', `Logged in as ${data.data?.role}`, data.data);
+            testResults.push({ name: 'Student Login', status: 'success' });
+          } else {
+            showResult(resultId, 'error', data.message || 'Login failed', data);
+            testResults.push({ name: 'Student Login', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Student Login', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testStudentLogin() {
-            const resultId = 'student-login-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: 'student@gmail.com', password: 'P@ssw0rd!' })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showResult(resultId, 'success', `Logged in as ${data.data?.role}`, data.data);
-                    testResults.push({name: 'Student Login', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', data.message || 'Login failed', data);
-                    testResults.push({name: 'Student Login', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Student Login', status: 'error'});
-                updateSummary();
-            }
+      async function testInvalidLogin() {
+        const resultId = 'invalid-login-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'wrong@example.com', password: 'wrong' }),
+          });
+          const data = await response.json();
+          if (!response.ok && response.status === 401) {
+            showResult(resultId, 'success', 'Correctly rejected invalid credentials', data);
+            testResults.push({ name: 'Invalid Login', status: 'success' });
+          } else {
+            showResult(resultId, 'error', 'Should have returned 401', data);
+            testResults.push({ name: 'Invalid Login', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Invalid Login', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testInvalidLogin() {
-            const resultId = 'invalid-login-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: 'wrong@example.com', password: 'wrong' })
-                });
-                const data = await response.json();
-                if (!response.ok && response.status === 401) {
-                    showResult(resultId, 'success', 'Correctly rejected invalid credentials', data);
-                    testResults.push({name: 'Invalid Login', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', 'Should have returned 401', data);
-                    testResults.push({name: 'Invalid Login', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Invalid Login', status: 'error'});
-                updateSummary();
-            }
+      async function testGetCourses() {
+        const resultId = 'get-courses-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Courses`);
+          const data = await response.json();
+          if (response.ok && data.success) {
+            const count = data.data?.items?.length || 0;
+            showResult(resultId, 'success', `Found ${count} courses`, data.data);
+            testResults.push({ name: 'Get Courses', status: 'success' });
+          } else {
+            showResult(resultId, 'error', 'Failed to fetch courses', data);
+            testResults.push({ name: 'Get Courses', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Get Courses', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testGetCourses() {
-            const resultId = 'get-courses-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Courses`);
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    const count = data.data?.items?.length || 0;
-                    showResult(resultId, 'success', `Found ${count} courses`, data.data);
-                    testResults.push({name: 'Get Courses', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', 'Failed to fetch courses', data);
-                    testResults.push({name: 'Get Courses', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Get Courses', status: 'error'});
-                updateSummary();
-            }
+      async function testAvailableCourses() {
+        const resultId = 'available-courses-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Courses/available-courses`);
+          const data = await response.json();
+          if (response.ok && data.success) {
+            const count = data.data?.items?.length || 0;
+            showResult(resultId, 'success', `Found ${count} available courses`, data.data);
+            testResults.push({ name: 'Available Courses', status: 'success' });
+          } else {
+            showResult(resultId, 'error', 'Failed to fetch', data);
+            testResults.push({ name: 'Available Courses', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Available Courses', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testAvailableCourses() {
-            const resultId = 'available-courses-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Courses/available-courses`);
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    const count = data.data?.items?.length || 0;
-                    showResult(resultId, 'success', `Found ${count} available courses`, data.data);
-                    testResults.push({name: 'Available Courses', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', 'Failed to fetch', data);
-                    testResults.push({name: 'Available Courses', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Available Courses', status: 'error'});
-                updateSummary();
-            }
+      async function testGetCourseById() {
+        const resultId = 'get-course-id-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Courses/1`);
+          const data = await response.json();
+          if (response.ok && data.success) {
+            showResult(resultId, 'success', `Course: ${data.data?.title}`, data.data);
+            testResults.push({ name: 'Get Course By ID', status: 'success' });
+          } else {
+            showResult(resultId, 'error', 'Failed to fetch course', data);
+            testResults.push({ name: 'Get Course By ID', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Get Course By ID', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testGetCourseById() {
-            const resultId = 'get-course-id-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Courses/1`);
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showResult(resultId, 'success', `Course: ${data.data?.title}`, data.data);
-                    testResults.push({name: 'Get Course By ID', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', 'Failed to fetch course', data);
-                    testResults.push({name: 'Get Course By ID', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Get Course By ID', status: 'error'});
-                updateSummary();
-            }
+      async function testCreateCourse() {
+        const resultId = 'create-course-result';
+        if (!accessToken) {
+          showResult(resultId, 'error', 'Please login first (run Admin Login test)');
+          return;
         }
-
-        async function testCreateCourse() {
-            const resultId = 'create-course-result';
-            if (!accessToken) {
-                showResult(resultId, 'error', 'Please login first (run Admin Login test)');
-                return;
-            }
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Courses`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${accessToken}`
-                    },
-                    body: JSON.stringify({
-                        title: 'Test Course',
-                        description: 'A test course',
-                        shortDescription: 'Test',
-                        category: 'Programming',
-                        level: 'Beginner',
-                        price: 99.99,
-                        duration: 600
-                    })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showResult(resultId, 'success', `Created course: ${data.data?.title}`, data.data);
-                    testResults.push({name: 'Create Course', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', 'Failed to create course', data);
-                    testResults.push({name: 'Create Course', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Create Course', status: 'error'});
-                updateSummary();
-            }
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Courses`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              title: 'Test Course',
+              description: 'A test course',
+              shortDescription: 'Test',
+              category: 'Programming',
+              level: 'Beginner',
+              price: 99.99,
+              duration: 600,
+            }),
+          });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            showResult(resultId, 'success', `Created course: ${data.data?.title}`, data.data);
+            testResults.push({ name: 'Create Course', status: 'success' });
+          } else {
+            showResult(resultId, 'error', 'Failed to create course', data);
+            testResults.push({ name: 'Create Course', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Create Course', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testPasswordReset() {
-            const resultId = 'password-reset-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Auth/send-password-reset-email`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: 'admin@gmail.com' })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showResult(resultId, 'success', data.message, data);
-                    testResults.push({name: 'Password Reset', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', 'Failed', data);
-                    testResults.push({name: 'Password Reset', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Password Reset', status: 'error'});
-                updateSummary();
-            }
+      async function testPasswordReset() {
+        const resultId = 'password-reset-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Auth/send-password-reset-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'admin@gmail.com' }),
+          });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            showResult(resultId, 'success', data.message, data);
+            testResults.push({ name: 'Password Reset', status: 'success' });
+          } else {
+            showResult(resultId, 'error', 'Failed', data);
+            testResults.push({ name: 'Password Reset', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Password Reset', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testRefreshToken() {
-            const resultId = 'refresh-token-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Auth/refresh-token`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ refreshToken: 'mock-refresh-token' })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showResult(resultId, 'success', 'Token refreshed', data.data);
-                    testResults.push({name: 'Refresh Token', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', 'Failed', data);
-                    testResults.push({name: 'Refresh Token', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Refresh Token', status: 'error'});
-                updateSummary();
-            }
+      async function testRefreshToken() {
+        const resultId = 'refresh-token-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Auth/refresh-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken: 'mock-refresh-token' }),
+          });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            showResult(resultId, 'success', 'Token refreshed', data.data);
+            testResults.push({ name: 'Refresh Token', status: 'success' });
+          } else {
+            showResult(resultId, 'error', 'Failed', data);
+            testResults.push({ name: 'Refresh Token', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Refresh Token', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testStudentRegistration() {
-            const resultId = 'student-reg-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Auth/students/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: `test${Date.now()}@example.com`,
-                        firstName: 'Test',
-                        lastName: 'Student',
-                        phoneNumber: '1234567890',
-                        password: 'P@ssw0rd!'
-                    })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showResult(resultId, 'success', `Registered: ${data.data?.userName}`, data.data);
-                    testResults.push({name: 'Student Registration', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', 'Failed', data);
-                    testResults.push({name: 'Student Registration', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Student Registration', status: 'error'});
-                updateSummary();
-            }
+      async function testStudentRegistration() {
+        const resultId = 'student-reg-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Auth/students/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: `test${Date.now()}@example.com`,
+              firstName: 'Test',
+              lastName: 'Student',
+              phoneNumber: '1234567890',
+              password: 'P@ssw0rd!',
+            }),
+          });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            showResult(resultId, 'success', `Registered: ${data.data?.userName}`, data.data);
+            testResults.push({ name: 'Student Registration', status: 'success' });
+          } else {
+            showResult(resultId, 'error', 'Failed', data);
+            testResults.push({ name: 'Student Registration', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Student Registration', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function testResendConfirmation() {
-            const resultId = 'resend-confirm-result';
-            showResult(resultId, 'loading', 'Testing...');
-            try {
-                const response = await fetch(`${API_URL}/Auth/resend-confirmation-email`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: 'admin@gmail.com' })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showResult(resultId, 'success', data.message, data);
-                    testResults.push({name: 'Resend Confirmation', status: 'success'});
-                } else {
-                    showResult(resultId, 'error', 'Failed', data);
-                    testResults.push({name: 'Resend Confirmation', status: 'error'});
-                }
-                updateSummary();
-            } catch (error) {
-                showResult(resultId, 'error', error.message);
-                testResults.push({name: 'Resend Confirmation', status: 'error'});
-                updateSummary();
-            }
+      async function testResendConfirmation() {
+        const resultId = 'resend-confirm-result';
+        showResult(resultId, 'loading', 'Testing...');
+        try {
+          const response = await fetch(`${API_URL}/Auth/resend-confirmation-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'admin@gmail.com' }),
+          });
+          const data = await response.json();
+          if (response.ok && data.success) {
+            showResult(resultId, 'success', data.message, data);
+            testResults.push({ name: 'Resend Confirmation', status: 'success' });
+          } else {
+            showResult(resultId, 'error', 'Failed', data);
+            testResults.push({ name: 'Resend Confirmation', status: 'error' });
+          }
+          updateSummary();
+        } catch (error) {
+          showResult(resultId, 'error', error.message);
+          testResults.push({ name: 'Resend Confirmation', status: 'error' });
+          updateSummary();
         }
+      }
 
-        async function runAllTests() {
-            testResults = [];
-            document.getElementById('summary').style.display = 'none';
-            
-            await testAdminLogin();
-            await new Promise(r => setTimeout(r, 500));
-            await testInstructorLogin();
-            await new Promise(r => setTimeout(r, 500));
-            await testStudentLogin();
-            await new Promise(r => setTimeout(r, 500));
-            await testInvalidLogin();
-            await new Promise(r => setTimeout(r, 500));
-            await testGetCourses();
-            await new Promise(r => setTimeout(r, 500));
-            await testAvailableCourses();
-            await new Promise(r => setTimeout(r, 500));
-            await testGetCourseById();
-            await new Promise(r => setTimeout(r, 500));
-            await testCreateCourse();
-            await new Promise(r => setTimeout(r, 500));
-            await testPasswordReset();
-            await new Promise(r => setTimeout(r, 500));
-            await testRefreshToken();
-            await new Promise(r => setTimeout(r, 500));
-            await testStudentRegistration();
-            await new Promise(r => setTimeout(r, 500));
-            await testResendConfirmation();
-        }
+      async function runAllTests() {
+        testResults = [];
+        document.getElementById('summary').style.display = 'none';
 
-        console.log('✨ API Test Page Loaded! You can also use the UI to test endpoints.');
+        await testAdminLogin();
+        await new Promise((r) => setTimeout(r, 500));
+        await testInstructorLogin();
+        await new Promise((r) => setTimeout(r, 500));
+        await testStudentLogin();
+        await new Promise((r) => setTimeout(r, 500));
+        await testInvalidLogin();
+        await new Promise((r) => setTimeout(r, 500));
+        await testGetCourses();
+        await new Promise((r) => setTimeout(r, 500));
+        await testAvailableCourses();
+        await new Promise((r) => setTimeout(r, 500));
+        await testGetCourseById();
+        await new Promise((r) => setTimeout(r, 500));
+        await testCreateCourse();
+        await new Promise((r) => setTimeout(r, 500));
+        await testPasswordReset();
+        await new Promise((r) => setTimeout(r, 500));
+        await testRefreshToken();
+        await new Promise((r) => setTimeout(r, 500));
+        await testStudentRegistration();
+        await new Promise((r) => setTimeout(r, 500));
+        await testResendConfirmation();
+      }
+
+      console.log('✨ API Test Page Loaded! You can also use the UI to test endpoints.');
     </script>
-</body>
+  </body>
 </html>

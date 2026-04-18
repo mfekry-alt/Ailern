@@ -1,35 +1,37 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AppProviders } from './app/providers';
 import { AppRouter } from './app/router';
 import { ErrorBoundary } from './app/ErrorBoundary';
 import { GlobalErrorOverlay } from './app/GlobalErrorOverlay';
+import { LoadingSpinner } from './components/LoadingSpinner';
 import { useMe } from './features/auth/api';
 import { useAuthStore } from './features/auth/store';
 
 function AppContent() {
   const { isLoading, isFetching } = useMe();
   const setLoading = useAuthStore((state) => state.setLoading);
+  const [ready, setReady] = useState(false);
+  const [showSpinner, setShowSpinner] = useState(true);
 
   useEffect(() => {
-    // Only show loading on initial load, not on background fetches
     if (!isLoading && !isFetching) {
       setLoading(false);
+      setReady(true);
     }
   }, [isLoading, isFetching, setLoading]);
 
-  // Don't block rendering while checking auth - let the router handle redirects
-  // if (isLoading) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center bg-secondary-50">
-  //       <div className="text-center">
-  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-  //         <p className="text-secondary-600">Loading...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  useEffect(() => {
+    if (!ready) return;
+    const timer = setTimeout(() => setShowSpinner(false), 450);
+    return () => clearTimeout(timer);
+  }, [ready]);
 
-  return <AppRouter />;
+  return (
+    <>
+      {showSpinner && <LoadingSpinner fading={ready} />}
+      {ready && <AppRouter />}
+    </>
+  );
 }
 
 function App() {

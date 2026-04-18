@@ -8,27 +8,14 @@ import {
 } from '@/hooks/useStrictExamMonitor';
 import { ViolationWarningModal } from '@/components/ViolationWarningModal';
 import { FullscreenPrompt } from '@/components/FullscreenPrompt';
-import type { QuestionAttempt as ApiQuestionAttempt } from '@/api/services/attempts.service';
+import { buildSaveAnswerEntries, type AttemptQuestion } from '@/api/services/attempts.service';
 
 const ENABLE_STRICT_MONITOR = false;
 
-interface Question {
-    id: string;
-    text: string;
-    type: 'MCQ' | 'TrueFalse' | 'Written';
-    instructions?: string;
-    options?: { id: string; text: string; optionNumber?: number }[];
-    points?: number;
-    // حقول المراجعة القادمة من السيرفر
-    studentOptionNumber?: number | null;
-    studentBooleanAnswer?: string | null;
-    studentWrittenAnswer?: string | null;
-}
-
-interface QuestionAttempt {
+interface LocalAnswer {
     questionId: string;
-    answer?: string;
-    selectedOptions?: string[];
+    optionId: string | null;
+    writtenAnswer: string | null;
 }
 
 interface QuizDetail {
@@ -44,9 +31,9 @@ export const QuizAttemptViewer = () => {
 
     // --- Core quiz state ---
     const [quizDetail, setQuizDetail] = useState<QuizDetail | null>(null);
-    const [questions, setQuestions] = useState<Question[]>([]);
+    const [questions, setQuestions] = useState<AttemptQuestion[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [answers, setAnswers] = useState<QuestionAttempt[]>([]);
+    const [answers, setAnswers] = useState<LocalAnswer[]>([]);
     const [flaggedQuestions, setFlaggedQuestions] = useState<string[]>([]);
     const [attemptId, setAttemptId] = useState<string | null>(null);
 
@@ -62,32 +49,18 @@ export const QuizAttemptViewer = () => {
     const quizContainerRef = useRef<HTMLDivElement>(null);
     const autoSaveIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
     const answersRef = useRef(answers);
+    const questionsRef = useRef(questions);
     const attemptIdRef = useRef(attemptId);
 
     // 🛡️ درع الحماية لمنع تكرار الريكويست في React Strict Mode
     const hasStartedInitialization = useRef(false);
 
     useEffect(() => { answersRef.current = answers; }, [answers]);
+    useEffect(() => { questionsRef.current = questions; }, [questions]);
     useEffect(() => { attemptIdRef.current = attemptId; }, [attemptId]);
 
     const isReviewMode = !!attemptIdFromUrl;
 
-    // 💡 دالة تحويل الإجابات قبل الإرسال للسيرفر
-    const formatAnswersForBackend = (currentAnswers: QuestionAttempt[]): { answers: ApiQuestionAttempt[] } => {
-        return {
-            answers: currentAnswers.map(ans => {
-                const question = questions.find(q => q.id === ans.questionId);
-                const value = ans.answer || ans.selectedOptions?.[0];
-
-                return {
-                    questionId: ans.questionId,
-                    optionNumber: question?.type === 'MCQ' ? Number(value) : null,
-                    booleanAnswer: question?.type === 'TrueFalse' ? String(value) : null,
-                    writtenAnswer: question?.type === 'Written' ? String(value) : null,
-                };
-            })
-        };
-    };
 
     // --- Submit Logic ---
     const handleAutoSubmit = useCallback(async () => {
@@ -97,12 +70,11 @@ export const QuizAttemptViewer = () => {
         if (!currentAttemptId || submitted || isReviewMode) return;
 
         setIsSubmitting(true);
-        console.log("⏳ Auto-submitting...");
         try {
-            const payload = formatAnswersForBackend(currentAnswers);
-            // 1. Save Progress first
-            await attemptsService.saveAttemptProgress(currentAttemptId, payload);
-            // 2. Submit Final
+            const entries = buildSaveAnswerEntries(questionsRef.current, currentAnswers);
+            if (entries.length > 0) {
+                await attemptsService.saveAttemptProgress(currentAttemptId, entries);
+            }
             await attemptsService.submitQuizAttempt(currentAttemptId);
 
             setSubmitted(true);
@@ -112,7 +84,7 @@ export const QuizAttemptViewer = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [submitted, quizId, navigate, isReviewMode, questions]);
+    }, [submitted, quizId, navigate, isReviewMode]);
 
     const strictExamMonitor = useStrictExamMonitor(handleAutoSubmit);
     const noOpExamMonitor = useMemo<UseStrictExamMonitorReturn>(
@@ -156,52 +128,37 @@ export const QuizAttemptViewer = () => {
                 if (currentAttemptId) {
                     setShowFullscreenPrompt(false);
                 } else {
-                    const attempt = await attemptsService.startOrResumeQuizAttempt(quizId);
+                    const attempt = await attemptsService.startQuizAttempt(quizId);
                     currentAttemptId = attempt.id;
                     if (!currentAttemptId) throw new Error('Failed to get valid attempt ID from server response');
 
-                    const startString = attempt.startAt.endsWith('Z') ? attempt.startAt : `${attempt.startAt}Z`;
-                    const serverStartTime = new Date(startString).getTime();
-                    const localNow = new Date().getTime();
-
-                    let elapsedSeconds = Math.floor((localNow - serverStartTime) / 1000);
-                    if (elapsedSeconds < 0) elapsedSeconds = 0;
-
-                    const totalAllowedSeconds = (quiz.attemptTimeLimit || 30) * 60;
-                    let remaining = totalAllowedSeconds - elapsedSeconds;
-
-                    if (remaining <= 0) {
-                        remaining = totalAllowedSeconds;
+                    const endDateStr = attempt.attemptEndDate;
+                    if (endDateStr) {
+                        const normalized = endDateStr.endsWith('Z') || endDateStr.includes('+') ? endDateStr : endDateStr + 'Z';
+                        const endMs = new Date(normalized).getTime();
+                        const remaining = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+                        setTimeRemaining(remaining);
+                    } else {
+                        setTimeRemaining((quiz.attemptTimeLimit || 30) * 60);
                     }
-                    setTimeRemaining(remaining);
                 }
 
                 setAttemptId(currentAttemptId);
 
-                // Fetch Questions
                 const questionsData = await attemptsService.getAttemptQuestions(currentAttemptId);
                 if (!questionsData || questionsData.length === 0) {
                     setError('This quiz has no questions available.');
                 } else {
                     setQuestions(questionsData);
 
-                    // 💡 لو في وضع المراجعة، نعبي الإجابات اللي راجعة من السيرفر عشان تظهر للطالب
-                    if (currentAttemptId === attemptIdFromUrl) {
-                        const previousAnswers: QuestionAttempt[] = questionsData.map((q: any) => {
-                            let val = undefined;
-                            if (q.type === 'MCQ' && q.studentOptionNumber != null) val = String(q.studentOptionNumber);
-                            if (q.type === 'TrueFalse' && q.studentBooleanAnswer != null) val = String(q.studentBooleanAnswer);
-                            if (q.type === 'Written' && q.studentWrittenAnswer != null) val = String(q.studentWrittenAnswer);
-
-                            return {
-                                questionId: q.id,
-                                answer: q.type !== 'MCQ' && val ? val : undefined,
-                                selectedOptions: q.type === 'MCQ' && val ? [val] : undefined
-                            };
-                        }).filter(a => a.answer !== undefined || a.selectedOptions !== undefined);
-
-                        setAnswers(previousAnswers);
-                    }
+                    const preFilledAnswers: LocalAnswer[] = questionsData
+                        .filter(q => q.selectedOptionId || q.writtenAnswer)
+                        .map(q => ({
+                            questionId: q.id,
+                            optionId: q.selectedOptionId || null,
+                            writtenAnswer: q.writtenAnswer || null,
+                        }));
+                    if (preFilledAnswers.length > 0) setAnswers(preFilledAnswers);
                 }
             } catch (err: any) {
                 if (err.response?.status === 403) setError('You have reached the maximum number of attempts allowed.');
@@ -240,16 +197,16 @@ export const QuizAttemptViewer = () => {
         if (!attemptId || submitted || showFullscreenPrompt || isReviewMode) return;
 
         autoSaveIntervalRef.current = setInterval(() => {
-            if (answers.length > 0) {
-                const payload = formatAnswersForBackend(answers);
-                attemptsService.saveAttemptProgress(attemptId, payload).catch(console.error);
+            const entries = buildSaveAnswerEntries(questionsRef.current, answersRef.current);
+            if (entries.length > 0) {
+                attemptsService.saveAttemptProgress(attemptId, entries).catch(console.error);
             }
-        }, 30000);
+        }, 40_000);
 
         return () => {
             if (autoSaveIntervalRef.current) clearInterval(autoSaveIntervalRef.current);
         };
-    }, [attemptId, answers, submitted, showFullscreenPrompt, isReviewMode, questions]);
+    }, [attemptId, submitted, showFullscreenPrompt, isReviewMode]);
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
@@ -269,10 +226,10 @@ export const QuizAttemptViewer = () => {
 
         setIsSubmitting(true);
         try {
-            const payload = formatAnswersForBackend(answers);
-            // 1. Save Progress first
-            await attemptsService.saveAttemptProgress(attemptId, payload);
-            // 2. Submit Final
+            const entries = buildSaveAnswerEntries(questionsRef.current, answers);
+            if (entries.length > 0) {
+                await attemptsService.saveAttemptProgress(attemptId, entries);
+            }
             await attemptsService.submitQuizAttempt(attemptId);
 
             setSubmitted(true);
@@ -284,23 +241,27 @@ export const QuizAttemptViewer = () => {
         }
     };
 
-    const handleAnswerChange = (value: string | string[]) => {
+    const handleSelectOption = (optId: string) => {
         if (isReviewMode) return;
+        const q = questions[currentQuestionIndex];
+        if (!q) return;
+        setAnswers(prev => {
+            const idx = prev.findIndex(a => a.questionId === q.id);
+            const entry: LocalAnswer = { questionId: q.id, optionId: optId, writtenAnswer: null };
+            if (idx > -1) { const u = [...prev]; u[idx] = entry; return u; }
+            return [...prev, entry];
+        });
+    };
 
-        const currentQuestion = questions[currentQuestionIndex];
-        if (!currentQuestion) return;
-
-        setAnswers((prev) => {
-            const existingIndex = prev.findIndex((a) => a.questionId === currentQuestion.id);
-            const updateData = typeof value === 'string' ? { answer: value } : { selectedOptions: value };
-
-            if (existingIndex > -1) {
-                const updated = [...prev];
-                updated[existingIndex] = { ...updated[existingIndex], ...updateData };
-                return updated;
-            } else {
-                return [...prev, { questionId: currentQuestion.id, ...updateData }];
-            }
+    const handleWrittenChange = (text: string) => {
+        if (isReviewMode) return;
+        const q = questions[currentQuestionIndex];
+        if (!q) return;
+        setAnswers(prev => {
+            const idx = prev.findIndex(a => a.questionId === q.id);
+            const entry: LocalAnswer = { questionId: q.id, optionId: null, writtenAnswer: text };
+            if (idx > -1) { const u = [...prev]; u[idx] = entry; return u; }
+            return [...prev, entry];
         });
     };
 
@@ -323,7 +284,7 @@ export const QuizAttemptViewer = () => {
     const getQuestionStatus = (questionId: string) => {
         if (flaggedQuestions.includes(questionId)) return 'flagged';
         const answer = answers.find((a) => a.questionId === questionId);
-        if (answer && (answer.answer || answer.selectedOptions?.length)) return 'answered';
+        if (answer && (answer.optionId || answer.writtenAnswer)) return 'answered';
         return 'remaining';
     };
 
@@ -370,7 +331,7 @@ export const QuizAttemptViewer = () => {
     );
 
     const currentQuestion = questions[currentQuestionIndex];
-    const totalAnswered = answers.filter((a) => a.answer || a.selectedOptions?.length).length;
+    const totalAnswered = answers.filter((a) => a.optionId || a.writtenAnswer).length;
     const totalQuestions = questions.length;
     const progressPercent = totalQuestions > 0 ? (totalAnswered / totalQuestions) * 100 : 0;
     const unansweredCount = totalQuestions - totalAnswered;
@@ -437,51 +398,44 @@ export const QuizAttemptViewer = () => {
                                 Question {currentQuestionIndex + 1}
                             </span>
                             <span className="text-gray-500 dark:text-slate-400 text-xs font-black uppercase tracking-widest bg-gray-100 dark:bg-slate-800 px-4 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700">
-                                {currentQuestion.points || 1} Pts
+                                {(currentQuestion as any).points || (currentQuestion as any).mark || ''} Pts
                             </span>
                         </div>
 
                         <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-10 leading-relaxed">
-                            {currentQuestion.text}
+                            {currentQuestion.question}
                         </h3>
 
                         {/* Options Area */}
                         <div className="grid gap-4">
                             {currentQuestion.type === 'MCQ' && (
                                 <div className="space-y-4">
-                                    {currentQuestion.options?.map((option, idx) => {
-                                        const currentAnswer = answers.find((a) => a.questionId === currentQuestion.id);
-                                        const optionId = String(option.optionNumber || option.id || idx);
-                                        const isSelected = currentAnswer?.selectedOptions?.includes(optionId) || currentAnswer?.answer === optionId;
+                                    {currentQuestion.options.map((opt) => {
+                                        const selectedId = answers.find(a => a.questionId === currentQuestion.id)?.optionId;
+                                        const isSelected = selectedId === opt.optionId;
 
                                         return (
-                                            <label
-                                                key={idx}
-                                                className={`flex items-center p-5 sm:p-6 rounded-2xl border-2 cursor-pointer transition-all ${isSelected
+                                            <button
+                                                key={opt.optionId}
+                                                onClick={() => handleSelectOption(opt.optionId)}
+                                                disabled={isReviewMode}
+                                                className={`w-full flex items-center p-5 sm:p-6 rounded-2xl border-2 cursor-pointer transition-all text-left ${isSelected
                                                     ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
                                                     : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/80'
                                                     } ${isReviewMode ? 'pointer-events-none opacity-90' : ''}`}
                                             >
                                                 <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
-                                                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white"></div>}
+                                                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
                                                 </div>
-                                                <input
-                                                    type="radio"
-                                                    name={`q${currentQuestion.id}`}
-                                                    value={optionId}
-                                                    onChange={(e) => handleAnswerChange([e.target.value])}
-                                                    disabled={isReviewMode}
-                                                    className="hidden"
-                                                />
                                                 <span className={`ml-4 text-base sm:text-lg font-bold ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-700 dark:text-slate-300'}`}>
-                                                    {option.text}
+                                                    {opt.option}
                                                 </span>
                                                 {isReviewMode && isSelected && (
                                                     <span className="ml-auto text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-100 dark:bg-blue-500/20 px-2 py-1 rounded-md">
                                                         Your Answer
                                                     </span>
                                                 )}
-                                            </label>
+                                            </button>
                                         );
                                     })}
                                 </div>
@@ -489,19 +443,19 @@ export const QuizAttemptViewer = () => {
 
                             {currentQuestion.type === 'TrueFalse' && (
                                 <div className="flex flex-col sm:flex-row gap-4">
-                                    {['True', 'False'].map((opt) => {
-                                        const isSelected = answers.find((a) => a.questionId === currentQuestion.id)?.answer === opt;
+                                    {currentQuestion.options.map((opt) => {
+                                        const isSelected = answers.find(a => a.questionId === currentQuestion.id)?.optionId === opt.optionId;
                                         return (
                                             <button
-                                                key={opt}
-                                                onClick={() => handleAnswerChange(opt)}
+                                                key={opt.optionId}
+                                                onClick={() => handleSelectOption(opt.optionId)}
                                                 disabled={isReviewMode}
                                                 className={`relative flex-1 py-6 px-6 rounded-2xl border-2 font-black text-lg transition-all flex items-center justify-between ${isSelected
                                                     ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
                                                     : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-blue-300 dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800/80'
                                                     } ${isReviewMode ? 'cursor-default opacity-90' : ''}`}
                                             >
-                                                <span>{opt}</span>
+                                                <span>{opt.option}</span>
                                                 <div className="flex items-center gap-3">
                                                     {isReviewMode && isSelected && (
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-100 dark:bg-blue-500/20 px-2 py-1 rounded-md">
@@ -509,7 +463,7 @@ export const QuizAttemptViewer = () => {
                                                         </span>
                                                     )}
                                                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
-                                                        {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full"></div>}
+                                                        {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                                                     </div>
                                                 </div>
                                             </button>
@@ -521,8 +475,8 @@ export const QuizAttemptViewer = () => {
                             {currentQuestion.type === 'Written' && (
                                 <div>
                                     <textarea
-                                        value={answers.find((a) => a.questionId === currentQuestion.id)?.answer || ''}
-                                        onChange={(e) => handleAnswerChange(e.target.value)}
+                                        value={answers.find(a => a.questionId === currentQuestion.id)?.writtenAnswer || ''}
+                                        onChange={(e) => handleWrittenChange(e.target.value)}
                                         placeholder="Type your detailed answer here..."
                                         disabled={isReviewMode}
                                         rows={8}
@@ -530,7 +484,7 @@ export const QuizAttemptViewer = () => {
                                     />
                                     {!isReviewMode && (
                                         <div className="mt-3 flex justify-end text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest">
-                                            Words: {answers.find((a) => a.questionId === currentQuestion.id)?.answer?.split(/\s+/).filter(Boolean).length || 0}
+                                            Words: {(answers.find(a => a.questionId === currentQuestion.id)?.writtenAnswer || '').split(/\s+/).filter(Boolean).length}
                                         </div>
                                     )}
                                 </div>

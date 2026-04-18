@@ -1,46 +1,36 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ChevronLeft, ChevronRight, Clock, Flag, Grid3x3,
-    Loader2, Send, CheckCircle2, AlertTriangle, ShieldAlert, Timer
+    Loader2, Send, CheckCircle2, ShieldAlert
 } from 'lucide-react';
 import { getQuiz } from '@/api/services/quiz.service';
 import {
-    startOrResumeQuizAttempt,
+    startQuizAttempt,
     getAttemptQuestions,
     saveAttemptProgress,
     submitQuizAttempt,
-    type QuestionAttempt as ApiQuestionAttempt
+    buildSaveAnswerEntries,
+    type AttemptQuestion,
 } from '@/api/services/attempts.service';
 
-interface Question {
-    id: string;
-    text: string;
-    type: 'MCQ' | 'TrueFalse' | 'Written';
-    options?: { id: string; text: string; optionNumber?: number }[];
-    points?: number;
-    // 💡 حقول الاستجابة القادمة من السيرفر
-    studentOptionNumber?: number | null;
-    studentBooleanAnswer?: string | null;
-    studentWrittenAnswer?: string | null;
-}
+// ─── Local state types ─────────────────────────────────────────────────────
 
 interface LocalAnswer {
     questionId: string;
-    value: string | number;
-    type: 'MCQ' | 'TrueFalse' | 'Written';
+    optionId: string | null;
+    writtenAnswer: string | null;
 }
 
 export const QuizPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
-    // --- States ---
-    const [quizDetail, setQuizDetail] = useState<{ id: string, title: string, description?: string, attemptTimeLimit?: number } | null>(null);
-    const [questions, setQuestions] = useState<Question[]>([]);
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [quizTitle, setQuizTitle] = useState('');
+    const [questions, setQuestions] = useState<AttemptQuestion[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState<LocalAnswer[]>([]);
-    const [flaggedQuestions, setFlaggedQuestions] = useState<string[]>([]);
+    const [flagged, setFlagged] = useState<Set<string>>(new Set());
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
     const [attemptId, setAttemptId] = useState<string | null>(null);
 
@@ -50,78 +40,51 @@ export const QuizPage = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     const answersRef = useRef(answers);
+    const questionsRef = useRef(questions);
     const attemptIdRef = useRef(attemptId);
-
     useEffect(() => { answersRef.current = answers; }, [answers]);
+    useEffect(() => { questionsRef.current = questions; }, [questions]);
     useEffect(() => { attemptIdRef.current = attemptId; }, [attemptId]);
 
-    const formatAnswersForBackend = (currentAnswers: any[]): { answers: ApiQuestionAttempt[] } => {
-        return {
-            answers: currentAnswers.map(ans => {
-                const question = questions.find(q => q.id === ans.questionId);
-                const value = ans.value || ans.answer || ans.selectedOptions?.[0];
+    // ── Initialization ─────────────────────────────────────────────────────
 
-                return {
-                    questionId: ans.questionId,
-                    optionNumber: question?.type === 'MCQ' ? Number(value) : null,
-                    booleanAnswer: question?.type === 'TrueFalse' ? String(value) : null,
-                    writtenAnswer: question?.type === 'Written' ? String(value) : null,
-                };
-            })
-        };
-    };
-
-    // --- Initialization ---
     useEffect(() => {
         const loadQuiz = async () => {
-            if (!id) {
-                setError('No quiz ID provided');
-                setIsLoading(false);
-                return;
-            }
+            if (!id) { setError('No quiz ID provided'); setIsLoading(false); return; }
 
             try {
                 const quiz = await getQuiz(id);
-                setQuizDetail({ id: quiz.id, title: quiz.title, description: quiz.description, attemptTimeLimit: quiz.attemptTimeLimit });
+                setQuizTitle(quiz.title);
 
-                const attempt = await startOrResumeQuizAttempt(id);
+                const attempt = await startQuizAttempt(id);
                 setAttemptId(attempt.id);
 
                 const attemptQuestions = await getAttemptQuestions(attempt.id);
+                if (attemptQuestions.length === 0) { setError('No questions available for this attempt.'); return; }
 
-                if (attemptQuestions.length > 0) {
-                    setQuestions(attemptQuestions as Question[]);
+                setQuestions(attemptQuestions);
 
-                    // 💡 هنا بنسحب إجابات السيرفر ونعبي الـ State عشان تظهر فوراً
-                    const preFilledAnswers: LocalAnswer[] = attemptQuestions.map((q: any) => {
-                        let val: string | number | undefined = undefined;
-                        if (q.type === 'MCQ' && q.studentOptionNumber != null) val = q.studentOptionNumber;
-                        if (q.type === 'TrueFalse' && q.studentBooleanAnswer != null) val = q.studentBooleanAnswer;
-                        if (q.type === 'Written' && q.studentWrittenAnswer != null) val = q.studentWrittenAnswer;
+                const preFilledAnswers: LocalAnswer[] = attemptQuestions
+                    .filter(q => q.selectedOptionId || q.writtenAnswer)
+                    .map(q => ({
+                        questionId: q.id,
+                        optionId: q.selectedOptionId || null,
+                        writtenAnswer: q.writtenAnswer || null,
+                    }));
+                if (preFilledAnswers.length > 0) setAnswers(preFilledAnswers);
 
-                        return val !== undefined ? { questionId: q.id, value: val, type: q.type } : null;
-                    }).filter(Boolean) as LocalAnswer[];
-
-                    if (preFilledAnswers.length > 0) {
-                        setAnswers(preFilledAnswers);
-                    }
-
+                // Timer: server returns attemptEndDate — remaining = endDate - now
+                const endDateStr = attempt.attemptEndDate;
+                if (endDateStr) {
+                    const normalized = endDateStr.endsWith('Z') || endDateStr.includes('+') ? endDateStr : endDateStr + 'Z';
+                    const endMs = new Date(normalized).getTime();
+                    const nowMs = Date.now();
+                    const remaining = Math.max(0, Math.floor((endMs - nowMs) / 1000));
+                    setTimeRemaining(remaining);
                 } else {
-                    setError('No questions available for this attempt.');
-                    return;
+                    const fallbackMinutes = quiz.attemptTimeLimit || 30;
+                    setTimeRemaining(fallbackMinutes * 60);
                 }
-
-                // Timer calculation
-                const startString = attempt.startAt.endsWith('Z') ? attempt.startAt : `${attempt.startAt}Z`;
-                const serverStartTime = new Date(startString).getTime();
-                const localNow = new Date().getTime();
-                let elapsedSeconds = Math.floor((localNow - serverStartTime) / 1000);
-                if (elapsedSeconds < 0) elapsedSeconds = 0;
-
-                const totalAllowedSeconds = (quiz.attemptTimeLimit || 30) * 60;
-                const remaining = totalAllowedSeconds - elapsedSeconds;
-                setTimeRemaining(remaining > 0 ? remaining : totalAllowedSeconds);
-
             } catch (err) {
                 console.error('Quiz loading error:', err);
                 setError('Failed to establish exam connection.');
@@ -132,103 +95,119 @@ export const QuizPage = () => {
         loadQuiz();
     }, [id]);
 
-    const autoSubmit = async () => {
-        const currentAttemptId = attemptIdRef.current;
-        const currentAnswers = answersRef.current;
-        if (!currentAttemptId) return;
+    // ── Auto-submit on timer expiry ────────────────────────────────────────
+
+    const doSubmit = useCallback(async (showResult = true) => {
+        const aid = attemptIdRef.current;
+        if (!aid) return;
 
         setIsSubmitting(true);
         try {
-            const payload = formatAnswersForBackend(currentAnswers);
-            await saveAttemptProgress(currentAttemptId, payload); // Save first
-            await submitQuizAttempt(currentAttemptId);            // Submit without payload
-            navigate(`/student/quizzes/${id}/result/${currentAttemptId}`);
-        } catch (err) {
-            navigate(`/student/quizzes/${id}/result/${currentAttemptId}`);
+            const entries = buildSaveAnswerEntries(questionsRef.current, answersRef.current);
+            if (entries.length > 0) await saveAttemptProgress(aid, entries);
+            await submitQuizAttempt(aid);
+            if (showResult) navigate(`/student/quizzes/${id}/result/${aid}`);
+        } catch {
+            if (showResult) navigate(`/student/quizzes/${id}/result/${aid}`);
         }
-    };
+    }, [id, navigate]);
 
+    // Timer countdown
     useEffect(() => {
         if (timeRemaining === null || timeRemaining <= 0 || isSubmitting) return;
         const interval = setInterval(() => {
             setTimeRemaining(prev => {
                 if (prev !== null && prev <= 1) {
                     clearInterval(interval);
-                    autoSubmit();
+                    doSubmit();
                     return 0;
                 }
                 return prev !== null ? prev - 1 : null;
             });
         }, 1000);
         return () => clearInterval(interval);
-    }, [timeRemaining, isSubmitting]);
+    }, [timeRemaining, isSubmitting, doSubmit]);
 
+    // Auto-save every 40s; only POST when at least one question has a saveable answer (no empty body)
     useEffect(() => {
-        if (!attemptId || answers.length === 0) return;
+        if (!attemptId) return;
         const autoSave = setInterval(async () => {
+            const entries = buildSaveAnswerEntries(questionsRef.current, answersRef.current);
+            if (entries.length === 0) return;
             setIsSaving(true);
             try {
-                await saveAttemptProgress(attemptId, formatAnswersForBackend(answers));
-            } catch (err) {
-                console.error('Auto-save error');
+                await saveAttemptProgress(attemptId, entries);
+            } catch {
+                /* silent */
             } finally {
                 setIsSaving(false);
             }
-        }, 30000);
+        }, 40_000);
         return () => clearInterval(autoSave);
-    }, [answers, attemptId]);
+    }, [attemptId]);
 
-    const handleAnswerChange = (value: string | number) => {
-        if (!currentQuestion) return;
+    // ── Answer handling ────────────────────────────────────────────────────
+
+    const currentQ = questions[currentIndex];
+
+    const handleSelectOption = (optionId: string) => {
+        if (!currentQ) return;
         setAnswers(prev => {
-            const idx = prev.findIndex(a => a.questionId === currentQuestion.id);
-            const entry: LocalAnswer = { questionId: currentQuestion.id, value, type: currentQuestion.type };
-            if (idx > -1) {
-                const updated = [...prev];
-                updated[idx] = entry;
-                return updated;
-            }
+            const idx = prev.findIndex(a => a.questionId === currentQ.id);
+            const entry: LocalAnswer = { questionId: currentQ.id, optionId, writtenAnswer: null };
+            if (idx > -1) { const u = [...prev]; u[idx] = entry; return u; }
+            return [...prev, entry];
+        });
+    };
+
+    const handleWrittenAnswer = (text: string) => {
+        if (!currentQ) return;
+        setAnswers(prev => {
+            const idx = prev.findIndex(a => a.questionId === currentQ.id);
+            const entry: LocalAnswer = { questionId: currentQ.id, optionId: null, writtenAnswer: text };
+            if (idx > -1) { const u = [...prev]; u[idx] = entry; return u; }
             return [...prev, entry];
         });
     };
 
     const toggleFlag = () => {
-        if (!currentQuestion) return;
-        setFlaggedQuestions(prev =>
-            prev.includes(currentQuestion.id) ? prev.filter(qId => qId !== currentQuestion.id) : [...prev, currentQuestion.id]
-        );
+        if (!currentQ) return;
+        setFlagged(prev => {
+            const n = new Set(prev);
+            n.has(currentQ.id) ? n.delete(currentQ.id) : n.add(currentQ.id);
+            return n;
+        });
     };
 
     const handleManualSubmit = async () => {
-        if (!attemptId) return;
-        if (!window.confirm("Are you sure you want to finish and submit your quiz?")) return;
-
-        setIsSubmitting(true);
-        try {
-            const payload = formatAnswersForBackend(answers);
-            await saveAttemptProgress(attemptId, payload); // Save first
-            await submitQuizAttempt(attemptId);            // Submit without payload
-            navigate(`/student/quizzes/${id}/result/${attemptId}`);
-        } catch (err) {
-            console.error('Submit failed:', err);
-            setIsSubmitting(false);
-        }
+        if (!attemptId || !window.confirm('Are you sure you want to finish and submit your quiz?')) return;
+        await doSubmit(true);
     };
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    const getSelectedOptionId = (qId: string) => answers.find(a => a.questionId === qId)?.optionId ?? null;
+    const getWrittenValue = (qId: string) => answers.find(a => a.questionId === qId)?.writtenAnswer ?? '';
+    const isAnswered = (qId: string) => {
+        const a = answers.find(ans => ans.questionId === qId);
+        return a ? !!(a.optionId || a.writtenAnswer) : false;
+    };
+
+    const totalAnswered = answers.filter(a => a.optionId || a.writtenAnswer).length;
+    const progressPercent = questions.length > 0 ? (totalAnswered / questions.length) * 100 : 0;
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
-        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     };
 
-    const currentQuestion = questions[currentQuestionIndex];
-    const totalAnswered = answers.length;
-    const progressPercent = questions.length > 0 ? (totalAnswered / questions.length) * 100 : 0;
-
-    const getQuestionStatus = (questionId: string) => {
-        if (flaggedQuestions.includes(questionId)) return 'flagged';
-        return answers.find(a => a.questionId === questionId) ? 'answered' : 'remaining';
+    const getStatus = (qId: string) => {
+        if (flagged.has(qId)) return 'flagged';
+        return isAnswered(qId) ? 'answered' : 'remaining';
     };
+
+    // ── Render ─────────────────────────────────────────────────────────────
 
     if (isLoading) return (
         <div className="min-h-screen bg-[#0a0f1d] flex flex-col items-center justify-center">
@@ -237,7 +216,7 @@ export const QuizPage = () => {
         </div>
     );
 
-    if (error || !currentQuestion) return (
+    if (error || !currentQ) return (
         <div className="min-h-screen bg-[#0a0f1d] flex items-center justify-center p-4">
             <div className="bg-slate-900/80 border border-red-500/20 p-10 rounded-[3rem] text-center max-w-lg backdrop-blur-xl">
                 <ShieldAlert className="w-20 h-20 text-red-500 mx-auto mb-6" />
@@ -270,61 +249,61 @@ export const QuizPage = () => {
                     <div className="bg-[#151a2d]/80 backdrop-blur-md border border-slate-800/80 p-8 rounded-[2.5rem] shadow-xl">
                         <div className="flex justify-between items-start mb-6">
                             <div>
-                                <h1 className="text-2xl font-black text-white line-clamp-1">{quizDetail?.title}</h1>
+                                <h1 className="text-2xl font-black text-white line-clamp-1">{quizTitle}</h1>
                                 <div className="flex items-center gap-3 mt-2">
-                                    <span className="text-xs font-bold text-slate-500 uppercase">Question {currentQuestionIndex + 1} of {questions.length}</span>
-                                    <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+                                    <span className="text-xs font-bold text-slate-500 uppercase">Question {currentIndex + 1} of {questions.length}</span>
+                                    <span className="w-1 h-1 rounded-full bg-slate-700" />
                                     <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">{totalAnswered} Answered</span>
                                 </div>
                             </div>
-                            <button onClick={toggleFlag} className={`p-4 rounded-2xl border-2 transition-all ${flaggedQuestions.includes(currentQuestion.id) ? 'bg-red-500/20 border-red-500 text-red-500' : 'border-slate-800 text-slate-500 hover:text-slate-300'}`}>
-                                <Flag className={`w-6 h-6 ${flaggedQuestions.includes(currentQuestion.id) ? 'fill-current' : ''}`} />
+                            <button onClick={toggleFlag} className={`p-4 rounded-2xl border-2 transition-all ${flagged.has(currentQ.id) ? 'bg-red-500/20 border-red-500 text-red-500' : 'border-slate-800 text-slate-500 hover:text-slate-300'}`}>
+                                <Flag className={`w-6 h-6 ${flagged.has(currentQ.id) ? 'fill-current' : ''}`} />
                             </button>
                         </div>
                         <div className="w-full bg-slate-800/50 h-2.5 rounded-full overflow-hidden border border-slate-700/30">
-                            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(99,102,241,0.5)]" style={{ width: `${progressPercent}%` }}></div>
+                            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(99,102,241,0.5)]" style={{ width: `${progressPercent}%` }} />
                         </div>
                     </div>
 
                     {/* Question Content */}
-                    <div className="bg-[#151a2d]/80 backdrop-blur-md border border-slate-800/80 rounded-[3rem] p-8 sm:p-12 shadow-2xl relative min-h-[450px] animate-in fade-in zoom-in-95 duration-500">
-                        <div className="absolute top-0 left-0 w-2 h-full bg-indigo-600"></div>
+                    <div className="bg-[#151a2d]/80 backdrop-blur-md border border-slate-800/80 rounded-[3rem] p-8 sm:p-12 shadow-2xl relative min-h-[450px] animate-in fade-in zoom-in-95 duration-500" key={currentQ.id}>
+                        <div className="absolute top-0 left-0 w-2 h-full bg-indigo-600" />
                         <div className="flex items-center gap-3 mb-8">
-                            <span className="px-4 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest">{currentQuestion.type}</span>
-                            <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Mark: {currentQuestion.points} pts</span>
+                            <span className="px-4 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest">{currentQ.type}</span>
+                            {currentQ.instructions && <span className="text-slate-500 text-xs italic">{currentQ.instructions}</span>}
                         </div>
-                        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-10 leading-relaxed">{currentQuestion.text}</h2>
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-10 leading-relaxed">{currentQ.question}</h2>
 
                         <div className="grid gap-4">
-                            {currentQuestion.type === 'Written' ? (
+                            {currentQ.type === 'Written' ? (
                                 <textarea
                                     className="w-full p-6 bg-[#0a0f1d] border-2 border-slate-700/50 rounded-3xl text-white outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 min-h-[250px] transition-all text-lg"
                                     placeholder="Write your answer here..."
-                                    value={answers.find(a => a.questionId === currentQuestion.id)?.value || ''}
-                                    onChange={(e) => handleAnswerChange(e.target.value)}
+                                    value={getWrittenValue(currentQ.id)}
+                                    onChange={(e) => handleWrittenAnswer(e.target.value)}
                                 />
-                            ) : currentQuestion.type === 'TrueFalse' ? (
+                            ) : currentQ.type === 'TrueFalse' ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {['True', 'False'].map(opt => {
-                                        const isSelected = answers.find(a => a.questionId === currentQuestion.id)?.value === opt;
+                                    {currentQ.options.map(opt => {
+                                        const selected = getSelectedOptionId(currentQ.id) === opt.optionId;
                                         return (
-                                            <button key={opt} onClick={() => handleAnswerChange(opt)} className={`p-6 rounded-[2rem] border-2 font-bold text-xl transition-all flex items-center justify-between ${isSelected ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 shadow-xl' : 'border-slate-800 bg-[#0a0f1d] text-slate-400 hover:border-slate-600'}`}>
-                                                <span>{opt}</span>
-                                                <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-700'}`}>
-                                                    {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                                            <button key={opt.optionId} onClick={() => handleSelectOption(opt.optionId)} className={`p-6 rounded-[2rem] border-2 font-bold text-xl transition-all flex items-center justify-between ${selected ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 shadow-xl' : 'border-slate-800 bg-[#0a0f1d] text-slate-400 hover:border-slate-600'}`}>
+                                                <span>{opt.option}</span>
+                                                <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ${selected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-700'}`}>
+                                                    {selected && <div className="w-2 h-2 bg-white rounded-full" />}
                                                 </div>
                                             </button>
                                         );
                                     })}
                                 </div>
                             ) : (
-                                currentQuestion.options?.map(opt => {
-                                    const isSelected = answers.find(a => a.questionId === currentQuestion.id)?.value === opt.optionNumber;
+                                currentQ.options.map(opt => {
+                                    const selected = getSelectedOptionId(currentQ.id) === opt.optionId;
                                     return (
-                                        <button key={opt.id} onClick={() => handleAnswerChange(opt.optionNumber!)} className={`flex items-center justify-between p-6 rounded-[1.5rem] border-2 transition-all text-left group ${isSelected ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 shadow-lg' : 'border-slate-800 bg-[#0a0f1d] text-slate-400 hover:border-slate-600'}`}>
-                                            <span className="text-lg font-bold pr-4">{opt.text}</span>
-                                            <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-700'}`}>
-                                                {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                                        <button key={opt.optionId} onClick={() => handleSelectOption(opt.optionId)} className={`flex items-center justify-between p-6 rounded-[1.5rem] border-2 transition-all text-left group ${selected ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300 shadow-lg' : 'border-slate-800 bg-[#0a0f1d] text-slate-400 hover:border-slate-600'}`}>
+                                            <span className="text-lg font-bold pr-4">{opt.option}</span>
+                                            <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-700'}`}>
+                                                {selected && <div className="w-2 h-2 bg-white rounded-full" />}
                                             </div>
                                         </button>
                                     );
@@ -335,18 +314,18 @@ export const QuizPage = () => {
 
                     {/* Bottom Nav */}
                     <div className="flex justify-between items-center bg-[#151a2d]/50 p-4 rounded-[2rem] border border-slate-800/40">
-                        <button disabled={currentQuestionIndex === 0} onClick={() => setCurrentQuestionIndex(v => v - 1)} className="px-8 py-4 bg-slate-800 hover:bg-slate-700 rounded-2xl font-bold text-slate-300 transition-all disabled:opacity-20 flex items-center gap-2">
+                        <button disabled={currentIndex === 0} onClick={() => setCurrentIndex(v => v - 1)} className="px-8 py-4 bg-slate-800 hover:bg-slate-700 rounded-2xl font-bold text-slate-300 transition-all disabled:opacity-20 flex items-center gap-2">
                             <ChevronLeft className="w-5 h-5" /> Previous
                         </button>
                         <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-900/80 px-4 py-2 rounded-xl">
                             {isSaving ? <><Loader2 className="w-3 h-3 animate-spin" /> Syncing</> : <><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Auto-Saved</>}
                         </div>
-                        {currentQuestionIndex === questions.length - 1 ? (
+                        {currentIndex === questions.length - 1 ? (
                             <button onClick={handleManualSubmit} disabled={isSubmitting} className="px-10 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/20 hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2">
                                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />} SUBMIT EXAM
                             </button>
                         ) : (
-                            <button onClick={() => setCurrentQuestionIndex(v => v + 1)} className="px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/20 hover:-translate-y-1 transition-all flex items-center gap-2">
+                            <button onClick={() => setCurrentIndex(v => v + 1)} className="px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/20 hover:-translate-y-1 transition-all flex items-center gap-2">
                                 NEXT QUESTION <ChevronRight className="w-5 h-5" />
                             </button>
                         )}
@@ -362,23 +341,24 @@ export const QuizPage = () => {
                         </div>
                         <div className="grid grid-cols-5 gap-3">
                             {questions.map((q, idx) => {
-                                const status = getQuestionStatus(q.id);
+                                const status = getStatus(q.id);
                                 return (
                                     <button
                                         key={q.id}
-                                        onClick={() => setCurrentQuestionIndex(idx)}
-                                        className={`aspect-square rounded-xl flex items-center justify-center font-black text-sm transition-all relative ${currentQuestionIndex === idx
+                                        onClick={() => setCurrentIndex(idx)}
+                                        className={`aspect-square rounded-xl flex items-center justify-center font-black text-sm transition-all relative ${
+                                            currentIndex === idx
                                                 ? 'bg-indigo-600 text-white ring-4 ring-indigo-500/20 scale-110 z-10'
                                                 : status === 'answered'
                                                     ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
                                                     : status === 'flagged'
                                                         ? 'bg-red-500/10 text-red-400 border border-red-500/30 animate-pulse'
                                                         : 'bg-[#0a0f1d] text-slate-600 border border-slate-800 hover:border-slate-600'
-                                            }`}
+                                        }`}
                                     >
                                         {idx + 1}
-                                        {status === 'flagged' && currentQuestionIndex !== idx && (
-                                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#151a2d]"></span>
+                                        {status === 'flagged' && currentIndex !== idx && (
+                                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#151a2d]" />
                                         )}
                                     </button>
                                 );
@@ -387,13 +367,13 @@ export const QuizPage = () => {
 
                         <div className="mt-8 pt-6 border-t border-slate-800 space-y-3">
                             <div className="flex items-center gap-3 text-[9px] font-black uppercase text-slate-500 tracking-widest">
-                                <div className="w-3 h-3 rounded-full bg-indigo-600"></div> Current
+                                <div className="w-3 h-3 rounded-full bg-indigo-600" /> Current
                             </div>
                             <div className="flex items-center gap-3 text-[9px] font-black uppercase text-slate-500 tracking-widest">
-                                <div className="w-3 h-3 rounded-md bg-indigo-500/20 border border-indigo-500/40"></div> Answered
+                                <div className="w-3 h-3 rounded-md bg-indigo-500/20 border border-indigo-500/40" /> Answered
                             </div>
                             <div className="flex items-center gap-3 text-[9px] font-black uppercase text-slate-500 tracking-widest">
-                                <div className="w-3 h-3 rounded-md bg-red-500/20 border border-red-500/40"></div> Flagged
+                                <div className="w-3 h-3 rounded-md bg-red-500/20 border border-red-500/40" /> Flagged
                             </div>
                         </div>
                     </div>

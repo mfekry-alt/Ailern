@@ -105,14 +105,14 @@ export const SignupPage = () => {
     const onSubmit = async (data: StudentFormData | InstructorFormData) => {
         setError('');
         try {
-            const payload: { fullName: string; email: string; password: string; role: 'Student' | 'Instructor'; jobTitle?: string } = {
+            const payload: Omit<import('@/types/api.types').RegisterUserCommand, 'userName'> = {
                 fullName: data.fullName,
                 email: data.email,
                 password: data.password,
                 role: userType === 'student' ? 'Student' : 'Instructor',
             };
             if (userType === 'instructor' && 'jobTitle' in data && data.jobTitle) {
-                payload.jobTitle = data.jobTitle;
+                payload.jobTitle = data.jobTitle as import('@/types/api.types').InstructorJobTitle;
             }
             await registerMutation.mutateAsync(payload);
             setCompletedSignup({ email: data.email });

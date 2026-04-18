@@ -18,6 +18,7 @@ import { ChangePasswordPage } from '@/routes/ChangePasswordPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 import { ForbiddenPage } from '@/routes/ForbiddenPage';
 import { NotificationsPage } from '@/routes/NotificationsPage';
+import { FilePreviewPage } from '@/routes/FilePreviewPage';
 
 // Student pages
 import { DashboardPage } from '@/routes/student/DashboardPage';
@@ -39,8 +40,11 @@ import { InstructorDashboardPage } from '@/routes/instructor/InstructorDashboard
 import { InstructorCoursesPage } from '@/routes/instructor/InstructorCoursesPage';
 import { InstructorManageCoursePage } from '@/routes/instructor/InstructorManageCoursePage';
 import { InstructorCourseEditPage } from '@/routes/instructor/InstructorCourseEditPage';
-import { InstructorStatisticsPage } from '@/routes/instructor/InstructorStatisticsPage';
-import { InstructorCourseEditContentPage } from '@/routes/instructor/InstructorCourseEditContentPage';
+import { CourseManageLayout } from './layouts/CourseManageLayout';
+import { CourseSectionsTab } from '@/routes/instructor/course/CourseSectionsTab';
+import { CourseAssignmentsTab } from '@/routes/instructor/course/CourseAssignmentsTab';
+import { CourseQuizzesTab } from '@/routes/instructor/course/CourseQuizzesTab';
+import { CourseStudentsTab } from '@/routes/instructor/course/CourseStudentsTab';
 import { InstructorGradebookPage } from '@/routes/instructor/InstructorGradebookPage';
 import { InstructorAssignmentsPage } from '@/routes/instructor/InstructorAssignmentsPage';
 import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';
@@ -82,6 +86,9 @@ export const AppRouter = () => {
             <Route element={<AuthLayout />}>
                 <Route path={ROUTES.CONFIRM_EMAIL} element={<ConfirmEmailPage />} />
             </Route>
+
+            {/* File preview (standalone, no layout) */}
+            <Route path="/preview" element={<FilePreviewPage />} />
 
             {/* Public routes */}
             <Route element={<MainLayout />}>
@@ -127,7 +134,13 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR} element={<InstructorDashboardPage />} />
                 <Route path={ROUTES.INSTRUCTOR_COURSES} element={<InstructorCoursesPage />} />                <Route path={ROUTES.INSTRUCTOR_MANAGE_COURSE} element={<InstructorManageCoursePage />} />                <Route path={ROUTES.INSTRUCTOR_COURSE_NEW} element={<InstructorCourseEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_COURSE_EDIT} element={<InstructorCourseEditPage />} />
-                <Route path="/instructor/courses/:id/content" element={<InstructorCourseEditContentPage />} />
+                <Route path="/instructor/courses/:id/manage" element={<CourseManageLayout />}>
+                    <Route index element={<Navigate to="sections" replace />} />
+                    <Route path="sections" element={<CourseSectionsTab />} />
+                    <Route path="assignments" element={<CourseAssignmentsTab />} />
+                    <Route path="quizzes" element={<CourseQuizzesTab />} />
+                    <Route path="students" element={<CourseStudentsTab />} />
+                </Route>
                 <Route path={ROUTES.INSTRUCTOR_GRADEBOOK} element={<InstructorGradebookPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENTS} element={<InstructorAssignmentsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<InstructorAssignmentCreatePage />} />
@@ -135,7 +148,6 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS} element={<InstructorQuizQuestionBuilderPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />
-                <Route path={ROUTES.INSTRUCTOR_STATISTICS} element={<InstructorStatisticsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT} element={<InstructorQuizQuestionsEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />

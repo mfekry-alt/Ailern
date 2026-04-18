@@ -94,8 +94,8 @@ export const ENDPOINTS = {
 
     // Quiz Attempts endpoints
     ATTEMPTS: {
-        START: (quizId: string) => `/Quizzes/${quizId}/Attempts`, // POST
-        GET_ATTEMPTS: (quizId: string) => `/Quizzes/${quizId}/attempts`, // GET 
+        START: (quizId: string) => `/Quizzes/${quizId}/attempts`, // POST - creates new attempt
+        GET_ATTEMPTS: (quizId: string) => `/Quizzes/${quizId}/attempts`, // GET
         GET_QUESTIONS: (attemptId: string) => `/Attempts/${attemptId}/questions`, // GET
         SAVE: (attemptId: string) => `/Attempts/${attemptId}/save`, // POST
         SUBMIT: (attemptId: string) => `/Attempts/${attemptId}/submit`, // PUT

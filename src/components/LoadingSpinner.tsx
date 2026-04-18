@@ -1,49 +1,36 @@
-// components/LoadingSpinner.tsx
 import Lottie from 'lottie-react';
-import loaderAnimation from '../../public/Loader.json';
+import loaderAnimation from '@/assets/Loader.json';
 
-const fadeInStyle = `
-    @keyframes fadeInLogo {
-        from { opacity: 0.7; }
-        to { opacity: 1; }
-    }
-    .logo-fade {
-        animation: fadeInLogo 1s ease-in-out infinite;
-    }
-`;
+interface LoadingSpinnerProps {
+    fading?: boolean;
+}
 
-export const LoadingSpinner = () => (
-    <div 
-        className="fixed inset-0 flex items-center justify-center"
-        style={{ backgroundColor: 'oklch(20.8% 0.042 265.755)', zIndex: 99 }}
+export const LoadingSpinner = ({ fading = false }: LoadingSpinnerProps) => (
+    <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f172a]"
+        style={{
+            opacity: fading ? 0 : 1,
+            transition: 'opacity 400ms ease-out',
+            pointerEvents: fading ? 'none' : 'auto',
+        }}
     >
-        <style>{fadeInStyle}</style>
-        {/* Container with padding and centering */}
-        <div className="flex flex-col items-center justify-center gap-4">
-            {/* Loader Animation Container - Maintains aspect ratio */}
-            <div className="relative w-20 h-20 md:w-24 md:h-24">
-                {/* Glow effect background */}
-                <div
-                    className="absolute inset-0 rounded-full blur-2xl opacity-60 animate-pulse"
-                    style={{
-                        background: 'radial-gradient(circle, rgba(74, 144, 226, 0.7) 0%, transparent 70%)',
-                    }}
-                />
+        {/* Glow effect */}
+        <div
+            className="absolute w-64 h-64 rounded-full blur-3xl opacity-40 animate-pulse"
+            style={{
+                background: 'radial-gradient(circle, rgba(15,90,156,0.6) 0%, rgba(116,56,139,0.3) 50%, transparent 70%)',
+            }}
+        />
 
-                {/* Lottie Animation Container */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <Lottie
-                        animationData={loaderAnimation}
-                        loop={true}
-                        autoplay={true}
-                        className="logo-fade"
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                        }}
-                    />
-                </div>
-            </div>
+        {/* Lottie animation — 200×200, scales down on small screens */}
+        <div className="relative w-[200px] h-[200px] max-w-[60vw] max-h-[60vw]">
+            <Lottie
+                animationData={loaderAnimation}
+                loop
+                autoplay
+                renderer="svg"
+                style={{ width: '100%', height: '100%' }}
+            />
         </div>
     </div>
 );

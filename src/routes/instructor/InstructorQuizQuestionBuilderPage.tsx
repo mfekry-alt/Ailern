@@ -5,7 +5,7 @@ import { storage } from '@/lib/storage';
 import { ArrowLeft, Plus, Trash2, CheckCircle2, Loader2, GripVertical, Sparkles, HelpCircle, Settings, XCircle, AlertTriangle } from 'lucide-react';
 import { useCreateQuiz } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
-import type { QuizOptionRequest, QuestionRequest, QuestionType } from '@/types/api.types';
+import type { OptionRequest, QuestionUpsertRequest, QuestionType } from '@/types/api.types';
 
 // ─── Local UI types ────────────────────────────────────────────────────────
 
@@ -54,7 +54,7 @@ const defaultQuestion = (uid: number): UIQuestion => ({
     options: makeMCQOptions(),
 });
 
-const convertQuestionRequestToUI = (q: QuestionRequest, uid: number): UIQuestion => {
+const convertQuestionRequestToUI = (q: QuestionUpsertRequest, uid: number): UIQuestion => {
     const options = q.options?.length
         ? q.options.map(o => ({ text: o.optionText, isCorrect: o.isCorrect }))
         : q.questionType === 'TrueFalse'
@@ -76,10 +76,10 @@ const convertQuestionRequestToUI = (q: QuestionRequest, uid: number): UIQuestion
 
 // ─── Payload builders ──────────────────────────────────────────────────────
 
-const buildPayloadOptions = (q: UIQuestion): QuizOptionRequest[] =>
+const buildPayloadOptions = (q: UIQuestion): OptionRequest[] =>
     q.options.map(o => ({ optionText: o.text, isCorrect: o.isCorrect }));
 
-const buildPayloadQuestion = (q: UIQuestion): QuestionRequest => ({
+const buildPayloadQuestion = (q: UIQuestion): QuestionUpsertRequest => ({
     questionType: q.type,
     questionText: q.text,
     mark: q.mark,
@@ -163,7 +163,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
         }, 100);
     };
 
-    const handleAIGenerate = (generatedQuestions: QuestionRequest[]) => {
+    const handleAIGenerate = (generatedQuestions: QuestionUpsertRequest[]) => {
         if (!generatedQuestions.length) {
             setError('AI generation returned no questions. Please try again.');
             setShowAIModal(false);
@@ -271,7 +271,7 @@ export const InstructorQuizQuestionBuilderPage = () => {
         const payload = {
             title: settings.title,
             description: settings.description?.trim() || settings.title?.trim() || 'Quiz',
-            courseId: String(settings.courseId),
+            courseId: Number(settings.courseId),
             maximumAttempts: settings.maximumAttempts,
             attemptTimeLimit: Number(settings.attemptTimeLimit) || 0,
             status: settings.status,

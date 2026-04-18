@@ -1,5 +1,5 @@
 /**
- * Quiz Attempts Service - الشامل لكل عمليات محاولات الاختبار
+ * Quiz Attempts Service
  */
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
@@ -7,28 +7,72 @@ import type { ApiResponse } from '@/types/api.types';
 
 // ─── Interfaces ────────────────────────────────────────────────────────────
 
-export interface QuestionAttempt {
+export interface StartAttemptResponse {
+    id: string;
+    attemptEndDate: string;
+    [key: string]: any;
+}
+
+export interface AttemptQuestion {
+    id: string;
+    question: string;
+    type: 'MCQ' | 'TrueFalse' | 'Written';
+    instructions: string | null;
+    options: { option: string; optionId: string }[];
+    writtenAnswer: string | null;
+    selectedOptionId: string | null;
+}
+
+export interface SaveAnswerEntry {
     questionId: string;
     optionId?: string | null;
-    booleanAnswer?: string | null;
     writtenAnswer?: string | null;
 }
 
+/** @deprecated Use SaveAnswerEntry instead */
+export type QuestionAttempt = SaveAnswerEntry;
+
+/** @deprecated API expects a raw array; use SaveAnswerEntry[] */
 export interface SaveAttemptPayload {
-    answers: QuestionAttempt[];
+    answers: SaveAnswerEntry[];
 }
 
-export interface StartAttemptResponse {
-    id: string;
-    quizId: string;
-    timeSpent: number;
-    startAt: string;
-    submittedAt?: string;
-    status: 'InProgress' | 'Submitted' | 'In-Progress' | 'Graded';
-    score?: number | null;
-    attemptNumber?: number;
-    totalMarks?: number;
-    duration?: number;
+/** Local answer row (supports legacy `answer` / `selectedOptions` from older forms) */
+export type LocalAnswerLike = {
+    questionId: string;
+    optionId?: string | null;
+    writtenAnswer?: string | null;
+    answer?: string;
+    selectedOptions?: string[];
+};
+
+/**
+ * Build POST /Attempts/{id}/save body: a JSON array of entries.
+ * Written → non-empty writtenAnswer, optionId null.
+ * MCQ / TrueFalse → optionId set, writtenAnswer null.
+ * Omits rows with nothing to save for that question type.
+ */
+export function buildSaveAnswerEntries(
+    questions: Array<{ id: string; type: string }>,
+    answers: LocalAnswerLike[],
+): SaveAnswerEntry[] {
+    const out: SaveAnswerEntry[] = [];
+    for (const raw of answers) {
+        const q = questions.find((x) => x.id === raw.questionId);
+        if (!q) continue;
+        const optionId = raw.optionId ?? raw.selectedOptions?.[0] ?? null;
+        const writtenRaw = raw.writtenAnswer ?? raw.answer ?? null;
+
+        if (q.type === 'Written') {
+            const text = typeof writtenRaw === 'string' ? writtenRaw.trim() : '';
+            if (!text) continue;
+            out.push({ questionId: raw.questionId, writtenAnswer: text, optionId: null });
+        } else {
+            if (!optionId) continue;
+            out.push({ questionId: raw.questionId, optionId: String(optionId), writtenAnswer: null });
+        }
+    }
+    return out;
 }
 
 export interface AttemptResult {
@@ -54,18 +98,8 @@ export interface StudentAnswer {
     possiblePoints?: number;
 }
 
-// 💡 Helper لتوحيد شكل المحاولة
-const normalizeAttempt = (attempt: any): StartAttemptResponse => {
-    if (!attempt) return attempt;
-    return {
-        ...attempt,
-        id: String(attempt.id || attempt.attemptId || attempt.quizAttemptId || attempt.Id || ''),
-        startAt: attempt.startAt || attempt.startedAt || attempt.createdAt || new Date().toISOString(),
-        status: attempt.status || 'InProgress'
-    };
-};
+// ─── Helpers ───────────────────────────────────────────────────────────────
 
-// 💡 Helper لاستخراج المصفوفات بأمان (منع خطأ all.find)
 const extractArray = (res: any): any[] => {
     if (!res) return [];
     const body = res.data;
@@ -77,81 +111,23 @@ const extractArray = (res: any): any[] => {
     return [];
 };
 
-// ─── Exported Functions ───────────────────────────────────────────────────
+// ─── Start Attempt ─────────────────────────────────────────────────────────
 
-// 🛡️ قفل مخصص لطلبات جلب كل المحاولات
-let activeAllAttemptsPromise: Record<string, Promise<StartAttemptResponse[]> | undefined> = {};
-
-export const getQuizAttempts = async (quizId: string): Promise<StartAttemptResponse[]> => {
-    // لو فيه طلب لنفس الكويز شغال حالياً، رجعه هو هو
-    if (activeAllAttemptsPromise[quizId]) {
-        console.log('🛡️ Returning active AllAttempts promise for:', quizId);
-        return activeAllAttemptsPromise[quizId]!;
-    }
-
-    activeAllAttemptsPromise[quizId] = (async () => {
-        try {
-            const response = await api.get<any>(ENDPOINTS.ATTEMPTS.GET_ATTEMPTS(quizId));
-            return extractArray(response).map(normalizeAttempt);
-        } catch (error) {
-            console.error('✗ Failed to fetch quiz attempts:', error);
-            return [];
-        } finally {
-            // مسح القفل بعد ما الريكويست يخلص
-            delete activeAllAttemptsPromise[quizId];
-        }
-    })();
-
-    return activeAllAttemptsPromise[quizId]!;
-};
-
-/**
- * دالة البدء التي تستعيد المحاولة القائمة فعلياً
- */
-// ✅ 1. المتغير ده لازم يكون هنا (خارج الدالة) عشان يشتغل كـ "قفل" عام
 let activeStartPromise: Promise<StartAttemptResponse> | null = null;
 
-export const startOrResumeQuizAttempt = async (quizId: string): Promise<StartAttemptResponse> => {
+export const startQuizAttempt = async (quizId: string): Promise<StartAttemptResponse> => {
+    if (activeStartPromise) return activeStartPromise;
 
-    // ✅ 2. لو فيه طلب شغال حالياً، رجع نفس الوعد (Promise) وماتعملش طلب جديد
-    if (activeStartPromise) {
-        console.log('🛡️ Request collision blocked. Returning active promise...');
-        return activeStartPromise;
-    }
-
-    // ✅ 3. ابدأ التنفيذ واحفظ الوعد في المتغير
     activeStartPromise = (async () => {
         try {
-            // فحص المحاولات الموجودة أولاً
-            const allAttempts = await getQuizAttempts(quizId);
-            const activeAttempt = allAttempts.find(a => {
-                const s = String(a.status || '').toLowerCase().replace('-', '');
-                return s === 'inprogress' || (!a.submittedAt && s !== 'submitted' && s !== 'graded');
-            });
-
-            if (activeAttempt && activeAttempt.id) {
-                console.log('💡 Found existing active attempt:', activeAttempt.id);
-                return activeAttempt;
-            }
-
-            // بدء محاولة جديدة
-            console.log('🚀 Starting new quiz attempt...');
-            const response = await api.post(ENDPOINTS.ATTEMPTS.START(quizId), {});
-            return normalizeAttempt(response.data?.data || response.data);
-
-        } catch (error: any) {
-            // معالجة خطأ التعارض (لو السيرفر أنشأها والطلب الأول لسه ماخلصش)
-            if (error.response?.status === 400 || error.response?.status === 409) {
-                const retryAttempts = await getQuizAttempts(quizId);
-                const retryActive = retryAttempts.find(a => {
-                    const s = String(a.status || '').toLowerCase().replace('-', '');
-                    return s === 'inprogress' || (!a.submittedAt && s !== 'submitted' && s !== 'graded');
-                });
-                if (retryActive && retryActive.id) return retryActive;
-            }
-            throw error;
+            const response = await api.post<any>(ENDPOINTS.ATTEMPTS.START(quizId), {});
+            const raw = response.data?.data ?? response.data;
+            return {
+                ...raw,
+                id: String(raw.id || raw.attemptId || ''),
+                attemptEndDate: raw.attemptEndDate || raw.endDate || '',
+            } as StartAttemptResponse;
         } finally {
-            // ✅ 4. المهم جداً: تصفير القفل بعد انتهاء العملية (بنجاح أو فشل)
             activeStartPromise = null;
         }
     })();
@@ -159,61 +135,85 @@ export const startOrResumeQuizAttempt = async (quizId: string): Promise<StartAtt
     return activeStartPromise;
 };
 
-// 🛡️ ضيف المتغير ده فوق جنب التاني
-let activeQuestionsPromise: Partial<Record<string, Promise<any[]>>> = {};
+/** @deprecated Use startQuizAttempt instead */
+export const startOrResumeQuizAttempt = startQuizAttempt;
 
-export const getAttemptQuestions = async (attemptId: string): Promise<any[]> => {
-    // لو الريكويست ده شغال حالياً لنفس الـ attemptId، رجعه هو هو
-    if (activeQuestionsPromise[attemptId]) {
-        return activeQuestionsPromise[attemptId];
-    }
+// ─── Get Attempt Questions ─────────────────────────────────────────────────
+
+let activeQuestionsPromise: Partial<Record<string, Promise<AttemptQuestion[]>>> = {};
+
+export const getAttemptQuestions = async (attemptId: string): Promise<AttemptQuestion[]> => {
+    if (activeQuestionsPromise[attemptId]) return activeQuestionsPromise[attemptId]!;
 
     activeQuestionsPromise[attemptId] = (async () => {
         try {
             const response = await api.get<ApiResponse<any[]>>(ENDPOINTS.ATTEMPTS.GET_QUESTIONS(attemptId));
-            const rawQuestions = response.data?.data ?? [];
+            const rawQuestions = response.data?.data ?? response.data ?? [];
+            const arr = Array.isArray(rawQuestions) ? rawQuestions : [];
 
-            return rawQuestions.map((q: any) => ({
+            return arr.map((q: any): AttemptQuestion => ({
                 id: String(q.id || ''),
-                text: q.question || q.text || q.questionText || '',
+                question: q.question || q.questionText || q.text || '',
                 type: q.type || q.questionType || 'MCQ',
-                points: q.mark || q.points || 1,
+                instructions: q.instructions || null,
                 options: (q.options || []).map((opt: any) => ({
-                    id: String(opt.id || opt.optionId),
-                    text: opt.option || opt.optionText || opt.text || '',
-                    optionId: opt.id || opt.optionId
+                    option: opt.option || opt.optionText || opt.text || '',
+                    optionId: String(opt.optionId || opt.id || ''),
                 })),
-                studentOptionId: q.optionId,
-                studentBooleanAnswer: q.booleanAnswer,
-                studentWrittenAnswer: q.writtenAnswer
+                writtenAnswer: q.writtenAnswer || null,
+                selectedOptionId: q.selectedOptionId || q.optionId || null,
             }));
         } finally {
-            // مسح القفل بعد ما يخلص
             delete activeQuestionsPromise[attemptId];
         }
     })();
 
-    return activeQuestionsPromise[attemptId];
+    return activeQuestionsPromise[attemptId]!;
 };
 
-export const saveAttemptProgress = async (attemptId: string, payload: SaveAttemptPayload) => {
-    const response = await api.post<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.SAVE(attemptId), payload);
+// ─── Save Progress ─────────────────────────────────────────────────────────
+
+/** POST body must be a raw JSON array (no wrapper object). Skips HTTP call when empty. */
+export const saveAttemptProgress = async (attemptId: string, answers: SaveAnswerEntry[]) => {
+    if (!answers.length) return null;
+    const response = await api.post<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.SAVE(attemptId), answers);
     return response.data;
 };
 
+// ─── Submit Attempt ────────────────────────────────────────────────────────
 
 export const submitQuizAttempt = async (attemptId: string) => {
-    // تم حذف الـ payload من هنا
-    const response = await api.put<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.SUBMIT(attemptId));
+    const response = await api.put<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.SUBMIT(attemptId), {});
     return response.data;
 };
+
+// ─── Get Attempts List ─────────────────────────────────────────────────────
+
+let activeAllAttemptsPromise: Record<string, Promise<any[]> | undefined> = {};
+
+export const getQuizAttempts = async (quizId: string): Promise<any[]> => {
+    if (activeAllAttemptsPromise[quizId]) return activeAllAttemptsPromise[quizId]!;
+
+    activeAllAttemptsPromise[quizId] = (async () => {
+        try {
+            const response = await api.get<any>(ENDPOINTS.ATTEMPTS.GET_ATTEMPTS(quizId));
+            return extractArray(response);
+        } catch {
+            return [];
+        } finally {
+            delete activeAllAttemptsPromise[quizId];
+        }
+    })();
+
+    return activeAllAttemptsPromise[quizId]!;
+};
+
+// ─── Get Attempt Result ────────────────────────────────────────────────────
 
 let activeResultPromises: Record<string, Promise<AttemptResult> | undefined> = {};
 
 export const getAttemptResult = async (attemptId: string): Promise<AttemptResult> => {
-    if (activeResultPromises[attemptId]) {
-        return activeResultPromises[attemptId]!;
-    }
+    if (activeResultPromises[attemptId]) return activeResultPromises[attemptId]!;
 
     activeResultPromises[attemptId] = (async () => {
         try {
@@ -231,7 +231,7 @@ export const getAttemptResult = async (attemptId: string): Promise<AttemptResult
                 status: data.status || 'Submitted',
                 quizName: data.quizName,
                 submittedAt: data.submittedAt || data.updatedAt,
-                attemptNumber: data.attemptNumber
+                attemptNumber: data.attemptNumber,
             };
         } finally {
             delete activeResultPromises[attemptId];
@@ -240,6 +240,8 @@ export const getAttemptResult = async (attemptId: string): Promise<AttemptResult
 
     return activeResultPromises[attemptId]!;
 };
+
+// ─── Get Student Answers ───────────────────────────────────────────────────
 
 export const getStudentAnswers = async (attemptId: string): Promise<StudentAnswer[]> => {
     try {
@@ -254,15 +256,14 @@ export const getStudentAnswers = async (attemptId: string): Promise<StudentAnswe
             correctAnswer: item.correctAnswer || item.correctOptionText,
             isCorrect: item.score > 0 || item.isCorrect,
             points: item.score || item.pointsAchieved || 0,
-            possiblePoints: item.maxScore || item.possiblePoints || 1
+            possiblePoints: item.maxScore || item.possiblePoints || 1,
         }));
-
-    } catch (error) {
+    } catch {
         return [];
     }
 };
 
-// ─── Grading Operations ───────────────────────────────────────────────────
+// ─── Grading Operations ────────────────────────────────────────────────────
 
 export interface GradeEntry {
     questionId: string;
@@ -275,23 +276,7 @@ export interface GradeSubmissionPayload {
     status: 'Submitted' | 'Reviewed';
 }
 
-/**
- * Grade a quiz submission (instructor operation)
- * Updates grades for specific questions in a submitted attempt
- * PUT /api/Attempts/{attemptId}/grade
- */
-export const gradeSubmission = async (
-    attemptId: string,
-    payload: GradeSubmissionPayload
-): Promise<any> => {
-    try {
-        const response = await api.put<ApiResponse<any>>(
-            ENDPOINTS.ATTEMPTS.GRADE(attemptId),
-            payload
-        );
-        return response.data?.data || response.data;
-    } catch (error) {
-        console.error('Error grading submission:', error);
-        throw error;
-    }
+export const gradeSubmission = async (attemptId: string, payload: GradeSubmissionPayload): Promise<any> => {
+    const response = await api.put<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.GRADE(attemptId), payload);
+    return response.data?.data || response.data;
 };

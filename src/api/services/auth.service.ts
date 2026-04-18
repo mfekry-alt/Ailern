@@ -13,7 +13,7 @@ import type {
     GetRefreshTokenCommand,
     RevokeRefreshTokenCommand,
     ResendEmailConfirmationCommand,
-    SendPasswordResetEmailCommand,
+    ForgetPasswordCommand,
     UserPasswordResetCommand,
     ChangePasswordCommand,
     EmailConfirmationParams,
@@ -96,7 +96,7 @@ export const resendConfirmationEmail = async (
  * @param command - Email to send reset link to
  */
 export const sendPasswordResetEmail = async (
-    command: SendPasswordResetEmailCommand
+    command: ForgetPasswordCommand
 ): Promise<void> => {
     await api.post<ApiResponse>(ENDPOINTS.AUTH.FORGET_PASSWORD, command);
 };

@@ -28,7 +28,7 @@
  * =====================================================================
  */
 
-import type { QuestionRequest, QuizOptionRequest } from '@/types/api.types';
+import type { QuestionUpsertRequest, OptionRequest } from '@/types/api.types';
 
 // ============================================================================
 // Validation Result Type
@@ -92,7 +92,7 @@ const isTrueFalsePattern = (options: Array<{ optionText: string; isCorrect: bool
 // Question & Option Validation
 // ============================================================================
 
-export const validateQuestionOption = (option: QuizOptionRequest, questionType: string): ValidationError[] => {
+export const validateQuestionOption = (option: OptionRequest, questionType: string): ValidationError[] => {
     const errors: ValidationError[] = [];
 
     if (!option.optionText?.trim()) {
@@ -115,7 +115,7 @@ export const validateQuestionOption = (option: QuizOptionRequest, questionType: 
     return errors;
 };
 
-export const validateQuestionRequest = (question: QuestionRequest): ValidationError[] => {
+export const validateQuestionRequest = (question: QuestionUpsertRequest): ValidationError[] => {
     const errors: ValidationError[] = [];
 
     // Question text validation
@@ -190,7 +190,7 @@ export const validateQuestionRequest = (question: QuestionRequest): ValidationEr
     return errors;
 };
 
-export const validateQuestionsArray = (questions: QuestionRequest[]): ValidationResult => {
+export const validateQuestionsArray = (questions: QuestionUpsertRequest[]): ValidationResult => {
     const errors: ValidationError[] = [];
 
     if (!questions || questions.length === 0) {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Upload, FolderOpen, Sparkles, FileText, X, ChevronDown, ChevronRight, AlertTriangle, BrainCircuit, Settings, SlidersHorizontal, BookOpen, Loader2 } from 'lucide-react';
 import { quizService, sectionService } from '@/api/services';
-import type { QuestionRequest } from '@/types/api.types';
+import type { QuestionUpsertRequest } from '@/types/api.types';
 import type { GenerateQuizByAIPayload, QuizGenerationFile } from '@/api/services/quiz.service';
 import type { SectionDto } from '@/api/services/section.service';
 
@@ -22,7 +22,7 @@ interface AIQuestionGeneratorModalProps {
     isOpen: boolean;
     quizId?: string;
     onClose: () => void;
-    onGenerate: (questions: QuestionRequest[]) => void;
+    onGenerate: (questions: QuestionUpsertRequest[]) => void;
 }
 
 export function AIQuestionGeneratorModal({ isOpen, quizId, onClose, onGenerate }: AIQuestionGeneratorModalProps) {
@@ -82,7 +82,7 @@ export function AIQuestionGeneratorModal({ isOpen, quizId, onClose, onGenerate }
         }).filter(Boolean) as QuizGenerationFile[];
     };
 
-    const coerceQuestions = (input: any): QuestionRequest[] => {
+    const coerceQuestions = (input: any): QuestionUpsertRequest[] => {
         const candidate = input?.questions ?? input?.result?.questions ?? input?.data?.questions ?? input?.data ?? input;
         const rawQuestions = Array.isArray(candidate) ? candidate : [];
         return rawQuestions.map((q: any) => {
@@ -95,8 +95,8 @@ export function AIQuestionGeneratorModal({ isOpen, quizId, onClose, onGenerate }
                     isCorrect: Boolean(o?.isCorrect ?? o?.correct),
                 })).filter((o: any) => o.optionText)
                 : [];
-            return { questionText, questionType: questionType as QuestionRequest['questionType'], mark: Number(q?.mark ?? q?.points ?? 5), instructions: q?.instructions ?? q?.instruction ?? undefined, explanation: q?.explanation ?? undefined, options } as QuestionRequest;
-        }).filter(Boolean) as QuestionRequest[];
+            return { questionText, questionType: questionType as QuestionUpsertRequest['questionType'], mark: Number(q?.mark ?? q?.points ?? 5), instructions: q?.instructions ?? q?.instruction ?? undefined, explanation: q?.explanation ?? undefined, options } as QuestionUpsertRequest;
+        }).filter(Boolean) as QuestionUpsertRequest[];
     };
 
     const extractJobId = (input: any): string | null => {

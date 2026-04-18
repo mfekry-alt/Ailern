@@ -36,7 +36,7 @@ export interface ResendEmailConfirmationCommand {
     email: string;
 }
 
-export interface SendPasswordResetEmailCommand {
+export interface ForgetPasswordCommand {
     email: string;
 }
 
@@ -56,6 +56,10 @@ export interface ChangePasswordCommand {
 // User Registration Types
 // ============================================================================
 
+export type InstructorJobTitle = 'Professor' | 'Teacher' | 'TeachingAssistant' | 'Lecturer' | 'Other';
+
+export type Roles = 'Admin' | 'Student' | 'Instructor';
+
 export interface CreateAdminCommand {
     fullName: string;
     userName: string;
@@ -64,14 +68,17 @@ export interface CreateAdminCommand {
     phoneNumber?: string;
 }
 
-export interface RegisterCommand {
+export interface RegisterUserCommand {
     fullName: string;
     userName: string;
     email: string;
     password: string;
-    role: 'Student' | 'Instructor';
-    jobTitle?: string;
+    role: Roles;
+    jobTitle?: InstructorJobTitle;
 }
+
+/** @deprecated Use RegisterUserCommand instead */
+export type RegisterCommand = RegisterUserCommand;
 
 // ============================================================================
 // User Management Types
@@ -345,40 +352,49 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 // Quiz Types (Updated to support attemptTimeLimit & exact JSON payload)
 // ============================================================================
 
-export type QuizStatus = 'Draft' | 'Published' | 'Scheduled' | 'Archived';
+export type QuizStatus = 'Draft' | 'Published' | 'Scheduled';
 export type QuestionType = 'MCQ' | 'TrueFalse' | 'Written';
 
 // --- Request DTOs (For Creation/Updating) ---
-export interface QuizOptionRequest {
+export interface OptionRequest {
+    optionId?: string;     // uuid — omit for new, include for updates
     optionText: string;
     isCorrect: boolean;
 }
 
-export interface QuestionRequest {
-    id?: string;           // uuid - omit for new, include for updates
+/** @deprecated Use OptionRequest instead */
+export type QuizOptionRequest = OptionRequest;
+
+export interface QuestionUpsertRequest {
+    id?: string;           // uuid — omit for new, include for updates
     questionText: string;
     questionType: QuestionType;
-    mark: number;
+    mark: number;          // double
     instructions?: string;
     explanation?: string;
-    options?: QuizOptionRequest[];
+    options?: OptionRequest[];
 }
 
-export interface CreateQuizCommand {
+/** @deprecated Use QuestionUpsertRequest instead */
+export type QuestionRequest = QuestionUpsertRequest;
+
+export interface QuizRequest {
+    courseId: number;
     title: string;
     description?: string;
     availableFrom: string;
     availableUntil: string;
     maximumAttempts: number;
-    attemptTimeLimit: number;   // Added Duration Field
+    attemptTimeLimit: number;
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
     shuffleOptions: boolean;
-    courseId: string | number;
     status: QuizStatus;
     publishedDate?: string | null;
-    questions: QuestionRequest[];
 }
+
+/** @deprecated Use QuizRequest instead */
+export type CreateQuizCommand = QuizRequest;
 
 // --- Response DTOs (For Fetching) ---
 export interface OptionDto {
@@ -452,15 +468,18 @@ export interface QuizSubmissionsResult extends PaginationResult<QuizSubmission> 
     items: QuizSubmission[];
 }
 
-export interface GradeQuestionEntry {
-    questionId: string;
-    score: number;
+export interface GradeSubmissionDto {
+    questionId: string;    // uuid
+    score: number | null;  // double, nullable
     feedback?: string;
 }
 
+/** @deprecated Use GradeSubmissionDto instead */
+export type GradeQuestionEntry = GradeSubmissionDto;
+
 export interface GradeSubmissionCommand {
-    grades: GradeQuestionEntry[];
-    status: 'Submitted' | 'Reviewed';
+    grades: GradeSubmissionDto[];
+    status: AttemptStatus;
 }
 
 export interface GradeSubmissionResult {
@@ -471,4 +490,41 @@ export interface GradeSubmissionResult {
     percentage: number;
     status: AttemptStatus;
     gradesApplied: number;
+}
+
+// ============================================================================
+// Quiz Attempt Types
+// ============================================================================
+
+export interface SaveAttemptAnswerRequest {
+    questionId: string;    // uuid
+    writtenAnswer?: string;
+    optionId?: string;     // uuid
+}
+
+// ============================================================================
+// Section Types
+// ============================================================================
+
+export interface SectionCreateCommand {
+    title: string;
+    sectionNumber: number; // int32
+    courseId: number;       // int32
+}
+
+export interface SectionUpdateCommand {
+    title: string;
+    sectionNumber: number; // int32
+}
+
+// ============================================================================
+// Material Types
+// ============================================================================
+
+export interface MaterialFilesReorderCommand {
+    orderedFilesIds: string[]; // uuid[]
+}
+
+export interface RequestMaterialPresignedUrlCommand {
+    files: FileMetaData[];
 }

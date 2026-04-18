@@ -1,15 +1,15 @@
 /**
  * useQuizAttempt Hook - Complete lifecycle management for quiz attempt workflow
  * Handles: starting attempts, fetching questions, saving progress, submitting, and viewing results
- * Features: auto-save every 30 seconds, localStorage backup, error handling
+ * Features: auto-save every 40 seconds (only when there is something to save), localStorage backup
  */
 import { useEffect, useState, useCallback, useRef } from 'react';
 import * as attemptsService from '@/api/services/attempts.service';
-import type {
-    QuestionAttempt,
-    SaveAttemptPayload,
-    AttemptResult,
-    StudentAnswer,
+import {
+    buildSaveAnswerEntries,
+    type AttemptResult,
+    type StudentAnswer,
+    type LocalAnswerLike,
 } from '@/api/services/attempts.service';
 
 /**
@@ -30,7 +30,7 @@ export interface UseQuizAttemptReturn {
     // State - Attempt Info
     attemptId: string | null;
     questions: Question[];
-    answers: QuestionAttempt[];
+    answers: LocalAnswerLike[];
     result: AttemptResult | null;
     studentAnswers: StudentAnswer[];
 
@@ -65,7 +65,7 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
     // Attempt Information
     const [attemptId, setAttemptId] = useState<string | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
-    const [answers, setAnswers] = useState<QuestionAttempt[]>([]);
+    const [answers, setAnswers] = useState<LocalAnswerLike[]>([]);
     const [result, setResult] = useState<AttemptResult | null>(null);
     const [studentAnswers, setStudentAnswers] = useState<StudentAnswer[]>([]);
 
@@ -84,6 +84,19 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
 
     // Auto-save timer reference
     const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const answersRef = useRef(answers);
+    const questionsRef = useRef(questions);
+    const attemptIdRef = useRef(attemptId);
+
+    useEffect(() => {
+        answersRef.current = answers;
+    }, [answers]);
+    useEffect(() => {
+        questionsRef.current = questions;
+    }, [questions]);
+    useEffect(() => {
+        attemptIdRef.current = attemptId;
+    }, [attemptId]);
 
     /**
      * Generate localStorage key for this attempt
@@ -93,7 +106,7 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
     /**
      * Save answers to localStorage for backup
      */
-    const saveToLocalStorage = useCallback((currentAnswers: QuestionAttempt[], currentAttemptId: string) => {
+    const saveToLocalStorage = useCallback((currentAnswers: LocalAnswerLike[], currentAttemptId: string) => {
         try {
             if (currentAttemptId) {
                 localStorage.setItem(
@@ -111,7 +124,7 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
     }, []);
 
     /**
-     * Auto-save answers every 30 seconds
+     * Auto-save every 40s; POST only when at least one answer is saveable (non-empty).
      */
     const initiateAutoSave = useCallback(() => {
         if (autoSaveTimerRef.current) {
@@ -119,21 +132,21 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
         }
 
         autoSaveTimerRef.current = setInterval(async () => {
-            if (attemptId && answers.length > 0) {
-                try {
-                    setIsAutoSaving(true);
-                    const payload: SaveAttemptPayload = { answers };
-                    await attemptsService.saveAttemptProgress(attemptId, payload);
-                    saveToLocalStorage(answers, attemptId);
-                    console.log('✓ Auto-save completed');
-                } catch (error) {
-                    console.warn('Auto-save failed, will retry:', error);
-                } finally {
-                    setIsAutoSaving(false);
-                }
+            const id = attemptIdRef.current;
+            if (!id) return;
+            const entries = buildSaveAnswerEntries(questionsRef.current, answersRef.current);
+            if (entries.length === 0) return;
+            try {
+                setIsAutoSaving(true);
+                await attemptsService.saveAttemptProgress(id, entries);
+                saveToLocalStorage(answersRef.current, id);
+            } catch (error) {
+                console.warn('Auto-save failed, will retry:', error);
+            } finally {
+                setIsAutoSaving(false);
             }
-        }, 30000); // 30 seconds
-    }, [attemptId, answers, saveToLocalStorage]);
+        }, 40_000);
+    }, [saveToLocalStorage]);
 
     /**
      * Start a new quiz attempt
@@ -171,7 +184,7 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
         setAnswers((prevAnswers) => {
             const existingIndex = prevAnswers.findIndex((a) => a.questionId === questionId);
 
-            let updatedAnswers: QuestionAttempt[];
+            let updatedAnswers: LocalAnswerLike[];
             if (existingIndex > -1) {
                 updatedAnswers = [...prevAnswers];
                 updatedAnswers[existingIndex] = {
@@ -213,7 +226,10 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
         setIsLoadingSubmit(true);
         setErrorSubmit(null);
         try {
-            const payload: SaveAttemptPayload = { answers };
+            const entries = buildSaveAnswerEntries(questionsRef.current, answersRef.current);
+            if (entries.length > 0) {
+                await attemptsService.saveAttemptProgress(attemptId, entries);
+            }
             await attemptsService.submitQuizAttempt(attemptId);
 
             // Clear auto-save timer on successful submission
@@ -233,7 +249,7 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
         } finally {
             setIsLoadingSubmit(false);
         }
-    }, [attemptId, answers]);
+    }, [attemptId]);
 
     /**
      * Fetch the result/grade of the attempt
