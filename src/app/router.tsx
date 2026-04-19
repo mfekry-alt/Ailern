@@ -54,6 +54,7 @@ import { InstructorQuizQuestionsEditPage } from '@/routes/instructor/InstructorQ
 import { InstructorAssignmentCreatePage } from '@/routes/instructor/InstructorAssignmentCreatePage';
 import { InstructorAssignmentEditPage } from '@/routes/instructor/InstructorAssignmentEditPage';
 import { InstructorSubmissionsPage } from '@/routes/instructor/InstructorSubmissionsPage';
+import { QuizDashboardPage } from '@/routes/instructor/QuizDashboardPage';
 
 // Admin pages
 import { AdminDashboardPage } from '@/routes/admin/AdminDashboardPage';
@@ -150,6 +151,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT} element={<InstructorQuizQuestionsEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
+                <Route path={ROUTES.INSTRUCTOR_QUIZ_DASHBOARD} element={<QuizDashboardPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
             </Route>

@@ -64,6 +64,7 @@ export const ROUTES = {
     INSTRUCTOR_QUIZ_EDIT: '/instructor/quiz/:id/edit',
     INSTRUCTOR_QUIZ_UPDATE: '/instructor/quiz/:id/update',
     INSTRUCTOR_QUIZ_QUESTIONS_EDIT: '/instructor/quiz/:id/questions/edit',
+    INSTRUCTOR_QUIZ_DASHBOARD: '/quiz-dashboard/:quizId',
 
     // Admin routes
     ADMIN: '/admin',
