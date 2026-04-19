@@ -1,4 +1,5 @@
 import { updateAssignment } from "./services/assignment.service";
+export { updateAssignment };
 
 export const ENDPOINTS = {
     // Auth endpoints (based on API: /api/Auth/*)
@@ -102,5 +103,9 @@ export const ENDPOINTS = {
         GET_RESULT: (attemptId: string) => `/Attempts/${attemptId}/result`, // GET
         GET_STUDENT_ANSWERS: (attemptId: string) => `/Attempts/${attemptId}/student-answers`, // GET
         GRADE: (attemptId: string) => `/Attempts/${attemptId}/grade`, // PUT
+    },
+    // Dashboard endpoints
+    DASHBOARD: {
+        QUIZ: (quizId: string) => `/Dashboard/quiz/${quizId}`,
     },
 } as const;
