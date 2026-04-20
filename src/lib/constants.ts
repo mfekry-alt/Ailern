@@ -35,7 +35,8 @@ export const ROUTES = {
     DASHBOARD: '/dashboard',
     MY_COURSES: '/my-courses',
     COURSES: '/courses',
-    COURSE_DETAIL: '/courses/:id',
+    COURSE_DETAIL: '/courses/:courseId',
+    COURSE_VIDEO: '/courses/:courseId/video/:fileId',
     LEARN: '/learn/:courseId/:lessonId',
     PROFILE: '/profile',
     CHANGE_PASSWORD: '/change-password',        // NOSONAR
@@ -98,6 +99,10 @@ export const QUERY_KEYS = {
     ATTEMPTS: (quizId: string) => ['attempts', quizId],
     ATTEMPT: (attemptId: string) => ['attempt', attemptId],
     ATTEMPT_GRADE: (attemptId: string) => ['attempt-grade', attemptId],
+    COURSE_SECTIONS: (courseId: string) => ['course-sections', courseId],
+    COURSE_ASSIGNMENTS: (courseId: string) => ['course-assignments', courseId],
+    COURSE_QUIZZES: (courseId: string) => ['course-quizzes', courseId],
+    ASSIGNMENT_SUBMISSION: (assignmentId: number) => ['assignment-submission', assignmentId],
 } as const;
 
 export const STORAGE_KEYS = {

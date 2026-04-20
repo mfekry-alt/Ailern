@@ -197,9 +197,6 @@ export const Header = () => {
             return [
                 { label: 'Dashboard', path: ROUTES.DASHBOARD },
                 { label: 'Courses', path: ROUTES.COURSES },
-                { label: 'Assignments', path: ROUTES.ASSIGNMENTS },
-                { label: 'Quizzes', path: ROUTES.QUIZZES },
-                { label: 'Grades', path: ROUTES.GRADES },
             ];
         }
         return [];
