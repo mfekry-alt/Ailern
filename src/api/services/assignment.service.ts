@@ -12,6 +12,7 @@ import type {
     ConfirmAssignmentUploadCommand,
     GetAssignmentDto,
     GetAssignmentSubmissionDto,
+    GetMySubmissionDto,
     ApiResponse,
     PaginationParams,
 } from '@/types/api.types';
@@ -127,19 +128,21 @@ export const getCourseAssignmentsForStudent = async (
 /**
  * Create an assignment submission (student)
  * @param command - Submission details with file metadata
+ * @returns Response containing submissionId and uploadUrls
  */
+export interface SubmissionCreateResponse {
+    id?: number;
+    submissionId?: number;
+    uploadUrls?: string[];
+    uploadFilesUrls?: string[];
+    urls?: string[];
+}
+
 export const createSubmission = async (
     command: AssignmentSubmissionCreateCommand
-): Promise<void> => {
-    await api.post<ApiResponse>(ENDPOINTS.SUBMISSIONS.CREATE, command);
-};
-
-/**
- * Confirm submission upload after files are uploaded
- * @param id - Submission ID
- */
-export const confirmSubmissionUpload = async (id: number): Promise<void> => {
-    await api.post<ApiResponse>(ENDPOINTS.SUBMISSIONS.CONFIRM_UPLOAD(id));
+): Promise<SubmissionCreateResponse> => {
+    const response = await api.post<ApiResponse<SubmissionCreateResponse>>(ENDPOINTS.SUBMISSIONS.CREATE, command);
+    return response.data.data ?? {};
 };
 
 /**
@@ -160,6 +163,20 @@ export const getSubmissionsByAssignment = async (
 ): Promise<GetAssignmentSubmissionDto[]> => {
     const response = await api.get<ApiResponse<GetAssignmentSubmissionDto[]>>(
         ENDPOINTS.SUBMISSIONS.GET_BY_ASSIGNMENT(assignmentId)
+    );
+    return response.data.data!;
+};
+
+/**
+ * Get current student's submission for an assignment
+ * @param assignmentId - Assignment ID
+ * @returns The student's submission
+ */
+export const getMySubmissionByAssignment = async (
+    assignmentId: number
+): Promise<GetMySubmissionDto> => {
+    const response = await api.get<ApiResponse<GetMySubmissionDto>>(
+        ENDPOINTS.SUBMISSIONS.GET_MY_SUBMISSION(assignmentId)
     );
     return response.data.data!;
 };
