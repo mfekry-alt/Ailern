@@ -295,6 +295,7 @@ export interface GetAssignmentDto {
     isPublished: boolean;
     createdAt: string;
     files?: FileMetaData[];
+    submissionFiles?: FileMetaData[];
     isSubmitted?: boolean;
     hasFeedback?: boolean;
 }
