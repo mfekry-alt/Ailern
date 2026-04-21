@@ -1,5 +1,6 @@
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Ailern';
-export const API_URL = 'https://localhost:7080/api';
+export const API_URL =
+    import.meta.env.VITE_API_URL ?? 'https://ailern.runasp.net/';
 
 export const ROLES = {
     ADMIN: 'Admin',
