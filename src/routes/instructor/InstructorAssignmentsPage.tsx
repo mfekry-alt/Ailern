@@ -3,19 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ROUTES, QUERY_KEYS } from '@/lib/constants';
 import {
-    Plus, Edit, Eye, Download, Upload, Clock, Users, FileText,
-    CheckCircle, AlertCircle, Calendar, Loader2, Search, Trash2,
-    ChevronDown, Filter, MoreVertical, CheckCircle2, LayoutGrid, X
+    Plus, Edit, Eye, Upload, Clock, Users, FileText,
+    Calendar, Loader2, Search, Trash2,
+    Filter, CheckCircle2, X, AlertTriangle
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import {
-    getInstructorAssignments,
-    deleteAssignment,
-    getAssignmentSubmissions,
-    gradeSubmission,
-    type GetAllAssignmentsDto,
-    type GetAllAssignmentSubmissionsDto,
-} from '@/api/services/assignment.service';
+import { useInstructorMyCourses } from '@/features/instructor/api';
+import { useInstructorAssignments, useDeleteAssignment } from '@/features/assignments/api';
+import type { GetAssignmentDto } from '@/types/api.types';
 import { handleApiError } from '@/api/client';
 
 // --- Types ---
@@ -23,37 +18,22 @@ type Assignment = {
     id: string;
     title: string;
     course: string;
+    courseId: number;
     dueDate: string;
-    submissions: number;
-    graded: number;
     status: 'draft' | 'published' | 'closed';
     description: string;
-    attachments: string[];
     createdAt: string;
 };
 
-type Submission = {
-    id: string;
-    studentName: string;
-    studentEmail: string;
-    submittedAt: string;
-    status: 'submitted' | 'graded' | 'late';
-    grade?: number;
-    feedback?: string;
-    attachments: string[];
-};
-
 // --- Helpers ---
-const mapAssignmentToUI = (assignment: GetAllAssignmentsDto): Assignment => ({
+const mapAssignmentToUI = (assignment: GetAssignmentDto): Assignment => ({
     id: assignment.id.toString(),
     title: assignment.title,
     course: assignment.courseName ? `${assignment.courseName}`.trim() : `Course ${assignment.courseId}`,
+    courseId: assignment.courseId,
     dueDate: assignment.dueDate,
-    submissions: 12, // Mock: Replace with real API data if available
-    graded: 8,     // Mock: Replace with real API data if available
     status: assignment.isPublished ? 'published' : 'draft',
     description: assignment.instructions || '',
-    attachments: [],
     createdAt: assignment.createdAt || new Date().toISOString(),
 });
 
@@ -62,62 +42,33 @@ export const InstructorAssignmentsPage = () => {
     const queryClient = useQueryClient();
     const [selectedCourse, setSelectedCourse] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
-    const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null);
-    const [viewingAssignment, setViewingAssignment] = useState<Assignment | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; title: string } | null>(null);
+    const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [isCourseSelectOpen, setIsCourseSelectOpen] = useState(false);
+
+    const showToast = (type: 'success' | 'error', text: string) => {
+        setToast({ type, text });
+        setTimeout(() => setToast(null), 4000);
+    };
 
     // --- Queries ---
-    const { data: assignmentsData, isLoading, error } = useQuery({
-        queryKey: QUERY_KEYS.INSTRUCTOR_ASSIGNMENTS,
-        queryFn: async () => {
-            const response = await getInstructorAssignments();
-            return Array.isArray(response) ? response : [];
-        },
-    });
-
-    const { data: submissionsData, isLoading: isLoadingSubmissions } = useQuery({
-        queryKey: QUERY_KEYS.ASSIGNMENT_SUBMISSIONS(selectedAssignmentId || 0),
-        queryFn: () => getAssignmentSubmissions(selectedAssignmentId!),
-        enabled: !!selectedAssignmentId,
-    });
+    const { data: assignmentsData, isLoading, error } = useInstructorAssignments();
+    const { data: coursesData } = useInstructorMyCourses({ PageNumber: 1, PageSize: 100 });
 
     const assignments = useMemo(() => assignmentsData?.map(mapAssignmentToUI) || [], [assignmentsData]);
 
-    const submissions = useMemo(() => {
-        if (!submissionsData || !Array.isArray(submissionsData)) return [];
-        return submissionsData.map((sub: GetAllAssignmentSubmissionsDto): Submission => ({
-            id: sub.id.toString(),
-            studentName: sub.studentName || 'Student',
-            studentEmail: 'student@ailern.com',
-            submittedAt: sub.submittedAt,
-            status: sub.grade !== null ? 'graded' : 'submitted',
-            grade: sub.grade,
-            feedback: sub.feedback || '',
-            attachments: [],
-        }));
-    }, [submissionsData]);
-
     // --- Mutations ---
-    const deleteMutation = useMutation({
-        mutationFn: (id: number) => deleteAssignment(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.INSTRUCTOR_ASSIGNMENTS }),
-    });
+    const deleteMutation = useDeleteAssignment();
 
-    const gradeMutation = useMutation({
-        mutationFn: ({ assignmentId, submissionId, grade, feedback }: any) =>
-            gradeSubmission(assignmentId, submissionId, { score: grade, feedback }),
-        onSuccess: () => selectedAssignmentId && queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ASSIGNMENT_SUBMISSIONS(selectedAssignmentId) }),
-    });
-
-    const handleGrade = (subId: string) => {
-        const grade = prompt('Enter grade (0-100):');
-        if (grade && !isNaN(parseFloat(grade))) {
-            const feedback = prompt('Enter feedback (optional):') || undefined;
-            gradeMutation.mutate({
-                assignmentId: selectedAssignmentId,
-                submissionId: parseInt(subId),
-                grade: parseFloat(grade),
-                feedback
-            });
+    const handleDelete = async (id: number) => {
+        try {
+            await deleteMutation.mutateAsync(id);
+            setDeleteConfirm(null);
+            showToast('success', 'Assignment deleted successfully.');
+        } catch (err) {
+            const apiError = handleApiError(err);
+            setDeleteConfirm(null);
+            showToast('error', apiError.message || 'Failed to delete assignment.');
         }
     };
 
@@ -129,15 +80,46 @@ export const InstructorAssignmentsPage = () => {
     const stats = [
         { label: 'Total Assignments', value: assignments.length, icon: FileText, color: 'blue' },
         { label: 'Published', value: assignments.filter(a => a.status === 'published').length, icon: CheckCircle2, color: 'emerald' },
-        { label: 'Submissions', value: assignments.reduce((s, a) => s + a.submissions, 0), icon: Upload, color: 'indigo' },
-        { label: 'To Grade', value: assignments.reduce((s, a) => s + (a.submissions - a.graded), 0), icon: Clock, color: 'orange' }
+        { label: 'Drafts', value: assignments.filter(a => a.status === 'draft').length, icon: Edit, color: 'indigo' },
+        { label: 'Past Due', value: assignments.filter(a => new Date(a.dueDate) < new Date()).length, icon: Clock, color: 'orange' }
     ];
 
+
     if (isLoading) return <LoadingSpinner />;
+
+    if (error) {
+        const apiError = handleApiError(error);
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans">
+                <div className="max-w-4xl mx-auto">
+                    <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-red-200 dark:border-red-500/20 p-12 text-center shadow-sm">
+                        <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Failed to load assignments</h3>
+                        <p className="text-gray-500 dark:text-slate-400">{apiError.message}</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans pb-20">
             <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4">
+
+                {/* Toast */}
+                {toast && (
+                    <div className={`fixed top-6 right-6 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-lg animate-in slide-in-from-top-2 ${
+                        toast.type === 'success'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400'
+                            : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400'
+                    }`}>
+                        {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                        <p className="text-sm font-bold">{toast.text}</p>
+                        <button onClick={() => setToast(null)} className="ml-2 p-1 hover:bg-black/10 rounded-lg transition-colors">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -151,7 +133,7 @@ export const InstructorAssignmentsPage = () => {
                         </div>
                     </div>
                     <button
-                        onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE)}
+                        onClick={() => setIsCourseSelectOpen(true)}
                         className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-blue-500/25 active:scale-95"
                     >
                         <Plus className="w-5 h-5" /> Create Assignment
@@ -207,134 +189,122 @@ export const InstructorAssignmentsPage = () => {
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">No assignments found</h3>
                             <p className="text-gray-500 dark:text-slate-400 mt-2">Try adjusting your filters or create a new assignment.</p>
                         </div>
-                    ) : filteredAssignments.map((assignment) => (
-                        <div key={assignment.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all group flex flex-col lg:flex-row gap-6 lg:items-center relative overflow-hidden">
-
-                            <div className="flex-1 space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${assignment.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
+                            {filteredAssignments.map((assignment) => (
+                                <div key={assignment.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl flex flex-col group hover:shadow-lg hover:border-blue-300 dark:hover:border-slate-500 transition-all overflow-hidden text-left">
+                                    {/* Card header */}
+                                    <div className="p-5 pb-0 flex justify-between items-start">
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider ${
+                                            assignment.status === 'published' 
+                                                ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400' 
+                                                : 'bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400'
                                         }`}>
-                                        {assignment.status}
-                                    </span>
-                                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">{assignment.course}</span>
-                                </div>
-
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
-                                    {assignment.title}
-                                </h3>
-
-                                <div className="flex flex-wrap items-center gap-5 text-sm font-semibold text-gray-500 dark:text-slate-400">
-                                    <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-orange-500" /> Due: {new Date(assignment.dueDate).toLocaleDateString()}</div>
-                                    <div className="flex items-center gap-2"><Users className="w-4 h-4 text-blue-500" /> {assignment.submissions} Students Submitted</div>
-                                </div>
-
-                                {/* Grading Progress */}
-                                <div className="space-y-1.5 max-w-md">
-                                    <div className="flex justify-between text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                                        <span>Grading Progress</span>
-                                        <span className="text-blue-600 dark:text-blue-400">{Math.round((assignment.graded / assignment.submissions) * 100)}%</span>
+                                            {assignment.status}
+                                        </span>
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                            <button onClick={() => navigate(`/instructor/assignments/${assignment.id}/edit`)} className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors" title="Edit Assignment">
+                                                <Edit className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => navigate(ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', assignment.id.toString()))} className="p-1.5 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg transition-colors" title="View Submissions">
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => setDeleteConfirm({ id: parseInt(assignment.id), title: assignment.title })} disabled={deleteMutation.isPending} className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors" title="Delete Assignment">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="h-2 w-full bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden border border-gray-200 dark:border-slate-600">
-                                        <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${(assignment.graded / assignment.submissions) * 100}%` }}></div>
+
+                                    {/* Card body */}
+                                    <div className="p-5 flex-1 flex flex-col">
+                                        <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1.5 truncate">{assignment.course}</div>
+                                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">{assignment.title}</h4>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-4 line-clamp-2">{assignment.description || 'No description'}</p>
+
+                                        {/* Meta info */}
+                                        <div className="mt-auto space-y-2.5">
+                                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-400">
+                                                <Calendar className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                                                <span className="font-semibold">Due:</span>
+                                                <span className="truncate">{new Date(assignment.dueDate).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                                {new Date(assignment.dueDate) < new Date() && (
+                                                    <span className="ml-1 text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-1.5 py-0.5 rounded">Past Due</span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
-                            {/* Actions */}
-                            <div className="flex flex-wrap lg:flex-col items-center gap-2 shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 dark:border-slate-700/50 pt-4 lg:pt-0 lg:pl-6">
-                                <button
-                                    onClick={() => { setSelectedAssignmentId(parseInt(assignment.id)); setViewingAssignment(assignment); }}
-                                    className="flex-1 lg:w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-sm active:scale-95"
-                                >
-                                    <Eye className="w-4 h-4" /> View Submissions
-                                </button>
-                                <div className="flex gap-2 w-full">
+                {/* Delete Confirmation Modal */}
+                {deleteConfirm && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in">
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
+                        <div className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[2rem] shadow-2xl border border-gray-200 dark:border-slate-700 p-8 animate-in zoom-in-95">
+                            <div className="text-center">
+                                <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Trash2 className="w-8 h-8 text-red-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Assignment?</h3>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
+                                    Are you sure you want to delete <strong className="text-gray-900 dark:text-white">"{deleteConfirm.title}"</strong>? This action cannot be undone.
+                                </p>
+                                <div className="flex gap-3 justify-center">
                                     <button
-                                        onClick={() => navigate(`/instructor/assignments/${assignment.id}/edit`)}
-                                        className="flex-1 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                                        onClick={() => setDeleteConfirm(null)}
+                                        className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-white font-bold text-sm rounded-xl transition-colors"
                                     >
-                                        <Edit className="w-4 h-4 mx-auto" />
+                                        Cancel
                                     </button>
                                     <button
-                                        onClick={() => deleteMutation.mutate(parseInt(assignment.id))}
-                                        className="flex-1 p-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shadow-sm"
+                                        onClick={() => handleDelete(deleteConfirm.id)}
+                                        disabled={deleteMutation.isPending}
+                                        className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50"
                                     >
-                                        <Trash2 className="w-4 h-4 mx-auto" />
+                                        {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                        Delete
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                )}
 
-                {/* Submissions Modal */}
-                {viewingAssignment && (
+                {/* Course Selection Modal */}
+                {isCourseSelectOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in">
-                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setViewingAssignment(null)} />
-                        <div className="relative bg-white dark:bg-slate-900 w-full max-w-5xl rounded-[2rem] shadow-2xl border border-gray-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95">
-
-                            <header className="p-6 sm:p-8 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 flex justify-between items-center shrink-0">
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsCourseSelectOpen(false)} />
+                        <div className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[2rem] shadow-2xl border border-gray-200 dark:border-slate-700 p-8 animate-in zoom-in-95 flex flex-col max-h-[85vh]">
+                            <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">Submissions</h2>
-                                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mt-1">{viewingAssignment.title}</p>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Select Course</h3>
+                                    <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Choose a course to create an assignment in.</p>
                                 </div>
-                                <button onClick={() => setViewingAssignment(null)} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-colors">
-                                    <X className="w-6 h-6" />
+                                <button onClick={() => setIsCourseSelectOpen(false)} className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors shrink-0">
+                                    <X className="w-5 h-5" />
                                 </button>
-                            </header>
-
-                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                                {isLoadingSubmissions ? (
-                                    <div className="py-20 flex flex-col items-center gap-3">
-                                        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-                                        <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">Loading student work...</p>
+                            </div>
+                            <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                {!coursesData || coursesData.items.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-500 dark:text-slate-400 font-medium">You don't have any courses yet.</p>
                                     </div>
-                                ) : submissions.length === 0 ? (
-                                    <div className="py-20 text-center text-gray-500">No submissions yet for this assignment.</div>
                                 ) : (
-                                    <div className="grid gap-4">
-                                        {submissions.map((sub) => (
-                                            <div key={sub.id} className="bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:border-blue-300 dark:hover:border-slate-500 transition-colors">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-gray-700 dark:text-white font-black text-lg shadow-inner shrink-0">
-                                                        {sub.studentName.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-bold text-gray-900 dark:text-white">{sub.studentName}</h4>
-                                                        <p className="text-xs font-medium text-gray-500 dark:text-slate-500 mt-1 flex items-center gap-1.5">
-                                                            <Clock className="w-3 h-3" /> Submitted: {new Date(sub.submittedAt).toLocaleString()}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-4 border-t md:border-t-0 md:border-l border-gray-200 dark:border-slate-700 pt-4 md:pt-0 md:pl-6">
-                                                    <div className="text-center shrink-0">
-                                                        <p className={`text-xl font-black ${sub.grade ? 'text-emerald-500' : 'text-gray-400'}`}>
-                                                            {sub.grade !== undefined ? `${sub.grade}%` : '--'}
-                                                        </p>
-                                                        <p className="text-[9px] font-bold uppercase tracking-wider text-gray-500 mt-1">Grade</p>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button className="p-3 bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors shadow-sm" title="Download Submission">
-                                                            <Download className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleGrade(sub.id)}
-                                                            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all shadow-md active:scale-95"
-                                                        >
-                                                            {sub.grade !== undefined ? 'Edit Grade' : 'Grade Submission'}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    coursesData.items.map(course => (
+                                        <button
+                                            key={course.id}
+                                            onClick={() => navigate(`/instructor/courses/${course.id}/assignments/create`)}
+                                            className="w-full text-left p-4 bg-gray-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-500/10 border border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-500/30 rounded-xl transition-all group"
+                                        >
+                                            <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">{course.name}</h4>
+                                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{course.code || 'No code'}</p>
+                                        </button>
+                                    ))
                                 )}
                             </div>
-
-                            <footer className="p-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 flex justify-end shrink-0">
-                                <button onClick={() => setViewingAssignment(null)} className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-white font-bold text-sm rounded-xl transition-colors">Close</button>
-                            </footer>
                         </div>
                     </div>
                 )}

@@ -1,69 +1,135 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
-import { ArrowLeft, Save, Upload, X, FileText, Loader2, Settings, CalendarClock, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { useAssignment, useUpdateAssignment } from '@/features/assignments/api';
-import { useInstructorCourses } from '@/features/courses/api';
+import {
+    ArrowLeft, Save, Upload, X, FileText, Loader2,
+    CalendarClock, ShieldCheck, CheckCircle2, AlertTriangle, Settings,
+    Clock, Sparkles, Download, Trash2
+} from 'lucide-react';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import { useAssignment, useUpdateAssignment, useDeleteAssignmentFile } from '@/features/assignments/api';
+import { uploadFileToPresignedUrlWithProgress } from '@/api/services/assignment.service';
+import { useCourse } from '@/features/courses/api';
 import { handleApiError } from '@/api/client';
 
 const inputCls =
     'w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed';
 const labelCls = 'block text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1';
 
+const getContentType = (fileName: string): string => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    const map: Record<string, string> = {
+        'pdf': 'application/pdf',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'zip': 'application/zip',
+        'txt': 'text/plain',
+        'ppt': 'application/vnd.ms-powerpoint',
+        'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png'
+    };
+    return map[ext || ''] || 'application/octet-stream';
+};
+
 export const InstructorAssignmentEditPage = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const assignmentId = parseInt(id || '0');
 
-    const [errorMsg, setErrorMsg] = useState<string>('');
-    const [successMsg, setSuccessMsg] = useState<string>('');
+    const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
     const [attachments, setAttachments] = useState<File[]>([]);
+    const [existingFiles, setExistingFiles] = useState<any[]>([]); // Any to bypass FileMetaData import if missing, but it's available? Let's check imports. Wait, FileMetaData is in types/api.types. Let's just use any[] or import it. It's safe to use any[] here.
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isFileSizeDropdownOpen, setIsFileSizeDropdownOpen] = useState(false);
+    const [uploadStatuses, setUploadStatuses] = useState<Record<number, { progress: number; status: 'pending' | 'uploading' | 'success' | 'error' }>>({});
+    const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+
+    const fileSizeOptions = [
+        { label: 'No limit', value: '' },
+        { label: '10 MB', value: '10' },
+        { label: '50 MB', value: '50' },
+        { label: '100 MB', value: '100' },
+    ];
 
     // API hooks
     const { data: assignmentData, isLoading } = useAssignment(assignmentId);
     const updateAssignmentMutation = useUpdateAssignment();
-    const { data: coursesData } = useInstructorCourses();
+    const deleteFileMutation = useDeleteAssignmentFile();
 
     const [formData, setFormData] = useState({
         title: '',
         description: '',
         course: '',
-        dueDate: '',
+        dueDate: null as Date | null,
         allowedFileTypes: [] as string[],
         maxFileSize: '',
+        maxFileCount: '5',
         allowLateSubmission: false,
-        status: 'draft' as 'draft' | 'published',
     });
+
+    const courseIdNum = formData.course ? parseInt(formData.course) : 0;
+    const { data: courseData } = useCourse(courseIdNum);
+
+    const fileTypeOptions = ['PDF', 'DOC', 'DOCX', 'ZIP', 'TXT', 'PPT', 'PPTX'];
 
     // Populate form with fetched assignment data
     useEffect(() => {
         if (assignmentData) {
-            const dueDate = assignmentData.dueDate
-                ? new Date(assignmentData.dueDate).toISOString().slice(0, 16)
-                : '';
+            const dueDateObj = assignmentData.dueDate ? new Date(assignmentData.dueDate) : null;
             setFormData({
                 title: assignmentData.title || '',
                 description: assignmentData.instructions || '',
                 course: assignmentData.courseId?.toString() || '',
-                dueDate,
-                allowedFileTypes: [], // Update if API returns this
-                maxFileSize: '', // Update if API returns this
+                dueDate: dueDateObj,
+                allowedFileTypes: [], 
+                maxFileSize: '', 
+                maxFileCount: '5',
                 allowLateSubmission: assignmentData.allowLateSubmission || false,
-                status: assignmentData.isPublished ? 'published' : 'draft',
             });
+            setExistingFiles(assignmentData.submissionFiles || assignmentData.files || []);
         }
     }, [assignmentData]);
-
-    const fileTypeOptions = ['PDF', 'DOC', 'DOCX', 'ZIP', 'TXT', 'PPT', 'PPTX'];
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         setAttachments([...attachments, ...files]);
+        setStatusMessage(null);
     };
 
     const removeAttachment = (index: number) => {
         setAttachments(attachments.filter((_, i) => i !== index));
+    };
+
+    const removeExistingFile = async (index: number) => {
+        const file = existingFiles[index];
+        if (!file) return;
+
+        const actualFileId = file.id || file.fileId;
+
+        // If file has an ID, it's already on the server, so we must delete it permanently
+        if (actualFileId) {
+            if (!window.confirm('Are you sure you want to permanently delete this file from the server? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                setDeletingFileId(actualFileId);
+                await deleteFileMutation.mutateAsync({ assignmentId, fileId: actualFileId });
+                setExistingFiles(prev => prev.filter((_, i) => i !== index));
+                setStatusMessage({ type: 'success', text: 'File deleted successfully.' });
+            } catch (err) {
+                const apiError = handleApiError(err);
+                setStatusMessage({ type: 'error', text: apiError.message || 'Failed to delete file.' });
+            } finally {
+                setDeletingFileId(null);
+            }
+        } else {
+            // If for some reason it doesn't have an ID, just remove from UI
+            console.warn('File removal from UI only: no ID found', file);
+            setExistingFiles(prev => prev.filter((_, i) => i !== index));
+        }
     };
 
     const toggleFileType = (type: string) => {
@@ -76,29 +142,26 @@ export const InstructorAssignmentEditPage = () => {
     };
 
     const handleSave = async (isDraft: boolean) => {
-        setErrorMsg('');
-        setSuccessMsg('');
-
         if (!formData.title.trim()) {
-            setErrorMsg('Assignment title is required.');
+            setStatusMessage({ type: 'error', text: 'Assignment title is required.' });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
         if (!isDraft && !formData.dueDate) {
-            setErrorMsg('Due date is required for publishing.');
+            setStatusMessage({ type: 'error', text: 'Due date is required for publishing.' });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
 
         setIsSubmitting(true);
+        setStatusMessage(null);
+        setUploadStatuses({});
 
         try {
             const command = {
                 title: formData.title,
                 instructions: formData.description,
-                dueDate: formData.dueDate
-                    ? new Date(formData.dueDate).toISOString()
-                    : new Date().toISOString(),
+                dueDate: formData.dueDate ? formData.dueDate.toISOString() : new Date().toISOString(),
                 allowLateSubmission: formData.allowLateSubmission,
                 isPublished: !isDraft,
                 uploadedFileMetaData: attachments.map((file) => ({
@@ -108,18 +171,55 @@ export const InstructorAssignmentEditPage = () => {
                 })),
             };
 
-            await updateAssignmentMutation.mutateAsync({ id: assignmentId, command });
+            const response = await updateAssignmentMutation.mutateAsync({ id: assignmentId, command });
 
-            setSuccessMsg(isDraft ? 'Draft saved successfully!' : 'Assignment updated successfully!');
-            setTimeout(() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENTS), 1500);
+            if (response.presingedFileUrls && attachments.length > 0) {
+                // If the backend filters existing files, the presinged url length should match the NEW attachments
+                if (response.presingedFileUrls.length !== attachments.length) {
+                    throw new Error("Mismatch between new uploaded files and secured storage paths.");
+                }
+
+                // Initialize statuses
+                const initialStatuses: Record<number, any> = {};
+                attachments.forEach((_, i) => {
+                    initialStatuses[i] = { progress: 0, status: 'pending' };
+                });
+                setUploadStatuses(initialStatuses);
+
+                // Upload each new file
+                const uploadPromises = attachments.map(async (file, index) => {
+                    setUploadStatuses(prev => ({ ...prev, [index]: { progress: 0, status: 'uploading' } }));
+                    try {
+                        await uploadFileToPresignedUrlWithProgress(
+                            response.presingedFileUrls![index],
+                            file,
+                            (progress) => {
+                                setUploadStatuses(prev => ({ ...prev, [index]: { progress, status: 'uploading' } }));
+                            }
+                        );
+                        setUploadStatuses(prev => ({ ...prev, [index]: { progress: 100, status: 'success' } }));
+                    } catch (err) {
+                        setUploadStatuses(prev => ({ ...prev, [index]: { progress: 0, status: 'error' } }));
+                        throw err;
+                    }
+                });
+
+                await Promise.all(uploadPromises);
+            }
+
+            setStatusMessage({ type: 'success', text: isDraft ? 'Draft saved successfully!' : 'Assignment updated and files uploaded successfully!' });
+            const courseId = assignmentData?.courseId || courseIdNum;
+            setTimeout(() => navigate(`/instructor/courses/${courseId}/manage/assignments`), 1500);
         } catch (error) {
             const apiError = handleApiError(error);
-            setErrorMsg(apiError.message || 'Failed to update assignment. Please try again.');
+            setStatusMessage({ type: 'error', text: apiError.message || 'Failed to update assignment.' });
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const isPublishDisabled = !formData.title.trim() || !formData.dueDate || isSubmitting;
 
     if (isLoading) {
         return (
@@ -140,48 +240,47 @@ export const InstructorAssignmentEditPage = () => {
                 <div className="flex items-center gap-4">
                     <button
                         type="button"
-                        onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENTS)}
+                        onClick={() => navigate(`/instructor/courses/${assignmentData?.courseId || courseIdNum}/manage/assignments`)}
                         className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 shadow-sm"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
                         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-                            <FileText className="w-8 h-8 text-indigo-500" /> Edit Assignment
+                             Edit Assignment
                         </h1>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-1">
-                            Update assignment details, attachments, and submission rules.
-                        </p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-1">Update assignment details, attachments, and submission rules.</p>
                     </div>
                 </div>
 
-                {/* Main Form Container */}
+                {/* Main Form Card */}
                 <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
                     <div className="p-6 sm:p-8 space-y-8">
 
-                        {/* Notifications */}
-                        {errorMsg && (
-                            <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl text-red-700 dark:text-red-400 text-sm font-bold shadow-sm">
-                                <AlertTriangle className="w-5 h-5 shrink-0" /> {errorMsg}
-                            </div>
-                        )}
-                        {successMsg && (
-                            <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl text-emerald-700 dark:text-emerald-400 text-sm font-bold shadow-sm">
-                                <CheckCircle2 className="w-5 h-5 shrink-0" /> {successMsg} Redirecting...
+                        {statusMessage && (
+                            <div className={`flex items-center gap-3 p-4 rounded-xl border animate-in slide-in-from-top-2 ${statusMessage.type === 'success'
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400'
+                                    : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400'
+                                }`}>
+                                {statusMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                                <p className="text-sm font-bold">{statusMessage.text}</p>
                             </div>
                         )}
 
-                        {/* Basic Information Section */}
-                        <div className="space-y-5">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
-                                <Settings className="w-5 h-5 text-blue-500" /> Basic Information
-                            </h3>
+                        {/* Section 1: Basic Information */}
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center shadow-sm">
+                                    <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">Basic Information</h3>
+                            </div>
 
                             <div>
                                 <label className={labelCls}>Assignment Title <span className="text-red-500">*</span></label>
                                 <input
                                     type="text"
-                                    placeholder="e.g., Programming Assignment 1: Basic Algorithms"
+                                    placeholder="e.g. Phase 1: Market Research Analysis"
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                     className={inputCls}
@@ -190,23 +289,17 @@ export const InstructorAssignmentEditPage = () => {
 
                             <div>
                                 <label className={labelCls}>Associated Course</label>
-                                <select
-                                    value={formData.course}
-                                    disabled
-                                    className={`${inputCls} bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400`}
-                                >
-                                    <option value={formData.course}>
-                                        {coursesData?.items?.find(c => c.id.toString() === formData.course)?.name || `Course ID: ${formData.course}`}
-                                    </option>
-                                </select>
+                                <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm opacity-90 cursor-default">
+                                    {courseData ? `${courseData.code} - ${courseData.name}` : assignmentData?.courseName ? assignmentData.courseName : (formData.course && formData.course !== '0') ? `Course #${formData.course}` : 'Course Details Unavailable'}
+                                </div>
                                 <p className="text-[11px] font-medium text-gray-500 dark:text-slate-500 mt-1.5 ml-1">The course cannot be changed after creation.</p>
                             </div>
 
                             <div>
-                                <label className={labelCls}>Description / Instructions</label>
+                                <label className={labelCls}>Instructions / Description</label>
                                 <textarea
                                     rows={5}
-                                    placeholder="Provide detailed instructions for the assignment..."
+                                    placeholder="Add detailed instructions for students..."
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     className={`${inputCls} resize-none`}
@@ -214,172 +307,195 @@ export const InstructorAssignmentEditPage = () => {
                             </div>
                         </div>
 
-                        {/* Timing & Submission Rules */}
-                        <div className="space-y-5 pt-4">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
-                                <CalendarClock className="w-5 h-5 text-amber-500" /> Timing & Rules
-                            </h3>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className={labelCls}>Due Date <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="datetime-local"
-                                        value={formData.dueDate}
-                                        onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                                        className={inputCls}
-                                    />
+                        {/* Section 2: Timing & Submission */}
+                        <div className="space-y-6 pt-4">
+                            <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 flex items-center justify-center shadow-sm">
+                                    <CalendarClock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">Submission Rules</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                                <div className="flex flex-col h-full">
+                                    <label className={labelCls}>Due Date &amp; Time <span className="text-red-500">*</span></label>
+                                    <div className="flex-1 flex flex-col justify-start">
+                                        <DateTimePicker
+                                            value={formData.dueDate}
+                                            onChange={(d) => setFormData({ ...formData, dueDate: d })}
+                                            minDate={new Date()}
+                                            placeholder="Select submission deadline"
+                                            iconColor="text-amber-500"
+                                        />
+                                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-2 ml-1">The date after which submissions are marked late.</p>
+                                    </div>
                                 </div>
 
-                                <div className="flex flex-col justify-end">
-                                    <label
-                                        className={`relative flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.allowLateSubmission
-                                                ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/10'
-                                                : 'border-gray-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
+                                <div className="flex flex-col h-full">
+                                    <label className={labelCls}>Timing Preferences</label>
+                                    <div className="flex-1 flex flex-col justify-start">
+                                        <div 
+                                            onClick={() => setFormData({ ...formData, allowLateSubmission: !formData.allowLateSubmission })}
+                                            className={`${inputCls} cursor-pointer flex items-center justify-between hover:border-blue-300 dark:hover:border-slate-500 transition-colors w-full ${
+                                                formData.allowLateSubmission ? 'border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10' : ''
                                             }`}
-                                    >
-                                        <div className="flex-1">
-                                            <div className={`font-bold text-sm mb-0.5 ${formData.allowLateSubmission ? 'text-amber-900 dark:text-amber-100' : 'text-gray-900 dark:text-white'}`}>
-                                                Allow Late Submission
+                                        >
+                                            <div className="flex items-center gap-3 truncate">
+                                                <div className={`flex items-center justify-center transition-colors ${formData.allowLateSubmission ? 'text-amber-500' : 'text-gray-400 dark:text-slate-500'}`}>
+                                                    <Clock className="w-[18px] h-[18px]" />
+                                                </div>
+                                                <span className={`font-semibold text-sm truncate ${formData.allowLateSubmission ? 'text-amber-900 dark:text-amber-100' : 'text-gray-700 dark:text-slate-200'}`}>
+                                                    Allow Late Submissions
+                                                </span>
                                             </div>
-                                            <div className={`text-[11px] font-medium ${formData.allowLateSubmission ? 'text-amber-700 dark:text-amber-300' : 'text-gray-500 dark:text-slate-400'}`}>
-                                                Students can submit after the due date.
+                                            {/* Switch Toggle */}
+                                            <div className={`w-10 h-5 shrink-0 rounded-full relative transition-colors duration-300 ml-4 ${
+                                                formData.allowLateSubmission ? 'bg-amber-500' : 'bg-gray-300 dark:bg-slate-600'
+                                            }`}>
+                                                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ease-spring ${
+                                                    formData.allowLateSubmission ? 'left-[22px] scale-105' : 'left-0.5'
+                                                }`} />
                                             </div>
                                         </div>
-                                        <div className="pt-1">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.allowLateSubmission}
-                                                onChange={(e) => setFormData({ ...formData, allowLateSubmission: e.target.checked })}
-                                                className="w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
-                                            />
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* File Restrictions */}
-                        <div className="space-y-5 pt-4">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
-                                <ShieldCheck className="w-5 h-5 text-emerald-500" /> File Restrictions
-                            </h3>
-
-                            <div>
-                                <label className={labelCls}>Allowed File Types</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {fileTypeOptions.map((type) => {
-                                        const isSelected = formData.allowedFileTypes.includes(type);
-                                        return (
-                                            <button
-                                                key={type}
-                                                type="button"
-                                                onClick={() => toggleFileType(type)}
-                                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-2 ${isSelected
-                                                        ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-400 shadow-sm'
-                                                        : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:border-emerald-300 dark:hover:border-slate-600'
-                                                    }`}
-                                            >
-                                                {type}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <p className="text-[11px] font-medium text-gray-500 dark:text-slate-500 mt-2 ml-1">Leave empty to allow all file types.</p>
-                            </div>
-
-                            <div>
-                                <label className={labelCls}>Maximum File Size</label>
-                                <select
-                                    value={formData.maxFileSize}
-                                    onChange={(e) => setFormData({ ...formData, maxFileSize: e.target.value })}
-                                    className={`${inputCls} sm:max-w-xs`}
-                                >
-                                    <option value="">No limit</option>
-                                    <option value="5">5 MB</option>
-                                    <option value="10">10 MB</option>
-                                    <option value="20">20 MB</option>
-                                    <option value="50">50 MB</option>
-                                    <option value="100">100 MB</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Visibility Status */}
-                        <div className="space-y-5 pt-4">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
-                                <Settings className="w-5 h-5 text-purple-500" /> Visibility Status
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <label className={`relative flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${formData.status === 'draft' ? 'border-purple-500 bg-purple-50 dark:bg-purple-500/10' : 'border-gray-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'}`}>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className={`font-bold text-sm ${formData.status === 'draft' ? 'text-purple-900 dark:text-purple-100' : 'text-gray-900 dark:text-white'}`}>Save as Draft</span>
-                                        <input type="radio" name="status" value="draft" checked={formData.status === 'draft'} onChange={() => setFormData({ ...formData, status: 'draft' })} className="w-4 h-4 text-purple-600 accent-purple-600 cursor-pointer" />
+                                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-2 ml-1">
+                                            {formData.allowLateSubmission 
+                                                ? 'Late submissions will be accepted but marked as late.'
+                                                : 'Submissions after deadline will be rejected.'}
+                                        </p>
                                     </div>
-                                    <span className={`text-[11px] font-medium ${formData.status === 'draft' ? 'text-purple-700 dark:text-purple-300' : 'text-gray-500 dark:text-slate-400'}`}>Not visible to students yet.</span>
-                                </label>
-
-                                <label className={`relative flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${formData.status === 'published' ? 'border-purple-500 bg-purple-50 dark:bg-purple-500/10' : 'border-gray-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'}`}>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className={`font-bold text-sm ${formData.status === 'published' ? 'text-purple-900 dark:text-purple-100' : 'text-gray-900 dark:text-white'}`}>Publish Immediately</span>
-                                        <input type="radio" name="status" value="published" checked={formData.status === 'published'} onChange={() => setFormData({ ...formData, status: 'published' })} className="w-4 h-4 text-purple-600 accent-purple-600 cursor-pointer" />
-                                    </div>
-                                    <span className={`text-[11px] font-medium ${formData.status === 'published' ? 'text-purple-700 dark:text-purple-300' : 'text-gray-500 dark:text-slate-400'}`}>Visible to students right away.</span>
-                                </label>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Attachments Upload */}
-                        <div className="space-y-4 pt-4">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
-                                <Upload className="w-5 h-5 text-rose-500" /> Reference Materials (Optional)
-                            </h3>
 
-                            <label className="flex flex-col items-center justify-center gap-3 px-6 py-10 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-2xl cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all bg-gray-50/50 dark:bg-slate-900/30 group">
-                                <div className="w-14 h-14 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Upload className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                        {/* Section 4: Attachments */}
+                        <div className="space-y-6 pt-4">
+                            <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center shadow-sm">
+                                    <Upload className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                                 </div>
-                                <div className="text-center">
-                                    <span className="text-sm font-bold text-gray-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Click to browse or drag files here</span>
-                                    <p className="text-xs text-gray-500 mt-1">Support for PDF, DOCX, ZIP</p>
+                                <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">Reference Materials (Optional)</h3>
+                            </div>
+
+                            <label className="relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-[2rem] cursor-pointer hover:border-blue-500 group transition-all duration-500 bg-gradient-to-b from-gray-50/50 to-white dark:from-slate-800/20 dark:to-slate-900/40 hover:shadow-lg hover:shadow-blue-500/5 outline-none">
+                                <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 group-hover:-translate-y-1 group-active:scale-95 transition-all duration-500 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-slate-700 relative z-10">
+                                    <div className="absolute inset-0 bg-blue-500 opacity-20 blur-xl rounded-full group-hover:opacity-40 transition-opacity duration-500" />
+                                    <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400 relative z-10" />
+                                </div>
+                                <div className="text-center relative z-10">
+                                    <span className="text-lg font-extrabold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Click to upload or drag files</span>
                                 </div>
                                 <input type="file" multiple onChange={handleFileUpload} className="hidden" />
                             </label>
 
-                            {attachments.length > 0 && (
-                                <div className="space-y-2 mt-4 bg-gray-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-700">
-                                    <p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">Attached Files</p>
-                                    {attachments.map((file, index) => (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg shrink-0">
-                                                    <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                            {(attachments.length > 0 || existingFiles.length > 0) && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                                    {existingFiles.map((file, index) => (
+                                        <div key={`existing-${index}`} className="flex items-center justify-between p-4 bg-blue-50/20 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-500/20 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                                            <div className="flex items-center gap-4 flex-1 truncate pr-2">
+                                                <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
+                                                    <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                                 </div>
                                                 <div className="truncate">
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{file.name}</p>
-                                                    <p className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                    <p className="text-sm font-bold text-blue-600 dark:text-blue-400 truncate">{file.fileName}</p>
+                                                    <div className="flex flex-col gap-1 mt-1">
+                                                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-lg w-fit uppercase">Previously Uploaded</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => removeAttachment(index)}
-                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors shrink-0"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                {file.fileUrl || file.url ? (
+                                                    <a 
+                                                        href={file.fileUrl || file.url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        download={file.fileName} 
+                                                        className="w-9 h-9 flex items-center justify-center bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all shadow-sm"
+                                                        title="Download"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </a>
+                                                ) : (
+                                                    <button 
+                                                        type="button"
+                                                        disabled
+                                                        className="w-9 h-9 flex items-center justify-center text-gray-400 bg-gray-50 dark:bg-slate-700/50 rounded-xl transition-all duration-200"
+                                                        title="No Download URL"
+                                                    >
+                                                        <Download className="w-4 h-4 opacity-50" />
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => removeExistingFile(index)} 
+                                                    disabled={deletingFileId === (file.id || file.fileId) || isSubmitting}
+                                                    className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-200 shadow-sm ${deletingFileId === (file.id || file.fileId) ? 'bg-gray-50 text-gray-400' : 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20'}`} 
+                                                    title="Remove File"
+                                                >
+                                                    {deletingFileId === (file.id || file.fileId) ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <Trash2 className="w-4 h-4" />
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
+                                    {attachments.map((file, index) => {
+                                        const statusObj = uploadStatuses[index];
+                                        const isUploading = statusObj?.status === 'uploading';
+                                        const isSuccess = statusObj?.status === 'success';
+                                        const isError = statusObj?.status === 'error';
+                                        const progress = statusObj?.progress || 0;
+
+                                        return (
+                                        <div key={`new-${index}`} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden relative">
+                                            <div className="flex items-center gap-4 flex-1 truncate pr-2 relative z-10">
+                                                <div className="w-12 h-12 bg-gray-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
+                                                    {isSuccess ? (
+                                                        <CheckCircle2 className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />
+                                                    ) : isError ? (
+                                                        <AlertTriangle className="w-6 h-6 text-red-500 dark:text-red-400" />
+                                                    ) : (
+                                                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                                    )}
+                                                </div>
+                                                <div className="truncate pr-2">
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{file.name}</p>
+                                                    <div className="flex items-center gap-2 mt-1 truncate">
+                                                        <span className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 shrink-0">
+                                                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                                                        </span>
+                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600 shrink-0"></span>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg truncate ${isSuccess ? 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10' : isError ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-500/10' : 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-500/10'}`}>
+                                                            {isUploading ? `Uploading ${progress}%` : isSuccess ? 'Success' : isError ? 'Failed' : 'New'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="shrink-0 relative z-10 flex items-center">
+                                                <button type="button" disabled={isSubmitting} onClick={() => removeAttachment(index)} className="w-9 h-9 flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-all duration-200 active:scale-95 disabled:opacity-50 shadow-sm" title="Remove File">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            {isUploading && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100 dark:bg-slate-700 overflow-hidden">
+                                                    <div className="bg-blue-500 h-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        )})}
                                 </div>
                             )}
                         </div>
-
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="p-6 sm:p-8 bg-gray-50/50 dark:bg-slate-900/50 border-t border-gray-200 dark:border-slate-700/50 flex flex-col-reverse sm:flex-row gap-4 justify-between items-center shrink-0">
+                    <div className="p-6 sm:p-8 bg-gray-50/50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-center">
                         <button
                             type="button"
-                            onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENTS)}
-                            className="w-full sm:w-auto px-8 py-3.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold transition-all text-sm shadow-sm"
+                            onClick={() => navigate(`/instructor/courses/${assignmentData?.courseId || courseIdNum}/manage/assignments`)}
+                            className="w-full sm:w-auto px-8 py-3.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold transition-all text-sm shadow-sm active:scale-95"
                         >
                             Cancel
                         </button>
@@ -389,7 +505,7 @@ export const InstructorAssignmentEditPage = () => {
                                 type="button"
                                 onClick={() => handleSave(true)}
                                 disabled={isSubmitting}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-800 hover:bg-gray-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl font-bold transition-all shadow-md active:scale-95 text-sm disabled:opacity-60"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-800 dark:bg-slate-700 hover:bg-black dark:hover:bg-slate-600 text-white rounded-xl font-bold transition-all text-sm disabled:opacity-50"
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                 Save Draft
@@ -397,8 +513,8 @@ export const InstructorAssignmentEditPage = () => {
                             <button
                                 type="button"
                                 onClick={() => handleSave(false)}
-                                disabled={isSubmitting}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-emerald-500/25 hover:-translate-y-0.5 active:scale-95 text-sm disabled:opacity-60"
+                                disabled={isPublishDisabled}
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-blue-500/25 active:scale-95 text-sm disabled:opacity-50"
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                                 Update Assignment

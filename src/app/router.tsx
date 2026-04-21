@@ -24,16 +24,20 @@ import { FilePreviewPage } from '@/routes/FilePreviewPage';
 import { DashboardPage } from '@/routes/student/DashboardPage';
 
 import { CoursesPage } from '@/routes/student/CoursesPage';
-import { CourseDetailPage } from '@/routes/student/CourseDetailPage';
 import { LessonPlayerPage } from '@/routes/student/LessonPlayerPage';
 import { ProfilePage } from '@/routes/ProfilePage';
-import { AssignmentsPage } from '@/routes/student/AssignmentsPage';
-import { AssignmentDetailPage } from '@/routes/student/AssignmentDetailPage';
-import { QuizzesPage } from '@/routes/student/QuizzesPage';
 import { QuizAttemptsPage } from '@/routes/student/QuizAttemptsPage';
 import { QuizAttemptViewer } from '@/routes/student/QuizAttemptViewer';
 import { QuizResultViewer } from '@/components/QuizResultViewer';
-import { GradesPage } from '@/routes/student/GradesPage';
+
+// Course Details (new course-centric feature)
+import { CourseDetailsLayout } from '@/features/course-details/pages/CourseDetailsLayout';
+import { OverviewTab } from '@/features/course-details/pages/OverviewTab';
+import { SectionsTab } from '@/features/course-details/pages/SectionsTab';
+import { AssignmentsTab } from '@/features/course-details/pages/AssignmentsTab';
+import { AssignmentDetailsPage } from '@/features/course-details/pages/AssignmentDetailsPage';
+import { QuizzesTab } from '@/features/course-details/pages/QuizzesTab';
+import { VideoViewerPage } from '@/features/course-details/pages/VideoViewerPage';
 
 // Instructor pages
 import { InstructorDashboardPage } from '@/routes/instructor/InstructorDashboardPage';
@@ -54,6 +58,8 @@ import { InstructorQuizQuestionsEditPage } from '@/routes/instructor/InstructorQ
 import { InstructorAssignmentCreatePage } from '@/routes/instructor/InstructorAssignmentCreatePage';
 import { InstructorAssignmentEditPage } from '@/routes/instructor/InstructorAssignmentEditPage';
 import { InstructorSubmissionsPage } from '@/routes/instructor/InstructorSubmissionsPage';
+import { InstructorUpcomingEventsPage } from '@/routes/instructor/InstructorUpcomingEventsPage';
+import { QuizDashboardPage } from '@/routes/instructor/QuizDashboardPage';
 
 // Admin pages
 import { AdminDashboardPage } from '@/routes/admin/AdminDashboardPage';
@@ -108,19 +114,23 @@ export const AppRouter = () => {
             >
                 <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
                 <Route path={ROUTES.COURSES} element={<CoursesPage />} />
-                <Route path={ROUTES.COURSE_DETAIL} element={<CourseDetailPage />} />
+                <Route path="/courses/:courseId" element={<CourseDetailsLayout />}>
+                    <Route index element={<Navigate to="overview" replace />} />
+                    <Route path="overview" element={<OverviewTab />} />
+                    <Route path="sections" element={<SectionsTab />} />
+                    <Route path="assignments" element={<AssignmentsTab />} />
+                    <Route path="assignments/:assignmentId" element={<AssignmentDetailsPage />} />
+                    <Route path="quizzes" element={<QuizzesTab />} />
+                </Route>
+                <Route path="/courses/:courseId/video/:fileId" element={<VideoViewerPage />} />
                 <Route path={ROUTES.LEARN} element={<LessonPlayerPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
                 <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
-                <Route path={ROUTES.ASSIGNMENTS} element={<AssignmentsPage />} />
-                <Route path={ROUTES.ASSIGNMENT_DETAIL} element={<AssignmentDetailPage />} />
-                <Route path={ROUTES.QUIZZES} element={<QuizzesPage />} />
                 <Route path="/quizzes/:id/attempts" element={<QuizAttemptsPage />} />
                 <Route path="/quizzes/:id/attempt" element={<QuizAttemptViewer />} />
                 <Route path="/quizzes/:id/attempt/:attemptId" element={<QuizAttemptViewer />} />
                 <Route path="/quizzes/:id/attempt/:attemptId/result" element={<QuizResultViewer />} />
-                <Route path={ROUTES.GRADES} element={<GradesPage />} />
             </Route>
 
             {/* Protected instructor routes */}
@@ -143,13 +153,16 @@ export const AppRouter = () => {
                 </Route>
                 <Route path={ROUTES.INSTRUCTOR_GRADEBOOK} element={<InstructorGradebookPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENTS} element={<InstructorAssignmentsPage />} />
-                <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<InstructorAssignmentCreatePage />} />
+                <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<Navigate to={ROUTES.INSTRUCTOR_ASSIGNMENTS} replace />} />
+                <Route path="/instructor/courses/:courseId/assignments/create" element={<InstructorAssignmentCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT} element={<InstructorAssignmentEditPage />} />
+                <Route path={ROUTES.INSTRUCTOR_UPCOMING_EVENTS} element={<InstructorUpcomingEventsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS} element={<InstructorQuizQuestionBuilderPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT} element={<InstructorQuizQuestionsEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
+                <Route path={ROUTES.INSTRUCTOR_QUIZ_DASHBOARD} element={<QuizDashboardPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
             </Route>

@@ -234,7 +234,7 @@ export const InstructorCourseEditContentPage = () => {
     const filteredEnrollments = useMemo(() => {
         return enrollmentRequests.filter((r) => {
             const statusOk = enrollFilterStatus === 'all' || r.status === enrollFilterStatus;
-            const nameOk = !enrollSearch || r.name.toLowerCase().includes(enrollSearch.toLowerCase());
+            const nameOk = !enrollSearch || r.name.toLowerCase().startsWith(enrollSearch.toLowerCase());
             return statusOk && nameOk;
         });
     }, [enrollmentRequests, enrollFilterStatus, enrollSearch]);
@@ -251,7 +251,7 @@ export const InstructorCourseEditContentPage = () => {
             const selectedStatus = quizFilterStatus.toLowerCase();
             const statusOk = quizFilterStatus === 'all' || apiStatus === selectedStatus;
             const title = String(q.title ?? '').toLowerCase();
-            const searchOk = !normalizedSearch || title.includes(normalizedSearch);
+            const searchOk = !normalizedSearch || title.startsWith(normalizedSearch);
             return statusOk && searchOk;
         });
 

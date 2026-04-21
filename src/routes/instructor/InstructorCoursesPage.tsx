@@ -17,9 +17,6 @@ interface Course {
     title: string;
     courseId: string;
     instructor: string;
-    status: string;
-    badgeBg: string;
-    badgeText: string;
     primaryAction?: string;
     secondaryAction?: string;
     students: number;
@@ -27,32 +24,8 @@ interface Course {
     sections: number;
 }
 
-// --- Helper: Map API status to UI status ---
-const getStatusConfig = (apiStatus: string): Pick<Course, 'status' | 'badgeBg' | 'badgeText' | 'primaryAction' | 'secondaryAction'> => {
-    // You can expand this switch based on actual API statuses (e.g., 'Draft', 'Pending')
-    const isPublished = apiStatus?.toLowerCase() === 'published' || true; // Defaulting to true for now based on original logic
-
-    if (isPublished) {
-        return {
-            status: 'Published',
-            badgeBg: 'bg-emerald-100 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20',
-            badgeText: 'text-emerald-700 dark:text-emerald-400',
-            primaryAction: 'Manage Content',
-            secondaryAction: 'Settings',
-        };
-    }
-
-    return {
-        status: apiStatus || 'Draft',
-        badgeBg: 'bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700',
-        badgeText: 'text-gray-700 dark:text-slate-300',
-        primaryAction: 'Edit Content',
-    };
-};
-
 // --- Helper: Map API DTO to UI Course ---
 const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
-    const statusConfig = getStatusConfig(dto.courseStatus);
     return {
         id: dto.id.toString(),
         title: dto.name,
@@ -61,7 +34,7 @@ const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
         students: 0, // Should come from API if available
         startDate: new Date(dto.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         sections: 0, // Should come from API if available
-        ...statusConfig,
+        primaryAction: 'Manage Content',
     };
 };
 
@@ -81,12 +54,7 @@ const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DC
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-80 group-hover:opacity-100 transition-opacity"></div>
 
             {/* Course Header */}
-            <div className="p-6 sm:p-8 flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-4">
-                    <div className={`px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${course.badgeBg} ${course.badgeText}`}>
-                        {course.status}
-                    </div>
-                </div>
+            <div className="p-6 sm:p-8 flex-1 flex flex-col pt-8">
 
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {course.title}

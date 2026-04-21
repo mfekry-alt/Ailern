@@ -134,7 +134,7 @@ export const InstructorStatisticsPage = () => {
 
     // --- TABS CONTENT ---
     const renderStudentsTab = () => {
-        const filteredStudents = studentsData.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.course.toLowerCase().includes(searchQuery.toLowerCase()));
+        const filteredStudents = studentsData.filter(s => s.name.toLowerCase().startsWith(searchQuery.toLowerCase()) || s.course.toLowerCase().startsWith(searchQuery.toLowerCase()));
         return (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="grid lg:grid-cols-2 gap-6">

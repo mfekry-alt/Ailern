@@ -11,6 +11,7 @@ import { getAssignment } from '@/api/services/assignment.service';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { QUERY_KEYS } from '@/lib/constants';
 import { handleApiError } from '@/api/client';
+import { formatDateTime, parseUtcDate } from '@/utils/dateFormat';
 
 export const AssignmentDetailPage = () => {
     const { id } = useParams();
@@ -34,9 +35,9 @@ export const AssignmentDetailPage = () => {
         if (!assignment) return null;
 
         const now = new Date();
-        const due = new Date(assignment.dueDate);
+        const due = parseUtcDate(assignment.dueDate);
         let status = 'pending';
-        if (due < now) status = 'late';
+        if (due && due.getTime() < now.getTime()) status = 'late';
 
         return {
             id: assignment.id.toString(),
@@ -56,9 +57,9 @@ export const AssignmentDetailPage = () => {
     // Calculate if assignment is due soon (within 48 hours)
     const isDueSoon = useMemo(() => {
         if (!assignmentUI) return false;
-        const dueDate = new Date(assignmentUI.dueDate);
+        const dueDate = parseUtcDate(assignmentUI.dueDate);
         const now = new Date();
-        const hoursUntilDue = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+        const hoursUntilDue = dueDate ? (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60) : 0;
         return hoursUntilDue > 0 && hoursUntilDue <= 48;
     }, [assignmentUI]);
 
@@ -207,7 +208,7 @@ export const AssignmentDetailPage = () => {
                                         <div>
                                             <p className="text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">Due Date</p>
                                             <p className={`text-sm font-semibold ${isDueSoon && !isLate ? 'text-orange-500' : isLate ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-                                                {new Date(assignmentUI.dueDate).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                {formatDateTime(assignmentUI.dueDate)}
                                             </p>
                                             {isDueSoon && !isLate && <p className="text-[11px] font-bold text-orange-500 mt-1">Due soon!</p>}
                                             {isLate && <p className="text-[11px] font-bold text-red-500 mt-1">Overdue</p>}

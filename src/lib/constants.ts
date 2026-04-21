@@ -36,7 +36,8 @@ export const ROUTES = {
     DASHBOARD: '/dashboard',
     MY_COURSES: '/my-courses',
     COURSES: '/courses',
-    COURSE_DETAIL: '/courses/:id',
+    COURSE_DETAIL: '/courses/:courseId',
+    COURSE_VIDEO: '/courses/:courseId/video/:fileId',
     LEARN: '/learn/:courseId/:lessonId',
     PROFILE: '/profile',
     CHANGE_PASSWORD: '/change-password',        // NOSONAR
@@ -58,6 +59,7 @@ export const ROUTES = {
     INSTRUCTOR_ASSIGNMENTS: '/instructor/assignments',
     INSTRUCTOR_ASSIGNMENT_CREATE: '/instructor/assignments/create',
     INSTRUCTOR_ASSIGNMENT_EDIT: '/instructor/assignments/:id/edit',
+    INSTRUCTOR_UPCOMING_EVENTS: '/instructor/upcoming-events',
     INSTRUCTOR_SUBMISSIONS: '/instructor/assignments/:assignmentId/submissions',
     INSTRUCTOR_QUIZ_CREATE: '/courses/:courseId/quiz/create',
     INSTRUCTOR_QUIZ_QUESTIONS: '/instructor/quiz/questions',
@@ -65,6 +67,7 @@ export const ROUTES = {
     INSTRUCTOR_QUIZ_EDIT: '/instructor/quiz/:id/edit',
     INSTRUCTOR_QUIZ_UPDATE: '/instructor/quiz/:id/update',
     INSTRUCTOR_QUIZ_QUESTIONS_EDIT: '/instructor/quiz/:id/questions/edit',
+    INSTRUCTOR_QUIZ_DASHBOARD: '/quiz-dashboard/:quizId',
 
     // Admin routes
     ADMIN: '/admin',
@@ -95,9 +98,17 @@ export const QUERY_KEYS = {
     ASSIGNMENT: (id: number) => ['assignment', id],
     INSTRUCTOR_ASSIGNMENTS: ['instructor-assignments'],
     ASSIGNMENT_SUBMISSIONS: (assignmentId: number) => ['assignment-submissions', assignmentId],
+    SUBMISSION_FILES: (assignmentId: number, submissionId: number) => ['submission-files', assignmentId, submissionId],
     ATTEMPTS: (quizId: string) => ['attempts', quizId],
     ATTEMPT: (attemptId: string) => ['attempt', attemptId],
     ATTEMPT_GRADE: (attemptId: string) => ['attempt-grade', attemptId],
+    INSTRUCTOR_STATS: ['instructor-stats'],
+    UPCOMING_EVENTS: ['upcoming-events'],
+    INSTRUCTOR_MY_COURSES: ['instructor-my-courses'],
+    COURSE_SECTIONS: (courseId: string) => ['course-sections', courseId],
+    COURSE_ASSIGNMENTS: (courseId: string) => ['course-assignments', courseId],
+    COURSE_QUIZZES: (courseId: string) => ['course-quizzes', courseId],
+    ASSIGNMENT_SUBMISSION: (assignmentId: number) => ['assignment-submission', assignmentId],
 } as const;
 
 export const STORAGE_KEYS = {
