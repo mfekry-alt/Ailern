@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useCourseQuizzes, useDeleteQuiz } from '@/features/quizzes/api';
 import { ROUTES } from '@/lib/constants';
-import { Plus, HelpCircle, Edit, Trash2, Filter, Loader2, Clock, Calendar, Repeat, ListChecks } from 'lucide-react';
+import { Plus, HelpCircle, Edit, Trash2, Filter, Loader2, Clock, Calendar, Repeat, ListChecks, BarChart2 } from 'lucide-react';
 
 interface Ctx { courseId: string; numericCourseId: number | null }
 
@@ -97,6 +97,14 @@ export const CourseQuizzesTab = () => {
                                 <div className="p-5 pb-0 flex justify-between items-start">
                                     {getStatusBadge(status)}
                                     <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                        {/* Analytics Dashboard icon — subtle, top-right */}
+                                        <button
+                                            onClick={() => navigate(`/quiz-dashboard/${quiz.id}`)}
+                                            className="p-1.5 text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-500/20 rounded-lg transition-colors"
+                                            title="View Analytics"
+                                        >
+                                            <BarChart2 className="w-4 h-4" />
+                                        </button>
                                         <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors" title="Edit Quiz">
                                             <Edit className="w-4 h-4" />
                                         </button>

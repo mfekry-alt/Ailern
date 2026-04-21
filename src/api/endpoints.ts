@@ -1,3 +1,6 @@
+import { updateAssignment } from "./services/assignment.service";
+export { updateAssignment };
+
 export const ENDPOINTS = {
     // Auth endpoints (based on API: /api/Auth/*)
     AUTH: {
@@ -62,6 +65,7 @@ export const ENDPOINTS = {
         CONFIRM_UPLOAD: (id: number) => `/Assignments/Submissions/${id}/confirm-upload`,
         DELETE: (id: number) => `/Assignments/Submissions/${id}`,
         GET_BY_ASSIGNMENT: (assignmentId: number) => `/Assignments/${assignmentId}/Submissions`,
+        GET_MY_SUBMISSION: (assignmentId: number) => `/Assignments/${assignmentId}/my-submission`,
         GET_FILES: (assignmentId: number, submissionId: number) => `/Assignments/${assignmentId}/Submissions/${submissionId}/files`,
         REVIEW: (submissionId: number) => `/Assignments/Submissions/${submissionId}`,
     },
@@ -108,5 +112,8 @@ export const ENDPOINTS = {
         STATS: '/Dashboard/instructor',
         UPCOMING_EVENTS: '/Dashboard/UpcomingEvents',
         MY_COURSES: '/Users/instructor/my-courses',
+    // Dashboard endpoints
+    DASHBOARD: {
+        QUIZ: (quizId: string) => `/Dashboard/quiz/${quizId}`,
     },
 } as const;

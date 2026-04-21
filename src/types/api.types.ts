@@ -295,6 +295,8 @@ export interface GetAssignmentDto {
     isPublished: boolean;
     createdAt: string;
     files?: FileMetaData[];
+    isSubmitted?: boolean;
+    hasFeedback?: boolean;
 }
 
 export interface GetAssignmentSubmissionDto {
@@ -308,6 +310,21 @@ export interface GetAssignmentSubmissionDto {
     files?: FileMetaData[];
     grade?: number;
     feedback?: string;
+}
+
+export interface GetMySubmissionDto {
+    submissionId: number;
+    submissionDate: string;
+    studentId: number;
+    assignmentId: number;
+    feedback: string | null;
+    isLate: boolean;
+    filesUrls: {
+        id: string;
+        fileName: string;
+        fileType: string;
+        fileUrl: string;
+    }[];
 }
 
 // ============================================================================

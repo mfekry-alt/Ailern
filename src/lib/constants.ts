@@ -35,7 +35,8 @@ export const ROUTES = {
     DASHBOARD: '/dashboard',
     MY_COURSES: '/my-courses',
     COURSES: '/courses',
-    COURSE_DETAIL: '/courses/:id',
+    COURSE_DETAIL: '/courses/:courseId',
+    COURSE_VIDEO: '/courses/:courseId/video/:fileId',
     LEARN: '/learn/:courseId/:lessonId',
     PROFILE: '/profile',
     CHANGE_PASSWORD: '/change-password',        // NOSONAR
@@ -65,6 +66,7 @@ export const ROUTES = {
     INSTRUCTOR_QUIZ_EDIT: '/instructor/quiz/:id/edit',
     INSTRUCTOR_QUIZ_UPDATE: '/instructor/quiz/:id/update',
     INSTRUCTOR_QUIZ_QUESTIONS_EDIT: '/instructor/quiz/:id/questions/edit',
+    INSTRUCTOR_QUIZ_DASHBOARD: '/quiz-dashboard/:quizId',
 
     // Admin routes
     ADMIN: '/admin',
@@ -102,6 +104,10 @@ export const QUERY_KEYS = {
     INSTRUCTOR_STATS: ['instructor-stats'],
     UPCOMING_EVENTS: ['upcoming-events'],
     INSTRUCTOR_MY_COURSES: ['instructor-my-courses'],
+    COURSE_SECTIONS: (courseId: string) => ['course-sections', courseId],
+    COURSE_ASSIGNMENTS: (courseId: string) => ['course-assignments', courseId],
+    COURSE_QUIZZES: (courseId: string) => ['course-quizzes', courseId],
+    ASSIGNMENT_SUBMISSION: (assignmentId: number) => ['assignment-submission', assignmentId],
 } as const;
 
 export const STORAGE_KEYS = {
