@@ -115,5 +115,6 @@ export const ENDPOINTS = {
     // Dashboard endpoints
     DASHBOARD: {
         QUIZ: (quizId: string) => `/Dashboard/quiz/${quizId}`,
+        ADMIN: '/Dashboard/admin',
     },
 } as const;
