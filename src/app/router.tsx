@@ -58,6 +58,7 @@ import { InstructorQuizQuestionsEditPage } from '@/routes/instructor/InstructorQ
 import { InstructorAssignmentCreatePage } from '@/routes/instructor/InstructorAssignmentCreatePage';
 import { InstructorAssignmentEditPage } from '@/routes/instructor/InstructorAssignmentEditPage';
 import { InstructorSubmissionsPage } from '@/routes/instructor/InstructorSubmissionsPage';
+import { InstructorUpcomingEventsPage } from '@/routes/instructor/InstructorUpcomingEventsPage';
 import { QuizDashboardPage } from '@/routes/instructor/QuizDashboardPage';
 
 // Admin pages
@@ -152,8 +153,10 @@ export const AppRouter = () => {
                 </Route>
                 <Route path={ROUTES.INSTRUCTOR_GRADEBOOK} element={<InstructorGradebookPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENTS} element={<InstructorAssignmentsPage />} />
-                <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<InstructorAssignmentCreatePage />} />
+                <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<Navigate to={ROUTES.INSTRUCTOR_ASSIGNMENTS} replace />} />
+                <Route path="/instructor/courses/:courseId/assignments/create" element={<InstructorAssignmentCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT} element={<InstructorAssignmentEditPage />} />
+                <Route path={ROUTES.INSTRUCTOR_UPCOMING_EVENTS} element={<InstructorUpcomingEventsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS} element={<InstructorQuizQuestionBuilderPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />

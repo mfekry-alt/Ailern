@@ -86,7 +86,7 @@ export const AdminUsersPage = () => {
         return users.filter((u) => {
             const roleMatch = selectedRole === 'all' || u.role === selectedRole;
             const activeMatch = !onlyActive || u.status === 'Active';
-            const searchMatch = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+            const searchMatch = !q || u.name.toLowerCase().startsWith(q) || u.email.toLowerCase().startsWith(q);
             return roleMatch && activeMatch && searchMatch;
         });
     }, [onlyActive, searchQuery, selectedRole, users]);

@@ -97,9 +97,9 @@ export const CoursesPage = () => {
         const instructorMatch = filterByInstructor === 'All' || course.instructor === filterByInstructor;
         const searchMatch =
             searchQuery === '' ||
-            course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            course.instructor.toLowerCase().includes(searchQuery.toLowerCase());
+            course.title.toLowerCase().startsWith(searchQuery.toLowerCase()) ||
+            course.description.toLowerCase().startsWith(searchQuery.toLowerCase()) ||
+            course.instructor.toLowerCase().startsWith(searchQuery.toLowerCase());
         return instructorMatch && searchMatch;
     });
 

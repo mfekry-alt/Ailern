@@ -11,4 +11,5 @@ export * as assignmentService from './assignment.service';
 export * as quizService from './quiz.service';
 export * as sectionService from './section.service';
 export * as attemptsService from './attempts.service';
+export * as instructorService from './instructor.service';
 export * as dashboardService from './dashboard.service';

@@ -60,7 +60,7 @@ export const AdminCoursesPage = () => {
     const filteredCourses = useMemo(() => {
         const q = searchQuery.toLowerCase();
         return courses.filter(c => {
-            const matchesSearch = c.title.toLowerCase().includes(q) || c.instructor.toLowerCase().includes(q);
+            const matchesSearch = c.title.toLowerCase().startsWith(q) || c.instructor.toLowerCase().startsWith(q);
             const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
             return matchesSearch && matchesStatus;
         });
