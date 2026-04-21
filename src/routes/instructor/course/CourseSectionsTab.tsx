@@ -155,7 +155,7 @@ export const CourseSectionsTab = () => {
    Modals
    ═══════════════════════════════════════════════════════════ */
 
-function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numericCourseId: number; onClose: () => void; qk: string[]; sections: SectionDto[] }) {
+function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numericCourseId: number; onClose: () => void; qk: any[]; sections: SectionDto[] }) {
     const qc = useQueryClient();
     const [title, setTitle] = useState('');
     const [newNumber, setNewNumber] = useState('');
@@ -264,7 +264,7 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
     );
 }
 
-function EditSectionModal({ section, onClose, qk, sections }: { section: SectionDto; onClose: () => void; qk: string[]; sections: SectionDto[] }) {
+function EditSectionModal({ section, onClose, qk, sections }: { section: SectionDto; onClose: () => void; qk: any[]; sections: SectionDto[] }) {
     const qc = useQueryClient();
     const [title, setTitle] = useState(section.title);
     const [editNumber, setEditNumber] = useState(String(section.sectionNumber));
@@ -413,7 +413,7 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
     );
 }
 
-function SectionFilesModal({ section, onClose, qk }: { section: SectionDto; onClose: () => void; qk: string[] }) {
+function SectionFilesModal({ section, onClose, qk }: { section: SectionDto; onClose: () => void; qk: any[] }) {
     const navigate = useNavigate();
     const qc = useQueryClient();
     const [localFiles, setLocalFiles] = useState<SectionFileDto[]>(() =>

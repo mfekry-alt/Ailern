@@ -10,6 +10,7 @@ import {
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useInstructorMyCourses } from '@/features/instructor/api';
 import { useInstructorAssignments, useDeleteAssignment } from '@/features/assignments/api';
+import type { GetAssignmentDto } from '@/types/api.types';
 import { handleApiError } from '@/api/client';
 
 // --- Types ---
@@ -25,7 +26,7 @@ type Assignment = {
 };
 
 // --- Helpers ---
-const mapAssignmentToUI = (assignment: GetAllAssignmentsDto): Assignment => ({
+const mapAssignmentToUI = (assignment: GetAssignmentDto): Assignment => ({
     id: assignment.id.toString(),
     title: assignment.title,
     course: assignment.courseName ? `${assignment.courseName}`.trim() : `Course ${assignment.courseId}`,
