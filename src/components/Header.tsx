@@ -2,8 +2,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES, APP_NAME } from '@/lib/constants';
-import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Menu, X } from 'lucide-react';
+import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Menu, X, Sun, Moon } from 'lucide-react';
 import { api } from '@/api/client';
+import { useTheme } from '@/hooks/useTheme';
 
 interface NavLink {
     label: string;
@@ -14,6 +15,7 @@ export const Header = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { isDark, toggleTheme } = useTheme();
     const isGuest = !user;
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -191,6 +193,7 @@ export const Header = () => {
             return [
                 { label: 'Dashboard', path: ROUTES.INSTRUCTOR },
                 { label: 'My Courses', path: ROUTES.INSTRUCTOR_COURSES },
+                { label: 'Upcoming Events', path: ROUTES.INSTRUCTOR_UPCOMING_EVENTS },
             ];
         }
         if (user?.roles?.includes('Student')) {
@@ -240,7 +243,7 @@ export const Header = () => {
         // 1. ثبتنا ارتفاع الهيدر باستخدام h-[72px] وشلنا الـ py
         <header className="sticky top-0 z-50 w-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 shadow-sm transition-all duration-300 py-9 px-8 h-[72px]">
             {/* 2. خلينا الـ div الداخلي يأخد h-full */}
-            <div className="flex items-center justify-between w-full h-full max-w-[1920px] mx-auto">
+            <div className="relative flex items-center justify-between w-full h-full max-w-[1920px] mx-auto">
 
                 {/* Logo */}
                 <Link
@@ -257,7 +260,7 @@ export const Header = () => {
                 </Link>
 
                 {/* Desktop Navigation */}
-                <nav className="hidden lg:flex items-center gap-2 flex-1 justify-center px-8">
+                <nav className="hidden lg:flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
                     {!isGuest &&
                         navLinks.map((link) => {
                             const isActive = (location.pathname === link.path ||
@@ -331,6 +334,15 @@ export const Header = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Theme Toggle Button */}
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                className="relative p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            >
+                                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                            </button>
 
                             {/* Notification Bell */}
                             <div className="relative" ref={notificationsRef}>

@@ -33,7 +33,7 @@ export const CourseQuizzesTab = () => {
             .filter((q) => {
                 const s = String((q as any).quizStatus ?? (q as any).status ?? '').toLowerCase();
                 const statusOk = filterStatus === 'all' || s === filterStatus.toLowerCase();
-                const searchOk = !term || String(q.title ?? '').toLowerCase().includes(term);
+                const searchOk = !term || String(q.title ?? '').toLowerCase().startsWith(term);
                 return statusOk && searchOk;
             })
             .sort((a, b) => new Date((b as any).createdAt ?? 0).getTime() - new Date((a as any).createdAt ?? 0).getTime());

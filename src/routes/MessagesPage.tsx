@@ -47,8 +47,8 @@ export const MessagesPage = () => {
     const messages: Message[] = [];
 
     const filteredConversations = conversations.filter(conv =>
-        conv.participants.some(p => p.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        conv.course?.toLowerCase().includes(searchQuery.toLowerCase())
+        conv.participants.some(p => p.toLowerCase().startsWith(searchQuery.toLowerCase())) ||
+        conv.course?.toLowerCase().startsWith(searchQuery.toLowerCase())
     );
 
     const currentMessages = selectedConversation ?

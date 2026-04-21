@@ -47,8 +47,8 @@ export const NotificationsPage = () => {
         return notifications.filter(n => {
             const roleMatch = n.role === 'all' || n.role === userRole;
             const typeMatch = selectedType === 'all' || n.type === selectedType;
-            const searchMatch = n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                n.description.toLowerCase().includes(searchQuery.toLowerCase());
+            const searchMatch = n.title.toLowerCase().startsWith(searchQuery.toLowerCase()) ||
+                n.description.toLowerCase().startsWith(searchQuery.toLowerCase());
             return roleMatch && typeMatch && searchMatch;
         });
     }, [notifications, selectedType, searchQuery, userRole]);

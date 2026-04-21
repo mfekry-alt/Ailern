@@ -57,6 +57,7 @@ export const ROUTES = {
     INSTRUCTOR_ASSIGNMENTS: '/instructor/assignments',
     INSTRUCTOR_ASSIGNMENT_CREATE: '/instructor/assignments/create',
     INSTRUCTOR_ASSIGNMENT_EDIT: '/instructor/assignments/:id/edit',
+    INSTRUCTOR_UPCOMING_EVENTS: '/instructor/upcoming-events',
     INSTRUCTOR_SUBMISSIONS: '/instructor/assignments/:assignmentId/submissions',
     INSTRUCTOR_QUIZ_CREATE: '/courses/:courseId/quiz/create',
     INSTRUCTOR_QUIZ_QUESTIONS: '/instructor/quiz/questions',
@@ -94,9 +95,13 @@ export const QUERY_KEYS = {
     ASSIGNMENT: (id: number) => ['assignment', id],
     INSTRUCTOR_ASSIGNMENTS: ['instructor-assignments'],
     ASSIGNMENT_SUBMISSIONS: (assignmentId: number) => ['assignment-submissions', assignmentId],
+    SUBMISSION_FILES: (assignmentId: number, submissionId: number) => ['submission-files', assignmentId, submissionId],
     ATTEMPTS: (quizId: string) => ['attempts', quizId],
     ATTEMPT: (attemptId: string) => ['attempt', attemptId],
     ATTEMPT_GRADE: (attemptId: string) => ['attempt-grade', attemptId],
+    INSTRUCTOR_STATS: ['instructor-stats'],
+    UPCOMING_EVENTS: ['upcoming-events'],
+    INSTRUCTOR_MY_COURSES: ['instructor-my-courses'],
 } as const;
 
 export const STORAGE_KEYS = {

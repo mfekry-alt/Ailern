@@ -240,11 +240,15 @@ export interface EmailConfirmationParams {
 // Assignment Types
 // ============================================================================
 
+export interface AssignmentMutationResponse {
+    id: number;
+    presingedFileUrls?: string[];
+}
+
 export interface AssignmentCreateCommand {
     title: string;
     instructions: string;
     dueDate: string; // ISO 8601 date-time format
-    courseId: number;
     allowLateSubmission: boolean;
     isPublished: boolean;
     uploadedFileMetaData?: FileMetaData[];
@@ -269,9 +273,12 @@ export interface ConfirmAssignmentUploadCommand {
 }
 
 export interface FileMetaData {
+    id?: string;
+    fileId?: string;
     fileName: string;
     fileSize: number; // int64
     contentType: string;
+    fileUrl?: string;
 }
 
 // Response DTOs for Assignments
@@ -292,11 +299,13 @@ export interface GetAssignmentDto {
 
 export interface GetAssignmentSubmissionDto {
     id: number;
-    assignmentId: number;
+    assignmentId?: number;
     studentId: number;
-    studentName: string;
-    submittedAt: string;
-    files: FileMetaData[];
+    name: string;
+    email?: string;
+    submissionDate: string;
+    isLate?: boolean;
+    files?: FileMetaData[];
     grade?: number;
     feedback?: string;
 }
@@ -513,6 +522,7 @@ export interface SectionCreateCommand {
 }
 
 export interface SectionUpdateCommand {
+    id: string; // uuid
     title: string;
     sectionNumber: number; // int32
 }
@@ -527,4 +537,22 @@ export interface MaterialFilesReorderCommand {
 
 export interface RequestMaterialPresignedUrlCommand {
     files: FileMetaData[];
+}
+
+// ============================================================================
+// Instructor Dashboard Types
+// ============================================================================
+
+export interface InstructorStatsDto {
+    totalCourses: number;
+    totalStudents: number;
+    totalQuizzes: number;
+    totalAssignments: number;
+}
+
+export interface UpcomingEventDto {
+    title: string;
+    eventType: 'Assignment' | 'Quiz';
+    courseName: string;
+    availableUntil: string; // ISO 8601 date-time e.g. "2027-04-10T00:00:00"
 }

@@ -3,6 +3,7 @@
  * Handles all assignment-related API calls
  */
 
+import axios from 'axios';
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
 import type {
@@ -14,6 +15,7 @@ import type {
     GetAssignmentSubmissionDto,
     ApiResponse,
     PaginationParams,
+    AssignmentMutationResponse,
 } from '@/types/api.types';
 
 // Type aliases for convenience
@@ -22,10 +24,14 @@ export type GetAllAssignmentSubmissionsDto = GetAssignmentSubmissionDto;
 
 /**
  * Create a new assignment
+ * @param courseId - Course ID
  * @param command - Assignment details
  */
-export const createAssignment = async (command: AssignmentCreateCommand): Promise<void> => {
-    await api.post<ApiResponse>(ENDPOINTS.ASSIGNMENTS.CREATE, command);
+export const createAssignment = async (courseId: number, command: AssignmentCreateCommand): Promise<AssignmentMutationResponse> => {
+    const response = await api.post<ApiResponse<AssignmentMutationResponse>>(ENDPOINTS.ASSIGNMENTS.CREATE(courseId), command);
+    const payload = response.data;
+    // backend usually returns response inside payload.data
+    return (payload?.data ?? payload) as AssignmentMutationResponse;
 };
 
 /**
@@ -46,8 +52,29 @@ export const confirmAssignmentUpload = async (
 export const updateAssignment = async (
     id: number,
     command: AssignmentUpdateCommand
+): Promise<AssignmentMutationResponse> => {
+    const response = await api.put<ApiResponse<AssignmentMutationResponse>>(ENDPOINTS.ASSIGNMENTS.UPDATE(id), command);
+    const payload = response.data;
+    return (payload?.data ?? payload) as AssignmentMutationResponse;
+};
+
+/**
+ * Upload a raw file directly to Wasabi pre-signed URL with axios tracking
+ */
+export const uploadFileToPresignedUrlWithProgress = async (
+    url: string,
+    file: File,
+    onProgress: (progress: number) => void
 ): Promise<void> => {
-    await api.put<ApiResponse>(ENDPOINTS.ASSIGNMENTS.UPDATE(id), command);
+    await axios.put(url, file, {
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                onProgress(percentCompleted);
+            }
+        }
+    });
 };
 
 /**
@@ -75,7 +102,7 @@ export const getAssignment = async (id: number): Promise<GetAssignmentDto> => {
  */
 export const deleteAssignmentFile = async (
     assignmentId: number,
-    fileId: number
+    fileId: string
 ): Promise<void> => {
     await api.delete<ApiResponse>(ENDPOINTS.ASSIGNMENTS.DELETE_FILE(assignmentId, fileId));
 };
@@ -153,15 +180,27 @@ export const deleteSubmission = async (id: number): Promise<void> => {
 /**
  * Get all submissions for an assignment (instructor)
  * @param assignmentId - Assignment ID
+ * @param status - Optional status filter
  * @returns List of submissions
  */
 export const getSubmissionsByAssignment = async (
-    assignmentId: number
+    assignmentId: number,
+    status?: string
 ): Promise<GetAssignmentSubmissionDto[]> => {
-    const response = await api.get<ApiResponse<GetAssignmentSubmissionDto[]>>(
-        ENDPOINTS.SUBMISSIONS.GET_BY_ASSIGNMENT(assignmentId)
+    // Backend signature: GetAllSubmissionsForAssignment(int assignmentId, string status, int pageNo = 1, int pageSize = 10)
+    // Backend status constants: "all", "ontime", "late" (all lowercase)
+    const params: any = {
+        status: status || 'all',
+        pageNo: 1,
+        pageSize: 50,
+    };
+
+    const response = await api.get<any>(
+        ENDPOINTS.SUBMISSIONS.GET_BY_ASSIGNMENT(assignmentId),
+        { params }
     );
-    return response.data.data!;
+    
+    return response.data.data?.items ? response.data.data.items : response.data.data || [];
 };
 
 /**
@@ -217,17 +256,13 @@ export const getAssignmentSubmissions = async (
 };
 
 /**
- * Grade a submission
- * @param assignmentId - Assignment ID (not currently used but kept for future API compatibility)
+ * Review a submission
  * @param submissionId - Submission ID
- * @param grade - Grade details
+ * @param feedback - Review feedback
  */
-export const gradeSubmission = async (
-    assignmentId: number,
+export const reviewSubmission = async (
     submissionId: number,
-    grade: { score: number; feedback?: string }
+    feedback: string
 ): Promise<void> => {
-    // This endpoint doesn't exist in the current API
-    // This is a placeholder for future implementation
-    console.warn('gradeSubmission not implemented in API');
+    await api.put<ApiResponse>(ENDPOINTS.SUBMISSIONS.REVIEW(submissionId), { feedback });
 };

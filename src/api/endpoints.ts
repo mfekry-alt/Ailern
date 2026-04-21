@@ -1,5 +1,3 @@
-import { updateAssignment } from "./services/assignment.service";
-
 export const ENDPOINTS = {
     // Auth endpoints (based on API: /api/Auth/*)
     AUTH: {
@@ -48,12 +46,12 @@ export const ENDPOINTS = {
 
     // Assignments endpoints (based on API: /api/Assignments/* and /api/Courses/*/Assignments)
     ASSIGNMENTS: {
-        CREATE: '/Assignments',
+        CREATE: (courseId: number) => `/Courses/${courseId}/Assignments`,
         UPDATE: (id: number) => `/Assignments/${id}`,
         DELETE: (id: number) => `/Assignments/${id}`,
         GET: (id: number) => `/Assignments/${id}`,
         CONFIRM_UPLOAD: '/Assignments/confirm-upload',
-        DELETE_FILE: (assignmentId: number, fileId: number) => `/Assignments/${assignmentId}/files/${fileId}`,
+        DELETE_FILE: (assignmentId: number, fileId: string) => `/Assignments/${assignmentId}/files/${fileId}`,
         COURSE_ASSIGNMENTS_INSTRUCTOR: (courseId: number) => `/Courses/${courseId}/instructors/Assignments`,
         COURSE_ASSIGNMENTS_STUDENT: (courseId: number) => `/Courses/${courseId}/students/Assignments`,
     },
@@ -65,6 +63,7 @@ export const ENDPOINTS = {
         DELETE: (id: number) => `/Assignments/Submissions/${id}`,
         GET_BY_ASSIGNMENT: (assignmentId: number) => `/Assignments/${assignmentId}/Submissions`,
         GET_FILES: (assignmentId: number, submissionId: number) => `/Assignments/${assignmentId}/Submissions/${submissionId}/files`,
+        REVIEW: (submissionId: number) => `/Assignments/Submissions/${submissionId}`,
     },
 
     // Quizzes endpoints
@@ -102,5 +101,12 @@ export const ENDPOINTS = {
         GET_RESULT: (attemptId: string) => `/Attempts/${attemptId}/result`, // GET
         GET_STUDENT_ANSWERS: (attemptId: string) => `/Attempts/${attemptId}/student-answers`, // GET
         GRADE: (attemptId: string) => `/Attempts/${attemptId}/grade`, // PUT
+    },
+
+    // Instructor Dashboard endpoints
+    INSTRUCTOR: {
+        STATS: '/Dashboard/instructor',
+        UPCOMING_EVENTS: '/Dashboard/UpcomingEvents',
+        MY_COURSES: '/Users/instructor/my-courses',
     },
 } as const;

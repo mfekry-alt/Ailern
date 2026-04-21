@@ -162,7 +162,7 @@ export const useQuizAttempt = (): UseQuizAttemptReturn => {
             // Fetch questions for this attempt
             setIsLoadingQuestions(true);
             const questionsData = await attemptsService.getAttemptQuestions(resolvedAttemptId);
-            setQuestions(questionsData as Question[]);
+            setQuestions(questionsData as unknown as Question[]);
             setIsLoadingQuestions(false);
 
             // Initialize answers array
