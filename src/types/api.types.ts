@@ -718,3 +718,26 @@ export interface UpcomingEventDto {
     courseName: string;
     availableUntil: string; // ISO 8601 date-time e.g. "2027-04-10T00:00:00"
 }
+// Admin Dashboard Types
+// ============================================================================
+export interface TopCourseDto {
+    courseName: string;
+    instructorName: string;
+    totalStudents: number;
+}
+
+export interface UserGrowthMonthDto {
+    month: string;
+    studentsCount: number;
+    instructorsCount: number;
+}
+
+export interface AdminDashboardData {
+    totalStudents: number;
+    totalInstructors: number;
+    totalAdmins: number;
+    totalCourses: number;
+    totalEnrollments: number;
+    topCourses: TopCourseDto[];
+    userGrowthPerMonths: UserGrowthMonthDto[];
+}
