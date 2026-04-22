@@ -112,8 +112,10 @@ export const ENDPOINTS = {
         STATS: '/Dashboard/instructor',
         UPCOMING_EVENTS: '/Dashboard/UpcomingEvents',
         MY_COURSES: '/Users/instructor/my-courses',
+    },
     // Dashboard endpoints
     DASHBOARD: {
         QUIZ: (quizId: string) => `/Dashboard/quiz/${quizId}`,
+        ADMIN: '/Dashboard/admin',
     },
 } as const;
