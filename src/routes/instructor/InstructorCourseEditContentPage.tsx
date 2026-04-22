@@ -6,6 +6,8 @@ import { useCourseQuizzes, useDeleteQuiz } from '@/features/quizzes/api';
 import { useCourse } from '@/features/courses/api';
 import { QUERY_KEYS } from '@/lib/constants';
 import { quizService } from '@/api/services';
+import { DeleteQuizDialog } from '@/components/ui/DeleteQuizDialog';
+import { QuizStatusSelect } from '@/components/QuizStatusSelect';
 import {
     Plus, Eye, Edit, Trash2, Upload, Filter, FileText, Video,
     Presentation, HelpCircle, Users, Calendar, BookOpen, CheckCircle,
@@ -108,6 +110,7 @@ export const InstructorCourseEditContentPage = () => {
     const [courseAssignments] = useState(initialAssignments);
     const { data: courseQuizzes = [], isLoading: quizzesLoading } = useCourseQuizzes(quizzesCourseId);
     const deleteQuizMutation = useDeleteQuiz(quizzesCourseId);
+    const [quizToDelete, setQuizToDelete] = useState<{ id: string; title: string } | null>(null);
     const [students] = useState(initialStudents);
     const [enrollmentRequests, setEnrollmentRequests] = useState(initialEnrollmentRequests);
 
@@ -609,11 +612,27 @@ export const InstructorCourseEditContentPage = () => {
 
                                 return (
                                     <div key={quiz.id} className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col group hover:shadow-md hover:border-purple-300 dark:hover:border-slate-500 transition-all">
-                                        <div className="flex justify-between items-start mb-3">
-                                            {getStatusBadge(String((quiz as any).quizStatus ?? (quiz as any).status ?? 'Draft'))}
-                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                        <div className="flex justify-between items-start mb-3 gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                {String((quiz as any).quizStatus ?? (quiz as any).status ?? '') === 'Scheduled' && (
+                                                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Scheduled</p>
+                                                )}
+                                                <QuizStatusSelect
+                                                    quizId={quiz.id}
+                                                    courseId={quizzesCourseId}
+                                                    status={String((quiz as any).quizStatus ?? (quiz as any).status ?? 'Draft')}
+                                                />
+                                            </div>
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0">
                                                 <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
-                                                <button onClick={() => { if (window.confirm('Delete this quiz permanently?')) deleteQuizMutation.mutate(quiz.id); }} className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setQuizToDelete({ id: quiz.id, title: quiz.title })}
+                                                    className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors"
+                                                    title="Delete Quiz"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         </div>
                                         <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4 line-clamp-2">{quiz.title}</h4>
@@ -901,6 +920,19 @@ export const InstructorCourseEditContentPage = () => {
                 {renderContent()}
 
             </div>
+
+            <DeleteQuizDialog
+                open={quizToDelete !== null}
+                quizTitle={quizToDelete?.title ?? ''}
+                onClose={() => setQuizToDelete(null)}
+                onConfirm={() => {
+                    if (!quizToDelete) return;
+                    deleteQuizMutation.mutate(quizToDelete.id, {
+                        onSuccess: () => setQuizToDelete(null),
+                    });
+                }}
+                isPending={deleteQuizMutation.isPending}
+            />
         </div>
     );
 };

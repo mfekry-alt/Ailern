@@ -2,20 +2,13 @@ import { useMemo, useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useCourseQuizzes, useDeleteQuiz } from '@/features/quizzes/api';
 import { ROUTES } from '@/lib/constants';
-import { Plus, HelpCircle, Edit, Trash2, Filter, Loader2, Clock, Calendar, Repeat, ListChecks, BarChart2 } from 'lucide-react';
+import { formatIsoDateTimeLocal } from '@/components/QuizForm';
+import { DeleteQuizDialog } from '@/components/ui/DeleteQuizDialog';
+import { QuizStatusSelect } from '@/components/QuizStatusSelect';
+import { Plus, HelpCircle, Edit, Trash2, Filter, Loader2, Clock, Calendar, Repeat, ListChecks, BarChart2, ClipboardCheck } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Ctx { courseId: string; numericCourseId: number | null }
-
-const toLocal = (iso?: string) => {
-    if (!iso) return '—';
-    try {
-        const normalized = iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z';
-        return new Date(normalized).toLocaleString(undefined, {
-            year: 'numeric', month: 'short', day: 'numeric',
-            hour: '2-digit', minute: '2-digit',
-        });
-    } catch { return iso; }
-};
 
 export const CourseQuizzesTab = () => {
     const { courseId } = useOutletContext<Ctx>();
@@ -23,8 +16,9 @@ export const CourseQuizzesTab = () => {
     const { data: courseQuizzes = [], isLoading } = useCourseQuizzes(courseId);
     const deleteQuizMutation = useDeleteQuiz(courseId);
 
-    const [filterStatus, setFilterStatus] = useState<'all' | 'Published' | 'Draft' | 'Scheduled'>('all');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'Published' | 'Draft'>('all');
     const [search, setSearch] = useState('');
+    const [quizToDelete, setQuizToDelete] = useState<{ id: string; title: string } | null>(null);
 
     const filteredQuizzes = useMemo(() => {
         const arr = Array.isArray(courseQuizzes) ? courseQuizzes : [];
@@ -73,7 +67,6 @@ export const CourseQuizzesTab = () => {
                         <option value="all">All Statuses</option>
                         <option value="Published">Published</option>
                         <option value="Draft">Draft</option>
-                        <option value="Scheduled">Scheduled</option>
                     </select>
                 </div>
                 <div className="flex-[2]">
@@ -94,9 +87,11 @@ export const CourseQuizzesTab = () => {
                         return (
                             <div key={quiz.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl flex flex-col group hover:shadow-lg hover:border-purple-300 dark:hover:border-slate-500 transition-all overflow-hidden">
                                 {/* Card header */}
-                                <div className="p-5 pb-0 flex justify-between items-start">
-                                    {getStatusBadge(status)}
-                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                <div className="p-5 pb-0 flex justify-between items-start gap-2">
+                                    <div className="min-w-0 flex-1">
+                                        <QuizStatusSelect quizId={quiz.id} courseId={courseId} status={status} />
+                                    </div>
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0">
                                         {/* Analytics Dashboard icon — subtle, top-right */}
                                         <button
                                             onClick={() => navigate(`/quiz-dashboard/${quiz.id}`)}
@@ -105,13 +100,25 @@ export const CourseQuizzesTab = () => {
                                         >
                                             <BarChart2 className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-[#21A9FF] hover:bg-[#21A9FF]/10 rounded-lg transition-colors" title="Edit Quiz">
+                                        <button
+                                            onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS.replace(':quizId', quiz.id.toString()))}
+                                            className="p-1.5 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded-lg transition-colors"
+                                            title="View Submissions"
+                                        >
+                                            <ClipboardCheck className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors" title="Edit Quiz">
                                             <Edit className="w-4 h-4" />
                                         </button>
                                         <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-[#21A9FF] hover:bg-[#21A9FF]/10 rounded-lg transition-colors" title="Manage Questions">
                                             <ListChecks className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => { if (window.confirm('Delete this quiz permanently?')) deleteQuizMutation.mutate(quiz.id); }} className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors" title="Delete Quiz">
+                                        <button
+                                            type="button"
+                                            onClick={() => setQuizToDelete({ id: quiz.id, title: quiz.title })}
+                                            className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors"
+                                            title="Delete Quiz"
+                                        >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -127,12 +134,12 @@ export const CourseQuizzesTab = () => {
                                         <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-400">
                                             <Calendar className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                             <span className="font-semibold">From:</span>
-                                            <span className="truncate">{toLocal(quiz.availableFrom)}</span>
+                                            <span className="truncate">{formatIsoDateTimeLocal(quiz.availableFrom)}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-400">
                                             <Clock className="w-3.5 h-3.5 text-red-500 shrink-0" />
                                             <span className="font-semibold">Until:</span>
-                                            <span className="truncate">{toLocal(quiz.availableUntil)}</span>
+                                            <span className="truncate">{formatIsoDateTimeLocal(quiz.availableUntil)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -149,6 +156,26 @@ export const CourseQuizzesTab = () => {
                     })}
                 </div>
             )}
+
+            <DeleteQuizDialog
+                open={quizToDelete !== null}
+                quizTitle={quizToDelete?.title ?? ''}
+                onClose={() => setQuizToDelete(null)}
+                onConfirm={() => {
+                    if (!quizToDelete) return;
+                    const deletingQuiz = quizToDelete;
+                    setQuizToDelete(null);
+                    deleteQuizMutation.mutate(deletingQuiz.id, {
+                        onSuccess: () => {
+                            toast.success(`"${deletingQuiz.title || 'Quiz'}" deleted successfully.`);
+                        },
+                        onError: () => {
+                            toast.error(`Could not delete "${deletingQuiz.title || 'quiz'}". Please try again.`);
+                        },
+                    });
+                }}
+                isPending={deleteQuizMutation.isPending}
+            />
         </div>
     );
 };

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/lib/constants';
 import { quizService, attemptsService } from '@/api/services';
-import type { QuizRequest, QuestionUpsertRequest } from '@/types/api.types';
+import type { CreateQuizBody, QuestionUpsertRequest, UpdateQuizBody } from '@/types/api.types';
 import type { GradeSubmissionPayload } from '@/api/services/attempts.service';
 
 /**
@@ -10,7 +10,7 @@ import type { GradeSubmissionPayload } from '@/api/services/attempts.service';
 export const useCourseQuizzes = (courseId: string) =>
     useQuery({
         queryKey: QUERY_KEYS.QUIZZES(courseId),
-        queryFn: () => quizService.getCourseQuizzes(courseId),
+        queryFn: () => quizService.getCourseQuizzes(courseId, 1, 100),
         enabled: !!courseId,
     });
 
@@ -30,7 +30,7 @@ export const useQuiz = (id: string) =>
 export const useCreateQuiz = (courseId: string) => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (cmd: QuizRequest) => quizService.createQuiz(cmd),
+        mutationFn: (cmd: CreateQuizBody) => quizService.createQuiz(courseId, cmd),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseId) });
         },
@@ -43,7 +43,7 @@ export const useCreateQuiz = (courseId: string) => {
 export const useUpdateQuiz = (courseId: string) => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, cmd }: { id: string; cmd: Partial<QuizRequest> }) =>
+        mutationFn: ({ id, cmd }: { id: string; cmd: UpdateQuizBody }) =>
             quizService.updateQuiz(id, cmd),
         onSuccess: (_data, vars) => {
             qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseId) });
@@ -61,6 +61,21 @@ export const useDeleteQuiz = (courseId: string) => {
         mutationFn: (id: string) => quizService.deleteQuiz(id),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseId) });
+        },
+    });
+};
+
+/**
+ * PUT /Quizzes/{id}/update-status — Draft | Published
+ */
+export const useUpdateQuizStatus = (courseId: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ quizId, status }: { quizId: string; status: 'Draft' | 'Published' }) =>
+            quizService.updateQuizStatus(quizId, status),
+        onSuccess: (_data, vars) => {
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseId) });
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZ(vars.quizId) });
         },
     });
 };
@@ -92,7 +107,7 @@ export const useQuizSubmissions = (
     pageSize: number = 10
 ) =>
     useQuery({
-        queryKey: QUERY_KEYS.QUIZ_SUBMISSIONS(quizId, status),
+        queryKey: [...QUERY_KEYS.QUIZ_SUBMISSIONS(quizId, status), pageNo, pageSize],
         queryFn: () => quizService.getQuizSubmissions(quizId, status, pageNo, pageSize),
         enabled: !!quizId,
     });

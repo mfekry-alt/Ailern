@@ -1,5 +1,6 @@
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Ailern';
-export const API_URL = 'https://localhost:7080/api';
+export const API_URL =
+    import.meta.env.VITE_API_URL ?? 'https://ailern.runasp.net/';
 
 export const ROLES = {
     ADMIN: 'Admin',
@@ -67,6 +68,8 @@ export const ROUTES = {
     INSTRUCTOR_QUIZ_UPDATE: '/instructor/quiz/:id/update',
     INSTRUCTOR_QUIZ_QUESTIONS_EDIT: '/instructor/quiz/:id/questions/edit',
     INSTRUCTOR_QUIZ_DASHBOARD: '/quiz-dashboard/:quizId',
+    INSTRUCTOR_QUIZ_SUBMISSIONS: '/instructor/quizzes/:quizId/submissions',
+    INSTRUCTOR_QUIZ_SUBMISSION_REVIEW: '/instructor/quizzes/:quizId/submissions/:attemptId',
 
     // Admin routes
     ADMIN: '/admin',

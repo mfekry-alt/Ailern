@@ -332,14 +332,31 @@ export interface GetMySubmissionDto {
 }
 
 // ============================================================================
-// Generic API Response Types
+// Generic API Response Types (global envelope)
 // ============================================================================
 
-export interface ApiResponse<T = any> {
-    success: boolean;
-    statusCode: number;
-    message: string;
-    errors?: any;
+/** Success envelope — `data` holds the endpoint payload (may be null for void ops). */
+export interface ApiSuccess<T> {
+    success: true;
+    message: string | null;
+    data: T;
+    statusCode: 200;
+}
+
+export type ApiFailure =
+    | { success: false; message: string | null; errors: Record<string, string[]>; statusCode: 400 }
+    | { success: false; message: string | null; statusCode: 400 }
+    | { success: false; message: string | null; statusCode: 404 | 401 | 403 | 409 | 500 };
+
+/** Axios `response.data` shape — narrow with `if (data.success)` before using `data.data`. */
+export type ApiResponse<T = unknown> = ApiSuccess<T> | ApiFailure;
+
+/** Loose envelope for legacy callers / interceptors (optional fields). */
+export interface ApiEnvelope<T = unknown> {
+    success?: boolean;
+    statusCode?: number;
+    message?: string | null;
+    errors?: Record<string, string[]> | null;
     data?: T;
 }
 
@@ -379,15 +396,44 @@ export const UserRole = {
 export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 // ============================================================================
-// Quiz Types (Updated to support attemptTimeLimit & exact JSON payload)
+// Quiz Types (API contract)
 // ============================================================================
 
-export type QuizStatus = 'Draft' | 'Published' | 'Scheduled';
+/** Server JSON enums */
+export type QuizStatus = 'Draft' | 'Published';
+/** UI-only scheduling mode (not sent as API enum) */
+export type QuizFormStatus = QuizStatus | 'Scheduled';
 export type QuestionType = 'MCQ' | 'TrueFalse' | 'Written';
 
-// --- Request DTOs (For Creation/Updating) ---
+// --- Request bodies (route supplies courseId / quizId where applicable) ---
+
+export interface CreateQuizBody {
+    title: string;
+    description?: string | null;
+    availableFrom: string;
+    availableUntil: string;
+    attemptTimeLimit: number;
+    maximumAttempts: number;
+    showResultOnClose: boolean;
+    shuffleQuestions: boolean;
+    shuffleOptions: boolean;
+}
+
+export interface UpdateQuizBody {
+    title: string;
+    description?: string | null;
+    availableFrom: string;
+    availableUntil: string;
+    attemptTimeLimit: number;
+    maximumAttempts: number;
+    showResultOnClose: boolean;
+    shuffleQuestions: boolean;
+    shuffleOptions: boolean;
+}
+
+// --- Request DTOs (questions upsert) ---
 export interface OptionRequest {
-    optionId?: string;     // uuid — omit for new, include for updates
+    optionId?: string | null;
     optionText: string;
     isCorrect: boolean;
 }
@@ -396,75 +442,93 @@ export interface OptionRequest {
 export type QuizOptionRequest = OptionRequest;
 
 export interface QuestionUpsertRequest {
-    id?: string;           // uuid — omit for new, include for updates
+    id?: string | null;
     questionText: string;
     questionType: QuestionType;
-    mark: number;          // double
-    instructions?: string;
-    explanation?: string;
-    options?: OptionRequest[];
+    mark: number;
+    instructions?: string | null;
+    explanation?: string | null;
+    options: OptionRequest[];
 }
 
 /** @deprecated Use QuestionUpsertRequest instead */
 export type QuestionRequest = QuestionUpsertRequest;
 
-export interface QuizRequest {
+/**
+ * Legacy combined shape (course + status) used by some forms.
+ * Prefer `CreateQuizBody` + `POST /Courses/{courseId}/quizzes` or `UpdateQuizBody` for updates.
+ */
+export interface QuizRequest extends CreateQuizBody {
     courseId: number;
-    title: string;
-    description?: string;
-    availableFrom: string;
-    availableUntil: string;
-    maximumAttempts: number;
-    attemptTimeLimit: number;
-    showResultOnClose: boolean;
-    shuffleQuestions: boolean;
-    shuffleOptions: boolean;
-    status: QuizStatus;
+    /** UI may use Draft | Published | Scheduled; API list/detail use Draft | Published only */
+    status: QuizFormStatus;
     publishedDate?: string | null;
 }
 
-/** @deprecated Use QuizRequest instead */
+/** @deprecated Use CreateQuizBody / UpdateQuizBody */
 export type CreateQuizCommand = QuizRequest;
 
-// --- Response DTOs (For Fetching) ---
-export interface OptionDto {
+// --- List row (course quizzes pagination) ---
+export interface GetAllQuizDto {
     id: string;
+    title: string;
+    description?: string | null;
+    availableFrom: string;
+    availableUntil: string;
+    status: QuizStatus;
+    maximumAttempts: number;
+    showResultOnClose: boolean;
+    attemptTimeLimit: number;
+    createdAt: string;
+    publishedAt?: string | null;
+    questionsCount: number;
+    studentAttemptCount?: number | null;
+    hasActiveAttempt: boolean;
+}
+
+// --- Response DTOs (single quiz) ---
+export interface OptionDto {
+    optionNumber: number;
     optionText: string;
     isCorrect: boolean;
+    /** Present on some mappings; prefer optionNumber when ordering */
+    id?: string;
 }
 
 export interface QuestionDto {
-    id: string;
+    id?: string | null;
     questionText: string;
     questionType: QuestionType;
     mark: number;
-    instructions?: string;
-    explanation?: string;
-    options: OptionDto[];
+    instructions?: string | null;
+    explanation?: string | null;
+    order: number;
+    options?: OptionDto[] | null;
 }
 
 export interface GetQuizDto {
     id: string;
+    courseId: number;
     title: string;
-    description?: string;
-    courseId: string | number;
-    courseName?: string;
-    maximumAttempts: number;
-    attemptTimeLimit: number;  // Added Duration Field
-    status: QuizStatus;
+    description: string;
     availableFrom: string;
     availableUntil: string;
-    publishedDate?: string;
+    maximumAttempts: number;
+    totalPoints: number;
     publishedAt?: string | null;
-    submissionsCount?: number;
+    status?: QuizStatus | null;
+    showResultOnClose?: boolean | null;
+    shuffleQuestions?: boolean | null;
+    shuffleOptions?: boolean | null;
+    attemptTimeLimit?: number;
+    createdAt?: string | null;
+    questions?: QuestionDto[] | null;
+    /** Client / older payloads */
+    courseName?: string;
+    publishedDate?: string;
     questionsCount?: number;
     studentAttemptCount?: number;
     hasActiveAttempt?: boolean;
-    createdAt: string;
-    showResultOnClose?: boolean;
-    shuffleQuestions?: boolean;
-    shuffleOptions?: boolean;
-    questions?: QuestionDto[]; // Optional: included when fetching a single quiz
 }
 
 // ============================================================================
@@ -473,44 +537,47 @@ export interface GetQuizDto {
 
 export type AttemptStatus = 'InProgress' | 'Submitted' | 'Reviewed';
 
-export interface QuizSubmission {
+export interface GetSubmissionsByQuizIdDto {
     id: string;
-    attemptId: string;
-    studentId: string;
-    studentName?: string;
-    studentEmail?: string;
-    quizId: string;
-    quizTitle?: string;
+    studentId: number;
+    studentName: string;
+    email: string;
+    timeSpent?: number | null;
+    startAt: string;
+    submittedAt?: string | null;
+    score?: number | null;
+    attemptNumber: number;
     status: AttemptStatus;
-    submittedAt?: string;
-    score?: number;
+}
+
+/** @deprecated Prefer GetSubmissionsByQuizIdDto */
+export interface QuizSubmission extends GetSubmissionsByQuizIdDto {
+    attemptId?: string;
+    studentEmail?: string;
+    quizId?: string;
+    quizTitle?: string;
     totalScore?: number;
     percentage?: number;
-    timeSpent?: number;
-    attemptNumber?: number;
 }
 
-export interface QuizSubmissionsResult extends PaginationResult<QuizSubmission> {
-    totalResults: number;
-    pagesCount: number;
-    start: number;
-    end: number;
-    items: QuizSubmission[];
-}
+export type QuizSubmissionsResult = PaginationResult<GetSubmissionsByQuizIdDto>;
 
 export interface GradeSubmissionDto {
-    questionId: string;    // uuid
-    score: number | null;  // double, nullable
-    feedback?: string;
+    questionId: string;
+    score?: number | null;
+    feedback?: string | null;
 }
 
 /** @deprecated Use GradeSubmissionDto instead */
 export type GradeQuestionEntry = GradeSubmissionDto;
 
-export interface GradeSubmissionCommand {
+export interface GradeSubmissionBody {
     grades: GradeSubmissionDto[];
     status: AttemptStatus;
 }
+
+/** @deprecated Use GradeSubmissionBody */
+export type GradeSubmissionCommand = GradeSubmissionBody;
 
 export interface GradeSubmissionResult {
     attemptId: string;
@@ -523,13 +590,90 @@ export interface GradeSubmissionResult {
 }
 
 // ============================================================================
-// Quiz Attempt Types
+// Quiz Attempt Types (student + result)
 // ============================================================================
 
+export interface AttemptDto {
+    attemptId: string;
+    attemptEndDate: string;
+}
+
+export interface AttemptOptionDto {
+    option: string;
+    optionId: string;
+    order: number;
+}
+
+export interface AttemptQuestionDto {
+    id: string;
+    question: string;
+    type: QuestionType;
+    mark: number;
+    instructions?: string | null;
+    options?: AttemptOptionDto[] | null;
+    order: number;
+    writtenAnswer?: string | null;
+    selectedOptionId?: string | null;
+    shuffledOptionIds: string[];
+}
+
 export interface SaveAttemptAnswerRequest {
-    questionId: string;    // uuid
-    writtenAnswer?: string;
-    optionId?: string;     // uuid
+    questionId: string;
+    writtenAnswer?: string | null;
+    optionId?: string | null;
+}
+
+export interface AttemptMetaData {
+    id: string;
+    timeSpent?: number | null;
+    startAt: string;
+    submittedAt?: string | null;
+    score?: number | null;
+    attemptNumber: number;
+    status: AttemptStatus;
+    attemptEndTime: string;
+}
+
+export interface GetAttemptsByQuizIdDto {
+    quizId: string;
+    quizTitle: string;
+    totalPoints: number;
+    availableFrom: string;
+    availableUntil: string;
+    showResultOnClose: boolean;
+    attempts: AttemptMetaData[];
+}
+
+export interface OptionAnswerDto {
+    order: number;
+    optionText: string;
+    isCorrect: boolean;
+    isSelected: boolean;
+}
+
+export interface AnswerDto {
+    questionId?: string;
+    questionText: string;
+    type: QuestionType;
+    answer?: string | null;
+    order: number;
+    score: number;
+    maxScore: number;
+    feedback: string;
+    instructions?: string | null;
+    explanation?: string | null;
+    options?: OptionAnswerDto[] | null;
+}
+
+export interface AttemptResultDto {
+    attemptId: string;
+    status: AttemptStatus;
+    quizTitle: string;
+    quizId: string;
+    answers: AnswerDto[];
+    timeSpent: number;
+    totalScore: number;
+    score: number;
 }
 
 // ============================================================================
