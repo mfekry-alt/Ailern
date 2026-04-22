@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useState, useRef, useMemo, useEffect } from 'react';
+import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sectionService } from '@/api/services';
 import type { SectionDto, SectionFileDto } from '@/api/services/section.service';
@@ -35,10 +35,26 @@ export const CourseSectionsTab = () => {
         onError: () => toast.error('Failed to delete section'),
     });
 
+    const [searchParams, setSearchParams] = useSearchParams();
     const [search, setSearch] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editModalSection, setEditModalSection] = useState<SectionDto | null>(null);
     const [filesModalSection, setFilesModalSection] = useState<SectionDto | null>(null);
+
+    useEffect(() => {
+        if (searchParams.get('create') === 'true') {
+            setIsCreateModalOpen(true);
+        }
+    }, [searchParams]);
+
+    const handleCloseCreateModal = () => {
+        setIsCreateModalOpen(false);
+        if (searchParams.get('create')) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete('create');
+            setSearchParams(nextParams, { replace: true });
+        }
+    };
 
     const filteredSections = useMemo(() => {
         const term = search.trim().toLowerCase();
@@ -50,7 +66,7 @@ export const CourseSectionsTab = () => {
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-3" />
+                <Loader2 className="w-8 h-8 text-[#21A9FF] animate-spin mb-3" />
                 <p className="text-gray-500 dark:text-slate-400 font-medium">Loading sections...</p>
             </div>
         );
@@ -61,9 +77,9 @@ export const CourseSectionsTab = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Layers className="w-6 h-6 text-blue-600" /> Sections
+                    <Layers className="w-6 h-6 text-[#21A9FF]" /> Sections
                 </h2>
-                <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-blue-600/25 active:scale-95">
+                <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-[#21A9FF]/25 active:scale-95">
                     <Plus className="w-4 h-4" /> Create Section
                 </button>
             </div>
@@ -72,7 +88,7 @@ export const CourseSectionsTab = () => {
             <div className="relative z-30 bg-white dark:bg-slate-800/40 p-3 rounded-2xl border border-gray-200 dark:border-slate-700/50 flex shadow-sm">
                 <div className="flex-1 w-full relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search sections..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white font-semibold transition-all" />
+                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search sections..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white font-semibold transition-all" />
                 </div>
             </div>
 
@@ -89,7 +105,7 @@ export const CourseSectionsTab = () => {
                         <div key={section.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl flex flex-col group hover:shadow-lg hover:border-blue-300 dark:hover:border-slate-500 transition-all overflow-hidden">
                             {/* Card Header (Badge) */}
                             <div className="p-5 pb-0 flex justify-between items-start">
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-[#21A9FF]/10 border border-[#21A9FF]/20 text-[#21A9FF] dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400">
                                     SECTION {section.sectionNumber}
                                 </span>
                             </div>
@@ -105,7 +121,7 @@ export const CourseSectionsTab = () => {
 
                             {/* Card Footer */}
                             <div className="border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-900/40 grid grid-cols-3 divide-x divide-gray-100 dark:divide-slate-700/50 mt-auto">
-                                <button onClick={() => setEditModalSection(section)} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all" title="Edit Section">
+                                <button onClick={() => setEditModalSection(section)} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] hover:bg-[#21A9FF]/10 transition-all" title="Edit Section">
                                     <Edit className="w-4 h-4" />
                                     <span className="text-[10px] font-bold leading-none tracking-wide uppercase">Edit</span>
                                 </button>
@@ -127,7 +143,7 @@ export const CourseSectionsTab = () => {
             {isCreateModalOpen && (
                 <CreateSectionModal
                     numericCourseId={numericCourseId!}
-                    onClose={() => setIsCreateModalOpen(false)}
+                    onClose={handleCloseCreateModal}
                     qk={qk}
                     sections={sections}
                 />
@@ -205,11 +221,11 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Name</label>
-                        <input value={title} onChange={e => setTitle(e.target.value)} disabled={isSubmitting} placeholder="e.g. Introduction" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white" />
+                        <input value={title} onChange={e => setTitle(e.target.value)} disabled={isSubmitting} placeholder="e.g. Introduction" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Number</label>
-                        <input value={newNumber} onChange={e => setNewNumber(e.target.value)} type="number" min={1} disabled={isSubmitting} placeholder="e.g. 1" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white" />
+                        <input value={newNumber} onChange={e => setNewNumber(e.target.value)} type="number" min={1} disabled={isSubmitting} placeholder="e.g. 1" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Include Files (Optional)</label>
@@ -227,7 +243,7 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
                                     <div key={i} className="flex items-center justify-between p-3.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all">
                                         <div className="flex items-center gap-3.5 flex-1 truncate pr-2">
                                             <div className="w-11 h-11 bg-gray-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700/50">
-                                                <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                <FileText className="w-5 h-5 text-[#21A9FF]" />
                                             </div>
                                             <div className="truncate pr-2">
                                                 <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{file.name}</p>
@@ -254,7 +270,7 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
 
                 <div className="mt-8 flex gap-3 justify-end">
                     <button onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition">Cancel</button>
-                    <button onClick={handleCreate} disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all shadow disabled:opacity-50">
+                    <button onClick={handleCreate} disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm rounded-xl transition-all shadow disabled:opacity-50">
                         {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                         Save Section
                     </button>
@@ -328,11 +344,11 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Name</label>
-                        <input value={title} onChange={e => setTitle(e.target.value)} disabled={isSubmitting} placeholder="Section name" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white" />
+                        <input value={title} onChange={e => setTitle(e.target.value)} disabled={isSubmitting} placeholder="Section name" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Number</label>
-                        <input value={editNumber} onChange={e => setEditNumber(e.target.value)} type="number" min={1} disabled={isSubmitting} placeholder="Section #" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white" />
+                        <input value={editNumber} onChange={e => setEditNumber(e.target.value)} type="number" min={1} disabled={isSubmitting} placeholder="Section #" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
                     </div>
 
                     {existingFiles.length > 0 && (
@@ -342,11 +358,11 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                                 {existingFiles.map((file) => (
                                     <div key={file.id} className="flex items-center justify-between p-3.5 bg-blue-50/20 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-500/20 rounded-2xl shadow-sm hover:shadow-md transition-all">
                                         <div className="flex items-center gap-3.5 flex-1 truncate pr-2">
-                                            <div className="w-11 h-11 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-blue-100/50 dark:border-blue-500/10">
-                                                <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                            <div className="w-11 h-11 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-[#21A9FF]/20 dark:border-blue-500/10">
+                                                <FileText className="w-5 h-5 text-[#21A9FF]" />
                                             </div>
                                                 <div className="truncate">
-                                                    <p className="text-sm font-bold text-blue-600 dark:text-blue-400 truncate">{file.fileName}</p>
+                                                    <p className="text-sm font-bold text-[#21A9FF] truncate">{file.fileName}</p>
                                                     <div className="flex flex-col gap-1 mt-0.5">
                                                         <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-lg w-fit uppercase tracking-tighter">Previously Uploaded</span>
                                                     </div>
@@ -377,7 +393,7 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                                         <div key={i} className="flex items-center justify-between p-3.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all">
                                             <div className="flex items-center gap-3.5 flex-1 truncate pr-2">
                                                 <div className="w-11 h-11 bg-gray-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700/50">
-                                                    <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                    <FileText className="w-5 h-5 text-[#21A9FF]" />
                                                 </div>
                                                 <div className="truncate pr-2">
                                                     <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{file.name}</p>
@@ -404,7 +420,7 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
 
                 <div className="mt-8 flex gap-3 justify-end">
                     <button onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition">Cancel</button>
-                    <button onClick={handleUpdate} disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition shadow disabled:opacity-50">
+                    <button onClick={handleUpdate} disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 disabled:opacity-50">
                         {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Save Changes
                     </button>
                 </div>
@@ -488,8 +504,8 @@ function SectionFilesModal({ section, onClose, qk }: { section: SectionDto; onCl
                                     className={`flex items-center justify-between p-3 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-slate-700/30 rounded-2xl shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all cursor-grab active:cursor-grabbing ${dragIdx === idx ? 'opacity-50' : ''}`}
                                 >
                                     <div className="flex items-center gap-4 flex-1 truncate pr-2">
-                                        <GripVertical className="w-4 h-4 text-blue-400 dark:text-blue-500/50 shrink-0 cursor-grab" />
-                                        <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[1rem] flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
+                                        <GripVertical className="w-4 h-4 text-[#21A9FF] shrink-0 cursor-grab" />
+                                        <div className="w-11 h-11 bg-[#21A9FF] rounded-[1rem] flex items-center justify-center shrink-0 shadow-md shadow-[#21A9FF]/20">
                                             <FileText className="w-5 h-5 text-white" />
                                         </div>
                                         <div className="truncate pr-4">
@@ -499,11 +515,11 @@ function SectionFilesModal({ section, onClose, qk }: { section: SectionDto; onCl
                                     <div className="flex items-center gap-3 shrink-0">
                                         {file.fileUrl && (
                                             isVideoFile(file.contentType, file.fileName) ? (
-                                                <button onClick={() => navigate(`/preview?${new URLSearchParams({ url: file.fileUrl, name: file.fileName, type: file.contentType, size: String(file.fileSize) })}`)} className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-all shadow-sm border border-gray-100 dark:border-slate-700 hover:border-blue-200" title="Play Video">
+                                                <button onClick={() => navigate(`/preview?${new URLSearchParams({ url: file.fileUrl, name: file.fileName, type: file.contentType, size: String(file.fileSize) })}`)} className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 text-[#21A9FF] rounded-xl hover:bg-[#21A9FF]/10 transition-all shadow-sm border border-gray-100 dark:border-slate-700 hover:border-[#21A9FF]/20" title="Play Video">
                                                     <Eye className="w-4 h-4" />
                                                 </button>
                                             ) : (
-                                                <a href={file.fileUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-all shadow-sm border border-gray-100 dark:border-slate-700 hover:border-blue-200" title="Preview">
+                                                <a href={file.fileUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 text-[#21A9FF] rounded-xl hover:bg-[#21A9FF]/10 transition-all shadow-sm border border-gray-100 dark:border-slate-700 hover:border-[#21A9FF]/20" title="Preview">
                                                     <Eye className="w-4 h-4" />
                                                 </a>
                                             )

@@ -152,6 +152,9 @@ export interface GetAllCoursesDto {
     courseStatus: string;
     createdAt: string;
     instructorId: number;
+    totalStudents: number;
+    totalSections: number;
+    description: string | null;
 }
 
 export interface GetAllCoursesDtoPaginationResult {
@@ -199,11 +202,11 @@ export interface RejectEnrollmentCommand {
 }
 
 export interface GetStudentsByCourseIdDto {
-    id: number;
     studentId: number;
     email: string;
     fullName: string;
-    phoneNumber: string;
+    phoneNumber: string | null;
+    enrolledAt: string;
 }
 
 export interface GetStudentCoursesDto {
@@ -596,4 +599,34 @@ export interface AdminDashboardData {
     totalEnrollments: number;
     topCourses: TopCourseDto[];
     userGrowthPerMonths: UserGrowthMonthDto[];
+}
+
+// ============================================================================
+// Student Profile Types
+// ============================================================================
+
+export interface StudentProfileAssignmentDto {
+    assignmentName: string;
+    assignmentId: number;
+    submissionId: number;
+    submissionFiles: FileMetaData[];
+    submissionFeedback: string | null;
+}
+
+export interface QuizAttemptDto {
+    attemptNumber: number;
+    score: number;
+    submittedAt: string;
+}
+
+export interface StudentProfileQuizDto {
+    quizName: string;
+    quizId: string;
+    attempts: QuizAttemptDto[];
+}
+
+export interface GetStudentProfileDto {
+    assignments: StudentProfileAssignmentDto[];
+    quizzes: StudentProfileQuizDto[];
+    averageQuizzesScore: number;
 }

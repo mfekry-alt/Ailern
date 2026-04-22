@@ -13,7 +13,7 @@ import { useCourse } from '@/features/courses/api';
 import { handleApiError } from '@/api/client';
 
 const inputCls =
-    'w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed';
+    'w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed';
 const labelCls = 'block text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1';
 
 const getContentType = (fileName: string): string => {
@@ -225,7 +225,7 @@ export const InstructorAssignmentEditPage = () => {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center transition-colors duration-300">
                 <div className="flex flex-col items-center space-y-4">
-                    <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-4 border-[#21A9FF]/30 border-t-[#21A9FF] rounded-full animate-spin"></div>
                     <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Loading assignment details...</p>
                 </div>
             </div>
@@ -270,8 +270,8 @@ export const InstructorAssignmentEditPage = () => {
                         {/* Section 1: Basic Information */}
                         <div className="space-y-6">
                             <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-700/50 pb-4">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center shadow-sm">
-                                    <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                <div className="w-10 h-10 rounded-xl bg-[#21A9FF]/10 border border-[#21A9FF]/20 flex items-center justify-center shadow-sm">
+                                    <Settings className="w-5 h-5 text-[#21A9FF]" />
                                 </div>
                                 <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">Basic Information</h3>
                             </div>
@@ -289,7 +289,7 @@ export const InstructorAssignmentEditPage = () => {
 
                             <div>
                                 <label className={labelCls}>Associated Course</label>
-                                <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm opacity-90 cursor-default">
+                                <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#21A9FF]/10 border border-[#21A9FF]/20 text-[#21A9FF] rounded-xl font-bold text-sm shadow-sm opacity-90 cursor-default">
                                     {courseData ? `${courseData.code} - ${courseData.name}` : assignmentData?.courseName ? assignmentData.courseName : (formData.course && formData.course !== '0') ? `Course #${formData.course}` : 'Course Details Unavailable'}
                                 </div>
                                 <p className="text-[11px] font-medium text-gray-500 dark:text-slate-500 mt-1.5 ml-1">The course cannot be changed after creation.</p>
@@ -335,7 +335,7 @@ export const InstructorAssignmentEditPage = () => {
                                     <div className="flex-1 flex flex-col justify-start">
                                         <div 
                                             onClick={() => setFormData({ ...formData, allowLateSubmission: !formData.allowLateSubmission })}
-                                            className={`${inputCls} cursor-pointer flex items-center justify-between hover:border-blue-300 dark:hover:border-slate-500 transition-colors w-full ${
+                                            className={`${inputCls} cursor-pointer flex items-center justify-between hover:border-[#21A9FF]/50 transition-colors w-full ${
                                                 formData.allowLateSubmission ? 'border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10' : ''
                                             }`}
                                         >
@@ -370,20 +370,20 @@ export const InstructorAssignmentEditPage = () => {
                         {/* Section 4: Attachments */}
                         <div className="space-y-6 pt-4">
                             <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-700/50 pb-4">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center shadow-sm">
-                                    <Upload className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                <div className="w-10 h-10 rounded-xl bg-[#21A9FF]/10 border border-[#21A9FF]/20 flex items-center justify-center shadow-sm">
+                                    <Upload className="w-5 h-5 text-[#21A9FF]" />
                                 </div>
                                 <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">Reference Materials (Optional)</h3>
                             </div>
 
-                            <label className="relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-[2rem] cursor-pointer hover:border-blue-500 group transition-all duration-500 bg-gradient-to-b from-gray-50/50 to-white dark:from-slate-800/20 dark:to-slate-900/40 hover:shadow-lg hover:shadow-blue-500/5 outline-none">
-                                <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <label className="relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-[2rem] cursor-pointer hover:border-[#21A9FF] group transition-all duration-500 bg-gradient-to-b from-gray-50/50 to-white dark:from-slate-800/20 dark:to-slate-900/40 hover:shadow-lg hover:shadow-[#21A9FF]/5 outline-none">
+                                <div className="absolute inset-0 bg-[#21A9FF]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 group-hover:-translate-y-1 group-active:scale-95 transition-all duration-500 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-slate-700 relative z-10">
-                                    <div className="absolute inset-0 bg-blue-500 opacity-20 blur-xl rounded-full group-hover:opacity-40 transition-opacity duration-500" />
-                                    <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400 relative z-10" />
+                                    <div className="absolute inset-0 bg-[#21A9FF] opacity-20 blur-xl rounded-full group-hover:opacity-40 transition-opacity duration-500" />
+                                    <Upload className="w-8 h-8 text-[#21A9FF] relative z-10" />
                                 </div>
                                 <div className="text-center relative z-10">
-                                    <span className="text-lg font-extrabold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Click to upload or drag files</span>
+                                    <span className="text-lg font-extrabold text-gray-900 dark:text-white group-hover:text-[#21A9FF] transition-colors">Click to upload or drag files</span>
                                 </div>
                                 <input type="file" multiple onChange={handleFileUpload} className="hidden" />
                             </label>
@@ -391,13 +391,13 @@ export const InstructorAssignmentEditPage = () => {
                             {(attachments.length > 0 || existingFiles.length > 0) && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                                     {existingFiles.map((file, index) => (
-                                        <div key={`existing-${index}`} className="flex items-center justify-between p-4 bg-blue-50/20 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-500/20 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                                        <div key={`existing-${index}`} className="flex items-center justify-between p-4 bg-[#21A9FF]/5 dark:bg-blue-900/5 border border-[#21A9FF]/20 dark:border-blue-500/20 rounded-2xl shadow-sm hover:shadow-md transition-all">
                                             <div className="flex items-center gap-4 flex-1 truncate pr-2">
                                                 <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
-                                                    <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                                    <FileText className="w-6 h-6 text-[#21A9FF]" />
                                                 </div>
                                                 <div className="truncate">
-                                                    <p className="text-sm font-bold text-blue-600 dark:text-blue-400 truncate">{file.fileName}</p>
+                                                    <p className="text-sm font-bold text-[#21A9FF] truncate">{file.fileName}</p>
                                                     <div className="flex flex-col gap-1 mt-1">
                                                         <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-lg w-fit uppercase">Previously Uploaded</span>
                                                     </div>
@@ -410,7 +410,7 @@ export const InstructorAssignmentEditPage = () => {
                                                         target="_blank" 
                                                         rel="noopener noreferrer" 
                                                         download={file.fileName} 
-                                                        className="w-9 h-9 flex items-center justify-center bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all shadow-sm"
+                                                        className="w-9 h-9 flex items-center justify-center bg-[#21A9FF]/10 text-[#21A9FF] rounded-xl hover:bg-[#21A9FF]/20 transition-all shadow-sm"
                                                         title="Download"
                                                     >
                                                         <Download className="w-4 h-4" />
@@ -457,7 +457,7 @@ export const InstructorAssignmentEditPage = () => {
                                                     ) : isError ? (
                                                         <AlertTriangle className="w-6 h-6 text-red-500 dark:text-red-400" />
                                                     ) : (
-                                                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                                        <FileText className="w-6 h-6 text-[#21A9FF]" />
                                                     )}
                                                 </div>
                                                 <div className="truncate pr-2">
@@ -480,7 +480,7 @@ export const InstructorAssignmentEditPage = () => {
                                             </div>
                                             {isUploading && (
                                                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100 dark:bg-slate-700 overflow-hidden">
-                                                    <div className="bg-blue-500 h-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                                                    <div className="bg-[#21A9FF] h-full transition-all duration-300" style={{ width: `${progress}%` }} />
                                                 </div>
                                             )}
                                         </div>
@@ -514,7 +514,7 @@ export const InstructorAssignmentEditPage = () => {
                                 type="button"
                                 onClick={() => handleSave(false)}
                                 disabled={isPublishDisabled}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-blue-500/25 active:scale-95 text-sm disabled:opacity-50"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white rounded-xl font-bold transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 text-sm disabled:opacity-50"
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                                 Update Assignment

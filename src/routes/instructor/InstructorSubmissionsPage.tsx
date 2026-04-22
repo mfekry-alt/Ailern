@@ -217,7 +217,7 @@ export const InstructorSubmissionsPage = () => {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
                 <div className="flex flex-col items-center space-y-4">
-                    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin" />
+                    <div className="w-12 h-12 border-4 border-[#21A9FF]/30 border-t-[#21A9FF] rounded-full animate-spin" />
                     <p className="text-gray-500 dark:text-slate-400 font-medium animate-pulse">Loading submissions...</p>
                 </div>
             </div>
@@ -273,7 +273,7 @@ export const InstructorSubmissionsPage = () => {
                     <div>
                         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Student Submissions</h1>
                         {assignment && (
-                            <p className="text-blue-600 dark:text-blue-400 mt-0.5 text-base font-semibold">{assignment.title}</p>
+                            <p className="text-[#21A9FF] mt-0.5 text-base font-semibold">{assignment.title}</p>
                         )}
                     </div>
                 </div>
@@ -286,13 +286,13 @@ export const InstructorSubmissionsPage = () => {
                         { label: 'Pending Review', value: stats.pending, icon: Clock, color: 'orange' },
                     ].map((stat, idx) => (
                         <div key={idx} className="bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/50 rounded-2xl p-5 flex items-center justify-between shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                            <div className={`absolute left-0 top-0 w-1 h-full ${stat.color === 'blue' ? 'bg-blue-500' : stat.color === 'emerald' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                            <div className={`absolute left-0 top-0 w-1 h-full ${stat.color === 'blue' ? 'bg-[#21A9FF]' : stat.color === 'emerald' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
                             <div>
                                 <p className="text-gray-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">{stat.label}</p>
                                 <h3 className="text-3xl font-black text-gray-900 dark:text-white">{stat.value}</h3>
                             </div>
                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                                stat.color === 'blue' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600' :
+                                stat.color === 'blue' ? 'bg-[#21A9FF]/10 text-[#21A9FF]' :
                                 stat.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600' :
                                 'bg-orange-50 dark:bg-orange-500/10 text-orange-600'
                             }`}>
@@ -312,7 +312,7 @@ export const InstructorSubmissionsPage = () => {
                             placeholder="Search by student name..."
                             value={search}
                             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 outline-none text-sm font-semibold transition-all"
+                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-[#21A9FF]/50 outline-none text-sm font-semibold transition-all"
                         />
                     </div>
 
@@ -322,7 +322,7 @@ export const InstructorSubmissionsPage = () => {
                             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                             <div
                                 onClick={() => { setIsTimeDropdownOpen(!isTimeDropdownOpen); setIsGradingDropdownOpen(false); }}
-                                className="pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 shadow-sm hover:border-blue-300 transition-colors min-w-[160px]"
+                                className="pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 shadow-sm hover:border-[#21A9FF]/50 transition-colors min-w-[160px]"
                             >
                                 <span className="flex-1 text-gray-800 dark:text-white">
                                     {apiStatus === 'all' ? 'Any Time Status' : apiStatus === 'ontime' ? 'On Time' : 'Late'}
@@ -361,7 +361,7 @@ export const InstructorSubmissionsPage = () => {
                             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                             <div
                                 onClick={() => { setIsGradingDropdownOpen(!isGradingDropdownOpen); setIsTimeDropdownOpen(false); }}
-                                className="pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 shadow-sm hover:border-blue-300 transition-colors min-w-[160px]"
+                                className="pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 shadow-sm hover:border-[#21A9FF]/50 transition-colors min-w-[160px]"
                             >
                                 <span className="flex-1 text-gray-800 dark:text-white">
                                     {gradingFilter === 'all' ? 'All Submissions' : gradingFilter === 'graded' ? 'Reviewed' : 'Pending Review'}
@@ -425,7 +425,7 @@ export const InstructorSubmissionsPage = () => {
                                     <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${
                                         reviewed
                                             ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
-                                            : 'bg-blue-100 dark:bg-slate-700 text-blue-700 dark:text-white'
+                                            : 'bg-[#21A9FF]/10 text-[#21A9FF]'
                                     }`}>
                                         {(sub.name || 'S').charAt(0).toUpperCase()}
                                     </div>
@@ -462,7 +462,7 @@ export const InstructorSubmissionsPage = () => {
                                     {/* View Files */}
                                     <button
                                         onClick={() => setFilesModal({ submissionId: sub.id, studentName: sub.name })}
-                                        className="p-2.5 bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors shadow-sm"
+                                        className="p-2.5 bg-white dark:bg-slate-800 text-[#21A9FF] border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-[#21A9FF]/10 transition-colors shadow-sm"
                                         title="View Files"
                                     >
                                         <Eye className="w-4 h-4" />
@@ -486,7 +486,7 @@ export const InstructorSubmissionsPage = () => {
                                         className={`px-4 py-2.5 font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed ${
                                             reviewed
                                                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                : 'bg-[#21A9FF] hover:bg-[#0094F2] text-white'
                                         }`}
                                     >
                                         <MessageSquare className="w-3.5 h-3.5" />
@@ -518,7 +518,7 @@ export const InstructorSubmissionsPage = () => {
                                     onClick={() => setCurrentPage(page)}
                                     className={`px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
                                         currentPage === page
-                                            ? 'bg-blue-600 text-white'
+                                            ? 'bg-[#21A9FF] text-white'
                                             : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-900 dark:text-white'
                                     }`}
                                 >
@@ -546,7 +546,7 @@ export const InstructorSubmissionsPage = () => {
                                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                                         {feedbackText.trim() ? 'Edit Feedback' : 'Review Submission'}
                                     </h2>
-                                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mt-0.5">{feedbackModal.studentName}</p>
+                                    <p className="text-sm font-semibold text-[#21A9FF] mt-0.5">{feedbackModal.studentName}</p>
                                 </div>
                                 <button onClick={() => setFeedbackModal(null)} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-colors">
                                     <X className="w-5 h-5" />
@@ -561,7 +561,7 @@ export const InstructorSubmissionsPage = () => {
                                     placeholder="Write your feedback for this student..."
                                     value={feedbackText}
                                     onChange={(e) => setFeedbackText(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white text-sm font-medium resize-none transition-all"
+                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white text-sm font-medium resize-none transition-all"
                                 />
                                 {feedbackText.trim() === '' && (
                                     <p className="text-xs text-orange-500 mt-1.5 font-semibold">Feedback cannot be empty.</p>
@@ -586,7 +586,7 @@ export const InstructorSubmissionsPage = () => {
                                         });
                                     }}
                                     disabled={reviewMutation.isPending || !feedbackText.trim()}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {reviewMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                     {reviewMutation.isPending ? 'Saving...' : 'Save Feedback'}
@@ -635,7 +635,7 @@ export const InstructorSubmissionsPage = () => {
                             <header className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center shrink-0">
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">Submission Files</h2>
-                                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mt-0.5">{filesModal.studentName}</p>
+                                    <p className="text-sm font-semibold text-[#21A9FF] mt-0.5">{filesModal.studentName}</p>
                                 </div>
                                 <button onClick={() => setFilesModal(null)} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-colors">
                                     <X className="w-5 h-5" />
@@ -644,7 +644,7 @@ export const InstructorSubmissionsPage = () => {
                             <div className="p-6 overflow-y-auto flex-1">
                                 {isLoadingFiles ? (
                                     <div className="py-12 flex flex-col items-center gap-3">
-                                        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                                        <Loader2 className="w-8 h-8 animate-spin text-[#21A9FF]" />
                                         <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">Loading files...</p>
                                     </div>
                                 ) : !submissionFiles || (Array.isArray(submissionFiles) && submissionFiles.length === 0) ? (
@@ -657,8 +657,8 @@ export const InstructorSubmissionsPage = () => {
                                         {(Array.isArray(submissionFiles) ? submissionFiles : [submissionFiles]).map((file: any, idx: number) => (
                                             <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
                                                 <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg shrink-0">
-                                                        <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                    <div className="p-2 bg-[#21A9FF]/10 rounded-lg shrink-0">
+                                                        <FileText className="w-5 h-5 text-[#21A9FF]" />
                                                     </div>
                                                     <div className="truncate">
                                                         <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{file.fileName || file.name || `File ${idx + 1}`}</p>
@@ -679,7 +679,7 @@ export const InstructorSubmissionsPage = () => {
                                                             showToast('error', "This file doesn't have a download URL.");
                                                         }
                                                     }}
-                                                    className="p-2.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors shrink-0"
+                                                    className="p-2.5 text-[#21A9FF] hover:bg-[#21A9FF]/10 rounded-lg transition-colors shrink-0"
                                                     title="Download File"
                                                 >
                                                     <Download className="w-4 h-4" />

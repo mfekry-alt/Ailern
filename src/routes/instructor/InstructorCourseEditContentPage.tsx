@@ -145,7 +145,7 @@ export const InstructorCourseEditContentPage = () => {
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">Published</span>;
         }
         if (status === 'Scheduled') {
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400">Scheduled</span>;
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-[#21A9FF]/10 border border-[#21A9FF]/20 text-[#21A9FF] dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400">Scheduled</span>;
         }
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400">Draft</span>;
     };
@@ -159,7 +159,7 @@ export const InstructorCourseEditContentPage = () => {
     const courseStats = useMemo(() => {
         const createdAt = courseDetails?.createdAt ? new Date(courseDetails.createdAt).toLocaleDateString() : '—';
         return [
-            { label: 'Course ID', value: courseDetails?.id?.toString() ?? '—', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
+            { label: 'Course ID', value: courseDetails?.id?.toString() ?? '—', icon: Users, color: 'text-[#21A9FF]', bg: 'bg-[#21A9FF]/10' },
             { label: 'Course Code', value: courseDetails?.code ?? '—', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
             { label: 'Created At', value: createdAt, icon: Calendar, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' },
             { label: 'Status', value: courseDetails?.courseStatus ?? 'Draft', icon: CheckCircle, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10' }
@@ -287,7 +287,7 @@ export const InstructorCourseEditContentPage = () => {
                     <div className="grid lg:grid-cols-2 gap-8">
                         <div className="space-y-6">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <LayoutGrid className="w-5 h-5 text-blue-500" /> Course Overview
+                                <LayoutGrid className="w-5 h-5 text-[#21A9FF]" /> Course Overview
                             </h3>
                             <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed bg-gray-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-gray-100 dark:border-slate-800">
                                 {courseDetails?.description || 'No description available. You can add a detailed description of your course content, objectives, and outcomes here.'}
@@ -295,7 +295,7 @@ export const InstructorCourseEditContentPage = () => {
                             <div className="space-y-3">
                                 <h4 className="text-sm font-bold text-gray-900 dark:text-white">Quick Highlights</h4>
                                 <ul className="space-y-3 text-sm text-gray-600 dark:text-slate-400">
-                                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Weekly lectures with downloadable slides and readings</li>
+                                    <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-[#21A9FF]"></div> Weekly lectures with downloadable slides and readings</li>
                                     <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div> Two major assignments and three graded quizzes</li>
                                     <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Built-in announcements and enrollment approvals</li>
                                 </ul>
@@ -311,7 +311,7 @@ export const InstructorCourseEditContentPage = () => {
                             </div>
                             <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 p-5">
                                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Average Grade</p>
-                                <p className="text-4xl font-black text-blue-600 dark:text-blue-400 mb-2">B+</p>
+                                <p className="text-4xl font-black text-[#21A9FF] mb-2">B+</p>
                                 <p className="text-xs font-semibold text-gray-500 dark:text-slate-400">Based on 3 graded items</p>
                             </div>
                             <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 p-5">
@@ -338,27 +338,27 @@ export const InstructorCourseEditContentPage = () => {
                     {/* Add Lecture Card */}
                     <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
-                            <Plus className="w-5 h-5 text-blue-500" /> Add New Lecture
+                            <Plus className="w-5 h-5 text-[#21A9FF]" /> Add New Lecture
                         </h3>
                         <div className="grid sm:grid-cols-12 gap-4 items-end">
                             <div className="sm:col-span-3">
                                 <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 ml-1">Title</label>
-                                <input value={newLecture.title} onChange={(e) => setNewLecture({ ...newLecture, title: e.target.value })} placeholder="e.g. Intro to ML" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all" />
+                                <input value={newLecture.title} onChange={(e) => setNewLecture({ ...newLecture, title: e.target.value })} placeholder="e.g. Intro to ML" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all" />
                             </div>
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 ml-1">Week</label>
-                                <input value={newLecture.week} onChange={(e) => setNewLecture({ ...newLecture, week: e.target.value })} placeholder="Week 1" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all" />
+                                <input value={newLecture.week} onChange={(e) => setNewLecture({ ...newLecture, week: e.target.value })} placeholder="Week 1" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all" />
                             </div>
                             <div className="sm:col-span-2">
                                 <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 ml-1">Duration</label>
-                                <input value={newLecture.length} onChange={(e) => setNewLecture({ ...newLecture, length: e.target.value })} placeholder="45:00" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all" />
+                                <input value={newLecture.length} onChange={(e) => setNewLecture({ ...newLecture, length: e.target.value })} placeholder="45:00" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all" />
                             </div>
                             <div className="sm:col-span-3">
                                 <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 ml-1">Video File</label>
-                                <input value={newLecture.video} onChange={(e) => setNewLecture({ ...newLecture, video: e.target.value })} placeholder="video.mp4" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all" />
+                                <input value={newLecture.video} onChange={(e) => setNewLecture({ ...newLecture, video: e.target.value })} placeholder="video.mp4" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all" />
                             </div>
                             <div className="sm:col-span-2">
-                                <button onClick={addLecture} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm hover:shadow-blue-500/25 active:scale-95 text-sm">Add</button>
+                                <button onClick={addLecture} className="w-full bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold py-3 rounded-xl transition-all shadow-sm shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 text-sm">Add</button>
                             </div>
                         </div>
                     </div>
@@ -370,7 +370,7 @@ export const InstructorCourseEditContentPage = () => {
                                 <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-blue-400 to-indigo-600"></div>
                                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4 ml-2">
                                     <div>
-                                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-100 dark:border-blue-500/20 mb-2 inline-block">
+                                        <span className="text-xs font-bold text-[#21A9FF] uppercase tracking-wider bg-[#21A9FF]/10 px-2.5 py-1 rounded-md border border-[#21A9FF]/20 mb-2 inline-block">
                                             {lecture.week}
                                         </span>
                                         <h4 className="text-xl font-bold text-gray-900 dark:text-white">{lecture.title}</h4>
@@ -379,7 +379,7 @@ export const InstructorCourseEditContentPage = () => {
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-900/50 p-1.5 rounded-xl border border-gray-100 dark:border-slate-800">
-                                        <button className="p-2 text-gray-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all" title="Preview"><Eye className="w-4 h-4" /></button>
+                                        <button className="p-2 text-gray-600 dark:text-slate-300 hover:text-[#21A9FF] hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all" title="Preview"><Eye className="w-4 h-4" /></button>
                                         <button className="p-2 text-gray-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all" title="Edit"><Edit className="w-4 h-4" /></button>
                                         <button onClick={() => deleteLecture(lecture.id)} className="p-2 text-gray-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all" title="Delete"><Trash2 className="w-4 h-4" /></button>
                                     </div>
@@ -407,24 +407,24 @@ export const InstructorCourseEditContentPage = () => {
                                         <div className="bg-blue-50/50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/20 rounded-xl p-4 mt-4">
                                             <div className="grid sm:grid-cols-12 gap-3 items-end">
                                                 <div className="sm:col-span-5">
-                                                    <input value={newLectureMaterial.name} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, name: e.target.value })} placeholder="Material Name" className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white" />
+                                                    <input value={newLectureMaterial.name} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, name: e.target.value })} placeholder="Material Name" className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
                                                 </div>
                                                 <div className="sm:col-span-3">
-                                                    <select value={newLectureMaterial.type} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, type: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white">
+                                                    <select value={newLectureMaterial.type} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, type: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white">
                                                         <option>PDF</option><option>PPT</option><option>DOC</option>
                                                     </select>
                                                 </div>
                                                 <div className="sm:col-span-2">
-                                                    <input value={newLectureMaterial.size} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, size: e.target.value })} placeholder="Size" className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white" />
+                                                    <input value={newLectureMaterial.size} onChange={(e) => setNewLectureMaterial({ ...newLectureMaterial, size: e.target.value })} placeholder="Size" className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
                                                 </div>
                                                 <div className="sm:col-span-2 flex gap-2">
-                                                    <button onClick={() => addMaterialToLecture(lecture.id)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition-all text-sm shadow-sm">Save</button>
+                                                    <button onClick={() => addMaterialToLecture(lecture.id)} className="flex-1 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold py-2 rounded-lg transition-all text-sm shadow-sm">Save</button>
                                                     <button onClick={() => { setAddMaterialForLectureId(null); setNewLectureMaterial({ name: '', type: 'PDF', size: '' }); }} className="flex-1 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 font-bold py-2 rounded-lg transition-all text-sm">Cancel</button>
                                                 </div>
                                             </div>
                                         </div>
                                     ) : (
-                                        <button onClick={() => setAddMaterialForLectureId(lecture.id)} className="flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mt-2 px-2 py-1 rounded-md hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors w-fit">
+                                        <button onClick={() => setAddMaterialForLectureId(lecture.id)} className="flex items-center gap-2 text-sm font-bold text-[#21A9FF] hover:text-[#0094F2] mt-2 px-2 py-1 rounded-md hover:bg-[#21A9FF]/10 transition-colors w-fit">
                                             <Plus className="w-4 h-4" /> Add Material
                                         </button>
                                     )}
@@ -495,7 +495,7 @@ export const InstructorCourseEditContentPage = () => {
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <FileText className="w-5 h-5 text-indigo-500" /> Course Assignments
                         </h3>
-                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE)} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-blue-500/25 active:scale-95">
+                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE)} className="flex items-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95">
                             <Plus className="w-4 h-4" /> New Assignment
                         </button>
                     </div>
@@ -523,7 +523,7 @@ export const InstructorCourseEditContentPage = () => {
                                         <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mt-1">Submissions</p>
                                     </div>
                                     <div className="flex gap-1">
-                                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', assignment.id))} className="p-2.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors" title="View Submissions">
+                                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', assignment.id))} className="p-2.5 bg-[#21A9FF]/10 text-[#21A9FF] hover:bg-[#21A9FF]/20 rounded-lg transition-colors" title="View Submissions">
                                             <Eye className="w-4 h-4" />
                                         </button>
                                         <button className="p-2.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-colors" title="Edit">
@@ -759,11 +759,11 @@ export const InstructorCourseEditContentPage = () => {
                                                 <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{student.progress}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4"><span className="px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold text-xs border border-blue-100 dark:border-blue-500/20">{student.assignments}</span></td>
+                                        <td className="px-6 py-4"><span className="px-2 py-1 rounded-md bg-[#21A9FF]/10 text-[#21A9FF] font-bold text-xs border border-[#21A9FF]/20">{student.assignments}</span></td>
                                         <td className="px-6 py-4"><span className="px-2 py-1 rounded-md bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 font-bold text-xs border border-purple-100 dark:border-purple-500/20">{student.quizzes}</span></td>
                                         <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-slate-400">{student.lastActive}</td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors" title="View Profile">
+                                            <button className="p-2 text-gray-400 hover:text-[#21A9FF] hover:bg-[#21A9FF]/10 rounded-lg transition-colors" title="View Profile">
                                                 <Eye className="w-5 h-5" />
                                             </button>
                                         </td>
@@ -785,7 +785,7 @@ export const InstructorCourseEditContentPage = () => {
                                 <button
                                     key={status}
                                     onClick={() => { setEnrollFilterStatus(status as any); setEnrollPage(1); }}
-                                    className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all capitalize ${enrollFilterStatus === status ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-800'}`}
+                                    className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all capitalize ${enrollFilterStatus === status ? 'bg-white dark:bg-slate-800 text-[#21A9FF] shadow-sm' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-800'}`}
                                 >
                                     {status}
                                 </button>
@@ -796,7 +796,7 @@ export const InstructorCourseEditContentPage = () => {
                                 value={enrollSearch}
                                 onChange={(e) => { setEnrollSearch(e.target.value); setEnrollPage(1); }}
                                 placeholder="Search by student name..."
-                                className="w-full h-full px-5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white text-sm font-semibold"
+                                className="w-full h-full px-5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white text-sm font-semibold"
                             />
                         </div>
                     </div>

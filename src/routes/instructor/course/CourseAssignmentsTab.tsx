@@ -60,22 +60,18 @@ export const CourseAssignmentsTab = () => {
         return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400">Draft</span>;
     };
 
-    if (isLoading) {
-        return (
             <div className="flex flex-col items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-3" />
+                <Loader2 className="w-8 h-8 text-[#21A9FF] animate-spin mb-3" />
                 <p className="text-gray-500 dark:text-slate-400 font-medium">Loading assignments...</p>
             </div>
-        );
-    }
 
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                    <FileText className="w-6 h-6 text-blue-600" /> Assignments
+                    <FileText className="w-6 h-6 text-[#21A9FF]" /> Assignments
                 </h2>
-                <button onClick={() => navigate(`/instructor/courses/${numericCourseId}/assignments/create`)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-blue-600/25 active:scale-95">
+                <button onClick={() => navigate(`/instructor/courses/${numericCourseId}/assignments/create`)} className="flex items-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-[#21A9FF]/25 active:scale-95">
                     <Plus className="w-4 h-4" /> Create Assignment
                 </button>
             </div>
@@ -85,7 +81,7 @@ export const CourseAssignmentsTab = () => {
                 {/* Search */}
                 <div className="flex-1 w-full relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search assignments..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white font-semibold transition-all" />
+                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search assignments..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white font-semibold transition-all" />
                 </div>
 
                 {/* Status Dropdown */}
@@ -115,12 +111,12 @@ export const CourseAssignmentsTab = () => {
                                         onClick={() => { setFilterStatus(opt.value); setIsStatusDropdownOpen(false); }}
                                         className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-all flex items-center justify-between ${
                                             filterStatus === opt.value
-                                                ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                                                ? 'bg-blue-50 dark:bg-[#21A9FF]/10 text-[#21A9FF]'
                                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
                                         }`}
                                     >
                                         {opt.label}
-                                        {filterStatus === opt.value && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />}
+                                        {filterStatus === opt.value && <div className="w-1.5 h-1.5 bg-[#21A9FF] rounded-full" />}
                                     </button>
                                 ))}
                             </div>
@@ -165,7 +161,7 @@ export const CourseAssignmentsTab = () => {
 
                                 {/* Card footer / Actions */}
                                 <div className="border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-900/40 grid grid-cols-4 divide-x divide-gray-100 dark:divide-slate-700/50 mt-auto">
-                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT.replace(':id', assignment.id.toString()))} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all" title="Edit Assignment">
+                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT.replace(':id', assignment.id.toString()))} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all" title="Edit Assignment">
                                         <Edit className="w-4 h-4" />
                                         <span className="text-[10px] font-bold leading-none tracking-wide uppercase">Edit</span>
                                     </button>
@@ -205,7 +201,7 @@ export const CourseAssignmentsTab = () => {
                         <div className="p-6 overflow-y-auto flex-1 bg-gray-50/30 dark:bg-slate-900/40">
                             {isLoadingFiles ? (
                                 <div className="py-12 flex flex-col items-center gap-4">
-                                    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+                                    <div className="w-12 h-12 border-4 border-[#21A9FF]/30 border-t-[#21A9FF] rounded-full animate-spin"></div>
                                     <p className="text-xs font-bold text-gray-500 uppercase tracking-widest animate-pulse">Loading files...</p>
                                 </div>
                             ) : assignmentFiles.length === 0 ? (
@@ -223,7 +219,7 @@ export const CourseAssignmentsTab = () => {
                                         return (
                                             <div key={idx} className="flex items-center justify-between p-3.5 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-slate-700/30 rounded-2xl shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all">
                                                 <div className="flex items-center gap-4 flex-1 truncate pr-2">
-                                                    <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
+                                                    <div className="w-11 h-11 bg-[#21A9FF] rounded-2xl flex items-center justify-center shrink-0 shadow-md shadow-[#21A9FF]/20">
                                                         <FileText className="w-5 h-5 text-white" />
                                                     </div>
                                                     <div className="truncate pr-4">
@@ -236,7 +232,7 @@ export const CourseAssignmentsTab = () => {
                                                             href={fileUrl} 
                                                             target="_blank" 
                                                             rel="noopener noreferrer" 
-                                                            className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-all shadow-sm border border-gray-100 dark:border-slate-700 hover:border-blue-200" 
+                                                            className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 text-[#21A9FF] rounded-xl hover:bg-[#21A9FF]/10 transition-all shadow-sm border border-gray-100 dark:border-slate-700 hover:border-[#21A9FF]/20" 
                                                             title="Preview"
                                                         >
                                                             <Eye className="w-4 h-4" />
