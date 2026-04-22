@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Settings, CalendarClock, Eye, Timer } from 'lucide-react';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
-import type { QuizStatus } from '@/types/api.types';
+import type { QuizFormStatus } from '@/types/api.types';
 
 export interface QuizFormData {
     title: string;
@@ -10,7 +10,7 @@ export interface QuizFormData {
     availableUntil: string;
     maximumAttempts: number;
     attemptTimeLimit: number | '';
-    status: QuizStatus;
+    status: QuizFormStatus;
     publishedDate: string;
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
@@ -24,6 +24,10 @@ interface QuizFormProps {
     submitLabel: string;
     secondaryAction?: { label: string; onClick: (data: QuizFormData) => void | Promise<void>; isPending?: boolean };
     onCancel: () => void;
+    /** Create flow uses stricter rules that match POST /Courses/{id}/quizzes validation. */
+    validationMode?: 'create' | 'edit';
+    /** Hide Draft / Published / Scheduled when new quizzes are always created as Draft. */
+    showVisibilitySection?: boolean;
 }
 
 const labelCls = 'block text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1';
@@ -35,7 +39,7 @@ const getInputCls = (hasError: boolean) =>
             : 'border-gray-200 dark:border-slate-700 focus:ring-blue-500/50'
     }`;
 
-const PUBLISH_OPTIONS: { value: QuizStatus; title: string; desc: string }[] = [
+const PUBLISH_OPTIONS: { value: QuizFormStatus; title: string; desc: string }[] = [
     { value: 'Draft', title: 'Save as Draft', desc: 'Not visible to students yet' },
     { value: 'Published', title: 'Publish Immediately', desc: 'Visible to students right away' },
     { value: 'Scheduled', title: 'Schedule', desc: 'Set a future publish date' },
@@ -57,6 +61,25 @@ export const toISOFromLocal = (datetimeLocal: string): string => {
     return d.toISOString();
 };
 
+/** Format an API ISO instant for display in the user's local timezone. */
+export function formatIsoDateTimeLocal(iso: string): string {
+    if (!iso) return '—';
+    try {
+        const normalized = iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
+        const d = new Date(normalized);
+        if (Number.isNaN(d.getTime())) return iso;
+        return d.toLocaleString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    } catch {
+        return iso;
+    }
+}
+
 const parseDateStr = (s: string): Date | null => {
     if (!s) return null;
     const d = new Date(s);
@@ -70,8 +93,8 @@ const dateToLocalStr = (d: Date | null): string => {
 };
 
 const defaultDateRange = () => {
-    const from = new Date();
-    const until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const from = new Date(Date.now() + 60 * 60 * 1000);
+    const until = new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000);
     return {
         availableFrom: toDatetimeLocal(from.toISOString()),
         availableUntil: toDatetimeLocal(until.toISOString()),
@@ -111,6 +134,8 @@ export const QuizForm = ({
     submitLabel,
     secondaryAction,
     onCancel,
+    validationMode = 'edit',
+    showVisibilitySection = true,
 }: QuizFormProps) => {
     const [data, setData] = useState<QuizFormData>(() => ({
         ...defaultFormData(),
@@ -138,23 +163,52 @@ export const QuizForm = ({
 
         if (data.description.length > 2000) e.description = 'Description must be 2000 characters or less.';
 
-        if (data.maximumAttempts < 1 || data.maximumAttempts > 5)
-            e.maximumAttempts = 'Attempts allowed must be between 1 and 5.';
-
-        if (data.attemptTimeLimit === '' || Number(data.attemptTimeLimit) < 5)
-            e.attemptTimeLimit = 'Time limit must be at least 5 minutes.';
+        const fromT = data.availableFrom ? new Date(data.availableFrom).getTime() : NaN;
+        const untilT = data.availableUntil ? new Date(data.availableUntil).getTime() : NaN;
+        const now = Date.now();
 
         if (!data.availableFrom) e.availableFrom = 'Available From is required.';
         if (!data.availableUntil) e.availableUntil = 'Available Until is required.';
-        else if (data.availableFrom && new Date(data.availableUntil) <= new Date(data.availableFrom))
-            e.availableUntil = '"Available Until" must be after "Available From".';
 
-        if (data.status === 'Scheduled') {
+        if (data.availableFrom && data.availableUntil) {
+            if (!Number.isFinite(fromT)) e.availableFrom = e.availableFrom || 'Invalid start date.';
+            if (!Number.isFinite(untilT)) e.availableUntil = e.availableUntil || 'Invalid end date.';
+            else if (Number.isFinite(fromT) && untilT <= fromT) {
+                e.availableUntil = '"Available Until" must be after "Available From".';
+            }
+        }
+
+        if (validationMode === 'create') {
+            if (data.maximumAttempts < 1 || data.maximumAttempts > 3)
+                e.maximumAttempts = 'Attempts allowed must be between 1 and 3.';
+
+            const windowMinutes = Number.isFinite(fromT) && Number.isFinite(untilT) ? (untilT - fromT) / 60_000 : NaN;
+            const limitRaw = data.attemptTimeLimit === '' ? NaN : Number(data.attemptTimeLimit);
+            const limitInt = Number.isFinite(limitRaw) ? Math.floor(limitRaw) : NaN;
+
+            if (data.attemptTimeLimit === '' || !Number.isFinite(limitRaw) || limitInt <= 0) {
+                e.attemptTimeLimit = 'Time limit must be greater than 0 minutes.';
+            } else if (Number.isFinite(windowMinutes) && limitInt > Math.floor(windowMinutes)) {
+                e.attemptTimeLimit = `Time limit cannot exceed the availability window (${Math.max(0, Math.floor(windowMinutes))} minutes).`;
+            }
+
+            if (Number.isFinite(fromT) && fromT <= now) {
+                e.availableFrom = 'Available From must be in the future.';
+            }
+        } else {
+            if (data.maximumAttempts < 1 || data.maximumAttempts > 5)
+                e.maximumAttempts = 'Attempts allowed must be between 1 and 5.';
+
+            if (data.attemptTimeLimit === '' || Number(data.attemptTimeLimit) < 5)
+                e.attemptTimeLimit = 'Time limit must be at least 5 minutes.';
+        }
+
+        if (showVisibilitySection && data.status === 'Scheduled') {
             if (!data.publishedDate) e.publishedDate = 'Publish Date is required for scheduled quizzes.';
             else {
-                const pd = new Date(data.publishedDate);
-                if (pd <= new Date()) e.publishedDate = 'Publish Date must be in the future.';
-                if (data.availableFrom && pd >= new Date(data.availableFrom))
+                const pd = new Date(data.publishedDate).getTime();
+                if (!Number.isFinite(pd) || pd <= now) e.publishedDate = 'Publish Date must be in the future.';
+                if (data.availableFrom && Number.isFinite(pd) && Number.isFinite(fromT) && pd >= fromT)
                     e.publishedDate = 'Publish Date must be before "Available From".';
             }
         }
@@ -220,6 +274,9 @@ export const QuizForm = ({
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
                         <CalendarClock className="w-5 h-5 text-blue-500" /> Timing & Limits
                     </h3>
+                    <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 -mt-2 mb-1 ml-1">
+                        Times are shown in your local timezone. The server stores and receives them as UTC (ISO-8601).
+                    </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className={labelCls}>Available From <span className="text-red-500">*</span></label>
@@ -251,8 +308,27 @@ export const QuizForm = ({
                         </div>
                         <div>
                             <label htmlFor="maximumAttempts" className={labelCls}>Attempts Allowed <span className="text-red-500">*</span></label>
-                            <input id="maximumAttempts" type="number" min={1} max={5} value={data.maximumAttempts} onChange={(e) => { set({ maximumAttempts: Math.min(5, Math.max(1, parseInt(e.target.value, 10) || 1)) }); clearError('maximumAttempts'); }} className={getInputCls(!!errors.maximumAttempts)} disabled={busy} />
-                            {errors.maximumAttempts ? <ErrorText msg={errors.maximumAttempts} /> : <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Between 1 and 5 attempts.</p>}
+                            <input
+                                id="maximumAttempts"
+                                type="number"
+                                min={1}
+                                max={validationMode === 'create' ? 3 : 5}
+                                value={data.maximumAttempts}
+                                onChange={(e) => {
+                                    const cap = validationMode === 'create' ? 3 : 5;
+                                    set({ maximumAttempts: Math.min(cap, Math.max(1, parseInt(e.target.value, 10) || 1)) });
+                                    clearError('maximumAttempts');
+                                }}
+                                className={getInputCls(!!errors.maximumAttempts)}
+                                disabled={busy}
+                            />
+                            {errors.maximumAttempts ? (
+                                <ErrorText msg={errors.maximumAttempts} />
+                            ) : (
+                                <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">
+                                    {validationMode === 'create' ? 'Between 1 and 3 attempts.' : 'Between 1 and 5 attempts.'}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label htmlFor="attemptTimeLimit" className={labelCls}>Time Limit (Minutes) <span className="text-red-500">*</span></label>
@@ -261,62 +337,83 @@ export const QuizForm = ({
                                 <input
                                     id="attemptTimeLimit"
                                     type="number"
-                                    min={5}
+                                    min={validationMode === 'create' ? 1 : 5}
                                     value={data.attemptTimeLimit}
                                     onChange={(e) => {
                                         const val = e.target.value;
-                                        set({ attemptTimeLimit: val === '' ? '' : Math.max(5, parseInt(val, 10)) });
+                                        if (val === '') {
+                                            set({ attemptTimeLimit: '' });
+                                        } else if (validationMode === 'create') {
+                                            const n = parseInt(val, 10);
+                                            set({ attemptTimeLimit: Number.isNaN(n) ? '' : Math.max(1, n) });
+                                        } else {
+                                            set({ attemptTimeLimit: Math.max(5, parseInt(val, 10)) });
+                                        }
                                         clearError('attemptTimeLimit');
                                     }}
                                     className={`${getInputCls(!!errors.attemptTimeLimit)} pl-11`}
                                     disabled={busy}
                                 />
                             </div>
-                            {errors.attemptTimeLimit ? <ErrorText msg={errors.attemptTimeLimit} /> : <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Minimum <strong>5</strong> minutes required.</p>}
+                            {errors.attemptTimeLimit ? (
+                                <ErrorText msg={errors.attemptTimeLimit} />
+                            ) : (
+                                <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">
+                                    {validationMode === 'create'
+                                        ? 'Minutes per attempt; must be greater than 0 and not longer than the availability window.'
+                                        : (
+                                            <>
+                                                Minimum <strong>5</strong> minutes required.
+                                            </>
+                                        )}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* Visibility Status */}
-                <div className="space-y-5 pt-4">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
-                        <Eye className="w-5 h-5 text-purple-500" /> Visibility Status
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {PUBLISH_OPTIONS.map((opt) => {
-                            const isSelected = data.status === opt.value;
-                            return (
-                                <label key={opt.value} className={`relative flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'}`}>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className={`font-bold text-sm ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'}`}>{opt.title}</span>
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
-                                            {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                {showVisibilitySection && (
+                    <div className="space-y-5 pt-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                            <Eye className="w-5 h-5 text-purple-500" /> Visibility Status
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {PUBLISH_OPTIONS.map((opt) => {
+                                const isSelected = data.status === opt.value;
+                                return (
+                                    <label key={opt.value} className={`relative flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'}`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className={`font-bold text-sm ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'}`}>{opt.title}</span>
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-blue-500' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <span className={`text-xs font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-slate-400'}`}>{opt.desc}</span>
-                                    <input type="radio" name="status" value={opt.value} checked={isSelected} onChange={() => { set({ status: opt.value }); clearError('publishedDate'); }} className="hidden" disabled={busy} />
-                                </label>
-                            );
-                        })}
-                    </div>
-
-                    {data.status === 'Scheduled' && (
-                        <div className="p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl animate-in fade-in slide-in-from-top-2">
-                            <label className={`${labelCls} !text-blue-700 dark:!text-blue-400`}>Publish Date & Time <span className="text-red-500">*</span></label>
-                            <DateTimePicker
-                                id="publishedDate"
-                                value={parseDateStr(data.publishedDate)}
-                                onChange={(d) => { set({ publishedDate: dateToLocalStr(d) }); clearError('publishedDate'); }}
-                                minDate={nowDate}
-                                hasError={!!errors.publishedDate}
-                                disabled={busy}
-                                placeholder="Select publish date & time"
-                                iconColor="text-blue-500"
-                            />
-                            {errors.publishedDate ? <ErrorText msg={errors.publishedDate} /> : <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-2 ml-1">Must be in the future and <strong>before</strong> "Available From" date.</p>}
+                                        <span className={`text-xs font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-slate-400'}`}>{opt.desc}</span>
+                                        <input type="radio" name="status" value={opt.value} checked={isSelected} onChange={() => { set({ status: opt.value }); clearError('publishedDate'); }} className="hidden" disabled={busy} />
+                                    </label>
+                                );
+                            })}
                         </div>
-                    )}
-                </div>
+
+                        {data.status === 'Scheduled' && (
+                            <div className="p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl animate-in fade-in slide-in-from-top-2">
+                                <label className={`${labelCls} !text-blue-700 dark:!text-blue-400`}>Publish Date & Time <span className="text-red-500">*</span></label>
+                                <DateTimePicker
+                                    id="publishedDate"
+                                    value={parseDateStr(data.publishedDate)}
+                                    onChange={(d) => { set({ publishedDate: dateToLocalStr(d) }); clearError('publishedDate'); }}
+                                    minDate={nowDate}
+                                    hasError={!!errors.publishedDate}
+                                    disabled={busy}
+                                    placeholder="Select publish date & time"
+                                    iconColor="text-blue-500"
+                                />
+                                {errors.publishedDate ? <ErrorText msg={errors.publishedDate} /> : <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-2 ml-1">Must be in the future and <strong>before</strong> &quot;Available From&quot; date.</p>}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Quiz Behavior */}
                 <div className="space-y-5 pt-4">

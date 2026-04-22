@@ -10,7 +10,7 @@ import type {
     PaginationParams,
     ApiResponse,
     GetAssignmentDto,
-    GetQuizDto
+    GetAllQuizDto,
 } from '@/types/api.types';
 import { getCourseAssignmentsForStudent } from './assignment.service';
 import { getCourseQuizzes } from './quiz.service';
@@ -82,14 +82,9 @@ export const getMyStudentAssignments = async (
 export const getMyStudentQuizzes = async (
     courseId?: number,
     preFetchedCourses?: GetStudentCoursesDto[]
-): Promise<GetQuizDto[]> => {
-    // 1. لو بنجيب كويزات كورس واحد بس
+): Promise<GetAllQuizDto[]> => {
     if (courseId) {
-        const res = await getCourseQuizzes(courseId.toString()) as any;
-        const data = res?.data ?? res;
-        const items = Array.isArray(data) ? data : (data?.items ?? []);
-
-        return items as GetQuizDto[];
+        return getCourseQuizzes(courseId.toString());
     }
 
     const courses = preFetchedCourses ?? await getMyStudentCourses({ PageNumber: 1, PageSize: 100 });
@@ -98,16 +93,12 @@ export const getMyStudentQuizzes = async (
 
     const promises = courses.map(course =>
         getCourseQuizzes(course.id.toString())
-            .then((res: any) => {
-                const data = res?.data ?? res;
-                const items = Array.isArray(data) ? data : (data?.items ?? []);
-
-                // السحر هنا: بنضيف اسم الكورس لكل كويز راجع
-                return items.map((quiz: any) => ({
-                    ...quiz,
-                    courseName: course.name // بنضيف حقل جديد اسمه courseName
-                }));
-            })
+            .then((items) =>
+                items.map((q) => ({
+                    ...q,
+                    courseName: course.name,
+                }))
+            )
             .catch(() => [])
     );
 
@@ -118,7 +109,7 @@ export const getMyStudentQuizzes = async (
 export interface StudentDashboardData {
     courses: GetStudentCoursesDto[];
     upcomingAssignments: GetAssignmentDto[];
-    pendingQuizzes: GetQuizDto[];
+    pendingQuizzes: GetAllQuizDto[];
     stats: {
         totalCourses: number;
         completedAssignments: number;
@@ -136,7 +127,7 @@ export const getStudentDashboardData = async (): Promise<StudentDashboardData> =
         const courses = await getMyStudentCourses().catch(() => []);
 
         let assignments: GetAssignmentDto[] = [];
-        let quizzes: GetQuizDto[] = [];
+        let quizzes: GetAllQuizDto[] = [];
 
         // 2. If we have courses, fetch assignments and quizzes by PASSING the courses
         if (courses.length > 0) {
@@ -157,7 +148,7 @@ export const getStudentDashboardData = async (): Promise<StudentDashboardData> =
             .slice(0, 5);
 
         const pendingQuizzes = quizzes
-            .filter((q: GetQuizDto) => q.status === 'Published') // Using string literal as per likely enum
+            .filter((q: GetAllQuizDto) => q.status === 'Published')
             .slice(0, 5);
 
         return {

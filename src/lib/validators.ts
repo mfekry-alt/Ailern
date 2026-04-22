@@ -205,6 +205,22 @@ export const validateQuestionsArray = (questions: QuestionUpsertRequest[]): Vali
     return { isValid: errors.length === 0, errors };
 };
 
+/** Human-readable summary for UI (matches server rules: one correct option for MCQ/TF, question text, etc.) */
+export function formatQuizQuestionErrors(errors: ValidationError[]): string {
+    return errors
+        .map((e) => {
+            const m = /^questions\[(\d+)\]/.exec(e.field);
+            if (m) {
+                const num = Number(m[1]) + 1;
+                const tail = e.field.replace(/^questions\[\d+\]\.?/, '');
+                const where = tail ? ` (${tail})` : '';
+                return `Question ${num}${where}: ${e.message}`;
+            }
+            return `${e.field}: ${e.message}`;
+        })
+        .join(' | ');
+}
+
 // ============================================================================
 // Grading Validation
 // ============================================================================

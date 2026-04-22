@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     ChevronLeft, ChevronRight, Clock, Flag, Grid3x3,
     Loader2, Send, CheckCircle2, ShieldAlert
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { getQuiz } from '@/api/services/quiz.service';
 import {
     startQuizAttempt,
     getAttemptQuestions,
     saveAttemptProgress,
     submitQuizAttempt,
+    getMyAttemptsForQuiz,
     buildSaveAnswerEntries,
     type AttemptQuestion,
 } from '@/api/services/attempts.service';
@@ -25,6 +27,10 @@ interface LocalAnswer {
 export const QuizPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const state = (location.state as { resume?: boolean; courseId?: string } | null) ?? null;
+    const shouldResume = Boolean(state?.resume);
+    const returnPath = state?.courseId ? `/courses/${state.courseId}/quizzes` : '/courses';
 
     const [quizTitle, setQuizTitle] = useState('');
     const [questions, setQuestions] = useState<AttemptQuestion[]>([]);
@@ -38,6 +44,7 @@ export const QuizPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
     const answersRef = useRef(answers);
     const questionsRef = useRef(questions);
@@ -56,10 +63,29 @@ export const QuizPage = () => {
                 const quiz = await getQuiz(id);
                 setQuizTitle(quiz.title);
 
-                const attempt = await startQuizAttempt(id);
-                setAttemptId(attempt.id);
+                let currentAttemptId: string | null = null;
+                let endDateStr: string | null = null;
 
-                const attemptQuestions = await getAttemptQuestions(attempt.id);
+                if (shouldResume) {
+                    const attemptsDto = await getMyAttemptsForQuiz(id);
+                    const activeAttempt = (attemptsDto?.attempts ?? [])
+                        .filter((a) => String(a.status).toLowerCase() === 'inprogress')
+                        .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime())[0];
+
+                    currentAttemptId = activeAttempt?.id ?? null;
+                    endDateStr = activeAttempt?.attemptEndTime ?? null;
+                    if (!currentAttemptId) {
+                        throw new Error('No active attempt found to resume.');
+                    }
+                } else {
+                    const attempt = await startQuizAttempt(id);
+                    currentAttemptId = attempt.id;
+                    endDateStr = attempt.attemptEndDate;
+                }
+
+                setAttemptId(currentAttemptId);
+
+                const attemptQuestions = await getAttemptQuestions(currentAttemptId);
                 if (attemptQuestions.length === 0) { setError('No questions available for this attempt.'); return; }
 
                 setQuestions(attemptQuestions);
@@ -74,7 +100,6 @@ export const QuizPage = () => {
                 if (preFilledAnswers.length > 0) setAnswers(preFilledAnswers);
 
                 // Timer: server returns attemptEndDate — remaining = endDate - now
-                const endDateStr = attempt.attemptEndDate;
                 if (endDateStr) {
                     const normalized = endDateStr.endsWith('Z') || endDateStr.includes('+') ? endDateStr : endDateStr + 'Z';
                     const endMs = new Date(normalized).getTime();
@@ -97,7 +122,13 @@ export const QuizPage = () => {
 
     // ── Auto-submit on timer expiry ────────────────────────────────────────
 
-    const doSubmit = useCallback(async (showResult = true) => {
+    const doSubmit = useCallback(async (mode: 'manual' | 'auto' = 'manual') => {
+        if (mode === 'auto') {
+            toast.info('Time is up. Your attempt was auto-submitted.');
+            navigate(returnPath, { replace: true });
+            return;
+        }
+
         const aid = attemptIdRef.current;
         if (!aid) return;
 
@@ -106,20 +137,24 @@ export const QuizPage = () => {
             const entries = buildSaveAnswerEntries(questionsRef.current, answersRef.current);
             if (entries.length > 0) await saveAttemptProgress(aid, entries);
             await submitQuizAttempt(aid);
-            if (showResult) navigate(`/student/quizzes/${id}/result/${aid}`);
+            toast.success('Quiz submitted successfully.');
+            navigate(returnPath, { replace: true });
         } catch {
-            if (showResult) navigate(`/student/quizzes/${id}/result/${aid}`);
+            toast.error('Failed to submit quiz. Please try again.');
         }
-    }, [id, navigate]);
+        finally {
+            setIsSubmitting(false);
+        }
+    }, [navigate, returnPath]);
 
     // Timer countdown
     useEffect(() => {
-        if (timeRemaining === null || timeRemaining <= 0 || isSubmitting) return;
+        if (timeRemaining === null || isSubmitting) return;
         const interval = setInterval(() => {
             setTimeRemaining(prev => {
                 if (prev !== null && prev <= 1) {
                     clearInterval(interval);
-                    doSubmit();
+                    doSubmit('auto');
                     return 0;
                 }
                 return prev !== null ? prev - 1 : null;
@@ -180,8 +215,9 @@ export const QuizPage = () => {
     };
 
     const handleManualSubmit = async () => {
-        if (!attemptId || !window.confirm('Are you sure you want to finish and submit your quiz?')) return;
-        await doSubmit(true);
+        if (!attemptId || isSubmitting) return;
+        setShowSubmitConfirm(false);
+        await doSubmit('manual');
     };
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -230,12 +266,12 @@ export const QuizPage = () => {
     return (
         <div className="min-h-screen bg-[#0a0f1d] text-slate-200 flex flex-col font-sans">
             {/* Navbar */}
-            <header className="sticky top-0 z-50 bg-[#0f1423]/90 backdrop-blur-xl border-b border-slate-800/80 h-20 px-6 sm:px-10 flex items-center justify-between shadow-2xl">
+            <header className="sticky top-0 z-50 border-b border-slate-800/80 h-20 px-6 sm:px-10 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 font-black text-xl text-white">A</div>
                     <span className="text-xl font-black tracking-tight hidden sm:block">Ailern Exam</span>
                 </div>
-                <div className={`flex items-center gap-4 px-6 py-2.5 rounded-2xl border-2 transition-all ${timeRemaining !== null && timeRemaining < 120 ? 'border-red-500/50 bg-red-500/10 animate-pulse' : 'border-slate-700/50 bg-slate-800/50'}`}>
+                <div className="flex items-center gap-4 px-6 py-2.5 rounded-2xl border-2 transition-all border-slate-700/50 bg-slate-800/50">
                     <Clock className={`w-5 h-5 ${timeRemaining !== null && timeRemaining < 120 ? 'text-red-500' : 'text-indigo-400'}`} />
                     <span className={`text-xl font-black font-mono ${timeRemaining !== null && timeRemaining < 120 ? 'text-red-500' : 'text-white'}`}>
                         {timeRemaining !== null ? formatTime(timeRemaining) : '--:--'}
@@ -270,6 +306,9 @@ export const QuizPage = () => {
                         <div className="absolute top-0 left-0 w-2 h-full bg-indigo-600" />
                         <div className="flex items-center gap-3 mb-8">
                             <span className="px-4 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest">{currentQ.type}</span>
+                            <span className="px-4 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                                {currentQ.mark} Pts
+                            </span>
                             {currentQ.instructions && <span className="text-slate-500 text-xs italic">{currentQ.instructions}</span>}
                         </div>
                         <h2 className="text-2xl sm:text-3xl font-bold text-white mb-10 leading-relaxed">{currentQ.question}</h2>
@@ -321,7 +360,7 @@ export const QuizPage = () => {
                             {isSaving ? <><Loader2 className="w-3 h-3 animate-spin" /> Syncing</> : <><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Auto-Saved</>}
                         </div>
                         {currentIndex === questions.length - 1 ? (
-                            <button onClick={handleManualSubmit} disabled={isSubmitting} className="px-10 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/20 hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2">
+                            <button onClick={() => setShowSubmitConfirm(true)} disabled={isSubmitting} className="px-10 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/20 hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2">
                                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />} SUBMIT EXAM
                             </button>
                         ) : (
@@ -331,6 +370,34 @@ export const QuizPage = () => {
                         )}
                     </div>
                 </main>
+
+            {showSubmitConfirm && (
+                <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-3xl border border-slate-700 bg-[#111a30] p-6 shadow-2xl">
+                        <h3 className="text-xl font-black text-white">Submit your quiz?</h3>
+                        <p className="mt-2 text-sm text-slate-300">
+                            Make sure you reviewed your answers. Once submitted, you cannot continue this attempt.
+                        </p>
+                        <div className="mt-6 flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowSubmitConfirm(false)}
+                                className="flex-1 rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-bold text-slate-200 hover:bg-slate-700"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleManualSubmit}
+                                disabled={isSubmitting}
+                                className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-3 text-sm font-black text-white hover:from-emerald-600 hover:to-teal-700 disabled:opacity-60"
+                            >
+                                {isSubmitting ? 'Submitting...' : 'Yes, Submit'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
                 {/* Sidebar */}
                 <aside className="space-y-6">

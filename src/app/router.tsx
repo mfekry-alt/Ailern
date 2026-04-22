@@ -60,6 +60,8 @@ import { InstructorAssignmentEditPage } from '@/routes/instructor/InstructorAssi
 import { InstructorSubmissionsPage } from '@/routes/instructor/InstructorSubmissionsPage';
 import { InstructorUpcomingEventsPage } from '@/routes/instructor/InstructorUpcomingEventsPage';
 import { QuizDashboardPage } from '@/routes/instructor/QuizDashboardPage';
+import { InstructorQuizSubmissionsPage } from '@/routes/instructor/InstructorQuizSubmissionsPage';
+import { InstructorQuizSubmissionReviewPage } from '@/routes/instructor/InstructorQuizSubmissionReviewPage';
 
 // Admin pages
 import { AdminDashboardPage } from '@/routes/admin/AdminDashboardPage';
@@ -163,6 +165,8 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT} element={<InstructorQuizQuestionsEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_DASHBOARD} element={<QuizDashboardPage />} />
+                <Route path={ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS} element={<InstructorQuizSubmissionsPage />} />
+                <Route path={ROUTES.INSTRUCTOR_QUIZ_SUBMISSION_REVIEW} element={<InstructorQuizSubmissionReviewPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
             </Route>

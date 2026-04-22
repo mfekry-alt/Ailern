@@ -5,7 +5,7 @@ import { ROUTES } from '@/lib/constants';
 import { ArrowLeft, AlertTriangle, FileArchive, ListChecks } from 'lucide-react';
 import { QuizForm, toDatetimeLocal, toISOFromLocal } from '@/components/QuizForm';
 import type { QuizFormData } from '@/components/QuizForm';
-import type { QuizRequest, GetQuizDto } from '@/types/api.types';
+import type { GetQuizDto, QuizFormStatus, UpdateQuizBody } from '@/types/api.types';
 import { toast } from 'sonner';
 
 function quizToFormData(quiz: GetQuizDto): QuizFormData {
@@ -16,25 +16,24 @@ function quizToFormData(quiz: GetQuizDto): QuizFormData {
         availableUntil: toDatetimeLocal(quiz.availableUntil),
         maximumAttempts: quiz.maximumAttempts,
         attemptTimeLimit: quiz.attemptTimeLimit || 5,
-        status: quiz.status,
-        publishedDate: quiz.publishedDate ? toDatetimeLocal(quiz.publishedDate) : '',
+        status: (quiz.status ?? 'Draft') as QuizFormStatus,
+        publishedDate: (quiz.publishedAt || quiz.publishedDate)
+            ? toDatetimeLocal(String(quiz.publishedAt || quiz.publishedDate))
+            : '',
         showResultOnClose: quiz.showResultOnClose ?? true,
         shuffleQuestions: quiz.shuffleQuestions ?? true,
         shuffleOptions: quiz.shuffleOptions ?? true,
     };
 }
 
-function formDataToCommand(data: QuizFormData, courseId: string): Partial<QuizRequest> {
+function formDataToUpdateBody(data: QuizFormData): UpdateQuizBody {
     return {
         title: data.title.trim(),
         description: data.description?.trim() || data.title.trim() || 'Quiz',
-        courseId: Number(courseId),
         maximumAttempts: data.maximumAttempts,
         attemptTimeLimit: Number(data.attemptTimeLimit) || 0,
-        status: data.status,
         availableFrom: toISOFromLocal(data.availableFrom),
         availableUntil: toISOFromLocal(data.availableUntil),
-        publishedDate: data.status === 'Scheduled' ? toISOFromLocal(data.publishedDate) : undefined,
         showResultOnClose: data.showResultOnClose,
         shuffleQuestions: data.shuffleQuestions,
         shuffleOptions: data.shuffleOptions,
@@ -84,7 +83,7 @@ export const InstructorQuizEditPage = () => {
     const handleSave = async (data: QuizFormData) => {
         try {
             setApiError(null);
-            const payload = formDataToCommand(data, actualCourseId);
+            const payload = formDataToUpdateBody(data);
             await updateQuizMutation.mutateAsync({ id: quizId!, cmd: payload });
             localStorage.removeItem(DRAFT_KEY);
             toast.success('Quiz updated successfully!');
@@ -199,6 +198,7 @@ export const InstructorQuizEditPage = () => {
                     onSubmit={handleSave}
                     isPending={updateQuizMutation.isPending}
                     submitLabel="Save Changes"
+                    showVisibilitySection={false}
                     onCancel={() => {
                         localStorage.removeItem(DRAFT_KEY);
                         navigate(-1);

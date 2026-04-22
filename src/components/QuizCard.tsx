@@ -5,7 +5,7 @@ import type { StartAttemptResponse } from '@/api/services/attempts.service';
 
 interface QuizCardProps {
     quiz: GetQuizDto;
-    onStartQuiz: (quizId: string) => void;
+    onStartQuiz: (quizId: string, resume?: boolean) => void;
     onViewAttempts?: (quizId: string) => void;
     isLoading?: boolean;
     attempts?: StartAttemptResponse[];
@@ -159,6 +159,7 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
 
     const status = getStatus();
     const StatusIcon = status.icon;
+    const hasActiveAttempt = Boolean(quiz.hasActiveAttempt);
 
     // Determine if button should be disabled
     // نعتمد على isAvailable اللي بتتحكم في التايمر عشان الزرار يفتح لوحده
@@ -286,9 +287,11 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
                 <div className="flex-1 relative group/tooltip">
                     <button
                         disabled={isDisabled}
-                        onClick={() => onStartQuiz(quiz.id)}
+                        onClick={() => onStartQuiz(quiz.id, hasActiveAttempt)}
                         className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${!isDisabled
-                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/25 active:scale-95'
+                            ? hasActiveAttempt
+                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/25 active:scale-95'
+                                : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/25 active:scale-95'
                             : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
                             }`}
                     >
@@ -297,7 +300,7 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
                         ) : (
                             <>
                                 <Play className="w-5 h-5 fill-current" />
-                                {!isDisabled ? 'Start Quiz...' : 'Start Quiz'}
+                                {!isDisabled ? (hasActiveAttempt ? 'Resume Quiz...' : 'Start Quiz...') : (hasActiveAttempt ? 'Resume Quiz' : 'Start Quiz')}
                             </>
                         )}
                     </button>

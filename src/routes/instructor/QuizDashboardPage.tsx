@@ -7,11 +7,12 @@ import {
 import {
     ArrowLeft, Users, Target, CheckCircle2, XCircle,
     TrendingUp, BarChart2, PieChart as PieChartIcon,
-    Clock, RefreshCw, Loader2, AlertCircle, HelpCircle,
+    Clock, RefreshCw, Loader2, AlertCircle, HelpCircle, ClipboardCheck,
 } from 'lucide-react';
 import { useQuizDashboard } from '@/features/quizzes/useQuizDashboard';
 import { useQuiz } from '@/features/quizzes/api';
 import type { DashboardMode } from '@/types/quiz-dashboard.types';
+import { ROUTES } from '@/lib/constants';
 
 // ── Color palette ─────────────────────────────────────────────────────────
 const COLORS = {
@@ -268,6 +269,17 @@ export const QuizDashboardPage = () => {
 
                     {/* Mode Selector */}
                     <div className="flex items-center gap-2 bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-sm self-start sm:self-auto">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (!quizId) return;
+                                navigate(ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS.replace(':quizId', quizId));
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                        >
+                            <ClipboardCheck className="w-4 h-4" />
+                            Submissions
+                        </button>
                         <span className="pl-2 pr-1 text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 whitespace-nowrap">View:</span>
                         {(['Min', 'Avg', 'Max'] as DashboardMode[]).map((m) => (
                             <ModeBtn key={m} label={m} active={mode === m} onClick={() => setMode(m)} />

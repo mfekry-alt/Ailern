@@ -45,6 +45,8 @@ export const ENDPOINTS = {
         REJECT_ENROLLMENT: (id: number, studentId: number) => `/Courses/${id}/enrollments/${studentId}/reject`,
         DELETE_ENROLLMENT: (id: number, studentId: number) => `/Courses/${id}/enrollments/${studentId}`,
         STUDENTS: (id: number) => `/Courses/${id}/students`,
+        /** GET paginated quizzes; POST create draft quiz (body: CreateQuizBody) — same course segment as Assignments */
+        QUIZZES: (courseId: number | string) => `/Courses/${courseId}/quizzes`,
     },
 
     // Assignments endpoints (based on API: /api/Assignments/* and /api/Courses/*/Assignments)
@@ -70,19 +72,17 @@ export const ENDPOINTS = {
         REVIEW: (submissionId: number) => `/Assignments/Submissions/${submissionId}`,
     },
 
-    // Quizzes endpoints
+    // Quizzes endpoints (single-quiz operations; course-scoped list/create under COURSES.QUIZZES)
     QUIZZES: {
-        CREATE: '/Quizzes',
         GET: (id: string) => `/Quizzes/${id}`,
         UPDATE: (id: string) => `/Quizzes/${id}`,
         DELETE: (id: string) => `/Quizzes/${id}`,
-        BY_COURSE: (courseId: string) => `/courses/${courseId}/quizzes`,
+        UPDATE_STATUS: (id: string) => `/Quizzes/${id}/update-status`,
         LIST: '/Quizzes',
         GENERATE_BY_AI: (quizId: string) => `/Quizzes/${quizId}/generate-by-ai`,
         UPSERT_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/questions`,
         GENERATE_FILES: (quizId: string) => `/Quizzes/${quizId}/generate-questions-files`,
         JOB_STATUS: (jobId: string) => `/Quizzes/job/${jobId}`,
-        GET_ATTEMPTS: (quizId: string) => `/Quizzes/${quizId}/attempts`,
         GET_SUBMISSIONS: (quizId: string) => `/Quizzes/${quizId}/submissions`,
     },
 
@@ -97,14 +97,16 @@ export const ENDPOINTS = {
 
     // Quiz Attempts endpoints
     ATTEMPTS: {
-        START: (quizId: string) => `/Quizzes/${quizId}/attempts`, // POST - creates new attempt
-        GET_ATTEMPTS: (quizId: string) => `/Quizzes/${quizId}/attempts`, // GET
-        GET_QUESTIONS: (attemptId: string) => `/Attempts/${attemptId}/questions`, // GET
-        SAVE: (attemptId: string) => `/Attempts/${attemptId}/save`, // POST
-        SUBMIT: (attemptId: string) => `/Attempts/${attemptId}/submit`, // PUT
-        GET_RESULT: (attemptId: string) => `/Attempts/${attemptId}/result`, // GET
-        GET_STUDENT_ANSWERS: (attemptId: string) => `/Attempts/${attemptId}/student-answers`, // GET
-        GRADE: (attemptId: string) => `/Attempts/${attemptId}/grade`, // PUT
+        /** POST empty body — Student */
+        START: (quizId: string) => `/Quizzes/${quizId}/Attempts`,
+        /** GET student history for a quiz — route id is quizId */
+        MY_ATTEMPTS_FOR_QUIZ: (quizId: string) => `/Quizzes/${quizId}/my-attempts`,
+        GET_QUESTIONS: (attemptId: string) => `/Attempts/${attemptId}/questions`,
+        SAVE: (attemptId: string) => `/Attempts/${attemptId}/save`,
+        SUBMIT: (attemptId: string) => `/Attempts/${attemptId}/submit`,
+        GET_RESULT: (attemptId: string) => `/Attempts/${attemptId}/result`,
+        GET_STUDENT_ANSWERS: (attemptId: string) => `/Attempts/${attemptId}/student-answers`,
+        GRADE: (attemptId: string) => `/Attempts/${attemptId}/grade`,
     },
 
     // Instructor Dashboard endpoints
@@ -112,6 +114,8 @@ export const ENDPOINTS = {
         STATS: '/Dashboard/instructor',
         UPCOMING_EVENTS: '/Dashboard/UpcomingEvents',
         MY_COURSES: '/Users/instructor/my-courses',
+    },
+
     // Dashboard endpoints
     DASHBOARD: {
         QUIZ: (quizId: string) => `/Dashboard/quiz/${quizId}`,

@@ -5,7 +5,6 @@ import { EmptyState } from '../components/EmptyState';
 import { TabLoadingState } from '../components/TabLoadingState';
 import { QuizCard } from '@/components/QuizCard';
 import { HelpCircle, AlertCircle, RefreshCw } from 'lucide-react';
-import type { GetQuizDto } from '../types';
 
 interface CourseContext {
     courseId: string;
@@ -19,25 +18,42 @@ const parseServerDate = (dateString?: string): Date => {
 };
 
 export const QuizzesTab = () => {
-    const { numericCourseId } = useOutletContext<CourseContext>();
+    const { courseId, numericCourseId } = useOutletContext<CourseContext>();
     const navigate = useNavigate();
 
     const { data: quizzes, isLoading, error, refetch } = useCourseQuizzes(numericCourseId ?? 0);
     const [startingQuizId, setStartingQuizId] = useState<string | null>(null);
+    const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'close'>('all');
 
     const publishedQuizzes = useMemo(
-        () => (quizzes ?? []).filter((q: GetQuizDto) => q.status === 'Published'),
+        () => (quizzes ?? []).filter((q) => q.status === 'Published'),
         [quizzes]
     );
 
-    const handleStartQuiz = (quizId: string) => {
+    const getAvailabilityStatus = (quiz: { availableFrom: string; availableUntil: string }): 'open' | 'close' => {
+        const now = new Date();
+        const from = parseServerDate(quiz.availableFrom);
+        const until = parseServerDate(quiz.availableUntil);
+        return now >= from && now <= until ? 'open' : 'close';
+    };
+
+    const filteredQuizzes = useMemo(
+        () =>
+            publishedQuizzes.filter((quiz) => {
+                if (statusFilter === 'all') return true;
+                return getAvailabilityStatus(quiz) === statusFilter;
+            }),
+        [publishedQuizzes, statusFilter]
+    );
+
+    const handleStartQuiz = (quizId: string, resume = false) => {
         setStartingQuizId(quizId);
-        navigate(`/quizzes/${quizId}/attempt`);
+        navigate(`/quizzes/${quizId}/attempt`, { state: { resume, courseId } });
         setStartingQuizId(null);
     };
 
     const handleViewAttempts = (quizId: string) => {
-        navigate(`/quizzes/${quizId}/attempts`);
+        navigate(`/quizzes/${quizId}/attempts`, { state: { courseId } });
     };
 
     if (isLoading) return <TabLoadingState />;
@@ -92,11 +108,44 @@ export const QuizzesTab = () => {
                 </div>
             </div>
 
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-200 bg-white p-2 dark:border-slate-700/50 dark:bg-slate-800/40">
+                <button
+                    onClick={() => setStatusFilter('all')}
+                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                        statusFilter === 'all'
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700/70'
+                    }`}
+                >
+                    All
+                </button>
+                <button
+                    onClick={() => setStatusFilter('open')}
+                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                        statusFilter === 'open'
+                            ? 'bg-emerald-600 text-white'
+                            : 'text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700/70'
+                    }`}
+                >
+                    Open
+                </button>
+                <button
+                    onClick={() => setStatusFilter('close')}
+                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                        statusFilter === 'close'
+                            ? 'bg-slate-700 text-white dark:bg-slate-600'
+                            : 'text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700/70'
+                    }`}
+                >
+                    Close
+                </button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {publishedQuizzes.map((quiz: GetQuizDto) => (
+                {filteredQuizzes.map((quiz) => (
                     <QuizCard
                         key={quiz.id}
-                        quiz={quiz}
+                        quiz={quiz as any}
                         onStartQuiz={handleStartQuiz}
                         onViewAttempts={handleViewAttempts}
                         isLoading={startingQuizId === quiz.id}
@@ -104,6 +153,14 @@ export const QuizzesTab = () => {
                     />
                 ))}
             </div>
+
+            {filteredQuizzes.length === 0 && (
+                <EmptyState
+                    icon={HelpCircle}
+                    title="No quizzes match this filter"
+                    description="Try switching between Open and Close to view available quizzes."
+                />
+            )}
         </div>
     );
 };
