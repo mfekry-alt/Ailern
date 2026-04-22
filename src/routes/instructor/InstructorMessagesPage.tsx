@@ -26,7 +26,7 @@ export const InstructorMessagesPage = () => {
                             <input
                                 type="text"
                                 placeholder="Search conversations..."
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-azure-50 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-[#21A9FF] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                             />
                         </div>
                     </div>
@@ -37,12 +37,12 @@ export const InstructorMessagesPage = () => {
                             <div
                                 key={conv.id}
                                 onClick={() => setSelectedConversation(conv.id)}
-                                className={`p-4 border-b border-gray-100 dark:border-zinc-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 ${selectedConversation === conv.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                                className={`p-4 border-b border-gray-100 dark:border-zinc-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 ${selectedConversation === conv.id ? 'bg-[#21A9FF]/10' : ''
                                     }`}
                             >
                                 <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
-                                        <span className="text-[14px] font-semibold text-azure-50">
+                                    <div className="w-10 h-10 rounded-full bg-[#21A9FF]/10 flex items-center justify-center shrink-0">
+                                        <span className="text-[14px] font-semibold text-[#21A9FF]">
                                             {conv.student.split(' ').map((n) => n[0]).join('')}
                                         </span>
                                     </div>
@@ -50,7 +50,7 @@ export const InstructorMessagesPage = () => {
                                         <div className="flex items-center justify-between mb-1">
                                             <p className="text-[14px] font-semibold text-azure-8 dark:text-zinc-100">{conv.student}</p>
                                             {conv.unread && (
-                                                <span className="w-2 h-2 rounded-full bg-azure-50 shrink-0" />
+                                                <span className="w-2 h-2 rounded-full bg-[#21A9FF] shrink-0" />
                                             )}
                                         </div>
                                         <p className="text-[12px] text-azure-46 dark:text-zinc-400 mb-1">{conv.course}</p>
@@ -68,8 +68,8 @@ export const InstructorMessagesPage = () => {
                     {/* Chat Header */}
                     <div className="p-4 border-b border-gray-200 dark:border-zinc-700 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                                <span className="text-[14px] font-semibold text-azure-50">—</span>
+                            <div className="w-10 h-10 rounded-full bg-[#21A9FF]/10 flex items-center justify-center">
+                                <span className="text-[14px] font-semibold text-[#21A9FF]">—</span>
                             </div>
                             <div>
                                 <p className="text-[16px] font-semibold text-azure-8 dark:text-zinc-100">Select a conversation</p>
@@ -90,13 +90,13 @@ export const InstructorMessagesPage = () => {
                             >
                                 <div
                                     className={`max-w-[70%] rounded-lg p-4 ${message.isMe
-                                        ? 'bg-azure-50 text-white'
+                                        ? 'bg-[#21A9FF] text-white'
                                         : 'bg-gray-100 dark:bg-zinc-800 text-azure-8 dark:text-zinc-100'
                                         }`}
                                 >
                                     <p className="text-[14px]">{message.text}</p>
                                     <p
-                                        className={`text-[10px] mt-2 ${message.isMe ? 'text-blue-100' : 'text-gray-500'
+                                        className={`text-[10px] mt-2 ${message.isMe ? 'text-white/70' : 'text-gray-500'
                                             }`}
                                     >
                                         {message.time}
@@ -112,9 +112,9 @@ export const InstructorMessagesPage = () => {
                             <input
                                 type="text"
                                 placeholder="Type your message..."
-                                className="flex-1 px-4 py-3 border border-gray-300 dark:border-zinc-700 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-azure-50 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                                className="flex-1 px-4 py-3 border border-gray-300 dark:border-zinc-700 rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-[#21A9FF] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                             />
-                            <button className="px-6 py-3 bg-azure-50 text-white rounded-lg hover:bg-azure-53 transition-colors">
+                            <button className="px-6 py-3 bg-[#21A9FF] text-white rounded-lg hover:bg-[#0094F2] transition-colors">
                                 <Send className="w-5 h-5" />
                             </button>
                         </div>

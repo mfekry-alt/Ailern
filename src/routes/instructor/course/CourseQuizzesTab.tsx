@@ -33,10 +33,16 @@ export const CourseQuizzesTab = () => {
             .sort((a, b) => new Date((b as any).createdAt ?? 0).getTime() - new Date((a as any).createdAt ?? 0).getTime());
     }, [courseQuizzes, filterStatus, search]);
 
+    const getStatusBadge = (status: string) => {
+        if (status === 'Published') return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">Published</span>;
+        if (status === 'Scheduled') return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-[#21A9FF]/10 border border-[#21A9FF]/20 text-[#21A9FF] dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20">Scheduled</span>;
+        return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400">Draft</span>;
+    };
+
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-purple-500 animate-spin mb-3" />
+                <Loader2 className="w-8 h-8 text-[#21A9FF] animate-spin mb-3" />
                 <p className="text-gray-500 dark:text-slate-400 font-medium">Loading quizzes...</p>
             </div>
         );
@@ -46,9 +52,9 @@ export const CourseQuizzesTab = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                    <HelpCircle className="w-6 h-6 text-purple-500" /> Quizzes
+                    <HelpCircle className="w-6 h-6 text-[#21A9FF]" /> Quizzes
                 </h2>
-                <button onClick={() => navigate(`/courses/${courseId}/quiz/create`)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-purple-500/25 active:scale-95">
+                <button onClick={() => navigate(`/courses/${courseId}/quiz/create`)} className="flex items-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-[#21A9FF]/25 active:scale-95">
                     <Plus className="w-4 h-4" /> Create Quiz
                 </button>
             </div>
@@ -57,14 +63,14 @@ export const CourseQuizzesTab = () => {
             <div className="bg-white dark:bg-slate-800/40 p-3 rounded-2xl border border-gray-200 dark:border-slate-700/50 flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative">
                     <Filter className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 appearance-none">
+                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 appearance-none">
                         <option value="all">All Statuses</option>
                         <option value="Published">Published</option>
                         <option value="Draft">Draft</option>
                     </select>
                 </div>
                 <div className="flex-[2]">
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search quizzes..." className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-gray-900 dark:text-white" />
+                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search quizzes..." className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
                 </div>
             </div>
 
@@ -104,7 +110,7 @@ export const CourseQuizzesTab = () => {
                                         <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors" title="Edit Quiz">
                                             <Edit className="w-4 h-4" />
                                         </button>
-                                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg transition-colors" title="Manage Questions">
+                                        <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-[#21A9FF] hover:bg-[#21A9FF]/10 rounded-lg transition-colors" title="Manage Questions">
                                             <ListChecks className="w-4 h-4" />
                                         </button>
                                         <button

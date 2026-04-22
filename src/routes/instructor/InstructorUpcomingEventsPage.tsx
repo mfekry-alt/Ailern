@@ -141,7 +141,7 @@ export const InstructorUpcomingEventsPage = () => {
                         </button>
                         <div>
                             <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-                                <CalendarDays className="w-8 h-8 text-rose-500" /> Upcoming Events
+                                <CalendarDays className="w-8 h-8 text-[#21A9FF]" /> Upcoming Events
                             </h1>
                             <p className="text-gray-500 dark:text-slate-400 font-medium text-sm mt-1">
                                 Comprehensive timeline of pending assessments and curriculum deadlines.
@@ -157,16 +157,16 @@ export const InstructorUpcomingEventsPage = () => {
                                 placeholder="Search events..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all w-full md:w-64 shadow-sm"
+                                className="pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all w-full md:w-64 shadow-sm"
                             />
                         </div>
                         
                         <div className="relative">
                             <button 
                                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                                className={`flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border ${filterType !== 'All' ? 'border-blue-500 shadow-sm shadow-blue-500/10' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all`}
+                                className={`flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border ${filterType !== 'All' ? 'border-[#21A9FF] shadow-sm shadow-[#21A9FF]/10' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all`}
                             >
-                                <Filter className={`w-4 h-4 ${filterType !== 'All' ? 'text-blue-500' : ''}`} />
+                                <Filter className={`w-4 h-4 ${filterType !== 'All' ? 'text-[#21A9FF]' : ''}`} />
                                 <span className="hidden sm:inline">{filterType === 'All' ? 'Filter' : filterType}</span>
                                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
                             </button>
@@ -185,7 +185,7 @@ export const InstructorUpcomingEventsPage = () => {
                                                 className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
                                             >
                                                 {type === 'All' ? 'All Types' : `${type}s`}
-                                                {filterType === type && <Check className="w-4 h-4 text-blue-500" />}
+                                                {filterType === type && <Check className="w-4 h-4 text-[#21A9FF]" />}
                                             </button>
                                         ))}
                                     </div>
@@ -206,7 +206,7 @@ export const InstructorUpcomingEventsPage = () => {
                             <p className="text-gray-500 dark:text-slate-400 mb-6">There was an error fetching your upcoming assessments.</p>
                             <button 
                                 onClick={() => window.location.reload()}
-                                className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors"
+                                className="px-6 py-2 bg-[#21A9FF] text-white font-bold rounded-xl hover:bg-[#0094F2] transition-colors"
                             >
                                 Try Again
                             </button>
@@ -223,7 +223,7 @@ export const InstructorUpcomingEventsPage = () => {
                             {searchQuery && (
                                 <button 
                                     onClick={() => setSearchQuery('')}
-                                    className="mt-6 text-sm font-bold text-blue-600 hover:underline"
+                                    className="mt-6 text-sm font-bold text-[#21A9FF] hover:underline"
                                 >
                                     Clear Search
                                 </button>
@@ -251,7 +251,7 @@ export const InstructorUpcomingEventsPage = () => {
                                 return (
                                     <div 
                                         key={idx}
-                                        className={`group relative bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-3xl p-6 border border-gray-200 dark:border-slate-700/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden`}
+                                        className={`group relative bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-3xl p-6 border border-gray-200 dark:border-slate-700/50 hover:shadow-xl hover:shadow-[#21A9FF]/5 transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden`}
                                     >
                                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${c.dot}`} />
                                         
@@ -261,12 +261,12 @@ export const InstructorUpcomingEventsPage = () => {
                                                     {event.eventType}
                                                 </span>
                                                 <span className="text-gray-300 dark:text-slate-700">|</span>
-                                                <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                                <p className="text-sm font-bold text-[#21A9FF] dark:text-[#21A9FF]">
                                                     {event.courseName}
                                                 </p>
                                             </div>
 
-                                            <h3 className="text-xl font-extrabold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                            <h3 className="text-xl font-extrabold text-gray-900 dark:text-white group-hover:text-[#21A9FF] dark:group-hover:text-[#21A9FF] transition-colors">
                                                 {event.title}
                                             </h3>
 
@@ -288,7 +288,7 @@ export const InstructorUpcomingEventsPage = () => {
                                             </div>
                                             <Link 
                                                 to={getDetailsPath()}
-                                                className="text-xs font-bold text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition-colors group/link"
+                                                className="text-xs font-bold text-gray-400 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] flex items-center gap-1 transition-colors group/link"
                                             >
                                                 Details <ArrowRight className="w-3 h-3 group-hover/link:translate-x-1 transition-transform" />
                                             </Link>
@@ -301,11 +301,11 @@ export const InstructorUpcomingEventsPage = () => {
                 </div>
 
                 {/* Footer Insight */}
-                <div className="p-6 bg-blue-50 dark:bg-blue-500/5 rounded-3xl border border-blue-100 dark:border-blue-500/10 flex items-start gap-4">
-                    <AlertCircle className="w-6 h-6 text-blue-500 shrink-0 mt-0.5" />
+                <div className="p-6 bg-[#21A9FF]/5 dark:bg-[#21A9FF]/5 rounded-3xl border border-[#21A9FF]/10 dark:border-[#21A9FF]/10 flex items-start gap-4">
+                    <AlertCircle className="w-6 h-6 text-[#21A9FF] shrink-0 mt-0.5" />
                     <div>
-                        <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100">Pro-Tip for Instructors</h4>
-                        <p className="text-xs text-blue-700/70 dark:text-blue-300/60 mt-1 leading-relaxed">
+                        <h4 className="text-sm font-bold text-[#21A9FF] dark:text-[#21A9FF]">Pro-Tip for Instructors</h4>
+                        <p className="text-xs text-[#21A9FF]/70 dark:text-[#21A9FF]/60 mt-1 leading-relaxed">
                             Stay ahead of your grading cycle by monitoring this timeline daily. 
                             Events marked as <span className="font-bold">Overdue</span> require immediate attention or grading.
                         </p>

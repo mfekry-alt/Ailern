@@ -34,8 +34,8 @@ export const Header = () => {
             time: '10:30 AM',
             isRead: false,
             icon: BookOpen,
-            iconBg: 'bg-blue-100 dark:bg-blue-900/30',
-            iconColor: 'text-blue-600 dark:text-blue-400'
+            iconBg: 'bg-[#21A9FF]/10',
+            iconColor: 'text-[#21A9FF]'
         },
         {
             id: 2,
@@ -221,9 +221,9 @@ export const Header = () => {
                         <button
                             type="button"
                             onClick={() => handleSearchResultClick(course.id)}
-                            className="w-full text-left px-4 py-3 rounded-xl hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors group flex flex-col gap-1"
+                            className="w-full text-left px-4 py-3 rounded-xl hover:bg-[#21A9FF]/10 dark:hover:bg-slate-800 transition-colors group flex flex-col gap-1"
                         >
-                            <span className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate group-hover:text-[#21A9FF] dark:group-hover:text-[#21A9FF] transition-colors">
                                 {course.name}
                             </span>
                             {course.code && (
@@ -269,8 +269,8 @@ export const Header = () => {
                                     key={link.path}
                                     to={link.path}
                                     className={`relative px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${isActive
-                                        ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-sm'
-                                        : 'text-gray-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                                        ? 'bg-[#21A9FF]/10 text-[#21A9FF] shadow-sm'
+                                        : 'text-gray-600 dark:text-slate-400 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] hover:bg-gray-50 dark:hover:bg-slate-800/50'
                                         }`}
                                 >
                                     {link.label}
@@ -301,7 +301,7 @@ export const Header = () => {
                             </Link>
                             <Link
                                 to={`${ROUTES.HOME}#contact`}
-                                className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg hover:shadow-blue-500/25 transition-all hover:-translate-y-0.5"
+                                className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-[#21A9FF] hover:bg-[#0094F2] hover:shadow-lg hover:shadow-[#21A9FF]/25 transition-all hover:-translate-y-0.5"
                             >
                                 Contact Us
                             </Link>
@@ -311,8 +311,8 @@ export const Header = () => {
                             {/* Search */}
                             <div className="relative w-[260px] hidden md:block group" ref={searchRef}>
                                 <form onSubmit={handleSearch}>
-                                    <div className="flex items-center h-10 px-3 rounded-full relative bg-gray-100/80 dark:bg-slate-800/80 border border-transparent focus-within:border-blue-500/50 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all duration-300">
-                                        <Search className="absolute left-3 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <div className="flex items-center h-10 px-3 rounded-full relative bg-gray-100/80 dark:bg-slate-800/80 border border-transparent focus-within:border-[#21A9FF]/50 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-4 focus-within:ring-[#21A9FF]/10 transition-all duration-300">
+                                        <Search className="absolute left-3 w-4 h-4 text-gray-400 group-focus-within:text-[#21A9FF] transition-colors" />
                                         <input
                                             type="text"
                                             placeholder="Search Courses..."
@@ -336,7 +336,7 @@ export const Header = () => {
                             <button
                                 type="button"
                                 onClick={toggleTheme}
-                                className="relative p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                className="relative p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] transition-colors"
                             >
                                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                             </button>
@@ -345,7 +345,7 @@ export const Header = () => {
                             <div className="relative" ref={notificationsRef}>
                                 <button
                                     onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                                    className="relative p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                    className="relative p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] transition-colors"
                                 >
                                     <Bell className="w-5 h-5" />
                                     {unreadCount > 0 && (
@@ -362,7 +362,7 @@ export const Header = () => {
                                             <button
                                                 type="button"
                                                 onClick={markAllAsRead}
-                                                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                                                className="text-xs font-semibold text-[#21A9FF] dark:text-[#21A9FF] hover:text-[#0094F2] transition-colors"
                                             >
                                                 Mark all as read
                                             </button>
@@ -379,7 +379,7 @@ export const Header = () => {
                                                         onClick={() => markNotificationAsRead(notification.id)}
                                                         className={`w-full text-left border-b border-gray-50 dark:border-slate-800/50 last:border-0 p-4 transition-colors flex items-start gap-4 ${notification.isRead
                                                             ? 'hover:bg-gray-50 dark:hover:bg-slate-800/50'
-                                                            : 'bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                                                            : 'bg-blue-50/50 dark:bg-[#21A9FF]/10 hover:bg-blue-50 dark:hover:bg-[#21A9FF]/20'
                                                             }`}
                                                     >
                                                         <div className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${notification.iconBg}`}>
@@ -396,7 +396,7 @@ export const Header = () => {
                                                         </div>
 
                                                         {!notification.isRead && (
-                                                            <div className="w-2 h-2 bg-blue-600 rounded-full shrink-0 mt-2 shadow-sm shadow-blue-500/50"></div>
+                                                            <div className="w-2 h-2 bg-[#21A9FF] rounded-full shrink-0 mt-2 shadow-sm shadow-[#21A9FF]/50"></div>
                                                         )}
                                                     </button>
                                                 );
@@ -407,7 +407,7 @@ export const Header = () => {
                                         <div className="border-t border-gray-100 dark:border-slate-800 p-3 flex items-center justify-center bg-gray-50/80 dark:bg-slate-900/80">
                                             <Link
                                                 to={ROUTES.NOTIFICATIONS}
-                                                className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                                                className="text-sm font-semibold text-[#21A9FF] dark:text-[#21A9FF] hover:text-[#0094F2] transition-colors"
                                                 onClick={() => setIsNotificationsOpen(false)}
                                             >
                                                 View all notifications
@@ -421,7 +421,7 @@ export const Header = () => {
                             <button
                                 type="button"
                                 onClick={handleProfileClick}
-                                className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm hover:shadow-md hover:scale-105 transition-all ring-2 ring-transparent hover:ring-blue-500/30"
+                                className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#21A9FF] to-[#0094F2] flex items-center justify-center text-white font-bold text-sm shadow-sm hover:shadow-md hover:scale-105 transition-all ring-2 ring-transparent hover:ring-[#21A9FF]/30"
                             >
                                 {user?.firstName?.[0]}{user?.lastName?.[0]}
                             </button>
@@ -446,12 +446,12 @@ export const Header = () => {
                                     key={link.path}
                                     to={link.path}
                                     className={`px-6 py-3.5 text-sm font-semibold transition-colors flex items-center gap-3 ${isActive
-                                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-500/10'
+                                        ? 'text-[#21A9FF] dark:text-[#21A9FF] bg-[#21A9FF]/10'
                                         : 'text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'
                                         }`}
                                     onClick={() => setIsMobileMenuOpen(false)}
                                 >
-                                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />}
+                                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-[#21A9FF] dark:bg-[#21A9FF]" />}
                                     {link.label}
                                 </Link>
                             );

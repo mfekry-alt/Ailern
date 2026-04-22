@@ -4,6 +4,7 @@ export type { SectionDto, SectionFileDto } from '@/api/services/section.service'
 export type {
     GetAssignmentDto,
     GetAssignmentSubmissionDto,
+    GetMySubmissionDto,
     GetQuizDto,
     GetCourseDto,
     FileMetaData,

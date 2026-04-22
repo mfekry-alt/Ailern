@@ -16,6 +16,7 @@ import type {
     GetEnrollmentRequestsDto,
     GetStudentsByCourseIdDto,
     PaginationParams,
+    PaginationResult,
     ApiResponse,
 } from '@/types/api.types';
 
@@ -241,7 +242,29 @@ export const deleteEnrollment = async (courseId: number, studentId: number): Pro
     await api.delete<ApiResponse>(ENDPOINTS.COURSES.DELETE_ENROLLMENT(courseId, studentId));
 };
 
-export const getCourseStudents = async (id: number): Promise<GetStudentsByCourseIdDto[]> => {
-    const response = await api.get<ApiResponse<GetStudentsByCourseIdDto[]>>(ENDPOINTS.COURSES.STUDENTS(id));
+export const getCourseStudents = async (
+    id: number,
+    params?: PaginationParams
+): Promise<PaginationResult<GetStudentsByCourseIdDto>> => {
+    const response = await api.get<ApiResponse<PaginationResult<GetStudentsByCourseIdDto>>>(
+        ENDPOINTS.COURSES.STUDENTS(id),
+        {
+            params: {
+                pageNo: params?.PageNumber || 1,
+                pageSize: params?.PageSize || 10,
+                searchString: params?.SearchString || '',
+            },
+        }
+    );
     return response.data.data!;
+};
+
+export const getStudentProfile = async (
+    courseId: number | string,
+    studentId: number | string
+): Promise<GetStudentProfileDto> => {
+    const response = await api.get<any>(
+        ENDPOINTS.USERS.STUDENT_PROFILE(courseId, studentId)
+    );
+    return response.data?.data || response.data;
 };

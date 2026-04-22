@@ -26,6 +26,7 @@ export const ENDPOINTS = {
         ADD_ROLE: (id: number) => `/Users/${id}/roles`,
         REMOVE_ROLE: (id: number) => `/Users/${id}/roles`,
         BY_ROLE: (roleId: number) => `/Users/roles/${roleId}`,
+        STUDENT_PROFILE: (courseId: number | string, studentId: number | string) => `/Users/student-profile?CourseId=${courseId}&StudentId=${studentId}`,
     },
 
     // Courses endpoints (based on API: /api/Courses/*)

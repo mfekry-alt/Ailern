@@ -1,15 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import {
     Edit2, Trash2, Plus, Users, Calendar, BookOpen,
-    Loader2, BookMarked, ArrowRight, AlertCircle, LayoutGrid
+    Loader2, BookMarked, ArrowRight, AlertCircle, LayoutGrid,
+    Search, SlidersHorizontal, Sparkles, GraduationCap, ChevronDown,
+    Layers, Clock, SortAsc, X
 } from 'lucide-react';
 import { ParallaxTiltCard } from '@/components/ui';
 import { useInstructorCourses, useDeleteCourse } from '@/features/courses/api';
 import { useAuthStore } from '@/features/auth/store';
 import type { GetAllCoursesDto } from '@/types/api.types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { Input } from '@/components/ui/Input';
 
 // --- Interfaces ---
 interface Course {
@@ -22,19 +25,35 @@ interface Course {
     students: number;
     startDate: string;
     sections: number;
+    thumbnail: string;
+    description: string;
 }
+
+const THUMBNAILS = [
+    'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=800&auto=format&fit=crop'
+];
 
 // --- Helper: Map API DTO to UI Course ---
 const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
+    // Determine thumbnail based on ID for consistency
+    const thumbIndex = dto.id % THUMBNAILS.length;
+    
     return {
         id: dto.id.toString(),
         title: dto.name,
         courseId: dto.code,
         instructor: `Instructor #${dto.instructorId}`,
-        students: 0, // Should come from API if available
+        students: dto.totalStudents,
         startDate: new Date(dto.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        sections: 0, // Should come from API if available
+        sections: dto.totalSections,
         primaryAction: 'Manage Content',
+        thumbnail: THUMBNAILS[thumbIndex],
+        description: dto.description || 'No description provided.',
     };
 };
 
@@ -48,72 +67,88 @@ interface Course3DCardProps {
 const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DCardProps) => {
     return (
         <ParallaxTiltCard
-            className="group relative flex flex-col bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden will-change-transform"
+            className="group relative flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-[#21A9FF]/10 transition-all duration-500 overflow-hidden h-full"
+            intensity={6}
+            scale={1.02}
         >
-            {/* Top Gradient Accent */}
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-80 group-hover:opacity-100 transition-opacity"></div>
-
-            {/* Course Header */}
-            <div className="p-6 sm:p-8 flex-1 flex flex-col pt-8">
-
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {course.title}
-                </h3>
-
-                <p className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-6">
-                    Code: <span className="text-gray-900 dark:text-slate-200">{course.courseId}</span>
-                </p>
-
-                <div className="mt-auto pt-6 border-t border-gray-100 dark:border-slate-700/50 grid grid-cols-3 gap-2">
-                    <div className="text-center flex flex-col items-center">
-                        <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center mb-2">
-                            <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <span className="text-lg font-black text-gray-900 dark:text-white leading-none mb-1">{course.students}</span>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-500">Students</p>
-                    </div>
-                    <div className="text-center flex flex-col items-center">
-                        <div className="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center mb-2">
-                            <LayoutGrid className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <span className="text-lg font-black text-gray-900 dark:text-white leading-none mb-1">{course.sections}</span>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-500">Sections</p>
-                    </div>
-                    <div className="text-center flex flex-col items-center">
-                        <div className="w-8 h-8 rounded-full bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center mb-2">
-                            <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <span className="text-sm font-black text-gray-900 dark:text-white leading-none mb-1 mt-1 truncate w-full px-1">{course.startDate.split(',')[0]}</span>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-500">Started</p>
-                    </div>
+            {/* Image Section */}
+            <div className="relative aspect-[16/7] overflow-hidden">
+                <img 
+                    src={course.thumbnail} 
+                    alt={course.title} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                
+                {/* Status Badge (Optional - can be customized per course status) */}
+                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-white shadow-lg">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#21A9FF]">
+                        {course.courseId}
+                    </span>
                 </div>
             </div>
 
-            {/* Actions Footer */}
-            <div className="p-4 sm:p-5 bg-gray-50/50 dark:bg-slate-900/30 border-t border-gray-100 dark:border-slate-700/50 flex items-center gap-2">
-                <button
-                    onClick={(e) => { e.stopPropagation(); onEdit(course.id); }}
-                    className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shadow-sm"
-                    title="Course Settings"
-                >
-                    <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(course.id); }}
-                    className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-200 dark:hover:border-red-500/30 hover:text-red-600 dark:hover:text-red-400 transition-colors shadow-sm"
-                    title="Delete Course"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
+            <div className="p-5 flex-1 flex flex-col">
+                <div className="h-10 mb-2">
+                    <Link to={`/instructor/courses/${course.id}/manage`} className="group/title" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-black text-slate-800 dark:text-white leading-tight line-clamp-1 group-hover/title:text-[#21A9FF] transition-colors duration-300">
+                            {course.title}
+                        </h3>
+                    </Link>
+                </div>
 
-                {course.primaryAction && (
+                <div className="h-12 mb-2">
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-3 opacity-80 italic">
+                        {course.description}
+                    </p>
+                </div>
+
+                {/* Metadata Row */}
+                <div className="flex items-center justify-between mb-4 mt-auto">
+                    <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100/50 dark:border-indigo-500/20">
+                            <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                            {course.sections} Sections
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100/50 dark:border-emerald-500/20">
+                            <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                            {course.students} Students
+                        </span>
+                    </div>
+                </div>
+
+                {/* Actions Footer */}
+                <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex gap-2 text-slate-400">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onEdit(course.id); }}
+                            className="p-2.5 rounded-xl bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 hover:bg-[#21A9FF]/10 hover:text-[#21A9FF] hover:border-[#21A9FF]/50 transition-all active:scale-95 group/edit"
+                            title="Edit Course"
+                        >
+                            <Edit2 className="w-3.5 h-3.5 transition-transform group-hover/edit:rotate-12" />
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(course.id); }}
+                            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 hover:border-red-200 transition-all active:scale-95 group/trash"
+                            title="Delete Course"
+                        >
+                            <Trash2 className="w-3.5 h-3.5 transition-transform group-hover/trash:scale-110" />
+                        </button>
+                    </div>
+
                     <Link to={`/instructor/courses/${course.id}/manage`} className="flex-1" onClick={(e) => e.stopPropagation()}>
-                        <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm py-3 px-4 rounded-xl transition-all shadow-sm hover:shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95">
-                            {course.primaryAction}
-                            <ArrowRight className="w-4 h-4" />
+                        <button className="w-full flex items-center justify-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-black text-[10px] py-2.5 px-3 rounded-xl transition-all shadow-lg shadow-[#21A9FF]/30 active:scale-95 group/btn">
+                            Manage Content
+                            <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                         </button>
                     </Link>
-                )}
+                </div>
             </div>
         </ParallaxTiltCard>
     );
@@ -122,24 +157,59 @@ const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DC
 export const InstructorCoursesPage = () => {
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState<'latest' | 'name' | 'students'>('name');
+    const [isSortOpen, setIsSortOpen] = useState(false);
+    const sortRef = useRef<HTMLDivElement>(null);
 
     const instructorId = useMemo(() => {
-        if (typeof user?.id === 'number') {
-            return user.id;
-        }
+        if (typeof user?.id === 'number') return user.id;
         const parsedId = Number(user?.id);
         return Number.isFinite(parsedId) && parsedId > 0 ? parsedId : undefined;
     }, [user?.id]);
 
-    // Fetch instructor courses using numeric ID when available, otherwise fallback endpoint.
+    // Fetch instructor courses
     const { data: coursesData, isLoading, error } = useInstructorCourses(instructorId);
     const deleteCourseMutation = useDeleteCourse();
 
-    // Map API data to UI format
+    // Close sort dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
+                setIsSortOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const sortOptions = [
+        { value: 'latest', label: 'Latest First', icon: Clock },
+        { value: 'name', label: 'Name (A-Z)', icon: SortAsc },
+        { value: 'students', label: 'Most Students', icon: Users },
+    ];
+
+    const currentSort = sortOptions.find(opt => opt.value === sortBy) || sortOptions[0];
+
+    // Map and Filter/Sort API data
     const courses = useMemo(() => {
         if (!coursesData?.items) return [];
-        return coursesData.items.map(mapCourseToUI);
-    }, [coursesData]);
+        let mapped = coursesData.items.map(mapCourseToUI);
+
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            mapped = mapped.filter(c =>
+                c.title.toLowerCase().startsWith(query) ||
+                c.courseId.toLowerCase().startsWith(query)
+            );
+        }
+
+        return mapped.sort((a, b) => {
+            if (sortBy === 'name') return a.title.localeCompare(b.title);
+            if (sortBy === 'students') return b.students - a.students;
+            return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+        });
+    }, [coursesData, searchQuery, sortBy]);
 
     const handleDeleteCourse = (id: string) => {
         if (window.confirm('Are you sure you want to permanently delete this course? This action cannot be undone.')) {
@@ -151,9 +221,7 @@ export const InstructorCoursesPage = () => {
         navigate(ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id));
     };
 
-    if (isLoading) {
-        return <LoadingSpinner />;
-    }
+    if (isLoading) return <LoadingSpinner />;
 
     if (error) {
         return (
@@ -176,55 +244,134 @@ export const InstructorCoursesPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans selection:bg-blue-500/30 pb-20">
-            <div className="max-w-7xl mx-auto space-y-8">
+        <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] p-4 sm:p-8 lg:p-12 transition-colors duration-500 font-sans selection:bg-blue-500/30 pb-32">
+            <div className="max-w-7xl mx-auto space-y-12">
 
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-fade-in">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center border border-blue-200/50 dark:border-blue-800/50 shadow-sm shrink-0">
-                            <BookMarked className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+                {/* Header Section */}
+                <div className="relative">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 animate-fade-in">
+                        <div className="flex items-start gap-6">
+                            <div className="w-16 h-16 bg-[#21A9FF] rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-[#21A9FF]/20 shrink-0 transform -rotate-3">
+                                <BookMarked className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                                    My <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#21A9FF] to-indigo-600">Courses</span>
+                                </h1>
+                                <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg font-medium max-w-lg">
+                                    Craft your curriculum and inspire your students with premium content and interactive sections.
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">My Courses</h1>
-                            <p className="text-gray-600 dark:text-slate-400 mt-1 text-lg">Manage your curriculum, students, and content.</p>
+
+                        <Link to={ROUTES.INSTRUCTOR_COURSE_NEW} className="shrink-0">
+                            <button className="group relative flex items-center justify-center gap-3 bg-[#21A9FF] text-white font-black text-base px-8 py-4 rounded-2xl transition-all duration-300 shadow-2xl shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 hover:-translate-y-1 active:scale-95 overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-[#21A9FF] to-[#0094F2] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                <Plus className="w-5 h-5 relative z-10 group-hover:rotate-90 transition-transform duration-300" />
+                                <span className="relative z-10">Create New Course</span>
+                            </button>
+                        </Link>
+                    </div>
+
+                    {/* Search & Filters Bar */}
+                    <div className="mt-12 flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                        <div className="flex-1 w-full flex items-center gap-3 p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm focus-within:border-[#21A9FF] dark:focus-within:border-[#21A9FF] transition-all duration-300">
+                            <div className="pl-4 text-slate-400">
+                                <Search className="w-4 h-4" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search courses..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 py-2.5 font-semibold text-sm transition-all shadow-none"
+                            />
+                            {searchQuery && (
+                                <button 
+                                    onClick={() => setSearchQuery('')}
+                                    className="p-1.5 mr-1 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Custom Sort Dropdown */}
+                        <div className="relative w-full md:w-auto" ref={sortRef}>
+                            <button
+                                onClick={() => setIsSortOpen(!isSortOpen)}
+                                className="flex items-center justify-between gap-4 min-w-[200px] p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Clock className="w-4 h-4 text-slate-400 group-hover:text-[#21A9FF] transition-colors" />
+                                    <span className="text-sm font-black text-slate-800 dark:text-slate-100">{currentSort.label}</span>
+                                </div>
+                                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-500 ${isSortOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isSortOpen && (
+                                <div className="absolute top-[calc(100%+8px)] right-0 w-full md:w-64 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-[100] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200">
+                                    {sortOptions.map((option) => (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => {
+                                                setSortBy(option.value as any);
+                                                setIsSortOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
+                                                sortBy === option.value 
+                                                ? 'bg-blue-50 dark:bg-[#21A9FF]/10 text-[#21A9FF]' 
+                                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <option.icon className={`w-4 h-4 ${sortBy === option.value ? 'text-[#21A9FF]' : 'text-slate-400'}`} />
+                                                <span className="text-sm font-bold">{option.label}</span>
+                                            </div>
+                                            {sortBy === option.value && (
+                                                <div className="w-1.5 h-1.5 rounded-full bg-[#21A9FF]"></div>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
-                    <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
-                        <button className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95">
-                            <Plus className="w-5 h-5" />
-                            Create New Course
-                        </button>
-                    </Link>
                 </div>
 
                 {/* Courses Grid */}
                 {courses.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4">
-                        {courses.map((course) => (
-                            <Course3DCard
-                                key={course.id}
-                                course={course}
-                                onEdit={(id) => navigate(ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', id))}
-                                onDelete={handleDeleteCourse}
-                                onSecondaryAction={runSecondaryAction}
-                            />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                        {courses.map((course, idx) => (
+                            <div key={course.id} className="animate-in fade-in slide-in-from-bottom-4 flex" style={{ animationDelay: `${idx * 100}ms` }}>
+                                <Course3DCard
+                                    course={course}
+                                    onEdit={(id) => navigate(ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', id))}
+                                    onDelete={handleDeleteCourse}
+                                    onSecondaryAction={runSecondaryAction}
+                                />
+                            </div>
                         ))}
                     </div>
                 ) : (
                     /* Empty State */
-                    <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white dark:bg-slate-800/20 rounded-[2rem] border border-dashed border-gray-200 dark:border-slate-700">
-                        <div className="w-24 h-24 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6 shadow-sm border border-gray-100 dark:border-slate-700">
-                            <BookOpen className="w-10 h-10 text-gray-400 dark:text-slate-500" />
+                    <div className="flex flex-col items-center justify-center py-24 px-4 text-center bg-white dark:bg-slate-900/40 backdrop-blur-md rounded-[3rem] border border-dashed border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-700">
+                        <div className="relative mb-8">
+                            <div className="w-32 h-32 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center shadow-inner">
+                                <BookOpen className="w-14 h-14 text-slate-300 dark:text-slate-600" />
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-white dark:bg-slate-700 rounded-2xl flex items-center justify-center shadow-lg transform rotate-12">
+                                <Sparkles className="w-6 h-6 text-[#21A9FF]" />
+                            </div>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No courses yet</h3>
-                        <p className="text-gray-500 dark:text-slate-400 max-w-md mx-auto mb-8">
-                            You haven't created any courses. Start building your curriculum by creating your first course.
+                        <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-4 italic">No courses found</h3>
+                        <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-10 text-lg leading-relaxed">
+                            {searchQuery ? "We couldn't find any courses matching your search." : "Your curriculum is waiting to be built. Start by creating your first masterpiece."}
                         </p>
                         <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
-                            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95">
-                                <Plus className="w-5 h-5" />
-                                Create Your First Course
+                            <button className="group flex items-center gap-3 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-black px-10 py-4 rounded-2xl transition-all duration-300 shadow-lg shadow-[#21A9FF]/25 hover:shadow-[#21A9FF]/40 hover:-translate-y-1 active:scale-95">
+                                <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                                Create New Course
                             </button>
                         </Link>
                     </div>
@@ -232,4 +379,4 @@ export const InstructorCoursesPage = () => {
             </div>
         </div>
     );
-};
+};
