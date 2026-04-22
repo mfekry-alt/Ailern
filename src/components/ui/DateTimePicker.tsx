@@ -32,6 +32,7 @@ const CustomInput = forwardRef<
         type="button"
         onClick={onClick}
         disabled={disabled}
+        aria-label={placeholder || 'Select date and time'}
         className={`
             w-full flex items-center gap-3 px-4 py-3.5
             bg-gray-50 dark:bg-slate-900/50
@@ -71,15 +72,17 @@ export function DateTimePicker({
         <DatePicker
             selected={value}
             onChange={onChange}
-            showTimeSelect
-            timeFormat="hh:mm aa"
-            timeIntervals={15}
-            dateFormat="MMM d, yyyy  h:mm aa"
+            showTimeInput
+            showTimeSelect={false}
+            timeInputLabel="Time"
+            dateFormat="MMM d, yyyy h:mm aa"
             minDate={minDate ?? undefined}
             disabled={disabled}
             placeholderText={placeholder}
             popperPlacement="bottom-start"
             showPopperArrow={false}
+            shouldCloseOnSelect={false}
+            popperClassName="ailern-datepicker-popper"
             customInput={
                 <CustomInput
                     id={id}

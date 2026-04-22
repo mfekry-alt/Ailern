@@ -124,8 +124,8 @@ export const InstructorAssignmentsPage = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center border border-blue-200/50 dark:border-blue-800/50 shadow-sm shrink-0">
-                            <FileText className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+                        <div className="w-14 h-14 bg-[#21A9FF]/10 rounded-2xl flex items-center justify-center border border-[#21A9FF]/20 dark:border-blue-800/50 shadow-sm shrink-0">
+                            <FileText className="w-7 h-7 text-[#21A9FF]" />
                         </div>
                         <div>
                             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Assignment Lab</h1>
@@ -134,7 +134,7 @@ export const InstructorAssignmentsPage = () => {
                     </div>
                     <button
                         onClick={() => setIsCourseSelectOpen(true)}
-                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-blue-500/25 active:scale-95"
+                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95"
                     >
                         <Plus className="w-5 h-5" /> Create Assignment
                     </button>
@@ -143,13 +143,13 @@ export const InstructorAssignmentsPage = () => {
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     {stats.map((stat, idx) => (
-                        <div key={idx} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                            <div className={`absolute left-0 top-0 w-1 h-full bg-${stat.color}-500`}></div>
+                        <div key={idx} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group hover:shadow-lg transition-all">
+                            <div className={`absolute left-0 top-0 w-1 h-full ${(stat.color === 'blue' || stat.color === 'indigo') ? 'bg-[#21A9FF]' : `bg-${stat.color}-500`}`}></div>
                             <div>
                                 <p className="text-gray-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
                                 <h3 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">{stat.value}</h3>
                             </div>
-                            <div className={`w-12 h-12 bg-${stat.color}-50 dark:bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center text-${stat.color}-600 dark:text-${stat.color}-400 group-hover:scale-110 transition-transform shrink-0`}>
+                            <div className={`w-12 h-12 ${(stat.color === 'blue' || stat.color === 'indigo') ? 'bg-[#21A9FF]/10 text-[#21A9FF]' : `bg-${stat.color}-50 dark:bg-${stat.color}-500/10 text-${stat.color}-600 dark:text-${stat.color}-400`} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0`}>
                                 <stat.icon className="w-6 h-6" />
                             </div>
                         </div>
@@ -163,7 +163,7 @@ export const InstructorAssignmentsPage = () => {
                         <select
                             value={selectedStatus}
                             onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer"
+                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-[#21A9FF]/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer"
                         >
                             <option value="all">All Statuses</option>
                             <option value="published">Published</option>
@@ -176,7 +176,7 @@ export const InstructorAssignmentsPage = () => {
                             placeholder="Filter by course name..."
                             value={selectedCourse === 'all' ? '' : selectedCourse}
                             onChange={(e) => setSelectedCourse(e.target.value || 'all')}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all text-sm font-bold"
+                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-[#21A9FF]/50 outline-none transition-all text-sm font-bold"
                         />
                     </div>
                 </div>
@@ -192,7 +192,7 @@ export const InstructorAssignmentsPage = () => {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
                             {filteredAssignments.map((assignment) => (
-                                <div key={assignment.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl flex flex-col group hover:shadow-lg hover:border-blue-300 dark:hover:border-slate-500 transition-all overflow-hidden text-left">
+                                <div key={assignment.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl flex flex-col group hover:shadow-lg hover:border-[#21A9FF] dark:hover:border-slate-500 transition-all overflow-hidden text-left">
                                     {/* Card header */}
                                     <div className="p-5 pb-0 flex justify-between items-start">
                                         <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider ${
@@ -203,10 +203,10 @@ export const InstructorAssignmentsPage = () => {
                                             {assignment.status}
                                         </span>
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                            <button onClick={() => navigate(`/instructor/assignments/${assignment.id}/edit`)} className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors" title="Edit Assignment">
+                                            <button onClick={() => navigate(`/instructor/assignments/${assignment.id}/edit`)} className="p-1.5 text-[#21A9FF] hover:bg-[#21A9FF]/10 rounded-lg transition-colors" title="Edit Assignment">
                                                 <Edit className="w-4 h-4" />
                                             </button>
-                                            <button onClick={() => navigate(ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', assignment.id.toString()))} className="p-1.5 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-lg transition-colors" title="View Submissions">
+                                            <button onClick={() => navigate(ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', assignment.id.toString()))} className="p-1.5 text-[#21A9FF] hover:bg-[#21A9FF]/10 rounded-lg transition-colors" title="View Submissions">
                                                 <Eye className="w-4 h-4" />
                                             </button>
                                             <button onClick={() => setDeleteConfirm({ id: parseInt(assignment.id), title: assignment.title })} disabled={deleteMutation.isPending} className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors" title="Delete Assignment">
@@ -217,7 +217,7 @@ export const InstructorAssignmentsPage = () => {
 
                                     {/* Card body */}
                                     <div className="p-5 flex-1 flex flex-col">
-                                        <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1.5 truncate">{assignment.course}</div>
+                                        <div className="text-[10px] font-bold text-[#21A9FF] uppercase tracking-widest mb-1.5 truncate">{assignment.course}</div>
                                         <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">{assignment.title}</h4>
                                         <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-4 line-clamp-2">{assignment.description || 'No description'}</p>
 
@@ -297,9 +297,9 @@ export const InstructorAssignmentsPage = () => {
                                         <button
                                             key={course.id}
                                             onClick={() => navigate(`/instructor/courses/${course.id}/assignments/create`)}
-                                            className="w-full text-left p-4 bg-gray-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-500/10 border border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-500/30 rounded-xl transition-all group"
+                                            className="w-full text-left p-4 bg-gray-50 dark:bg-slate-900 hover:bg-[#21A9FF]/10 border border-gray-100 dark:border-slate-700 hover:border-[#21A9FF]/30 rounded-xl transition-all group"
                                         >
-                                            <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">{course.name}</h4>
+                                            <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-[#21A9FF]">{course.name}</h4>
                                             <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{course.code || 'No code'}</p>
                                         </button>
                                     ))

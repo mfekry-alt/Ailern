@@ -165,7 +165,7 @@ export const InstructorStatisticsPage = () => {
                                 <XAxis dataKey="student" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                                 <Tooltip content={<CustomTooltip />} />
-                                <Bar dataKey="grade" name="Grade (%)" fill="#3b82f6" radius={[4, 4, 0, 0]} animationDuration={1500} />
+                                <Bar dataKey="grade" name="Grade (%)" fill="#21A9FF" radius={[4, 4, 0, 0]} animationDuration={1500} />
                                 <Line type="monotone" dataKey="engagement" name="Engagement" stroke="#eab308" strokeWidth={3} dot={{ r: 4, fill: '#eab308', strokeWidth: 2, stroke: '#fff' }} animationDuration={1500} />
                             </ComposedChart>
                         </ResponsiveContainer>
@@ -182,9 +182,9 @@ export const InstructorStatisticsPage = () => {
                         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                             <div className="relative w-full sm:w-64">
                                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input type="text" placeholder="Search students..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full text-gray-900 dark:text-white" />
+                                <input type="text" placeholder="Search students..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-[#21A9FF] outline-none w-full text-gray-900 dark:text-white" />
                             </div>
-                            <button onClick={handleExportProgress} className="w-full sm:w-auto px-4 py-2.5 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 font-bold text-sm rounded-xl hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors shrink-0 flex items-center justify-center gap-2">
+                            <button onClick={handleExportProgress} className="w-full sm:w-auto px-4 py-2.5 bg-[#21A9FF]/10 text-[#21A9FF] font-bold text-sm rounded-xl hover:bg-[#21A9FF]/20 transition-colors shrink-0 flex items-center justify-center gap-2">
                                 <Download className="w-4 h-4" /> Export Progress
                             </button>
                         </div>
@@ -203,7 +203,7 @@ export const InstructorStatisticsPage = () => {
                                 {filteredStudents.map((s) => (
                                     <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-4 py-3 flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">{s.name.charAt(0)}</div>
+                                            <div className="w-9 h-9 rounded-full bg-[#21A9FF]/10 text-[#21A9FF] flex items-center justify-center font-bold text-sm">{s.name.charAt(0)}</div>
                                             <div><p className="text-sm font-bold text-gray-900 dark:text-white">{s.name}</p><p className="text-[10px] text-gray-500 dark:text-slate-400">{s.email}</p></div>
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-300 font-medium whitespace-nowrap">{s.course}</td>
@@ -216,7 +216,7 @@ export const InstructorStatisticsPage = () => {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap ${s.status === 'Exceling' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400' : s.status === 'At Risk' ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400' : 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400'}`}>{s.status}</span>
+                                            <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap ${s.status === 'Exceling' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400' : s.status === 'At Risk' ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400' : 'bg-[#21A9FF]/10 border-[#21A9FF]/20 text-[#21A9FF]'}`}>{s.status}</span>
                                         </td>
                                     </tr>
                                 ))}
@@ -242,7 +242,7 @@ export const InstructorStatisticsPage = () => {
                                 <XAxis dataKey="course" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                                 <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
-                                <Bar dataKey="avgScore" name="Avg Score (%)" fill="#3b82f6" radius={[4, 4, 0, 0]} animationDuration={1500} />
+                                <Bar dataKey="avgScore" name="Avg Score (%)" fill="#21A9FF" radius={[4, 4, 0, 0]} animationDuration={1500} />
                                 <Bar dataKey="passRate" name="Pass Rate (%)" fill="#10b981" radius={[4, 4, 0, 0]} animationDuration={1500} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -277,7 +277,7 @@ export const InstructorStatisticsPage = () => {
                                 <div className="grid grid-cols-2 gap-3 mb-4">
                                     <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-gray-100 dark:border-slate-700 text-center">
                                         <p className="text-[10px] font-bold uppercase text-gray-500">Avg Score</p>
-                                        <p className={`text-xl font-black ${quiz.avgScore < 70 ? 'text-red-500' : 'text-blue-600'}`}>{quiz.avgScore}%</p>
+                                        <p className={`text-xl font-black ${quiz.avgScore < 70 ? 'text-red-500' : 'text-[#21A9FF]'}`}>{quiz.avgScore}%</p>
                                     </div>
                                     <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-gray-100 dark:border-slate-700 text-center">
                                         <p className="text-[10px] font-bold uppercase text-gray-500">Pass Rate</p>
@@ -371,7 +371,7 @@ export const InstructorStatisticsPage = () => {
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Courses Overview</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {coursesData.map(c => (
-                            <div key={c.id} className="bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 hover:border-blue-300 transition-all rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div key={c.id} className="bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 hover:border-[#21A9FF] transition-all rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="flex-1">
                                     <h4 className="font-bold text-base text-gray-900 dark:text-white">{c.title}</h4>
                                     <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mt-1.5 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {c.students} Students</p>
@@ -395,9 +395,9 @@ export const InstructorStatisticsPage = () => {
         const Icon = icon;
         return (
             <div key={label} className={`bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 shadow-sm relative overflow-hidden group hover:shadow-lg transition-all duration-300`}>
-                <div className={`absolute left-0 top-0 w-1.5 h-full bg-${color}-500`}></div>
+                <div className={`absolute left-0 top-0 w-1.5 h-full ${color === 'blue' ? 'bg-[#21A9FF]' : `bg-${color}-500`}`}></div>
                 <div className="flex justify-between items-start mb-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-${color}-50 dark:bg-${color}-500/10 text-${color}-600 dark:text-${color}-400 group-hover:scale-110 transition-transform`}>
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${color === 'blue' ? 'bg-[#21A9FF]/10 text-[#21A9FF]' : `bg-${color}-50 dark:bg-${color}-500/10 text-${color}-600 dark:text-${color}-400`} group-hover:scale-110 transition-transform`}>
                         <Icon className="w-6 h-6" />
                     </div>
                     {trend && (
@@ -422,7 +422,7 @@ export const InstructorStatisticsPage = () => {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
-                            <BarChart3 className="w-8 h-8 text-blue-500" />
+                            <BarChart3 className="w-8 h-8 text-[#21A9FF]" />
                             Statistics & Figures
                         </h1>
                         <p className="text-gray-600 dark:text-slate-400 mt-2 text-lg">
@@ -470,7 +470,7 @@ export const InstructorStatisticsPage = () => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
                                 className={`px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 min-w-[180px] ${
-                                    activeTab === tab.id ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50'
+                                    activeTab === tab.id ? 'bg-[#21A9FF] text-white shadow-md shadow-[#21A9FF]/20' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50'
                                 }`}
                             >
                                 <Icon className="w-4 h-4" /> {tab.label}

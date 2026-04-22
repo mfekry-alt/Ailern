@@ -94,7 +94,7 @@ export const ViewSubmissionPanel = ({ open, onClose, submission, isLoading, assi
                                         Files ({submission.filesUrls.length})
                                     </p>
                                     <div className="space-y-2">
-                                        {submission.filesUrls.map((file, idx) => (
+                                        {submission.filesUrls.map((file: any, idx: number) => (
                                             <div
                                                 key={file.id || idx}
                                                 className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700"

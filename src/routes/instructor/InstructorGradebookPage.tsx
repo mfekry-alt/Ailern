@@ -115,7 +115,7 @@ export const InstructorGradebookPage = () => {
                     <select
                         value={selectedCourse}
                         onChange={(e) => setSelectedCourse(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-azure-50 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                        className="px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-[#21A9FF] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                     >
                         <option value="all">All Courses</option>
                         <option value="CS101">CS101 - Introduction to Programming</option>
@@ -126,7 +126,7 @@ export const InstructorGradebookPage = () => {
                         <button
                             onClick={() => setActiveTab('pending')}
                             className={`px-4 py-2 rounded-md text-[14px] font-medium transition-colors ${activeTab === 'pending'
-                                ? 'bg-azure-50 text-white hover:bg-azure-53'
+                                ? 'bg-[#21A9FF] text-white'
                                 : 'bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-azure-8 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700'
                                 }`}
                         >
@@ -135,7 +135,7 @@ export const InstructorGradebookPage = () => {
                         <button
                             onClick={() => setActiveTab('graded')}
                             className={`px-4 py-2 rounded-md text-[14px] font-medium transition-colors ${activeTab === 'graded'
-                                ? 'bg-azure-50 text-white hover:bg-azure-53'
+                                ? 'bg-[#21A9FF] text-white'
                                 : 'bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-azure-8 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700'
                                 }`}
                         >
@@ -198,12 +198,12 @@ export const InstructorGradebookPage = () => {
                                             onClick={() => downloadSubmission(submission.id)}
                                             className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
                                         >
-                                            <Download className="w-4 h-4 text-azure-50" />
+                                            <Download className="w-4 h-4 text-[#21A9FF]" />
                                         </button>
                                         {submission.status === 'pending' ? (
                                             <button
                                                 onClick={() => openGradeModal(submission.id)}
-                                                className="px-4 py-2 bg-azure-50 text-white rounded-md text-[14px] font-medium hover:bg-azure-53 transition-colors"
+                                                className="px-4 py-2 bg-[#21A9FF] text-white rounded-md text-[14px] font-medium hover:bg-[#0094F2] transition-colors"
                                             >
                                                 Grade
                                             </button>
@@ -228,7 +228,7 @@ export const InstructorGradebookPage = () => {
                 {[
                     { label: 'Pending Reviews', value: String(stats.pending), icon: Clock, color: '#f59e0b' },
                     { label: 'Graded', value: String(stats.graded), icon: CheckCircle, color: '#22c55e' },
-                    { label: 'Total Submissions', value: String(stats.total), icon: FileText, color: '#0d7ff2' },
+                    { label: 'Total Submissions', value: String(stats.total), icon: FileText, color: '#21A9FF' },
                     { label: 'Avg. Grade', value: `${stats.avg}%`, icon: CheckCircle, color: '#8b5cf6' },
                 ].map((stat) => {
                     const Icon = stat.icon;
@@ -286,7 +286,7 @@ export const InstructorGradebookPage = () => {
                                     max={100}
                                     value={gradeValue}
                                     onChange={(e) => setGradeValue(Number(e.target.value))}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-azure-50 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-[#21A9FF] bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
                                 />
                             </div>
 
@@ -299,7 +299,7 @@ export const InstructorGradebookPage = () => {
                                 </button>
                                 <button
                                     onClick={saveGrade}
-                                    className="flex-1 px-4 py-2 bg-azure-50 text-white rounded-md text-[14px] font-medium hover:bg-azure-53 transition-colors"
+                                    className="flex-1 px-4 py-2 bg-[#21A9FF] text-white rounded-md text-[14px] font-medium hover:bg-[#0094F2] transition-colors"
                                 >
                                     Save
                                 </button>

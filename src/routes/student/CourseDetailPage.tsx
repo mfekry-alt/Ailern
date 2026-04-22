@@ -80,7 +80,7 @@ export const CourseDetailPage = () => {
 
                     try {
                         const quizzesData = await getCourseQuizzes(courseData.id.toString());
-                        setQuizzes(quizzesData);
+                        setQuizzes(quizzesData as any);
                     } catch (err) {
                         console.warn('Failed to fetch quizzes:', err);
                     }
@@ -407,10 +407,14 @@ export const CourseDetailPage = () => {
                                                             </span>
                                                         </div>
                                                         <button
-                                                            onClick={() => navigate(`/quizzes/${quiz.id}/attempt`)}
-                                                            className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-purple-500/25 shrink-0"
+                                                            onClick={() => navigate(`/quizzes/${quiz.id}/attempt`, { state: { resume: Boolean(quiz.hasActiveAttempt), courseId: id } })}
+                                                            className={`w-full sm:w-auto px-6 py-2.5 text-white text-sm font-semibold rounded-xl transition-all shadow-sm shrink-0 ${
+                                                                quiz.hasActiveAttempt
+                                                                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:shadow-emerald-500/25'
+                                                                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 hover:shadow-purple-500/25'
+                                                            }`}
                                                         >
-                                                            Start Quiz
+                                                            {quiz.hasActiveAttempt ? 'Resume Quiz' : 'Start Quiz'}
                                                         </button>
                                                     </div>
 
@@ -434,7 +438,7 @@ export const CourseDetailPage = () => {
 
                                     {quizzes.length > 3 && (
                                         <button
-                                            onClick={() => navigate('/quizzes')}
+                                            onClick={() => navigate(`/courses/${id}/quizzes`)}
                                             className="w-full py-3.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-white font-semibold rounded-xl transition-colors text-sm"
                                         >
                                             View All Quizzes

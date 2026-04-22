@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Clock, Flag, Grid3x3, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { quizService, attemptsService } from '@/api/services';
+import { toast } from 'sonner';
 import {
     useStrictExamMonitor,
     type UseStrictExamMonitorReturn,
@@ -28,6 +29,10 @@ interface QuizDetail {
 export const QuizAttemptViewer = () => {
     const { id: quizId, attemptId: attemptIdFromUrl } = useParams<{ id: string, attemptId?: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const state = (location.state as { resume?: boolean; courseId?: string } | null) ?? null;
+    const shouldResume = Boolean(state?.resume);
+    const returnPath = state?.courseId ? `/courses/${state.courseId}/quizzes` : '/courses';
 
     // --- Core quiz state ---
     const [quizDetail, setQuizDetail] = useState<QuizDetail | null>(null);
@@ -42,6 +47,7 @@ export const QuizAttemptViewer = () => {
     const [error, setError] = useState<string | null>(null);
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
     const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(ENABLE_STRICT_MONITOR);
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 
@@ -64,27 +70,10 @@ export const QuizAttemptViewer = () => {
 
     // --- Submit Logic ---
     const handleAutoSubmit = useCallback(async () => {
-        const currentAttemptId = attemptIdRef.current;
-        const currentAnswers = answersRef.current;
-
-        if (!currentAttemptId || submitted || isReviewMode) return;
-
-        setIsSubmitting(true);
-        try {
-            const entries = buildSaveAnswerEntries(questionsRef.current, currentAnswers);
-            if (entries.length > 0) {
-                await attemptsService.saveAttemptProgress(currentAttemptId, entries);
-            }
-            await attemptsService.submitQuizAttempt(currentAttemptId);
-
-            setSubmitted(true);
-            setTimeout(() => navigate(`/quizzes/${quizId}/attempt/${currentAttemptId}/result`), 2000);
-        } catch (err) {
-            console.error('[Quiz] Auto-submit failed:', err);
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [submitted, quizId, navigate, isReviewMode]);
+        if (submitted || isReviewMode) return;
+        toast.info('Time is up. Your attempt was auto-submitted.');
+        navigate(returnPath, { replace: true });
+    }, [submitted, navigate, isReviewMode, returnPath]);
 
     const strictExamMonitor = useStrictExamMonitor(handleAutoSubmit);
     const noOpExamMonitor = useMemo<UseStrictExamMonitorReturn>(
@@ -128,18 +117,40 @@ export const QuizAttemptViewer = () => {
                 if (currentAttemptId) {
                     setShowFullscreenPrompt(false);
                 } else {
-                    const attempt = await attemptsService.startQuizAttempt(quizId);
-                    currentAttemptId = attempt.id;
-                    if (!currentAttemptId) throw new Error('Failed to get valid attempt ID from server response');
+                    if (shouldResume) {
+                        const attemptsDto = await attemptsService.getMyAttemptsForQuiz(quizId);
+                        const activeAttempt = (attemptsDto?.attempts ?? [])
+                            .filter((a) => String(a.status).toLowerCase() === 'inprogress')
+                            .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime())[0];
 
-                    const endDateStr = attempt.attemptEndDate;
-                    if (endDateStr) {
-                        const normalized = endDateStr.endsWith('Z') || endDateStr.includes('+') ? endDateStr : endDateStr + 'Z';
-                        const endMs = new Date(normalized).getTime();
-                        const remaining = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
-                        setTimeRemaining(remaining);
+                        currentAttemptId = activeAttempt?.id ?? null;
+                        if (!currentAttemptId) {
+                            throw new Error('No active attempt found to resume.');
+                        }
+
+                        const endDateStr = activeAttempt.attemptEndTime;
+                        if (endDateStr) {
+                            const normalized = endDateStr.endsWith('Z') || endDateStr.includes('+') ? endDateStr : endDateStr + 'Z';
+                            const endMs = new Date(normalized).getTime();
+                            const remaining = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+                            setTimeRemaining(remaining);
+                        } else {
+                            setTimeRemaining((quiz.attemptTimeLimit || 30) * 60);
+                        }
                     } else {
-                        setTimeRemaining((quiz.attemptTimeLimit || 30) * 60);
+                        const attempt = await attemptsService.startQuizAttempt(quizId);
+                        currentAttemptId = attempt.id;
+                        if (!currentAttemptId) throw new Error('Failed to get valid attempt ID from server response');
+
+                        const endDateStr = attempt.attemptEndDate;
+                        if (endDateStr) {
+                            const normalized = endDateStr.endsWith('Z') || endDateStr.includes('+') ? endDateStr : endDateStr + 'Z';
+                            const endMs = new Date(normalized).getTime();
+                            const remaining = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+                            setTimeRemaining(remaining);
+                        } else {
+                            setTimeRemaining((quiz.attemptTimeLimit || 30) * 60);
+                        }
                     }
                 }
 
@@ -176,7 +187,7 @@ export const QuizAttemptViewer = () => {
 
     // --- Timer Tick Effect ---
     useEffect(() => {
-        if (timeRemaining === null || timeRemaining <= 0 || isSubmitting || isReviewMode) return;
+        if (timeRemaining === null || isSubmitting || isReviewMode) return;
 
         const interval = setInterval(() => {
             setTimeRemaining((prev) => {
@@ -217,13 +228,13 @@ export const QuizAttemptViewer = () => {
     const handleFullscreenEntered = () => setShowFullscreenPrompt(false);
     const handleFullscreenCancel = () => {
         setError('Fullscreen mode is required to take this quiz.');
-        navigate('/quizzes');
+        navigate('/courses');
     };
 
     const handleManualSubmit = async () => {
         if (!attemptId || submitted || isSubmitting || isReviewMode) return;
-        if (!window.confirm("Are you sure you want to finish and submit your quiz?")) return;
 
+        setShowSubmitConfirm(false);
         setIsSubmitting(true);
         try {
             const entries = buildSaveAnswerEntries(questionsRef.current, answers);
@@ -231,11 +242,10 @@ export const QuizAttemptViewer = () => {
                 await attemptsService.saveAttemptProgress(attemptId, entries);
             }
             await attemptsService.submitQuizAttempt(attemptId);
-
-            setSubmitted(true);
-            setTimeout(() => navigate(`/quizzes/${quizId}/attempt/${attemptId}/result`), 1000);
+            toast.success('Quiz submitted successfully.');
+            navigate(returnPath, { replace: true });
         } catch (err) {
-            alert('Failed to submit quiz. Please check your connection and try again.');
+            toast.error('Failed to submit quiz. Please check your connection and try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -304,7 +314,7 @@ export const QuizAttemptViewer = () => {
                 <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4 opacity-80" />
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h2>
                 <p className="text-gray-500 dark:text-slate-400 font-medium mb-8">{error || 'No questions available.'}</p>
-                <button onClick={() => navigate('/quizzes')} className="w-full px-6 py-3.5 bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+                <button onClick={() => navigate('/courses')} className="w-full px-6 py-3.5 bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
                     Back to Quizzes
                 </button>
             </div>
@@ -338,6 +348,33 @@ export const QuizAttemptViewer = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-300" ref={quizContainerRef}>
+            {showSubmitConfirm && !isReviewMode && (
+                <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-3xl border border-slate-700 bg-white p-6 shadow-2xl dark:bg-slate-900">
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white">Submit your quiz?</h3>
+                        <p className="mt-2 text-sm text-gray-600 dark:text-slate-300">
+                            Please confirm before submitting. You will not be able to continue this attempt afterward.
+                        </p>
+                        <div className="mt-6 flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowSubmitConfirm(false)}
+                                className="flex-1 rounded-xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleManualSubmit}
+                                disabled={isSubmitting}
+                                className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-3 text-sm font-black text-white hover:from-emerald-600 hover:to-teal-700 disabled:opacity-60"
+                            >
+                                {isSubmitting ? 'Submitting...' : 'Yes, Submit'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <ViolationWarningModal
                 isOpen={examMonitor.showViolationModal}
@@ -358,7 +395,7 @@ export const QuizAttemptViewer = () => {
 
             {/* --- Top Navbar --- */}
             {!isReviewMode && (
-                <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800 h-20 px-6 sm:px-10 flex items-center justify-between shadow-sm">
+                <header className="sticky top-0 z-30 border-b border-gray-200 dark:border-slate-800 h-20 px-6 sm:px-10 flex items-center justify-between">
                     <div className="flex items-center gap-4">
 
                     </div>
@@ -376,7 +413,6 @@ export const QuizAttemptViewer = () => {
 
                 {/* --- Left Column: Question Area --- */}
                 <main className="flex-1 flex flex-col gap-6 w-full max-w-4xl">
-
                     {/* Header Card */}
                     <div className="mb-2">
                         <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-4 leading-tight">{quizDetail?.title}</h1>
@@ -398,7 +434,7 @@ export const QuizAttemptViewer = () => {
                                 Question {currentQuestionIndex + 1}
                             </span>
                             <span className="text-gray-500 dark:text-slate-400 text-xs font-black uppercase tracking-widest bg-gray-100 dark:bg-slate-800 px-4 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700">
-                                {(currentQuestion as any).points || (currentQuestion as any).mark || ''} Pts
+                                {currentQuestion.mark} Pts
                             </span>
                         </div>
 
@@ -504,7 +540,7 @@ export const QuizAttemptViewer = () => {
 
                         {!isReviewMode && (
                             <button
-                                onClick={handleManualSubmit}
+                                onClick={() => setShowSubmitConfirm(true)}
                                 disabled={isSubmitting || examMonitor.hasAutoSubmitted}
                                 className="hidden sm:flex items-center gap-2 px-10 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/25 active:scale-95"
                             >
@@ -530,7 +566,7 @@ export const QuizAttemptViewer = () => {
                     {/* Mobile Submit Button */}
                     {!isReviewMode && (
                         <button
-                            onClick={handleManualSubmit}
+                            onClick={() => setShowSubmitConfirm(true)}
                             disabled={isSubmitting || examMonitor.hasAutoSubmitted}
                             className="sm:hidden w-full mt-4 flex items-center justify-center gap-2 px-10 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg active:scale-95"
                         >

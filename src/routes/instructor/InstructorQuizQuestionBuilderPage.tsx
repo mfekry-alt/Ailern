@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ROUTES, STORAGE_KEYS } from '@/lib/constants';
+import { QUERY_KEYS, ROUTES, STORAGE_KEYS } from '@/lib/constants';
 import { storage } from '@/lib/storage';
 import { ArrowLeft, Plus, Trash2, CheckCircle2, Loader2, GripVertical, Sparkles, HelpCircle, Settings, XCircle, AlertTriangle } from 'lucide-react';
-import { useCreateQuiz } from '@/features/quizzes/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { createQuiz, upsertQuizQuestions } from '@/api/services/quiz.service';
+import type { CreateQuizBody } from '@/types/api.types';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
 import type { OptionRequest, QuestionUpsertRequest, QuestionType } from '@/types/api.types';
+import { validateQuestionsArray, formatQuizQuestionErrors } from '@/lib/validators';
 
 // ─── Local UI types ────────────────────────────────────────────────────────
 
@@ -101,7 +104,9 @@ export const InstructorQuizQuestionBuilderPage = () => {
     const location = useLocation();
     const settings = (location.state as any)?.settings;
 
-    const createQuizMutation = useCreateQuiz(settings?.courseId || '');
+    const queryClient = useQueryClient();
+    const courseKey = String(settings?.courseId ?? '');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const isDraftQuiz = settings?.status === 'Draft';
 
     const [questions, setQuestions] = useState<UIQuestion[]>(() => (isDraftQuiz ? [] : [defaultQuestion(1)]));
@@ -233,29 +238,15 @@ export const InstructorQuizQuestionBuilderPage = () => {
     // ── Validation ────────────────────────────────────────────────────────
 
     const validate = (): string | null => {
-        if (isDraftQuiz && questions.length === 0) return null; // Draft can have 0 questions
+        if (isDraftQuiz && questions.length === 0) return null;
 
         if (questions.length === 0) {
             return 'At least one question is required for published or scheduled quizzes.';
         }
 
-        for (let i = 0; i < questions.length; i++) {
-            const q = questions[i];
-            const n = `Question ${i + 1}`;
-            if (!q.text.trim()) return `${n}: Question text is required.`;
-            if (q.text.length > 1500) return `${n}: Max 1500 characters.`;
-            if (q.mark <= 0) return `${n}: Points must be greater than 0.`;
-
-            if (q.type === 'MCQ') {
-                if (q.options.length < 3 || q.options.length > 5) return `${n}: MCQ must have 3–5 options.`;
-                if (q.options.some(o => !o.text.trim())) return `${n}: All option texts are required.`;
-                if (q.options.filter(o => o.isCorrect).length !== 1) return `${n}: Exactly one correct option is required.`;
-            }
-
-            if (q.type === 'TrueFalse') {
-                if (q.options.filter(o => o.isCorrect).length !== 1) return `${n}: Select the correct answer (True or False).`;
-            }
-        }
+        const payload = questions.map(buildPayloadQuestion);
+        const result = validateQuestionsArray(payload);
+        if (!result.isValid) return formatQuizQuestionErrors(result.errors);
         return null;
     };
 
@@ -268,24 +259,25 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
         const payloadQuestions = questions.map(buildPayloadQuestion);
 
-        const payload = {
+        const body: CreateQuizBody = {
             title: settings.title,
             description: settings.description?.trim() || settings.title?.trim() || 'Quiz',
-            courseId: Number(settings.courseId),
             maximumAttempts: settings.maximumAttempts,
             attemptTimeLimit: Number(settings.attemptTimeLimit) || 0,
-            status: settings.status,
             availableFrom: new Date(settings.availableFrom).toISOString(),
             availableUntil: new Date(settings.availableUntil).toISOString(),
-            publishedDate: settings.status === 'Scheduled' && settings.publishedDate ? new Date(settings.publishedDate).toISOString() : undefined,
             showResultOnClose: settings.showResultOnClose ?? false,
             shuffleQuestions: settings.shuffleQuestions ?? false,
             shuffleOptions: settings.shuffleOptions ?? false,
-            questions: payloadQuestions,
         };
 
         try {
-            await createQuizMutation.mutateAsync(payload);
+            setIsSubmitting(true);
+            const quizId = await createQuiz(Number(settings.courseId), body);
+            await upsertQuizQuestions(quizId, payloadQuestions);
+            if (courseKey) {
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseKey) });
+            }
             storage.remove(STORAGE_KEYS.QUIZ_SETTINGS_DRAFT);
             storage.remove(STORAGE_KEYS.QUIZ_BUILDER_DRAFT);
             setSuccess(true);
@@ -297,10 +289,12 @@ export const InstructorQuizQuestionBuilderPage = () => {
             const extracted = fieldErrors ? (title ? `${title} — ${fieldErrors}` : fieldErrors) : (title || e?.message || 'Failed to create quiz. Please try again.');
             setError(extracted);
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    const isLoading = createQuizMutation.isPending;
+    const isLoading = isSubmitting;
 
     const isQuestionComplete = (q: UIQuestion): boolean => {
         if (!q.text.trim() || q.mark <= 0) return false;

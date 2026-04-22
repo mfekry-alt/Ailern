@@ -1,9 +1,20 @@
 /**
- * Quiz Service - Handles all quiz-related API calls
+ * Quiz Service — aligned with `/api` quiz contract (course-scoped create/list, envelope responses).
  */
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
-import type { QuizRequest, GetQuizDto, ApiResponse, QuestionUpsertRequest, QuestionDto } from '@/types/api.types';
+import type {
+    ApiEnvelope,
+    ApiResponse,
+    CreateQuizBody,
+    GetAllQuizDto,
+    GetQuizDto,
+    GetSubmissionsByQuizIdDto,
+    PaginationResult,
+    QuestionDto,
+    QuestionUpsertRequest,
+    UpdateQuizBody,
+} from '@/types/api.types';
 
 export interface QuizGenerationFile {
     id: string;
@@ -29,11 +40,17 @@ export interface GenerateQuizByAIPayload {
     query?: string;
 }
 
-// --- Helper Functions ---
-const unwrapApiResponse = <T>(payload: ApiResponse<T> | T): T => {
-    if (payload && typeof payload === 'object' && 'data' in payload) {
-        return (payload as ApiResponse<T>).data as T;
+const unwrapEnvelope = <T>(payload: ApiEnvelope<T> | T | undefined): T | undefined => {
+    if (payload == null) return undefined;
+    if (typeof payload === 'object' && payload !== null && 'data' in payload) {
+        return (payload as ApiEnvelope<T>).data as T | undefined;
     }
+    return payload as T;
+};
+
+const unwrapApiResponse = <T>(payload: ApiResponse<T> | ApiEnvelope<T> | T): T => {
+    const inner = unwrapEnvelope<T>(payload as ApiEnvelope<T>);
+    if (inner !== undefined) return inner as T;
     return payload as T;
 };
 
@@ -59,62 +76,78 @@ const buildGenerateFormData = (payload: GenerateQuizByAIPayload): FormData => {
     return formData;
 };
 
-// --- Quiz CRUD Operations ---
+// --- Quiz CRUD ---
 
 /**
- * Create a new quiz with questions
- * Payload must match the exact schema expected by the backend
+ * POST /api/Courses/{courseId}/quizzes — returns new quiz id (GUID string).
  */
-export const createQuiz = async (command: QuizRequest): Promise<GetQuizDto> => {
-    // 💡 إجبار إضافة الحقل حتى لو كان غير موجوداً في الـ Component
-    const payload = {
-        ...command,
-        attemptTimeLimit: command.attemptTimeLimit ?? 0
-    };
-
-    const response = await api.post<ApiResponse<GetQuizDto>>(ENDPOINTS.QUIZZES.CREATE, payload);
-    return response.data.data!;
+export const createQuiz = async (
+    courseId: string | number,
+    body: CreateQuizBody
+): Promise<string> => {
+    const response = await api.post<ApiResponse<string>>(ENDPOINTS.COURSES.QUIZZES(courseId), body);
+    const id = unwrapEnvelope<string>(response.data as ApiEnvelope<string>);
+    if (typeof id !== 'string' || !id) {
+        throw new Error((response.data as ApiEnvelope)?.message ?? 'Failed to create quiz');
+    }
+    return id;
 };
 
 /**
- * Get all quizzes for a course
+ * PUT /api/Quizzes/{id}/update-status?status=Draft|Published
  */
-export const getCourseQuizzes = async (courseId: string | number): Promise<GetQuizDto[]> => {
+export const updateQuizStatus = async (
+    quizId: string,
+    status: 'Draft' | 'Published'
+): Promise<void> => {
+    await api.put(ENDPOINTS.QUIZZES.UPDATE_STATUS(quizId), undefined, {
+        params: { status },
+    });
+};
+
+/**
+ * GET /api/Courses/{courseId}/quizzes?pageNo=&pageSize=
+ */
+export const getCourseQuizzes = async (
+    courseId: string | number,
+    pageNo: number = 1,
+    pageSize: number = 100
+): Promise<GetAllQuizDto[]> => {
     try {
-        const response = await api.get<any>(ENDPOINTS.QUIZZES.BY_COURSE(String(courseId)));
-
-        // التعامل مع الرد سواء كان مصفوفة مباشرة أو كائن مغلف
-        const payload = response.data;
-
-        // 1. لو الداتا جوه data.items (زي ما ظاهر في الصورة الأخيرة)
-        if (payload?.data?.items && Array.isArray(payload.data.items)) {
-            return payload.data.items;
-        }
-
-        // 2. لو الداتا جوه data مباشرة
-        if (payload?.data && Array.isArray(payload.data)) {
-            return payload.data;
-        }
-
-        // 3. لو الرد مصفوفة مباشرة
-        if (Array.isArray(payload)) {
-            return payload;
-        }
-
+        const response = await api.get<ApiResponse<PaginationResult<GetAllQuizDto>>>(
+            ENDPOINTS.COURSES.QUIZZES(courseId),
+            { params: { pageNo, pageSize } }
+        );
+        const page = unwrapEnvelope<PaginationResult<GetAllQuizDto>>(response.data as ApiEnvelope<PaginationResult<GetAllQuizDto>>);
+        if (page?.items) return page.items;
         return [];
     } catch (error) {
-        console.error('Fetch quizzes failed, trying fallback...', error);
-        // Fallback endpoint
-        const response = await api.get<any>(ENDPOINTS.QUIZZES.LIST, {
-            params: { courseId },
-        });
-        const payload = response.data;
-        const data = payload?.data?.items ?? payload?.data ?? payload;
-        return Array.isArray(data) ? data : [];
+        console.error('Fetch course quizzes failed:', error);
+        return [];
     }
 };
 
-// أضف | undefined عشان الـ check اللي تحت يشتغل صح
+export const getCourseQuizzesPage = async (
+    courseId: string | number,
+    pageNo: number = 1,
+    pageSize: number = 10
+): Promise<PaginationResult<GetAllQuizDto>> => {
+    const response = await api.get<ApiResponse<PaginationResult<GetAllQuizDto>>>(
+        ENDPOINTS.COURSES.QUIZZES(courseId),
+        { params: { pageNo, pageSize } }
+    );
+    const page = unwrapEnvelope<PaginationResult<GetAllQuizDto>>(response.data as ApiEnvelope<PaginationResult<GetAllQuizDto>>);
+    return (
+        page ?? {
+            totalResults: 0,
+            pagesCount: 0,
+            start: 0,
+            end: -1,
+            items: [],
+        }
+    );
+};
+
 let activeQuizPromises: Record<string, Promise<GetQuizDto> | undefined> = {};
 
 export const getQuiz = async (id: string): Promise<GetQuizDto> => {
@@ -125,7 +158,9 @@ export const getQuiz = async (id: string): Promise<GetQuizDto> => {
     activeQuizPromises[id] = (async () => {
         try {
             const response = await api.get<ApiResponse<GetQuizDto>>(ENDPOINTS.QUIZZES.GET(id));
-            return response.data.data!;
+            const data = unwrapEnvelope<GetQuizDto>(response.data as ApiEnvelope<GetQuizDto>);
+            if (!data) throw new Error('Quiz not found');
+            return data;
         } finally {
             delete activeQuizPromises[id];
         }
@@ -135,37 +170,21 @@ export const getQuiz = async (id: string): Promise<GetQuizDto> => {
 };
 
 /**
- * Update an existing quiz
+ * PUT /api/Quizzes/{id}
  */
-export const updateQuiz = async (
-    id: string,
-    command: Partial<QuizRequest>
-): Promise<GetQuizDto> => {
-    // 💡 إجبار الحقل على التواجد لتجنب إسقاطه بواسطة المتصفح عند إرسال الـ JSON
-    const payload = {
-        ...command,
-        attemptTimeLimit: command.attemptTimeLimit ?? 0
-    };
-
-    const response = await api.put<ApiResponse<GetQuizDto>>(ENDPOINTS.QUIZZES.UPDATE(id), payload);
-    return response.data.data!;
+export const updateQuiz = async (id: string, command: UpdateQuizBody): Promise<void> => {
+    await api.put<ApiResponse<null>>(ENDPOINTS.QUIZZES.UPDATE(id), command);
 };
 
-/**
- * Delete a quiz
- */
 export const deleteQuiz = async (id: string): Promise<void> => {
     await api.delete(ENDPOINTS.QUIZZES.DELETE(id));
 };
 
-// --- AI Generation Operations ---
+// --- AI (optional / backend-specific) ---
 
-/**
- * Generate quiz questions using AI from files or text
- */
-export const generateQuizQuestionsByAI = async (quizId: string, payload: GenerateQuizByAIPayload): Promise<any> => {
+export const generateQuizQuestionsByAI = async (quizId: string, payload: GenerateQuizByAIPayload): Promise<unknown> => {
     const formData = buildGenerateFormData(payload);
-    const response = await api.post<ApiResponse<any>>(
+    const response = await api.post<ApiResponse<unknown>>(
         ENDPOINTS.QUIZZES.GENERATE_BY_AI(quizId),
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -173,66 +192,44 @@ export const generateQuizQuestionsByAI = async (quizId: string, payload: Generat
     return unwrapApiResponse(response.data);
 };
 
-/**
- * Quick AI Generation - Used for generating questions on the fly
- */
 export const generateAIQuestions = async (params: {
     topic: string;
-    difficulty: "Easy" | "Medium" | "Hard";
+    difficulty: 'Easy' | 'Medium' | 'Hard';
     count: number;
     context?: string;
 }): Promise<QuestionUpsertRequest[]> => {
     const response = await api.post<ApiResponse<QuestionUpsertRequest[]>>('/Quizzes/quick-generate', params);
-    return response.data.data || [];
+    const data = unwrapEnvelope(response.data as ApiEnvelope<QuestionUpsertRequest[]>);
+    return data ?? [];
 };
 
-/**
- * Get AI generation job status/results
- */
-export const getQuizGenerationJob = async (jobId: string): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>(ENDPOINTS.QUIZZES.JOB_STATUS(jobId));
+export const getQuizGenerationJob = async (jobId: string): Promise<unknown> => {
+    const response = await api.get<ApiResponse<unknown>>(ENDPOINTS.QUIZZES.JOB_STATUS(jobId));
     return unwrapApiResponse(response.data);
 };
 
-/**
- * Get available files for AI question generation for a quiz
- */
-export const getQuizGenerationFiles = async (quizId: string): Promise<any> => {
-    const response = await api.get<ApiResponse<any>>(ENDPOINTS.QUIZZES.GENERATE_FILES(quizId));
+export const getQuizGenerationFiles = async (quizId: string): Promise<unknown> => {
+    const response = await api.get<ApiResponse<unknown>>(ENDPOINTS.QUIZZES.GENERATE_FILES(quizId));
     return unwrapApiResponse(response.data);
 };
 
-// --- Question Management ---
+// --- Questions ---
 
-/**
- * Upsert (create/update) questions for a quiz
- * Allows updating questions independently without updating the entire quiz
- * PUT /api/Quizzes/{id}/questions
- */
 export const upsertQuizQuestions = async (
     quizId: string,
     questions: QuestionUpsertRequest[]
-): Promise<QuestionDto[]> => {
-    const response = await api.put<ApiResponse<QuestionDto[]>>(
-        ENDPOINTS.QUIZZES.UPSERT_QUESTIONS(quizId),
-        questions
-    );
-    return response.data.data || unwrapApiResponse(response.data) || [];
+): Promise<void> => {
+    await api.put<ApiResponse<null>>(ENDPOINTS.QUIZZES.UPSERT_QUESTIONS(quizId), questions);
 };
 
-// --- Submission Management ---
+// --- Submissions (instructor) ---
 
-/**
- * Get quiz submissions (for instructor grading)
- * Filters submissions by status and supports pagination
- * GET /api/Quizzes/{id}/submissions
- */
 export const getQuizSubmissions = async (
     quizId: string,
     status?: 'InProgress' | 'Submitted' | 'Reviewed',
     pageNo: number = 1,
     pageSize: number = 10
-): Promise<any> => {
+): Promise<PaginationResult<GetSubmissionsByQuizIdDto>> => {
     const params = new URLSearchParams();
     if (status) params.append('status', status);
     params.append('pageNo', String(pageNo));
@@ -242,52 +239,17 @@ export const getQuizSubmissions = async (
     const endpoint = ENDPOINTS.QUIZZES.GET_SUBMISSIONS(quizId);
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
 
-    try {
-        const response = await api.get<any>(url);
-
-        // Handle multiple response formats
-        const payload = response.data;
-
-        // 1. Paginated result with items
-        if (payload?.items && Array.isArray(payload.items)) {
-            return payload;
-        }
-
-        // 2. Direct data array (not paginated)
-        if (payload?.data && Array.isArray(payload.data)) {
-            if (payload.data.items) {
-                return payload.data; // Already paginated format
-            }
-            // Convert to paginated format
-            return {
-                items: payload.data,
-                totalResults: payload.data.length,
-                pagesCount: 1,
-                start: 0,
-                end: payload.data.length - 1,
-            };
-        }
-
-        // 3. Array directly
-        if (Array.isArray(payload)) {
-            return {
-                items: payload,
-                totalResults: payload.length,
-                pagesCount: 1,
-                start: 0,
-                end: payload.length - 1,
-            };
-        }
-
-        return {
-            items: [],
+    const response = await api.get<ApiResponse<PaginationResult<GetSubmissionsByQuizIdDto>>>(url);
+    const page = unwrapEnvelope<PaginationResult<GetSubmissionsByQuizIdDto>>(
+        response.data as ApiEnvelope<PaginationResult<GetSubmissionsByQuizIdDto>>
+    );
+    return (
+        page ?? {
             totalResults: 0,
             pagesCount: 0,
             start: 0,
-            end: 0,
-        };
-    } catch (error) {
-        console.error('Error fetching quiz submissions:', error);
-        throw error;
-    }
+            end: -1,
+            items: [],
+        }
+    );
 };

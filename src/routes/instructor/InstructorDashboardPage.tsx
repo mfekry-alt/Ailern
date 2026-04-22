@@ -142,7 +142,7 @@ const MiniCalendar = ({ events }: { events: UpcomingEventDto[] }) => {
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-500" /> Calendar
+                    <Calendar className="w-5 h-5 text-[#21A9FF]" /> Calendar
                 </h2>
                 <div className="flex items-center gap-1">
                     <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
@@ -176,7 +176,7 @@ const MiniCalendar = ({ events }: { events: UpcomingEventDto[] }) => {
                         <div
                             key={day}
                             className={`group/cal relative flex flex-col items-center justify-center rounded-lg py-1.5 text-xs font-semibold transition-all cursor-default
-                                ${isToday(day) ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50'}
+                                ${isToday(day) ? 'bg-[#21A9FF] text-white shadow-md shadow-[#21A9FF]/30' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50'}
                             `}
                         >
                             {day}
@@ -278,7 +278,7 @@ export const InstructorDashboardPage = () => {
                             <Activity className="w-3.1 h-3.1" /> Academic Management Console
                         </div>
                         <h1 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
-                            Dashboard Overview, <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500">{displayName}</span>
+                            Dashboard Overview, <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#21A9FF] to-indigo-500">{displayName}</span>
                         </h1>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pt-1">
                             <p className="text-gray-500 dark:text-slate-400 text-sm md:text-base font-medium">
@@ -293,7 +293,7 @@ export const InstructorDashboardPage = () => {
                     </div>
                     
                     <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
-                        <button className="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95">
+                        <button className="w-full md:w-auto flex items-center justify-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-[#21A9FF]/25 hover:-translate-y-0.5 active:scale-95">
                             <Plus className="w-5 h-5" />
                             Create New Course
                         </button>
@@ -309,7 +309,7 @@ export const InstructorDashboardPage = () => {
                             return (
                                 <div key={idx} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group hover:shadow-md hover:-translate-y-1 transition-all duration-300">
                                     <div className={`absolute left-0 top-0 w-1.5 h-full
-                                        ${stat.color === 'blue' ? 'bg-blue-500' : ''}
+                                        ${stat.color === 'blue' ? 'bg-[#21A9FF]' : ''}
                                         ${stat.color === 'emerald' ? 'bg-emerald-500' : ''}
                                         ${stat.color === 'purple' ? 'bg-purple-500' : ''}
                                         ${stat.color === 'amber' ? 'bg-amber-500' : ''}
@@ -321,7 +321,7 @@ export const InstructorDashboardPage = () => {
                                         </h3>
                                     </div>
                                     <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0
-                                        ${stat.color === 'blue' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : ''}
+                                        ${stat.color === 'blue' ? 'bg-blue-50 dark:bg-blue-500/10 text-[#21A9FF] dark:text-[#21A9FF]' : ''}
                                         ${stat.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : ''}
                                         ${stat.color === 'purple' ? 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400' : ''}
                                         ${stat.color === 'amber' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' : ''}
@@ -344,10 +344,10 @@ export const InstructorDashboardPage = () => {
                         <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 shadow-sm">
                             <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
                                 <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <LayoutGrid className="w-5 h-5 text-blue-500" /> My Courses
+                                    <LayoutGrid className="w-5 h-5 text-[#21A9FF]" /> My Courses
                                 </h2>
                                 <Link to={ROUTES.INSTRUCTOR_COURSES}>
-                                    <button className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 group">
+                                    <button className="text-sm font-bold text-[#21A9FF] dark:text-[#21A9FF] hover:text-[#0094F2] dark:hover:text-[#0094F2] flex items-center gap-1 group">
                                         View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                     </button>
                                 </Link>
@@ -378,7 +378,7 @@ export const InstructorDashboardPage = () => {
                                         className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700/50 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-300 dark:hover:border-slate-500 transition-all group"
                                     >
                                         <div className="flex-1">
-                                            <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-1.5">
+                                            <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-[#21A9FF] dark:group-hover:text-[#21A9FF] transition-colors mb-1.5">
                                                 {course.title}
                                             </h3>
                                             <div className="flex items-center gap-3">
@@ -387,13 +387,13 @@ export const InstructorDashboardPage = () => {
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0 border-t sm:border-t-0 border-gray-200 dark:border-slate-700 pt-4 sm:pt-0">
                                             <Link to={ROUTES.INSTRUCTOR_COURSE_EDIT.replace(':id', course.id)}>
-                                                <button className="p-2 text-gray-500 hover:text-blue-600 bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-colors border border-gray-200 dark:border-slate-600 shadow-sm" title="Edit Settings">
+                                                <button className="p-2 text-gray-500 hover:text-[#21A9FF] bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-colors border border-gray-200 dark:border-slate-600 shadow-sm" title="Edit Settings">
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
                                             </Link>
                                             {course.primaryAction && (
                                                 <Link to={`/instructor/courses/${course.id}/manage/sections`}>
-                                                    <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-blue-500/25 active:scale-95 flex items-center gap-1">
+                                                    <button className="bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-[#21A9FF]/25 active:scale-95 flex items-center gap-1">
                                                         {course.primaryAction}
                                                     </button>
                                                 </Link>

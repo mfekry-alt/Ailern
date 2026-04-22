@@ -57,7 +57,7 @@ export const CourseManageLayout = () => {
                     )}
                     <button
                         onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
-                        className="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors shrink-0"
+                        className="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-400 hover:text-[#21A9FF] dark:hover:text-white hover:bg-[#21A9FF]/10 transition-colors shrink-0"
                     >
                         {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                     </button>
@@ -77,7 +77,7 @@ export const CourseManageLayout = () => {
                                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all group
                                 ${collapsed ? 'justify-center' : ''}
                                 ${isActive
-                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                    ? 'bg-[#21A9FF] text-white shadow-md shadow-[#21A9FF]/20'
                                     : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white'
                                 }`
                             }

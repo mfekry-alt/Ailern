@@ -13,7 +13,7 @@ import { handleApiError } from '@/api/client';
 import { uploadFileToPresignedUrlWithProgress } from '@/api/services/assignment.service';
 
 const inputCls =
-    'w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all text-sm font-semibold';
+    'w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all text-sm font-semibold';
 const labelCls = 'block text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1';
 
 export const InstructorAssignmentCreatePage = () => {
@@ -184,8 +184,8 @@ i) => {
                         {/* Section 1: Basic Information */}
                         <div className="space-y-6">
                             <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-700/50 pb-4">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center shadow-sm">
-                                    <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                <div className="w-10 h-10 rounded-xl bg-[#21A9FF]/10 border border-[#21A9FF]/20 flex items-center justify-center shadow-sm">
+                                    <Settings className="w-5 h-5 text-[#21A9FF]" />
                                 </div>
                                 <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">Basic Information</h3>
                             </div>
@@ -193,7 +193,7 @@ i) => {
                             {/* Badge instead of select course */}
                             <div>
                                 <label className={labelCls}>Course</label>
-                                <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400 rounded-xl font-bold text-sm shadow-sm opacity-90 cursor-default">
+                                <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#21A9FF]/10 border border-[#21A9FF]/20 text-[#21A9FF] rounded-xl font-bold text-sm shadow-sm opacity-90 cursor-default">
                                     {courseData ? `${courseData.code} - ${courseData.name}` : `Course #${courseIdNum}`}
                                 </div>
                             </div>
@@ -249,7 +249,7 @@ i) => {
                                     <div className="flex-1 flex flex-col justify-start">
                                         <div 
                                             onClick={() => setFormData({ ...formData, allowLateSubmission: !formData.allowLateSubmission })}
-                                            className={`${inputCls} cursor-pointer flex items-center justify-between hover:border-blue-300 dark:hover:border-slate-500 transition-colors w-full ${
+                                            className={`${inputCls} cursor-pointer flex items-center justify-between hover:border-[#21A9FF]/50 transition-colors w-full ${
                                                 formData.allowLateSubmission ? 'border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10' : ''
                                             }`}
                                         >
@@ -284,20 +284,20 @@ i) => {
                         {/* Section 4: Attachments */}
                         <div className="space-y-6 pt-4">
                             <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-700/50 pb-4">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center shadow-sm">
-                                    <Upload className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                <div className="w-10 h-10 rounded-xl bg-[#21A9FF]/10 border border-[#21A9FF]/20 flex items-center justify-center shadow-sm">
+                                    <Upload className="w-5 h-5 text-[#21A9FF]" />
                                 </div>
                                 <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">Reference Materials</h3>
                             </div>
 
-                            <label className="relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-[2rem] cursor-pointer hover:border-blue-500 group transition-all duration-500 bg-gradient-to-b from-gray-50/50 to-white dark:from-slate-800/20 dark:to-slate-900/40 hover:shadow-lg hover:shadow-blue-500/5 outline-none">
-                                <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <label className="relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-[2rem] cursor-pointer hover:border-[#21A9FF] group transition-all duration-500 bg-gradient-to-b from-gray-50/50 to-white dark:from-slate-800/20 dark:to-slate-900/40 hover:shadow-lg hover:shadow-[#21A9FF]/5 outline-none">
+                                <div className="absolute inset-0 bg-[#21A9FF]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 group-hover:-translate-y-1 group-active:scale-95 transition-all duration-500 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-slate-700 relative z-10">
-                                    <div className="absolute inset-0 bg-blue-500 opacity-20 blur-xl rounded-full group-hover:opacity-40 transition-opacity duration-500" />
-                                    <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400 relative z-10" />
+                                    <div className="absolute inset-0 bg-[#21A9FF] opacity-20 blur-xl rounded-full group-hover:opacity-40 transition-opacity duration-500" />
+                                    <Upload className="w-8 h-8 text-[#21A9FF] relative z-10" />
                                 </div>
                                 <div className="text-center relative z-10">
-                                    <span className="text-lg font-extrabold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Click to upload reference files</span>
+                                    <span className="text-lg font-extrabold text-gray-900 dark:text-white group-hover:text-[#21A9FF] transition-colors">Click to upload reference files</span>
                                 </div>
                                 <input type="file" multiple onChange={handleFileUpload} className="hidden" />
                             </label>
@@ -320,7 +320,7 @@ i) => {
                                                     ) : isError ? (
                                                         <AlertTriangle className="w-6 h-6 text-red-500 dark:text-red-400" />
                                                     ) : (
-                                                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                                        <FileText className="w-6 h-6 text-[#21A9FF]" />
                                                     )}
                                                 </div>
                                                 <div className="truncate pr-2">
@@ -343,7 +343,7 @@ i) => {
                                             </div>
                                             {isUploading && (
                                                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100 dark:bg-slate-700 overflow-hidden">
-                                                    <div className="bg-blue-500 h-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                                                    <div className="bg-[#21A9FF] h-full transition-all duration-300" style={{ width: `${progress}%` }} />
                                                 </div>
                                             )}
                                         </div>
@@ -377,7 +377,7 @@ i) => {
                                 type="button"
                                 onClick={() => handleSave(false)}
                                 disabled={isPublishDisabled}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-blue-500/25 active:scale-95 text-sm disabled:opacity-50"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white rounded-xl font-bold transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 text-sm disabled:opacity-50"
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                                 Publish
