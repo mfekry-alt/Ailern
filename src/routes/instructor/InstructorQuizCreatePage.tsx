@@ -3,21 +3,18 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, HelpCircle, CheckCircle2, ListChecks } from 'lucide-react';
 import { QuizForm, toISOFromLocal } from '@/components/QuizForm';
 import type { QuizFormData } from '@/components/QuizForm';
-import type { QuizRequest, GetQuizDto } from '@/types/api.types';
+import type { CreateQuizBody } from '@/types/api.types';
 import { useCreateQuiz } from '@/features/quizzes/api';
 import { ROUTES } from '@/lib/constants';
 import { toast } from 'sonner';
 
-const buildCommand = (data: QuizFormData, courseId: string): QuizRequest => ({
+const buildCreateBody = (data: QuizFormData): CreateQuizBody => ({
     title: data.title.trim(),
     description: data.description?.trim() || data.title.trim() || 'Quiz',
-    courseId: Number(courseId),
     maximumAttempts: data.maximumAttempts,
     attemptTimeLimit: Number(data.attemptTimeLimit) || 0,
-    status: data.status,
     availableFrom: toISOFromLocal(data.availableFrom),
     availableUntil: toISOFromLocal(data.availableUntil),
-    publishedDate: data.status === 'Scheduled' ? toISOFromLocal(data.publishedDate) : undefined,
     showResultOnClose: data.showResultOnClose,
     shuffleQuestions: data.shuffleQuestions,
     shuffleOptions: data.shuffleOptions,
@@ -28,7 +25,7 @@ export const InstructorQuizCreatePage = () => {
     const { courseId } = useParams<{ courseId: string }>();
     const createQuizMutation = useCreateQuiz(courseId || '');
     const [apiError, setApiError] = useState<string>('');
-    const [createdQuiz, setCreatedQuiz] = useState<GetQuizDto | null>(null);
+    const [createdQuiz, setCreatedQuiz] = useState<{ id: string; title: string } | null>(null);
 
     if (!courseId) {
         return (
@@ -48,9 +45,9 @@ export const InstructorQuizCreatePage = () => {
     const handleSubmit = async (data: QuizFormData) => {
         try {
             setApiError('');
-            const cmd = buildCommand(data, courseId);
-            const result = await createQuizMutation.mutateAsync(cmd);
-            setCreatedQuiz(result);
+            const body = buildCreateBody(data);
+            const quizId = await createQuizMutation.mutateAsync(body);
+            setCreatedQuiz({ id: quizId, title: data.title.trim() });
             toast.success('Quiz created successfully!');
         } catch (err: any) {
             const d = err?.response?.data;
@@ -79,7 +76,7 @@ export const InstructorQuizCreatePage = () => {
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Quiz Created!</h1>
                         <p className="text-gray-500 dark:text-slate-400 font-medium">
-                            <span className="font-bold text-gray-700 dark:text-slate-200">"{createdQuiz.title}"</span> has been created successfully.
+                            <span className="font-bold text-gray-700 dark:text-slate-200">&quot;{createdQuiz.title}&quot;</span> has been created successfully.
                         </p>
                     </div>
 
@@ -131,6 +128,8 @@ export const InstructorQuizCreatePage = () => {
                 )}
 
                 <QuizForm
+                    validationMode="create"
+                    showVisibilitySection={false}
                     onSubmit={handleSubmit}
                     isPending={createQuizMutation.isPending}
                     submitLabel="Create Quiz"

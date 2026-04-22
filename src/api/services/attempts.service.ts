@@ -3,24 +3,37 @@
  */
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
-import type { ApiResponse } from '@/types/api.types';
+import type {
+    AnswerDto,
+    ApiEnvelope,
+    ApiResponse,
+    AttemptQuestionDto,
+    AttemptResultDto,
+    GetAttemptsByQuizIdDto,
+    GradeSubmissionBody,
+} from '@/types/api.types';
 
 // ─── Interfaces ────────────────────────────────────────────────────────────
 
 export interface StartAttemptResponse {
-    id: string;
+    attemptId: string;
     attemptEndDate: string;
-    [key: string]: any;
+    /** Alias for legacy callers */
+    id: string;
 }
 
+/** Normalized attempt question for UI (maps from AttemptQuestionDto) */
 export interface AttemptQuestion {
     id: string;
     question: string;
     type: 'MCQ' | 'TrueFalse' | 'Written';
+    mark: number;
     instructions: string | null;
-    options: { option: string; optionId: string }[];
+    options: { option: string; optionId: string; order?: number }[];
     writtenAnswer: string | null;
     selectedOptionId: string | null;
+    order: number;
+    shuffledOptionIds: string[];
 }
 
 export interface SaveAnswerEntry {
@@ -75,17 +88,18 @@ export function buildSaveAnswerEntries(
     return out;
 }
 
+/** Summary for result screens (from AttemptResultDto) */
 export interface AttemptResult {
     quizId: string;
     score: number;
     totalScore: number;
     percentage: number;
     status: string;
-    studentId?: number;
     quizName?: string;
     submittedAt?: string;
     attemptNumber?: number;
     timeSpent?: number;
+    raw?: AttemptResultDto;
 }
 
 export interface StudentAnswer {
@@ -98,17 +112,17 @@ export interface StudentAnswer {
     possiblePoints?: number;
 }
 
+export interface InstructorAttemptAnswer extends AnswerDto {
+    questionId: string;
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-const extractArray = (res: any): any[] => {
-    if (!res) return [];
-    const body = res.data;
-    if (Array.isArray(body)) return body;
-    if (Array.isArray(body?.data)) return body.data;
-    if (Array.isArray(body?.data?.attempts)) return body.data.attempts;
-    if (Array.isArray(body?.attempts)) return body.attempts;
-    if (Array.isArray(body?.items)) return body.items;
-    return [];
+const unwrapData = <T>(body: unknown): T | undefined => {
+    if (body && typeof body === 'object' && 'data' in (body as object)) {
+        return (body as ApiEnvelope<T>).data;
+    }
+    return undefined;
 };
 
 // ─── Start Attempt ─────────────────────────────────────────────────────────
@@ -120,13 +134,16 @@ export const startQuizAttempt = async (quizId: string): Promise<StartAttemptResp
 
     activeStartPromise = (async () => {
         try {
-            const response = await api.post<any>(ENDPOINTS.ATTEMPTS.START(quizId), {});
-            const raw = response.data?.data ?? response.data;
-            return {
-                ...raw,
-                id: String(raw.id || raw.attemptId || ''),
-                attemptEndDate: raw.attemptEndDate || raw.endDate || '',
-            } as StartAttemptResponse;
+            const response = await api.post<ApiResponse<{ attemptId: string; attemptEndDate: string }>>(
+                ENDPOINTS.ATTEMPTS.START(quizId),
+                {}
+            );
+            const raw: { attemptId?: string; attemptEndDate?: string; id?: string; endDate?: string } =
+                unwrapData<{ attemptId?: string; attemptEndDate?: string; id?: string; endDate?: string }>(response.data)
+                ?? {};
+            const attemptId = String(raw?.attemptId ?? (raw as { id?: string })?.id ?? '');
+            const attemptEndDate = String(raw?.attemptEndDate ?? (raw as { endDate?: string })?.endDate ?? '');
+            return { attemptId, id: attemptId, attemptEndDate };
         } finally {
             activeStartPromise = null;
         }
@@ -147,21 +164,25 @@ export const getAttemptQuestions = async (attemptId: string): Promise<AttemptQue
 
     activeQuestionsPromise[attemptId] = (async () => {
         try {
-            const response = await api.get<ApiResponse<any[]>>(ENDPOINTS.ATTEMPTS.GET_QUESTIONS(attemptId));
-            const rawQuestions = response.data?.data ?? response.data ?? [];
+            const response = await api.get<ApiResponse<AttemptQuestionDto[]>>(ENDPOINTS.ATTEMPTS.GET_QUESTIONS(attemptId));
+            const rawQuestions = unwrapData(response.data) ?? [];
             const arr = Array.isArray(rawQuestions) ? rawQuestions : [];
 
-            return arr.map((q: any): AttemptQuestion => ({
+            return arr.map((q: AttemptQuestionDto): AttemptQuestion => ({
                 id: String(q.id || ''),
-                question: q.question || q.questionText || q.text || '',
-                type: q.type || q.questionType || 'MCQ',
-                instructions: q.instructions || null,
-                options: (q.options || []).map((opt: any) => ({
-                    option: opt.option || opt.optionText || opt.text || '',
-                    optionId: String(opt.optionId || opt.id || ''),
+                question: q.question || '',
+                type: q.type || 'MCQ',
+                mark: Number(q.mark ?? 0),
+                instructions: q.instructions ?? null,
+                options: (q.options || []).map((opt) => ({
+                    option: opt.option || '',
+                    optionId: String(opt.optionId || ''),
+                    order: opt.order,
                 })),
-                writtenAnswer: q.writtenAnswer || null,
-                selectedOptionId: q.selectedOptionId || q.optionId || null,
+                writtenAnswer: q.writtenAnswer ?? null,
+                selectedOptionId: q.selectedOptionId ?? null,
+                order: q.order,
+                shuffledOptionIds: q.shuffledOptionIds ?? [],
             }));
         } finally {
             delete activeQuestionsPromise[attemptId];
@@ -191,21 +212,22 @@ export const submitQuizAttempt = async (attemptId: string) => {
 
 let activeAllAttemptsPromise: Record<string, Promise<any[]> | undefined> = {};
 
-export const getQuizAttempts = async (quizId: string): Promise<any[]> => {
-    if (activeAllAttemptsPromise[quizId]) return activeAllAttemptsPromise[quizId]!;
+/** GET /api/Quizzes/{quizId}/my-attempts — returns GetAttemptsByQuizIdDto */
+export const getMyAttemptsForQuiz = async (quizId: string): Promise<GetAttemptsByQuizIdDto | null> => {
+    try {
+        const response = await api.get<ApiResponse<GetAttemptsByQuizIdDto>>(
+            ENDPOINTS.ATTEMPTS.MY_ATTEMPTS_FOR_QUIZ(quizId)
+        );
+        return unwrapData(response.data) ?? null;
+    } catch {
+        return null;
+    }
+};
 
-    activeAllAttemptsPromise[quizId] = (async () => {
-        try {
-            const response = await api.get<any>(ENDPOINTS.ATTEMPTS.GET_ATTEMPTS(quizId));
-            return extractArray(response);
-        } catch {
-            return [];
-        } finally {
-            delete activeAllAttemptsPromise[quizId];
-        }
-    })();
-
-    return activeAllAttemptsPromise[quizId]!;
+/** @deprecated Prefer getMyAttemptsForQuiz — kept for callers expecting a flat attempts array */
+export const getQuizAttempts = async (quizId: string): Promise<unknown[]> => {
+    const dto = await getMyAttemptsForQuiz(quizId);
+    return dto?.attempts ?? [];
 };
 
 // ─── Get Attempt Result ────────────────────────────────────────────────────
@@ -217,11 +239,20 @@ export const getAttemptResult = async (attemptId: string): Promise<AttemptResult
 
     activeResultPromises[attemptId] = (async () => {
         try {
-            const response = await api.get<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.GET_RESULT(attemptId));
-            const data = response.data?.data || {};
+            const response = await api.get<ApiResponse<AttemptResultDto>>(ENDPOINTS.ATTEMPTS.GET_RESULT(attemptId));
+            const data: AttemptResultDto = unwrapData<AttemptResultDto>(response.data) ?? {
+                attemptId,
+                status: 'Submitted',
+                quizTitle: '',
+                quizId: '',
+                answers: [],
+                timeSpent: 0,
+                totalScore: 0,
+                score: 0,
+            };
 
-            const achieved = data.achievedScore || data.score || 0;
-            const total = data.totalScore || data.totalMarks || 1;
+            const achieved = data.score ?? 0;
+            const total = data.totalScore || 1;
 
             return {
                 quizId: data.quizId,
@@ -229,9 +260,11 @@ export const getAttemptResult = async (attemptId: string): Promise<AttemptResult
                 totalScore: total,
                 percentage: Math.round((achieved / total) * 100),
                 status: data.status || 'Submitted',
-                quizName: data.quizName,
-                submittedAt: data.submittedAt || data.updatedAt,
-                attemptNumber: data.attemptNumber,
+                quizName: data.quizTitle,
+                submittedAt: undefined,
+                attemptNumber: undefined,
+                timeSpent: data.timeSpent,
+                raw: data,
             };
         } finally {
             delete activeResultPromises[attemptId];
@@ -245,22 +278,32 @@ export const getAttemptResult = async (attemptId: string): Promise<AttemptResult
 
 export const getStudentAnswers = async (attemptId: string): Promise<StudentAnswer[]> => {
     try {
-        const response = await api.get<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.GET_RESULT(attemptId));
-        const data = response.data?.data;
-        const resultsArray = data?.attemptResult || data?.answers || [];
+        const response = await api.get<ApiResponse<AttemptResultDto>>(ENDPOINTS.ATTEMPTS.GET_STUDENT_ANSWERS(attemptId));
+        const data = unwrapData<AttemptResultDto>(response.data);
+        const resultsArray = data?.answers ?? [];
 
-        return resultsArray.map((item: any) => ({
-            questionId: String(item.questionId || ''),
-            questionText: item.questionText || item.question || '',
-            studentAnswer: item.studentAnswer || item.booleanAnswer || String(item.optionId || ''),
-            correctAnswer: item.correctAnswer || item.correctOptionText,
-            isCorrect: item.score > 0 || item.isCorrect,
-            points: item.score || item.pointsAchieved || 0,
-            possiblePoints: item.maxScore || item.possiblePoints || 1,
+        return resultsArray.map((item: AnswerDto, idx: number) => ({
+            questionId: String(idx),
+            questionText: item.questionText || '',
+            studentAnswer: item.answer ?? '',
+            correctAnswer: undefined,
+            isCorrect: item.score > 0,
+            points: item.score,
+            possiblePoints: item.maxScore,
         }));
     } catch {
         return [];
     }
+};
+
+/** GET /api/Attempts/{attemptId}/student-answers — instructor review payload */
+export const getAttemptStudentAnswers = async (attemptId: string): Promise<AttemptResultDto> => {
+    const response = await api.get<ApiResponse<AttemptResultDto>>(ENDPOINTS.ATTEMPTS.GET_STUDENT_ANSWERS(attemptId));
+    const data = unwrapData<AttemptResultDto>(response.data);
+    if (!data) {
+        throw new Error('No student answers returned');
+    }
+    return data;
 };
 
 // ─── Grading Operations ────────────────────────────────────────────────────
@@ -271,12 +314,9 @@ export interface GradeEntry {
     feedback?: string;
 }
 
-export interface GradeSubmissionPayload {
-    grades: GradeEntry[];
-    status: 'Submitted' | 'Reviewed';
-}
+export type GradeSubmissionPayload = GradeSubmissionBody;
 
-export const gradeSubmission = async (attemptId: string, payload: GradeSubmissionPayload): Promise<any> => {
-    const response = await api.put<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.GRADE(attemptId), payload);
-    return response.data?.data || response.data;
+export const gradeSubmission = async (attemptId: string, payload: GradeSubmissionPayload): Promise<unknown> => {
+    const response = await api.put<ApiResponse<null>>(ENDPOINTS.ATTEMPTS.GRADE(attemptId), payload);
+    return unwrapData(response.data);
 };

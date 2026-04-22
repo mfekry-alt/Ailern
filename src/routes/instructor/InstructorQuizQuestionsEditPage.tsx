@@ -8,7 +8,9 @@ import {
 } from 'lucide-react';
 import { useQuiz, useUpsertQuizQuestions } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
+import { toast } from 'sonner';
 import type { OptionRequest, QuestionUpsertRequest, QuestionType, QuestionDto, OptionDto } from '@/types/api.types';
+import { validateQuestionsArray, formatQuizQuestionErrors } from '@/lib/validators';
 
 // ─── Local UI types ────────────────────────────────────────────────────────
 
@@ -95,17 +97,21 @@ const convertQuestionDtoToUI = (dto: QuestionDto, uid: number): UIQuestion => ({
     instructions: dto.instructions || '',
     mark: dto.mark,
     explanation: dto.explanation || '',
-    options: dto.options.map(convertOptionDtoToUI),
-    backendId: dto.id,
+    options: (dto.options ?? []).map(convertOptionDtoToUI),
+    backendId: dto.id ?? undefined,
 });
 
 // ─── Payload builders ──────────────────────────────────────────────────────
 
 const buildPayloadOptions = (q: UIQuestion): OptionRequest[] =>
-    q.options.map(o => ({ optionText: o.text, isCorrect: o.isCorrect }));
+    q.options.map(o => ({
+        optionId: o.backendId ?? null,
+        optionText: o.text,
+        isCorrect: o.isCorrect,
+    }));
 
 const buildPayloadQuestion = (q: UIQuestion): QuestionUpsertRequest => ({
-    id: q.backendId,
+    id: q.backendId ?? null,
     questionType: q.type,
     questionText: q.text,
     mark: q.mark,
@@ -139,7 +145,6 @@ export const InstructorQuizQuestionsEditPage = () => {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState('');
     const [showAIModal, setShowAIModal] = useState(false);
-    const [success, setSuccess] = useState(false);
 
     // Load existing quiz questions on mount
     useEffect(() => {
@@ -268,28 +273,20 @@ export const InstructorQuizQuestionsEditPage = () => {
 
     // ── Validation ────────────────────────────────────────────────────────
 
+    /**
+     * Client validation aligned with `POST .../quizzes/{id}/questions` and `@/lib/validators`.
+     * Draft quizzes may have zero questions (empty save); any question listed must be complete
+     * (question text, marks, MCQ/TF options with exactly one correct answer).
+     */
     const validate = (): string | null => {
-        if (isDraftQuiz) return null;
-
-        if (questions.length === 0) return 'At least one question is required for published or scheduled quizzes.';
-
-        for (let i = 0; i < questions.length; i++) {
-            const q = questions[i];
-            const n = `Question ${i + 1}`;
-            if (!q.text.trim()) return `${n}: Question text is required.`;
-            if (q.text.length > 1500) return `${n}: Max 1500 characters.`;
-            if (q.mark <= 0) return `${n}: Points must be greater than 0.`;
-
-            if (q.type === 'MCQ') {
-                if (q.options.length < 3 || q.options.length > 5) return `${n}: MCQ must have 3–5 options.`;
-                if (q.options.some(o => !o.text.trim())) return `${n}: All option texts are required.`;
-                if (q.options.filter(o => o.isCorrect).length !== 1) return `${n}: Exactly one correct option is required.`;
-            }
-
-            if (q.type === 'TrueFalse') {
-                if (q.options.filter(o => o.isCorrect).length !== 1) return `${n}: Select the correct answer (True or False).`;
-            }
+        if (questions.length === 0) {
+            if (isDraftQuiz) return null;
+            return 'At least one question is required for published or scheduled quizzes.';
         }
+
+        const payload = questions.map(buildPayloadQuestion);
+        const result = validateQuestionsArray(payload);
+        if (!result.isValid) return formatQuizQuestionErrors(result.errors);
         return null;
     };
 
@@ -309,8 +306,11 @@ export const InstructorQuizQuestionsEditPage = () => {
         try {
             await upsertQuestionsMutation.mutateAsync(payloadQuestions);
             storage.remove(STORAGE_KEYS.QUIZ_EDIT_DRAFT);
-            setSuccess(true);
-            setTimeout(() => navigate(-1), 1500);
+            toast.success('Questions saved successfully.', {
+                description: quiz?.title ? `“${quiz.title}” is up to date.` : undefined,
+            });
+            const courseIdStr = quiz?.courseId != null ? String(quiz.courseId) : null;
+            navigate(courseIdStr ? `/instructor/courses/${courseIdStr}/manage/quizzes` : -1);
         } catch (e: any) {
             console.error('[UpsertQuestions] error:', e?.response?.status, e?.response?.data, e);
             const d = e?.response?.data;
@@ -318,6 +318,8 @@ export const InstructorQuizQuestionsEditPage = () => {
                 .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`).join(' | ') : null;
             const title = d?.message || d?.title;
             const extracted = fieldErrors ? (title ? `${title} — ${fieldErrors}` : fieldErrors) : (title || e?.message || 'Failed to save questions. Please try again.');
+            const forToast = extracted.length > 220 ? `${extracted.slice(0, 217)}…` : extracted;
+            toast.error('Could not save questions', { description: forToast });
             setError(extracted);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -426,13 +428,6 @@ export const InstructorQuizQuestionsEditPage = () => {
                             <p className="text-sm font-bold text-red-700 dark:text-red-400">{error}</p>
                         </div>
                     )}
-                    {success && (
-                        <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
-                            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Questions saved successfully! Redirecting...</p>
-                        </div>
-                    )}
-
                     <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] gap-8 items-start">
 
                         {/* --- Sidebar: Quiz Map --- */}
