@@ -70,6 +70,7 @@ export const ROUTES = {
     INSTRUCTOR_QUIZ_DASHBOARD: '/quiz-dashboard/:quizId',
     INSTRUCTOR_QUIZ_SUBMISSIONS: '/instructor/quizzes/:quizId/submissions',
     INSTRUCTOR_QUIZ_SUBMISSION_REVIEW: '/instructor/quizzes/:quizId/submissions/:attemptId',
+    INSTRUCTOR_AI_ASSISTANT: '/instructor/courses/:id/manage/ai-assistant',
 
     // Admin routes
     ADMIN: '/admin',

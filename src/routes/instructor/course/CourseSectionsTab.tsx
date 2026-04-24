@@ -103,12 +103,7 @@ export const CourseSectionsTab = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                     {filteredSections.map(section => (
                         <div key={section.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl flex flex-col group hover:shadow-lg hover:border-blue-300 dark:hover:border-slate-500 transition-all overflow-hidden">
-                            {/* Card Header (Badge) */}
-                            <div className="p-5 pb-0 flex justify-between items-start">
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-[#21A9FF]/10 border border-[#21A9FF]/20 text-[#21A9FF] dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400">
-                                    SECTION {section.sectionNumber}
-                                </span>
-                            </div>
+                            {/* Card Body */}
 
                             {/* Card Body */}
                             <div className="p-5 flex-1 flex flex-col">
@@ -158,7 +153,7 @@ export const CourseSectionsTab = () => {
             )}
             {filesModalSection && (
                 <SectionFilesModal
-                    section={filesModalSection}
+                    section={sections.find(s => s.id === filesModalSection.id) || filesModalSection}
                     onClose={() => setFilesModalSection(null)}
                     qk={qk}
                 />
@@ -174,7 +169,6 @@ export const CourseSectionsTab = () => {
 function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numericCourseId: number; onClose: () => void; qk: any[]; sections: SectionDto[] }) {
     const qc = useQueryClient();
     const [title, setTitle] = useState('');
-    const [newNumber, setNewNumber] = useState('');
     const [files, setFiles] = useState<File[]>([]);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -183,10 +177,9 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
     const handleCreate = async () => {
         setError('');
         const t = title.trim();
-        const num = Number(newNumber);
+        const num = sections.length + 1;
         if (!t) return setError('Section name is required');
         if (sections.some(s => s.title.toLowerCase() === t.toLowerCase())) return setError('Section name must be unique');
-        if (!Number.isFinite(num) || num < 1) return setError('Section number must be valid');
 
         setIsSubmitting(true);
         try {
@@ -222,10 +215,6 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Name</label>
                         <input value={title} onChange={e => setTitle(e.target.value)} disabled={isSubmitting} placeholder="e.g. Introduction" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Number</label>
-                        <input value={newNumber} onChange={e => setNewNumber(e.target.value)} type="number" min={1} disabled={isSubmitting} placeholder="e.g. 1" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Include Files (Optional)</label>
@@ -283,7 +272,6 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
 function EditSectionModal({ section, onClose, qk, sections }: { section: SectionDto; onClose: () => void; qk: any[]; sections: SectionDto[] }) {
     const qc = useQueryClient();
     const [title, setTitle] = useState(section.title);
-    const [editNumber, setEditNumber] = useState(String(section.sectionNumber));
     const [existingFiles, setExistingFiles] = useState<SectionFileDto[]>(section.sectionFiles || []);
     const [files, setFiles] = useState<File[]>([]);
     const [error, setError] = useState('');
@@ -305,10 +293,9 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
     const handleUpdate = async () => {
         setError('');
         const t = title.trim();
-        const num = Number(editNumber);
+        const num = section.sectionNumber;
         if (!t) return setError('Section name is required');
         if (sections.some(s => s.id !== section.id && s.title.toLowerCase() === t.toLowerCase())) return setError('Section name must be unique');
-        if (!Number.isFinite(num) || num < 1) return setError('Section number must be valid');
 
         setIsSubmitting(true);
         try {
@@ -345,10 +332,6 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Name</label>
                         <input value={title} onChange={e => setTitle(e.target.value)} disabled={isSubmitting} placeholder="Section name" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Number</label>
-                        <input value={editNumber} onChange={e => setEditNumber(e.target.value)} type="number" min={1} disabled={isSubmitting} placeholder="Section #" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
                     </div>
 
                     {existingFiles.length > 0 && (
@@ -437,6 +420,10 @@ function SectionFilesModal({ section, onClose, qk }: { section: SectionDto; onCl
     );
     const [dragIdx, setDragIdx] = useState<number | null>(null);
 
+    useEffect(() => {
+        setLocalFiles([...(section.sectionFiles || [])].sort((a, b) => a.orderIndex - b.orderIndex));
+    }, [section.sectionFiles]);
+
     const deleteFileMutation = useMutation({
         mutationFn: (fileId: string) => sectionService.deleteMaterialFile(section.id, fileId),
         onSuccess: (_d, fileId) => {
@@ -449,7 +436,10 @@ function SectionFilesModal({ section, onClose, qk }: { section: SectionDto; onCl
 
     const reorderMutation = useMutation({
         mutationFn: (orderedIds: string[]) => sectionService.reorderMaterialFiles(section.id, { orderedFilesIds: orderedIds }),
-        onSuccess: () => toast.success('Files reordered'),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: qk });
+            toast.success('Files reordered');
+        },
         onError: () => toast.error('Reorder failed'),
     });
 

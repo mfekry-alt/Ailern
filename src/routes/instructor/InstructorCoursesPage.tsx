@@ -90,7 +90,7 @@ const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DC
 
             <div className="p-5 flex-1 flex flex-col">
                 <div className="h-10 mb-2">
-                    <Link to={`/instructor/courses/${course.id}/manage`} className="group/title" onClick={(e) => e.stopPropagation()}>
+                    <Link to={`/instructor/courses/${course.id}/manage/sections`} className="group/title" onClick={(e) => e.stopPropagation()}>
                         <h3 className="text-lg font-black text-slate-800 dark:text-white leading-tight line-clamp-1 group-hover/title:text-[#21A9FF] transition-colors duration-300">
                             {course.title}
                         </h3>
@@ -142,7 +142,7 @@ const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DC
                         </button>
                     </div>
 
-                    <Link to={`/instructor/courses/${course.id}/manage`} className="flex-1" onClick={(e) => e.stopPropagation()}>
+                    <Link to={`/instructor/courses/${course.id}/manage/sections`} className="flex-1" onClick={(e) => e.stopPropagation()}>
                         <button className="w-full flex items-center justify-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-black text-[10px] py-2.5 px-3 rounded-xl transition-all shadow-lg shadow-[#21A9FF]/30 active:scale-95 group/btn">
                             Manage Content
                             <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />

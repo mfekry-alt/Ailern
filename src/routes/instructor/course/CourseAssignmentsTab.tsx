@@ -60,10 +60,10 @@ export const CourseAssignmentsTab = () => {
         return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400">Draft</span>;
     };
 
-            <div className="flex flex-col items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-[#21A9FF] animate-spin mb-3" />
-                <p className="text-gray-500 dark:text-slate-400 font-medium">Loading assignments...</p>
-            </div>
+    <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-[#21A9FF] animate-spin mb-3" />
+        <p className="text-gray-500 dark:text-slate-400 font-medium">Loading assignments...</p>
+    </div>
 
     return (
         <div className="space-y-6">
@@ -109,11 +109,10 @@ export const CourseAssignmentsTab = () => {
                                     <button
                                         key={opt.value}
                                         onClick={() => { setFilterStatus(opt.value); setIsStatusDropdownOpen(false); }}
-                                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-all flex items-center justify-between ${
-                                            filterStatus === opt.value
+                                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-all flex items-center justify-between ${filterStatus === opt.value
                                                 ? 'bg-blue-50 dark:bg-[#21A9FF]/10 text-[#21A9FF]'
                                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                                        }`}
+                                            }`}
                                     >
                                         {opt.label}
                                         {filterStatus === opt.value && <div className="w-1.5 h-1.5 bg-[#21A9FF] rounded-full" />}
@@ -228,11 +227,11 @@ export const CourseAssignmentsTab = () => {
                                                 </div>
                                                 <div className="flex items-center gap-3 shrink-0">
                                                     {fileUrl && (
-                                                        <a 
-                                                            href={fileUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer" 
-                                                            className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 text-[#21A9FF] rounded-xl hover:bg-[#21A9FF]/10 transition-all shadow-sm border border-gray-100 dark:border-slate-700 hover:border-[#21A9FF]/20" 
+                                                        <a
+                                                            href={fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 text-[#21A9FF] rounded-xl hover:bg-[#21A9FF]/10 transition-all shadow-sm border border-gray-100 dark:border-slate-700 hover:border-[#21A9FF]/20"
                                                             title="Preview"
                                                         >
                                                             <Eye className="w-4 h-4" />

@@ -49,6 +49,7 @@ import { CourseSectionsTab } from '@/routes/instructor/course/CourseSectionsTab'
 import { CourseAssignmentsTab } from '@/routes/instructor/course/CourseAssignmentsTab';
 import { CourseQuizzesTab } from '@/routes/instructor/course/CourseQuizzesTab';
 import { CourseStudentsTab } from '@/routes/instructor/course/CourseStudentsTab';
+import { CourseAIAssistantTab } from '@/routes/instructor/course/CourseAIAssistantTab';
 import { InstructorGradebookPage } from '@/routes/instructor/InstructorGradebookPage';
 import { InstructorAssignmentsPage } from '@/routes/instructor/InstructorAssignmentsPage';
 import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';
@@ -147,11 +148,12 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_COURSES} element={<InstructorCoursesPage />} />                <Route path={ROUTES.INSTRUCTOR_MANAGE_COURSE} element={<InstructorManageCoursePage />} />                <Route path={ROUTES.INSTRUCTOR_COURSE_NEW} element={<InstructorCourseEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_COURSE_EDIT} element={<InstructorCourseEditPage />} />
                 <Route path="/instructor/courses/:id/manage" element={<CourseManageLayout />}>
-                    <Route index element={<Navigate to="sections" replace />} />
+                    <Route index element={<Navigate to="ai-assistant" replace />} />
                     <Route path="sections" element={<CourseSectionsTab />} />
                     <Route path="assignments" element={<CourseAssignmentsTab />} />
                     <Route path="quizzes" element={<CourseQuizzesTab />} />
                     <Route path="students" element={<CourseStudentsTab />} />
+                    <Route path="ai-assistant" element={<CourseAIAssistantTab />} />
                 </Route>
                 <Route path={ROUTES.INSTRUCTOR_GRADEBOOK} element={<InstructorGradebookPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENTS} element={<InstructorAssignmentsPage />} />

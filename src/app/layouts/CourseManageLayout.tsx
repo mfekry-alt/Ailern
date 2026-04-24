@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
 import { Outlet, useParams, useNavigate, NavLink } from 'react-router-dom';
 import { useCourse } from '@/features/courses/api';
-import { ChevronLeft, ChevronRight, Layers, FileText, HelpCircle, Users, Menu, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Layers, FileText, HelpCircle, Users, Menu, X, Sparkles } from 'lucide-react';
 
 const NAV_ITEMS = [
     { to: 'sections', label: 'Sections', icon: Layers },
     { to: 'assignments', label: 'Assignments', icon: FileText },
     { to: 'quizzes', label: 'Quizzes', icon: HelpCircle },
     { to: 'students', label: 'Students', icon: Users },
+    { to: 'ai-assistant', label: 'Files', icon: Sparkles },
 ] as const;
 
 export const CourseManageLayout = () => {
@@ -74,16 +75,19 @@ export const CourseManageLayout = () => {
                             to={`${linkBase}/${to}`}
                             onClick={() => setMobileOpen(false)}
                             className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all group
+                                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black transition-all group relative
                                 ${collapsed ? 'justify-center' : ''}
                                 ${isActive
-                                    ? 'bg-[#21A9FF] text-white shadow-md shadow-[#21A9FF]/20'
-                                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white'
+                                    ? 'bg-[#21A9FF]/10 text-[#21A9FF] shadow-sm active'
+                                    : 'text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white'
                                 }`
                             }
                         >
-                            <Icon className="w-5 h-5 shrink-0" />
-                            {!collapsed && <span className="truncate">{label}</span>}
+                            {/* Active Indicator Bar */}
+                            <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#21A9FF] rounded-r-full transition-all duration-300 opacity-0 group-[.active]:opacity-100 ${collapsed ? '-left-1' : ''}`} />
+                            
+                            <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${collapsed ? '' : 'ml-1'}`} />
+                            {!collapsed && <span className="truncate tracking-tight">{label}</span>}
                         </NavLink>
                     ))}
                 </nav>
