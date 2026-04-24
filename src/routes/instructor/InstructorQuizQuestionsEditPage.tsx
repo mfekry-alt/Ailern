@@ -4,7 +4,8 @@ import { ROUTES, STORAGE_KEYS } from '@/lib/constants';
 import { storage } from '@/lib/storage';
 import {
     ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
-    GripVertical, Sparkles, ListChecks, HelpCircle, AlertTriangle, Save
+    GripVertical, Sparkles, ListChecks, HelpCircle, AlertTriangle, Save,
+    ChevronDown, ChevronUp, Check, Filter, FileText, LayoutGrid
 } from 'lucide-react';
 import { useQuiz, useUpsertQuizQuestions } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
@@ -145,6 +146,7 @@ export const InstructorQuizQuestionsEditPage = () => {
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState('');
     const [showAIModal, setShowAIModal] = useState(false);
+    const [openTypeUid, setOpenTypeUid] = useState<number | null>(null);
 
     // Load existing quiz questions on mount
     useEffect(() => {
@@ -232,6 +234,7 @@ export const InstructorQuizQuestionsEditPage = () => {
     const changeType = (uid: number, type: QuestionType) => {
         const options = type === 'MCQ' ? makeMCQOptions() : type === 'TrueFalse' ? makeTFOptions() : [];
         updateQ(uid, { type, options });
+        setOpenTypeUid(null);
     };
 
     // ── Option helpers ────────────────────────────────────────────────────
@@ -393,27 +396,33 @@ export const InstructorQuizQuestionsEditPage = () => {
                 {/* --- Sticky Header --- */}
                 <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800 py-4 px-4 sm:px-8">
                     <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => navigate(-1)} className="w-10 h-10 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0">
+                        <div className="flex items-center gap-5">
+                            <button onClick={() => navigate(-1)} className="w-11 h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex items-center justify-center text-slate-400 hover:text-[#21A9FF] hover:border-[#21A9FF]/30 transition-all shrink-0 shadow-sm active:scale-90">
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
                             <div>
-                                <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                                    <ListChecks className="w-6 h-6 text-blue-500" /> Edit Questions
+                                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center text-[#21A9FF]">
+                                        <ListChecks className="w-5 h-5" />
+                                    </div>
+                                    Edit Questions
                                 </h1>
-                                <div className="flex items-center gap-3 mt-1">
-                                    <span className="text-xs font-bold text-gray-500 dark:text-slate-400 max-w-[200px] sm:max-w-md truncate">
+                                <div className="flex items-center gap-3 mt-1.5 ml-0.5">
+                                    <span className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest max-w-[200px] sm:max-w-md truncate">
                                         {settings?.title || quiz.title}
                                     </span>
-                                    <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md border ${statusBadgeClass}`}>
+                                    <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md border shadow-sm ${statusBadgeClass}`}>
                                         {currentStatus}
                                     </span>
                                 </div>
                             </div>
                         </div>
                         <div className="w-full sm:w-auto">
-                            <button onClick={() => setShowAIModal(true)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 text-sm">
-                                <Sparkles className="w-4 h-4" /> AI Generator
+                            <button onClick={() => setShowAIModal(true)} className="w-full sm:w-auto group relative flex items-center justify-center gap-3 px-8 py-4 bg-[#A855F7] text-white font-black rounded-[1.25rem] transition-all duration-300 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/40 hover:-translate-y-1 active:scale-95 overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 opacity-100"></div>
+                                <Sparkles className="w-5 h-5 relative z-10 group-hover:rotate-12 transition-transform" />
+                                <span className="relative z-10 text-sm">AI Generator</span>
                             </button>
                         </div>
                     </div>
@@ -431,22 +440,22 @@ export const InstructorQuizQuestionsEditPage = () => {
                     <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] gap-8 items-start">
 
                         {/* --- Sidebar: Quiz Map --- */}
-                        <aside className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm xl:sticky xl:top-28 hidden md:block">
-                            <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100 dark:border-slate-700/50">
-                                <h3 className="text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <HelpCircle className="w-4 h-4" /> Question Map
+                        <aside className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2.5rem] p-8 shadow-sm xl:sticky xl:top-28 hidden md:block">
+                            <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100 dark:border-slate-700/50">
+                                <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <LayoutGrid className="w-4 h-4 text-[#21A9FF]" /> Map
                                 </h3>
-                                <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 text-xs font-bold px-2 py-1 rounded-lg">
-                                    {questions.length}
+                                <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    {questions.length} Q
                                 </span>
                             </div>
 
                             {questions.length === 0 ? (
-                                <div className="text-center py-8 text-sm font-bold text-gray-400 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
-                                    No questions yet
+                                <div className="text-center py-12 text-[10px] font-black uppercase tracking-widest text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl">
+                                    Empty
                                 </div>
                             ) : (
-                                <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-2 custom-scrollbar">
                                     {questions.map((q, idx) => {
                                         const complete = isQuestionComplete(q);
                                         return (
@@ -462,18 +471,23 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                 }}
                                                 onDragEnd={() => setDraggedUid(null)}
                                                 onClick={() => scrollToQuestion(q.uid)}
-                                                className={`w-full text-left rounded-xl border p-3 transition-all flex items-start gap-2 group ${complete
-                                                    ? 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:hover:bg-emerald-500/10'
-                                                    : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700/50'
+                                                className={`w-full text-left rounded-2xl border p-4 transition-all duration-300 flex items-start gap-3 group relative overflow-hidden ${complete
+                                                    ? 'border-emerald-200 bg-emerald-50/30 hover:bg-emerald-50 dark:border-emerald-500/10 dark:bg-emerald-500/5 dark:hover:bg-emerald-500/10'
+                                                    : 'border-slate-100 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-800'
                                                     }`}
                                             >
-                                                <GripVertical className="w-4 h-4 text-gray-300 dark:text-slate-500 mt-1 cursor-grab group-hover:text-gray-500" />
+                                                {/* Left Accent */}
+                                                <div className={`absolute left-0 top-0 w-1 h-full opacity-50 ${complete ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                                                
+                                                <GripVertical className="w-4 h-4 text-slate-300 dark:text-slate-600 mt-1 cursor-grab group-hover:text-[#21A9FF] transition-colors" />
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Q {idx + 1}</span>
-                                                        <span className={`w-2 h-2 rounded-full ${complete ? 'bg-emerald-500' : 'bg-red-400'}`}></span>
+                                                    <div className="flex items-center justify-between mb-1.5">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">Question {idx + 1}</span>
+                                                        {complete && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
                                                     </div>
-                                                    <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{getQuestionName(q, idx)}</p>
+                                                    <p className={`text-xs font-bold truncate tracking-tight transition-colors ${complete ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'}`}>
+                                                        {getQuestionName(q, idx)}
+                                                    </p>
                                                 </div>
                                             </button>
                                         );
@@ -481,38 +495,38 @@ export const InstructorQuizQuestionsEditPage = () => {
                                 </div>
                             )}
 
-                            <button onClick={addQuestion} className="w-full mt-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
-                                <Plus className="w-4 h-4" /> Add Blank
+                            <button onClick={addQuestion} className="w-full mt-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black uppercase tracking-widest rounded-2xl transition-all hover:scale-[1.02] active:scale-95 shadow-lg flex items-center justify-center gap-2 group">
+                                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" /> Add Blank
                             </button>
                         </aside>
 
                         {/* --- Main Content: Questions Editor --- */}
                         <div className="space-y-6">
                             {questions.map((q, idx) => (
-                                <div key={q.uid} id={`question-card-${q.uid}`} className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden relative">
+                                <div key={q.uid} id={`question-card-${q.uid}`} className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden relative group/qcard hover:shadow-xl hover:shadow-[#21A9FF]/5 transition-all duration-500">
                                     {/* Accent Line */}
-                                    <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
+                                    <div className={`absolute top-0 left-0 w-2 h-full transition-colors duration-500 ${isQuestionComplete(q) ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
 
-                                    <div className="p-6 sm:p-8 space-y-6 ml-2">
+                                    <div className="p-6 sm:p-10 space-y-8 ml-2">
 
                                         {/* Question Header */}
-                                        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700/50 pb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg text-sm font-black uppercase tracking-widest">
+                                        <div className="flex flex-wrap items-center justify-between gap-6 border-b border-slate-50 dark:border-slate-800 pb-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg">
                                                     Question {idx + 1}
                                                 </div>
                                                 {isQuestionComplete(q) ? (
-                                                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider flex items-center gap-1">
-                                                        <CheckCircle2 className="w-3 h-3" /> Ready
+                                                    <span className="text-[10px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-xl font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-500/20 flex items-center gap-2">
+                                                        <CheckCircle2 className="w-3.5 h-3.5" /> Ready
                                                     </span>
                                                 ) : (
-                                                    <span className="text-[10px] bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider flex items-center gap-1">
-                                                        <AlertTriangle className="w-3 h-3" /> Incomplete
+                                                    <span className="text-[10px] bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-xl font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/20 flex items-center gap-2">
+                                                        <AlertTriangle className="w-3.5 h-3.5" /> Incomplete
                                                     </span>
                                                 )}
                                             </div>
-                                            <button onClick={() => removeQ(q.uid)} className="p-2.5 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-xl transition-colors" title="Delete Question">
-                                                <Trash2 className="w-4 h-4" />
+                                            <button onClick={() => removeQ(q.uid)} className="p-3 bg-rose-50 dark:bg-rose-500/10 text-rose-500 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-2xl transition-all active:scale-90 border border-rose-100 dark:border-rose-500/20" title="Delete Question">
+                                                <Trash2 className="w-4.5 h-4.5" />
                                             </button>
                                         </div>
 
@@ -520,11 +534,60 @@ export const InstructorQuizQuestionsEditPage = () => {
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                             <div>
                                                 <label className={labelCls}>Question Type</label>
-                                                <select value={q.type} onChange={e => changeType(q.uid, e.target.value as QuestionType)} className={`${inputCls} cursor-pointer`}>
-                                                    <option value="MCQ">Multiple Choice (MCQ)</option>
-                                                    <option value="TrueFalse">True / False</option>
-                                                    <option value="Written">Written Answer (Essay)</option>
-                                                </select>
+                                                <div className="relative">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setOpenTypeUid(openTypeUid === q.uid ? null : q.uid)}
+                                                        className={`${inputCls} flex items-center justify-between text-left group/drop`}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <Filter className="w-4 h-4 text-gray-400" />
+                                                            <span className="font-bold">{
+                                                                q.type === 'MCQ' ? 'Multiple Choice (MCQ)' :
+                                                                q.type === 'TrueFalse' ? 'True / False' :
+                                                                'Written Answer (Essay)'
+                                                            }</span>
+                                                        </div>
+                                                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${openTypeUid === q.uid ? 'rotate-180' : ''}`} />
+                                                    </button>
+
+                                                    {openTypeUid === q.uid && (
+                                                        <div className="absolute top-[calc(100%+8px)] left-0 w-full bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-[60] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200">
+                                                            {[
+                                                                { val: 'MCQ', lab: 'Multiple Choice (MCQ)', icon: ListChecks },
+                                                                { val: 'TrueFalse', lab: 'True / False', icon: HelpCircle },
+                                                                { val: 'Written', lab: 'Written Answer (Essay)', icon: FileText }
+                                                            ].map((opt) => (
+                                                                <button
+                                                                    key={opt.val}
+                                                                    type="button"
+                                                                    onClick={() => changeType(q.uid, opt.val as QuestionType)}
+                                                                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
+                                                                        q.type === opt.val 
+                                                                        ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' 
+                                                                        : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <opt.icon className={`w-4 h-4 ${q.type === opt.val ? 'text-blue-600' : 'text-gray-400'}`} />
+                                                                        <span className="text-sm font-bold">{opt.lab}</span>
+                                                                    </div>
+                                                                    {q.type === opt.val && (
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Invisible Click-away Overlay */}
+                                                    {openTypeUid === q.uid && (
+                                                        <div 
+                                                            className="fixed inset-0 z-50 cursor-default" 
+                                                            onClick={() => setOpenTypeUid(null)}
+                                                        />
+                                                    )}
+                                                </div>
                                             </div>
                                             <div>
                                                 <label className={labelCls}>Points / Marks <span className="text-red-500">*</span></label>
@@ -645,11 +708,14 @@ export const InstructorQuizQuestionsEditPage = () => {
                             ))}
 
                             {/* Add Large Button at Bottom */}
-                            <button onClick={addQuestion} className="w-full py-6 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-[2rem] text-gray-500 dark:text-slate-400 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all flex items-center justify-center gap-2 font-bold group">
-                                <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 flex items-center justify-center transition-colors">
-                                    <Plus className="w-5 h-5" />
+                            <button onClick={addQuestion} className="w-full py-10 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[3rem] text-slate-400 dark:text-slate-500 hover:border-[#21A9FF] hover:text-[#21A9FF] hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-all duration-500 flex flex-col items-center justify-center gap-4 font-black group shadow-sm hover:shadow-xl hover:shadow-[#21A9FF]/5">
+                                <div className="w-16 h-16 rounded-[1.5rem] bg-slate-50 dark:bg-slate-800 group-hover:bg-[#21A9FF] group-hover:text-white flex items-center justify-center transition-all duration-500 shadow-inner group-hover:rotate-12">
+                                    <Plus className="w-8 h-8" />
                                 </div>
-                                Add New Question Manually
+                                <div className="text-center">
+                                    <span className="block text-lg tracking-tight">Add New Question</span>
+                                    <span className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mt-1">Manual Content Creation</span>
+                                </div>
                             </button>
                         </div>
                     </div>
