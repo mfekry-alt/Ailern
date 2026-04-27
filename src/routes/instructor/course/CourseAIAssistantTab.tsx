@@ -1,15 +1,15 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { 
-    Upload, 
-    FileText, 
-    File as FileIcon, 
-    X, 
-    Trash2, 
-    Eye, 
-    Sparkles, 
-    AlertCircle, 
-    CheckCircle2, 
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useOutletContext, Link } from 'react-router-dom';
+import {
+    Upload,
+    FileText,
+    File as FileIcon,
+    X,
+    Trash2,
+    Eye,
+    Sparkles,
+    AlertCircle,
+    CheckCircle2,
     Loader2,
     FilePieChart,
     Plus,
@@ -18,12 +18,17 @@ import {
     Database,
     Search,
     Filter,
-    BrainCircuit
+    BrainCircuit,
+    RotateCcw,
+    Send,
+    AlertTriangle
 } from 'lucide-react';
 import { PDFThumbnail } from '@/components/PDFThumbnail';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { toast } from 'sonner';
+import { aiResourcesService } from '@/api/services/ai-resources.service';
+import { handleApiError } from '@/api/client';
 
 // --- Interfaces ---
 
@@ -70,14 +75,43 @@ const getFileIcon = (fileName: string) => {
 
 export const CourseAIAssistantTab = () => {
     const { courseId } = useOutletContext<CourseContext>();
-    
+
     // --- State ---
     const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    
+    const [isLoading, setIsLoading] = useState(true);
+    const [failedUploads, setFailedUploads] = useState<string[]>([]);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const fetchFiles = useCallback(async () => {
+        if (!courseId) return;
+        try {
+            const response = await aiResourcesService.getAiResources(courseId);
+            if (response.success && response.data) {
+                const mappedFiles: UploadedFile[] = response.data.map((item: any) => ({
+                    id: item.id || item.fileId,
+                    name: item.name || item.fileName || 'Unnamed File',
+                    size: item.size || item.fileSize || 0,
+                    type: item.contentType || item.type || 'application/pdf',
+                    uploadDate: item.createdAt || item.uploadDate || new Date().toISOString(),
+                    url: item.url || item.fileUrl
+                }));
+                setUploadedFiles(mappedFiles);
+            }
+        } catch (error) {
+            console.error('Failed to fetch AI resources:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [courseId]);
+
+    // --- Effects ---
+    useEffect(() => {
+        fetchFiles();
+    }, [fetchFiles]);
 
     // --- Handlers ---
 
@@ -94,67 +128,116 @@ export const CourseAIAssistantTab = () => {
         return null;
     };
 
-    const handleFiles = useCallback((files: FileList | File[]) => {
+    const handleFiles = useCallback(async (files: FileList | File[]) => {
         const fileList = Array.from(files);
-        
+        const validFiles: File[] = [];
+        const newUploadingEntries: UploadingFile[] = [];
+
         fileList.forEach(file => {
             const error = validateFile(file);
-            const uploadId = Math.random().toString(36).substring(7);
-
             if (error) {
                 toast.error(error, { description: file.name });
                 return;
             }
+            validFiles.push(file);
 
-            // Create uploading entry
-            const newFile: UploadingFile = {
+            const uploadId = Math.random().toString(36).substring(7);
+            newUploadingEntries.push({
                 id: uploadId,
                 file,
                 progress: 0,
                 status: 'uploading'
-            };
-
-            setUploadingFiles(prev => [...prev, newFile]);
-
-            // Simulate upload (replace with actual API call)
-            simulateUpload(newFile);
+            });
         });
-    }, []);
 
-    const simulateUpload = (uploadingFile: UploadingFile) => {
-        let currentProgress = 0;
-        const interval = setInterval(() => {
-            currentProgress += Math.random() * 15;
-            if (currentProgress >= 100) {
-                currentProgress = 100;
-                clearInterval(interval);
-                
-                // Finalize upload
-                setUploadingFiles(prev => prev.filter(f => f.id !== uploadingFile.id));
-                setUploadedFiles(prev => [
-                    {
-                        id: Math.random().toString(36).substring(7),
-                        name: uploadingFile.file.name,
-                        size: uploadingFile.file.size,
-                        type: uploadingFile.file.type,
-                        url: URL.createObjectURL(uploadingFile.file),
-                        uploadDate: new Date().toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'short', 
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        })
-                    },
-                    ...prev
-                ]);
-                toast.success('File uploaded successfully', { description: uploadingFile.file.name });
-            } else {
-                setUploadingFiles(prev => prev.map(f => 
-                    f.id === uploadingFile.id ? { ...f, progress: Math.round(currentProgress) } : f
-                ));
+        if (validFiles.length === 0) return;
+
+        setUploadingFiles(prev => [...prev, ...newUploadingEntries]);
+
+        try {
+            // 1. Generate Upload URLs
+            const response = await aiResourcesService.generateUploadUrls(courseId, {
+                Files: validFiles.map(f => ({
+                    FileName: f.name,
+                    FileSize: f.size,
+                    ContentType: f.type || 'application/octet-stream'
+                }))
+            });
+
+            if (!response.success || !response.data) {
+                throw new Error(response.message || 'Failed to generate upload URLs');
             }
-        }, 300);
+
+            const presignedData = response.data;
+            const successFileIds: string[] = [];
+            const failedFileNames: string[] = [];
+            const allFileIds: string[] = [];
+
+            // 2. Upload Files to S3 in parallel using Promise.allSettled
+            const uploadPromises = validFiles.map(async (file, index) => {
+                const entry = newUploadingEntries[index];
+                const { presignedUrl, fileId } = presignedData[index];
+                const contentType = file.type || 'application/octet-stream';
+
+                allFileIds.push(fileId);
+
+                try {
+                    await aiResourcesService.uploadToS3(presignedUrl, file, contentType, (progress) => {
+                        setUploadingFiles(prev => prev.map(f =>
+                            f.id === entry.id ? { ...f, progress } : f
+                        ));
+                    });
+
+                    setUploadingFiles(prev => prev.map(f =>
+                        f.id === entry.id ? { ...f, status: 'completed', id: fileId } : f
+                    ));
+                    successFileIds.push(fileId);
+                } catch (error) {
+                    setUploadingFiles(prev => prev.map(f =>
+                        f.id === entry.id ? { ...f, status: 'error', error: 'Upload failed' } : f
+                    ));
+                    failedFileNames.push(file.name);
+                }
+            });
+
+            await Promise.allSettled(uploadPromises);
+
+            // 3. Auto-confirm uploads
+            // We always call the confirm endpoint so the backend can finalize or clean up,
+            // but we ONLY pass the IDs of the files that successfully uploaded.
+            if (allFileIds.length > 0) {
+                try {
+                    await aiResourcesService.confirmUploads(courseId, successFileIds);
+                    if (successFileIds.length > 0) {
+                        toast.success(`${successFileIds.length} file(s) uploaded successfully`);
+                    }
+                    // Refetch the file list from backend
+                    await fetchFiles();
+                    // Clear completed from uploading list
+                    setUploadingFiles(prev => prev.filter(f => f.status === 'error'));
+                } catch (confirmError) {
+                    const apiError = handleApiError(confirmError);
+                    toast.error('Confirmation failed', { description: apiError.message });
+                }
+            }
+
+            // 4. Show failed files
+            if (failedFileNames.length > 0) {
+                setFailedUploads(failedFileNames);
+            }
+
+        } catch (error) {
+            const apiError = handleApiError(error);
+            toast.error('Upload Process Failed', { description: apiError.message });
+            setUploadingFiles(prev => prev.map(f =>
+                newUploadingEntries.some(ne => ne.id === f.id) ? { ...f, status: 'error' } : f
+            ));
+        }
+    }, [courseId, fetchFiles]);
+
+    const retryUpload = async (failedFile: UploadingFile) => {
+        setUploadingFiles(prev => prev.filter(f => f.id !== failedFile.id));
+        handleFiles([failedFile.file]);
     };
 
     const cancelUpload = (id: string) => {
@@ -162,9 +245,15 @@ export const CourseAIAssistantTab = () => {
         toast.info('Upload cancelled');
     };
 
-    const deleteFile = (id: string, name: string) => {
-        setUploadedFiles(prev => prev.filter(f => f.id !== id));
-        toast.success('File deleted', { description: name });
+    const deleteFile = async (id: string, name: string) => {
+        try {
+            await aiResourcesService.deleteResource(courseId, id);
+            setUploadedFiles(prev => prev.filter(f => f.id !== id));
+            toast.success('File deleted', { description: name });
+        } catch (error) {
+            const apiError = handleApiError(error);
+            toast.error('Failed to delete file', { description: apiError.message });
+        }
     };
 
     // --- Drag and Drop Logic ---
@@ -187,13 +276,13 @@ export const CourseAIAssistantTab = () => {
         }
     };
 
-    const filteredFiles = uploadedFiles.filter(f => 
+    const filteredFiles = uploadedFiles.filter(f =>
         f.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
         <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            
+
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-3">
@@ -211,14 +300,14 @@ export const CourseAIAssistantTab = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
+
                 {/* Left Column: Upload & Progress */}
                 <div className="lg:col-span-1 space-y-6">
-                    
+
                     {/* Upload Card */}
                     <Card className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2.5rem] bg-white dark:bg-slate-900/40 hover:border-indigo-400 dark:hover:border-indigo-500/50 transition-all duration-300 overflow-hidden shadow-sm">
                         <CardContent className="p-0">
-                            <div 
+                            <div
                                 className={`p-8 flex flex-col items-center text-center gap-4 cursor-pointer transition-colors ${isDragging ? 'bg-indigo-50/50 dark:bg-indigo-500/5' : ''}`}
                                 onDragOver={onDragOver}
                                 onDragLeave={onDragLeave}
@@ -228,7 +317,7 @@ export const CourseAIAssistantTab = () => {
                                 <div className={`w-20 h-20 rounded-3xl flex items-center justify-center transition-all duration-500 ${isDragging ? 'bg-indigo-500 text-white scale-110 rotate-3 shadow-xl shadow-indigo-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                                     <Upload className={`w-10 h-10 ${isDragging ? 'animate-bounce' : ''}`} />
                                 </div>
-                                
+
                                 <div className="space-y-1">
                                     <h3 className="text-lg font-black text-slate-900 dark:text-white">Upload Materials</h3>
                                     <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
@@ -244,12 +333,12 @@ export const CourseAIAssistantTab = () => {
                                     ))}
                                 </div>
                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-2">Max 10MB per file</p>
-                                
-                                <input 
+
+                                <input
                                     ref={fileInputRef}
-                                    type="file" 
-                                    className="hidden" 
-                                    multiple 
+                                    type="file"
+                                    className="hidden"
+                                    multiple
                                     onChange={(e) => e.target.files && handleFiles(e.target.files)}
                                     accept=".pdf,.doc,.docx,.ppt,.pptx"
                                 />
@@ -259,36 +348,88 @@ export const CourseAIAssistantTab = () => {
 
                     {/* Uploading List */}
                     {uploadingFiles.length > 0 && (
-                        <div className="space-y-3">
-                            <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2">Uploading ({uploadingFiles.length})</h3>
+                        <div className="space-y-6">
                             <div className="space-y-3">
-                                {uploadingFiles.map(file => (
-                                    <div key={file.id} className="bg-white dark:bg-slate-900/60 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-3 animate-in slide-in-from-left-2">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl">
-                                                    <Loader2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 animate-spin" />
+                                <div className="flex items-center justify-between px-2">
+                                    <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Uploading ({uploadingFiles.length})</h3>
+                                    {uploadingFiles.some(f => f.status === 'uploading') && (
+                                        <span className="text-[10px] font-black text-indigo-500 uppercase animate-pulse">In Progress</span>
+                                    )}
+                                </div>
+
+                                {/* Overall Progress */}
+                                <div className="px-2 space-y-1.5">
+                                    <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                                        <span>Overall Progress</span>
+                                        <span>{Math.round(uploadingFiles.reduce((acc, f) => acc + f.progress, 0) / uploadingFiles.length)}%</span>
+                                    </div>
+                                    <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-indigo-500 transition-all duration-500"
+                                            style={{ width: `${uploadingFiles.reduce((acc, f) => acc + f.progress, 0) / uploadingFiles.length}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {uploadingFiles.map(file => (
+                                        <div key={file.id} className="bg-white dark:bg-slate-900/60 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-3 animate-in slide-in-from-left-2">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`p-2 rounded-xl ${file.status === 'completed' ? 'bg-green-50 dark:bg-green-500/10' :
+                                                            file.status === 'error' ? 'bg-red-50 dark:bg-red-500/10' :
+                                                                'bg-indigo-50 dark:bg-indigo-500/10'
+                                                        }`}>
+                                                        {file.status === 'completed' ? (
+                                                            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                                        ) : file.status === 'error' ? (
+                                                            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                                        ) : (
+                                                            <Loader2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 animate-spin" />
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{file.file.name}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                                                                {formatFileSize(file.file.size)} • {file.progress}%
+                                                            </p>
+                                                            {file.status === 'error' && (
+                                                                <span className="text-[10px] text-red-500 font-bold uppercase tracking-tighter">Failed</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{file.file.name}</p>
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{formatFileSize(file.file.size)} • {file.progress}%</p>
+                                                <div className="flex items-center gap-1">
+                                                    {file.status === 'error' && (
+                                                        <button
+                                                            onClick={() => retryUpload(file)}
+                                                            className="p-1.5 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all"
+                                                            title="Retry Upload"
+                                                        >
+                                                            <RotateCcw className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => cancelUpload(file.id)}
+                                                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <button 
-                                                onClick={() => cancelUpload(file.id)}
-                                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
+                                            <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full transition-all duration-300 ease-out ${file.status === 'completed' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' :
+                                                            file.status === 'error' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
+                                                                'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]'
+                                                        }`}
+                                                    style={{ width: `${file.progress}%` }}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                            <div 
-                                                className="h-full bg-indigo-500 transition-all duration-300 ease-out shadow-[0_0_8px_rgba(99,102,241,0.5)]" 
-                                                style={{ width: `${file.progress}%` }} 
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -296,13 +437,13 @@ export const CourseAIAssistantTab = () => {
 
                 {/* Right Column: Uploaded Files List */}
                 <div className="lg:col-span-2 space-y-6">
-                    
+
                     {/* Search & Stats */}
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900/40 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
                         <div className="relative w-full sm:w-72">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input 
-                                type="text" 
+                            <input
+                                type="text"
                                 placeholder="Search materials..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -337,7 +478,7 @@ export const CourseAIAssistantTab = () => {
                                     Start by uploading course materials to help the AI assistant understand your course content.
                                 </p>
                             </div>
-                            <Button 
+                            <Button
                                 onClick={() => fileInputRef.current?.click()}
                                 className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black transition-all shadow-xl shadow-indigo-600/20 active:scale-95 flex items-center gap-2"
                             >
@@ -349,7 +490,7 @@ export const CourseAIAssistantTab = () => {
                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                             <Search className="w-12 h-12 text-slate-200 dark:text-slate-800" />
                             <p className="text-slate-500 dark:text-slate-400 font-bold">No materials match "{searchQuery}"</p>
-                            <button 
+                            <button
                                 onClick={() => setSearchQuery('')}
                                 className="text-indigo-600 dark:text-indigo-400 text-sm font-black hover:underline"
                             >
@@ -359,8 +500,8 @@ export const CourseAIAssistantTab = () => {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {filteredFiles.map((file, idx) => (
-                                <div 
-                                    key={file.id} 
+                                <div
+                                    key={file.id}
                                     className="group bg-white dark:bg-slate-900/60 p-4 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 hover:border-indigo-400/50 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-500 animate-in zoom-in-95"
                                     style={{ animationDelay: `${idx * 50}ms` }}
                                 >
@@ -369,7 +510,7 @@ export const CourseAIAssistantTab = () => {
                                         <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-40 transition-opacity">
                                             {getFileIcon(file.name)}
                                         </div>
-                                        
+
                                         {/* Real PDF Thumbnail Rendering */}
                                         <div className="absolute inset-0 p-3">
                                             <div className="w-full h-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden transform group-hover:scale-[1.02] transition-transform duration-500 origin-bottom">
@@ -391,13 +532,14 @@ export const CourseAIAssistantTab = () => {
 
                                         {/* Quick Actions overlay */}
                                         <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                                            <button 
+                                            <button
+                                                onClick={() => file.url && window.open(file.url, '_blank')}
                                                 className="p-2.5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-600 hover:text-indigo-600 dark:text-slate-300 rounded-2xl shadow-lg border border-white dark:border-slate-700 transition-all hover:scale-110 active:scale-95"
                                                 title="Preview Full Screen"
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={() => deleteFile(file.id, file.name)}
                                                 className="p-2.5 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-600 hover:text-red-500 rounded-2xl shadow-lg border border-white dark:border-slate-700 transition-all hover:scale-110 active:scale-95"
                                                 title="Delete Material"
@@ -413,26 +555,10 @@ export const CourseAIAssistantTab = () => {
                                         </h3>
                                         <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                                             <span className="flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {file.uploadDate}
-                                            </span>
-                                            <span className="w-1 h-1 bg-slate-200 dark:bg-slate-800 rounded-full" />
-                                            <span className="flex items-center gap-1">
                                                 <FilePieChart className="w-3 h-3" />
                                                 {formatFileSize(file.size)}
                                             </span>
                                         </div>
-                                    </div>
-
-                                    <div className="mt-5 pt-4 border-t border-slate-50 dark:border-slate-800/50 flex items-center justify-between px-1">
-                                        <div className="flex -space-x-2">
-                                            <div className="w-7 h-7 rounded-full bg-indigo-500 border-2 border-white dark:border-slate-900" />
-                                            <div className="w-7 h-7 rounded-full bg-purple-500 border-2 border-white dark:border-slate-900" />
-                                            <div className="w-7 h-7 rounded-full bg-blue-500 border-2 border-white dark:border-slate-900" />
-                                        </div>
-                                        <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1 rounded-xl border border-indigo-100/50 dark:border-indigo-500/20">
-                                            Analyzed
-                                        </span>
                                     </div>
                                 </div>
                             ))}
@@ -445,7 +571,7 @@ export const CourseAIAssistantTab = () => {
             <div className="p-8 rounded-[3rem] bg-gradient-to-br from-indigo-600 to-purple-700 text-white shadow-2xl shadow-indigo-500/20 overflow-hidden relative group">
                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000" />
                 <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-64 h-64 bg-purple-400/20 rounded-full blur-3xl" />
-                
+
                 <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                     <div className="p-5 bg-white/10 backdrop-blur-md rounded-[2rem] border border-white/20">
                         <BrainCircuit className="w-12 h-12 text-white" />
@@ -456,11 +582,47 @@ export const CourseAIAssistantTab = () => {
                             Once your materials are uploaded, you can head to the Quizzes or Assignments tab to start generating smart assessments powered by this data.
                         </p>
                     </div>
-                    <button className="px-8 py-4 bg-white text-indigo-600 rounded-2xl font-black shadow-xl shadow-black/10 hover:shadow-white/20 transition-all hover:-translate-y-1 active:scale-95">
+                    <Link
+                        to={`/instructor/courses/${courseId}/manage/quizzes`}
+                        className="px-8 py-4 bg-white text-indigo-600 rounded-2xl font-black shadow-xl shadow-black/10 hover:shadow-white/20 transition-all hover:-translate-y-1 active:scale-95 text-center"
+                    >
                         Go to Quizzes
-                    </button>
+                    </Link>
                 </div>
             </div>
+
+            {/* Failed Uploads Modal */}
+            {failedUploads.length > 0 && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 bg-rose-50 dark:bg-rose-500/10 border-b border-rose-100 dark:border-rose-500/20 flex flex-col items-center text-center space-y-3">
+                            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-500/20 rounded-full flex items-center justify-center">
+                                <AlertTriangle className="w-8 h-8 text-rose-500" />
+                            </div>
+                            <h3 className="text-xl font-black text-rose-600 dark:text-rose-400">Upload Failed</h3>
+                            <p className="text-sm font-medium text-rose-500 dark:text-rose-400/80">
+                                {failedUploads.length} file{failedUploads.length > 1 ? 's' : ''} could not be uploaded.
+                            </p>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <ul className="max-h-48 overflow-y-auto space-y-2 pr-2">
+                                {failedUploads.map((name, i) => (
+                                    <li key={i} className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                        <X className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                                        <span className="truncate" title={name}>{name}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <Button
+                                onClick={() => setFailedUploads([])}
+                                className="w-full py-6 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-white rounded-xl font-black transition-all"
+                            >
+                                OK, I understand
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

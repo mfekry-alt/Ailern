@@ -313,7 +313,11 @@ export const InstructorQuizQuestionsEditPage = () => {
                 description: quiz?.title ? `“${quiz.title}” is up to date.` : undefined,
             });
             const courseIdStr = quiz?.courseId != null ? String(quiz.courseId) : null;
-            navigate(courseIdStr ? `/instructor/courses/${courseIdStr}/manage/quizzes` : -1);
+            if (courseIdStr) {
+                navigate(`/instructor/courses/${courseIdStr}/manage/quizzes`);
+            } else {
+                navigate(-1);
+            }
         } catch (e: any) {
             console.error('[UpsertQuestions] error:', e?.response?.status, e?.response?.data, e);
             const d = e?.response?.data;

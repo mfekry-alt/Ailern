@@ -27,6 +27,7 @@ export const ROUTES = {
     SIGNUP: '/signup',
     FORGOT_PASSWORD: '/forgot-password',// NOSONAR
     CONFIRM_EMAIL: '/confirm-email',
+    CONFIRM_CHANGE_EMAIL: '/confirm-change-email',
     VERIFY_EMAIL: '/verify-email',
     SET_PASSWORD: '/set-password',      // NOSONAR
     FORBIDDEN: '/403',
@@ -41,6 +42,7 @@ export const ROUTES = {
     LEARN: '/learn/:courseId/:lessonId',
     PROFILE: '/profile',
     CHANGE_PASSWORD: '/change-password',        // NOSONAR
+    CHANGE_EMAIL: '/change-email',
     NOTIFICATIONS: '/notifications',
     ASSIGNMENTS: '/assignments',
     ASSIGNMENT_DETAIL: '/assignments/:id',

@@ -22,7 +22,7 @@ import type {
  */
 export const getUserById = async (id: number): Promise<GetUserByIdDto> => {
     const response = await api.get<ApiResponse<GetUserByIdDto>>(ENDPOINTS.USERS.GET(id));
-    return response.data.data!;
+    return (response.data as any).data!;
 };
 
 /**
@@ -39,7 +39,7 @@ export const getUsersByRole = async (
         ENDPOINTS.USERS.BY_ROLE(roleId),
         { params }
     );
-    return response.data.data!;
+    return (response.data as any).data!;
 };
 
 /**
@@ -67,9 +67,11 @@ export const removeUserRole = async (
  * Get student's enrolled courses
  * @returns List of student's courses
  */
-export const getStudentCourses = async (): Promise<GetStudentCoursesDto[]> => {
+export const getStudentCourses = async (paginationParams?: PaginationParams): Promise<GetStudentCoursesDto[]> => {
     const response = await api.get<ApiResponse<GetStudentCoursesDto[]>>(
-        ENDPOINTS.STUDENTS.MY_COURSES
+        ENDPOINTS.STUDENTS.MY_COURSES,
+        { params: paginationParams }
     );
-    return response.data.data!;
+    const payload = (response.data as any)?.data ?? response.data;
+    return payload;
 };

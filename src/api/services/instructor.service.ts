@@ -22,7 +22,8 @@ export const getInstructorStats = async (): Promise<InstructorStatsDto> => {
         ENDPOINTS.INSTRUCTOR.STATS,
     );
     // Handle both { data: { data: … } } and { data: … } envelopes
-    return response.data.data ?? (response.data as unknown as InstructorStatsDto);
+    const payload = response.data as any;
+    return payload.data ?? (payload as unknown as InstructorStatsDto);
 };
 
 // ── Upcoming Events ────────────────────────────────────────────────────
@@ -31,7 +32,8 @@ export const getUpcomingEvents = async (): Promise<UpcomingEventDto[]> => {
         ENDPOINTS.INSTRUCTOR.UPCOMING_EVENTS,
     );
     // Response shape: { data: { totalResults, items: [...] } }
-    const raw = response.data.data ?? response.data;
+    const payload = response.data as any;
+    const raw = payload.data ?? payload;
     const data = raw as any;
     return data?.items ?? (Array.isArray(data) ? data : []);
 };
@@ -56,7 +58,8 @@ export const getInstructorMyCourses = async (
         },
     );
 
-    const raw = response.data.data ?? response.data;
+    const payload = response.data as any;
+    const raw = payload.data ?? payload;
     const data = raw as any;
 
     return {

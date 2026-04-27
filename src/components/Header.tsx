@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES, APP_NAME } from '@/lib/constants';
-import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Menu, X, Sun, Moon } from 'lucide-react';
+import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Menu, X, Sun, Moon, Camera, Image as ImageIcon, Trash2, User as UserIcon, LogOut, Settings } from 'lucide-react';
 import { api } from '@/api/client';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -26,6 +26,10 @@ export const Header = () => {
     const searchRef = useRef<HTMLDivElement>(null);
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const notificationsRef = useRef<HTMLDivElement>(null);
+    const profileRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const [notifications, setNotifications] = useState([
         {
@@ -68,6 +72,9 @@ export const Header = () => {
         const handleClickOutside = (event: MouseEvent) => {
             if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
                 setIsNotificationsOpen(false);
+            }
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+                setIsProfileOpen(false);
             }
         };
 
@@ -170,7 +177,11 @@ export const Header = () => {
     }, []);
 
     const handleProfileClick = () => {
-        navigate(ROUTES.PROFILE);
+        setIsProfileOpen(!isProfileOpen);
+    };
+
+    const handleFileChange = () => {
+        // Removed photo logic
     };
 
     const getDashboardRoute = () => {
@@ -418,13 +429,56 @@ export const Header = () => {
                             </div>
 
                             {/* User Avatar */}
-                            <button
-                                type="button"
-                                onClick={handleProfileClick}
-                                className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#21A9FF] to-[#0094F2] flex items-center justify-center text-white font-bold text-sm shadow-sm hover:shadow-md hover:scale-105 transition-all ring-2 ring-transparent hover:ring-[#21A9FF]/30"
-                            >
-                                {user?.firstName?.[0]}{user?.lastName?.[0]}
-                            </button>
+                            <div className="relative" ref={profileRef}>
+                                <button
+                                    type="button"
+                                    onClick={handleProfileClick}
+                                    className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#21A9FF] to-[#0094F2] flex items-center justify-center text-white font-bold text-sm shadow-sm hover:shadow-md hover:scale-105 transition-all ring-2 ring-transparent hover:ring-[#21A9FF]/30 overflow-hidden"
+                                >
+                                    {user?.avatar ? (
+                                        <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span>{user?.firstName?.[0]}{user?.lastName?.[0]}</span>
+                                    )}
+                                </button>
+
+                                {/* Profile Dropdown */}
+                                {isProfileOpen && (
+                                    <div className="absolute right-0 top-[calc(100%+8px)] w-[240px] bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-700/80 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2">
+                                        <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-[#21A9FF]/10 flex items-center justify-center text-[#21A9FF] overflow-hidden">
+                                                {user?.avatar ? (
+                                                    <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <UserIcon className="w-5 h-5" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user?.fullName}</p>
+                                                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-2">
+                                            <button
+                                                onClick={() => { navigate(ROUTES.PROFILE); setIsProfileOpen(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                                            >
+                                                <UserIcon className="w-4 h-4 text-gray-400" />
+                                                View Profile
+                                            </button>
+                                            <button
+                                                onClick={() => { navigate(ROUTES.PROFILE); setIsProfileOpen(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                                            >
+                                                <Settings className="w-4 h-4 text-gray-400" />
+                                                Settings
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                         </>
                     )}
                 </div>

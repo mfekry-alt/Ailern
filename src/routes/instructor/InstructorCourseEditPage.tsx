@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { ROUTES } from '@/lib/constants';
 import {
     ArrowLeft, Save, Loader2, CheckCircle2, AlertTriangle,
-    Settings, BookOpen, AlignLeft
+    Settings, AlignLeft, Camera, Image as ImageIcon, X, Trash2
 } from 'lucide-react';
 import { useCreateCourse, useUpdateCourse, useCourse } from '@/features/courses/api';
 import { handleApiError } from '@/api/client';
@@ -15,7 +16,7 @@ const labelCls = 'block text-[11px] font-bold text-gray-500 dark:text-slate-400 
 export const InstructorCourseEditPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const isNew = !id; // If there is no ID in the URL, we are on the Create page
+    const isNew = !id;
     const courseId = id ? parseInt(id) : 0;
 
     const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
@@ -30,13 +31,7 @@ export const InstructorCourseEditPage = () => {
         title: '',
         courseId: '',
         description: '',
-        department: '',
-        academicYear: '',
-        category: '',
         thumbnail: null as File | null,
-        prerequisites: '',
-        learningObjectives: '',
-        readyToSubmit: false,
     });
 
     // Populate form when editing an existing course
@@ -50,6 +45,17 @@ export const InstructorCourseEditPage = () => {
             }));
         }
     }, [existingCourse, isNew]);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setFormData(prev => ({ ...prev, thumbnail: file }));
+        }
+    };
+
+    const removeImage = () => {
+        setFormData(prev => ({ ...prev, thumbnail: null }));
+    };
 
     const generateCourseId = (title: string) => {
         const cleaned = title
@@ -66,37 +72,60 @@ export const InstructorCourseEditPage = () => {
         return `${cleaned || 'COURSE'}${suffix}`;
     };
 
-    const handleSubmit = async (isDraft: boolean) => {
+    const handleSubmit = async () => {
         setStatusMessage(null);
-        if (!isDraft && !formData.title.trim()) {
-            setStatusMessage({ type: 'error', text: 'Course title is required for submission.' });
+        if (!formData.title.trim()) {
+            setStatusMessage({ type: 'error', text: 'Course title is required.' });
             return;
         }
 
-        const code = formData.courseId.trim() ? formData.courseId.trim() : generateCourseId(formData.title);
-        setFormData((prev) => ({ ...prev, courseId: code }));
+        if (!formData.courseId.trim()) {
+            setStatusMessage({ type: 'error', text: 'Course code is required.' });
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
+            // Prepare image metadata if exists - Use PascalCase for backend compatibility
+            const imageMetadata = formData.thumbnail ? {
+                FileName: formData.thumbnail.name,
+                FileSize: formData.thumbnail.size,
+                ContentType: formData.thumbnail.type
+            } : undefined;
+
             const command = {
-                code,
-                name: formData.title,
+                code: formData.courseId.trim(),
+                name: formData.title.trim(),
                 description: formData.description,
-                department: formData.department,
-                academicYear: formData.academicYear,
-                category: formData.category,
-                prerequisites: formData.prerequisites,
-                learningObjectives: formData.learningObjectives,
-                isDraft: isDraft
+                Image: imageMetadata
             };
 
+            console.log('📦 Sending Course Command:', JSON.stringify(command, null, 2));
+
+            let response: any;
             if (isNew) {
-                await createCourseMutation.mutateAsync(command);
-                setStatusMessage({ type: 'success', text: isDraft ? 'Draft saved successfully.' : 'Course created successfully!' });
+                response = await createCourseMutation.mutateAsync(command);
             } else {
-                await updateCourseMutation.mutateAsync({ id: courseId, command });
-                setStatusMessage({ type: 'success', text: isDraft ? 'Draft updated successfully.' : 'Course updated successfully!' });
+                response = await updateCourseMutation.mutateAsync({ id: courseId, command });
             }
+
+            // Handle binary upload if uploadImageUrl returned
+            // Create returns { data: { uploadImageUrl } }, Update returns { data: string }
+            const uploadImageUrl = response?.data?.uploadImageUrl || (typeof response?.data === 'string' ? response.data : null);
+            
+            if (uploadImageUrl && formData.thumbnail) {
+                console.log('🚀 Uploading course image to Wasabi...', uploadImageUrl);
+                await axios.put(uploadImageUrl, formData.thumbnail, {
+                    headers: { 'Content-Type': formData.thumbnail.type }
+                });
+                console.log('✅ Image upload complete!');
+            }
+
+            setStatusMessage({ 
+                type: 'success', 
+                text: isNew ? 'Course created successfully!' : 'Course updated successfully!' 
+            });
 
             setTimeout(() => navigate(ROUTES.INSTRUCTOR_COURSES), 1500);
         } catch (error) {
@@ -136,7 +165,7 @@ export const InstructorCourseEditPage = () => {
                             {isNew ? 'Create New Course' : 'Edit Course'}
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-1">
-                            Set up the structure and foundational details of your course.
+                            Set up the foundational details of your course.
                         </p>
                     </div>
                 </div>
@@ -155,115 +184,105 @@ export const InstructorCourseEditPage = () => {
                             </div>
                         )}
 
-                        {/* Section 1: Basic Information */}
-                        <div className="space-y-5">
+                        {/* Basic Information Section */}
+                        <div className="space-y-6">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
                                 <Settings className="w-5 h-5 text-blue-500" /> Basic Information
                             </h3>
 
-                            <div>
-                                <label className={labelCls}>Course Title <span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Introduction to Artificial Intelligence"
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className={inputCls}
-                                />
+                            {/* Image Upload Section */}
+                            <div className="flex flex-col sm:flex-row gap-6 items-start pb-4">
+                                <div className="relative group">
+                                    <div className="w-40 h-40 rounded-3xl overflow-hidden bg-gray-50 dark:bg-slate-900 border-2 border-dashed border-gray-200 dark:border-slate-700 flex items-center justify-center transition-all group-hover:border-blue-400">
+                                        {formData.thumbnail ? (
+                                            <img
+                                                src={URL.createObjectURL(formData.thumbnail)}
+                                                className="w-full h-full object-cover"
+                                                alt="Course Preview"
+                                            />
+                                        ) : existingCourse?.imageUrl ? (
+                                            <img
+                                                src={existingCourse.imageUrl || undefined}
+                                                className="w-full h-full object-cover opacity-60"
+                                                alt="Current Thumbnail"
+                                            />
+                                        ) : (
+                                            <div className="text-center p-4">
+                                                <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase">No Image</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {(formData.thumbnail || existingCourse?.imageUrl) && (
+                                        <button
+                                            onClick={removeImage}
+                                            className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex-1 space-y-3">
+                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">Course Thumbnail</h4>
+                                    <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+                                        Upload a high-quality image to represent your course.
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <label className="cursor-pointer px-4 py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors flex items-center gap-2">
+                                            <Camera className="w-3.5 h-3.5" />
+                                            {formData.thumbnail ? 'Change Image' : 'Select Image'}
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                                        </label>
+                                        {formData.thumbnail && (
+                                            <button
+                                                onClick={removeImage}
+                                                className="px-4 py-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors flex items-center gap-2"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className={labelCls}>Course ID</label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                <div className="md:col-span-2">
+                                    <label className={labelCls}>Course Name <span className="text-red-500">*</span></label>
                                     <input
                                         type="text"
-                                        placeholder="e.g. CS101 (Auto-generated if empty)"
+                                        placeholder="e.g. Introduction to Artificial Intelligence"
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                        className={inputCls}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Course Code <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. CS101"
                                         value={formData.courseId}
                                         onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
                                         disabled={!isNew}
                                         className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
                                     />
                                 </div>
-                                <div>
-                                    <label className={labelCls}>Category</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Programming, Design, AI"
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section 2: Academic Details */}
-                        <div className="space-y-5 pt-4">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
-                                <BookOpen className="w-5 h-5 text-amber-500" /> Academic Details
-                            </h3>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className={labelCls}>Department</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Computer Science"
-                                        value={formData.department}
-                                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={labelCls}>Academic Year</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. 2024/2025"
-                                        value={formData.academicYear}
-                                        onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Section 3: Course Content Details */}
-                        <div className="space-y-5 pt-4">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
-                                <AlignLeft className="w-5 h-5 text-emerald-500" /> Course Content Details
-                            </h3>
-
-                            <div>
-                                <label className={labelCls}>Course Description</label>
-                                <textarea
-                                    rows={4}
-                                    placeholder="Provide a detailed overview of the course content..."
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className={`${inputCls} resize-none`}
-                                />
                             </div>
 
                             <div>
-                                <label className={labelCls}>Prerequisites</label>
-                                <textarea
-                                    rows={2}
-                                    placeholder="What should students know before taking this course?"
-                                    value={formData.prerequisites}
-                                    onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
-                                    className={`${inputCls} resize-none`}
-                                />
-                            </div>
-
-                            <div>
-                                <label className={labelCls}>Learning Objectives</label>
-                                <textarea
-                                    rows={2}
-                                    placeholder="What will students learn? (Separate with commas or bullets)"
-                                    value={formData.learningObjectives}
-                                    onChange={(e) => setFormData({ ...formData, learningObjectives: e.target.value })}
-                                    className={`${inputCls} resize-none`}
-                                />
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3 pt-4">
+                                    <AlignLeft className="w-5 h-5 text-emerald-500" /> Description
+                                </h3>
+                                <div className="mt-4">
+                                    <textarea
+                                        rows={6}
+                                        placeholder="Provide a detailed overview of the course content..."
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        className={`${inputCls} resize-none`}
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -279,26 +298,15 @@ export const InstructorCourseEditPage = () => {
                             Cancel
                         </button>
 
-                        <div className="flex gap-3 w-full sm:w-auto">
-                            <button
-                                type="button"
-                                onClick={() => handleSubmit(true)}
-                                disabled={isSubmitting}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-800 dark:bg-slate-700 hover:bg-black dark:hover:bg-slate-600 text-white rounded-xl font-bold transition-all text-sm disabled:opacity-50"
-                            >
-                                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                Save Draft
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleSubmit(false)}
-                                disabled={isSubmitting}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-blue-500/25 active:scale-95 text-sm disabled:opacity-50"
-                            >
-                                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                {isNew ? 'Create Course' : 'Save Changes'}
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-12 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-blue-500/25 active:scale-95 text-sm disabled:opacity-50"
+                        >
+                            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            {isNew ? 'Create Course' : 'Save Changes'}
+                        </button>
                     </div>
                 </div>
             </div>

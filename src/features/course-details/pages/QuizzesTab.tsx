@@ -4,7 +4,7 @@ import { useCourseQuizzes } from '../api';
 import { EmptyState } from '../components/EmptyState';
 import { TabLoadingState } from '../components/TabLoadingState';
 import { QuizCard } from '@/components/QuizCard';
-import { HelpCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { HelpCircle, AlertCircle, RefreshCw, Search, Filter, ChevronDown } from 'lucide-react';
 
 interface CourseContext {
     courseId: string;
@@ -24,6 +24,8 @@ export const QuizzesTab = () => {
     const { data: quizzes, isLoading, error, refetch } = useCourseQuizzes(numericCourseId ?? 0);
     const [startingQuizId, setStartingQuizId] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'close'>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     const publishedQuizzes = useMemo(
         () => (quizzes ?? []).filter((q) => q.status === 'Published'),
@@ -40,10 +42,14 @@ export const QuizzesTab = () => {
     const filteredQuizzes = useMemo(
         () =>
             publishedQuizzes.filter((quiz) => {
-                if (statusFilter === 'all') return true;
-                return getAvailabilityStatus(quiz) === statusFilter;
+                if (statusFilter !== 'all' && getAvailabilityStatus(quiz) !== statusFilter) return false;
+                if (searchQuery) {
+                    const term = searchQuery.toLowerCase();
+                    return (quiz.title ?? '').toLowerCase().startsWith(term);
+                }
+                return true;
             }),
-        [publishedQuizzes, statusFilter]
+        [publishedQuizzes, statusFilter, searchQuery]
     );
 
     const handleStartQuiz = (quizId: string, resume = false) => {
@@ -60,19 +66,19 @@ export const QuizzesTab = () => {
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <AlertCircle className="w-8 h-8 text-red-500" />
+            <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in duration-500">
+                <div className="w-20 h-20 bg-red-50 dark:bg-red-500/10 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 border border-red-100 dark:border-red-500/20 shadow-inner">
+                    <AlertCircle className="w-10 h-10 text-red-500" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
                     Failed to load quizzes
                 </h2>
-                <p className="text-gray-500 dark:text-slate-400 text-sm mb-6">
+                <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 mb-8 max-w-sm mx-auto">
                     Could not fetch course quizzes. Please try again.
                 </p>
                 <button
                     onClick={() => refetch()}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors"
+                    className="flex items-center gap-3 px-8 py-3.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95"
                 >
                     <RefreshCw className="w-4 h-4" />
                     Retry
@@ -91,56 +97,81 @@ export const QuizzesTab = () => {
         );
     }
 
+    const filterLabel = statusFilter === 'all' ? 'All Status' : statusFilter === 'open' ? 'Open' : 'Closed';
+
     return (
-        <div className="space-y-8 animate-fade-in">
-            <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center border border-purple-200/50 dark:border-purple-800/50">
-                    <HelpCircle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                    <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                        Quizzes
-                    </h2>
-                    <p className="text-gray-500 dark:text-slate-400 text-sm mt-0.5">
-                        {publishedQuizzes.length}{' '}
-                        {publishedQuizzes.length === 1 ? 'quiz' : 'quizzes'} available
-                    </p>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Premium Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white shrink-0">
+                        <HelpCircle className="w-7 h-7" />
+                    </div>
+                    <div>
+                        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Quizzes & Assessments
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                                {publishedQuizzes.length} {publishedQuizzes.length === 1 ? 'Quiz' : 'Quizzes'} Available
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-200 bg-white p-2 dark:border-slate-700/50 dark:bg-slate-800/40">
-                <button
-                    onClick={() => setStatusFilter('all')}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                        statusFilter === 'all'
-                            ? 'bg-purple-600 text-white'
-                            : 'text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700/70'
-                    }`}
-                >
-                    All
-                </button>
-                <button
-                    onClick={() => setStatusFilter('open')}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                        statusFilter === 'open'
-                            ? 'bg-emerald-600 text-white'
-                            : 'text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700/70'
-                    }`}
-                >
-                    Open
-                </button>
-                <button
-                    onClick={() => setStatusFilter('close')}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                        statusFilter === 'close'
-                            ? 'bg-slate-700 text-white dark:bg-slate-600'
-                            : 'text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-700/70'
-                    }`}
-                >
-                    Close
-                </button>
+            {/* Search & Filter Bar */}
+            <div className="relative z-30 bg-white/60 dark:bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 flex flex-col sm:flex-row gap-3 items-center shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)]">
+                {/* Search */}
+                <div className="flex-1 w-full relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                    <input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search for a quiz..."
+                        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 text-slate-900 dark:text-white font-semibold transition-all shadow-sm placeholder:text-slate-400"
+                    />
+                </div>
+
+                {/* Filter Dropdown */}
+                <div className="relative shrink-0 w-full sm:w-auto">
+                    <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <div
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className="pl-11 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-3 shadow-sm hover:border-indigo-300 dark:hover:border-slate-500 transition-all min-w-[160px]"
+                    >
+                        <span className="flex-1 text-slate-800 dark:text-white">{filterLabel}</span>
+                        <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180 text-indigo-500' : ''}`} />
+                    </div>
+                    {isDropdownOpen && (
+                        <>
+                            <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                            <div className="absolute top-full right-0 mt-2 w-full sm:w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-20 overflow-hidden backdrop-blur-xl">
+                                {[
+                                    { value: 'all' as const, label: 'All Status' },
+                                    { value: 'open' as const, label: 'Open' },
+                                    { value: 'close' as const, label: 'Closed' },
+                                ].map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => { setStatusFilter(opt.value); setIsDropdownOpen(false); }}
+                                        className={`w-full text-left px-5 py-3 text-sm font-bold transition-all flex items-center justify-between ${statusFilter === opt.value
+                                                ? 'bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                            }`}
+                                    >
+                                        {opt.label}
+                                        {statusFilter === opt.value && <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
+            {/* Quiz Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredQuizzes.map((quiz) => (
                     <QuizCard
@@ -158,7 +189,7 @@ export const QuizzesTab = () => {
                 <EmptyState
                     icon={HelpCircle}
                     title="No quizzes match this filter"
-                    description="Try switching between Open and Close to view available quizzes."
+                    description="Try switching between Open and Closed to view available quizzes."
                 />
             )}
         </div>
