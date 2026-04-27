@@ -26,16 +26,12 @@ interface Course {
     startDate: string;
     sections: number;
     thumbnail: string;
+    imageUrl?: string;
     description: string;
 }
 
 const THUMBNAILS = [
-    'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=800&auto=format&fit=crop'
+    '/course-default.png'
 ];
 
 // --- Helper: Map API DTO to UI Course ---
@@ -52,7 +48,8 @@ const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
         startDate: new Date(dto.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         sections: dto.totalSections,
         primaryAction: 'Manage Content',
-        thumbnail: THUMBNAILS[thumbIndex],
+        thumbnail: dto.imageUrl || THUMBNAILS[thumbIndex],
+        imageUrl: dto.imageUrl || undefined,
         description: dto.description || 'No description provided.',
     };
 };
@@ -64,6 +61,8 @@ interface Course3DCardProps {
     onSecondaryAction: (course: Course) => void;
 }
 
+const FALLBACK_IMAGE = "/course-default.png";
+
 const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DCardProps) => {
     return (
         <ParallaxTiltCard
@@ -74,9 +73,12 @@ const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DC
             {/* Image Section */}
             <div className="relative aspect-[16/7] overflow-hidden">
                 <img 
-                    src={course.thumbnail} 
+                    src={course.imageUrl || course.thumbnail || FALLBACK_IMAGE} 
                     alt={course.title} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    onError={(e) => {
+                        e.currentTarget.src = FALLBACK_IMAGE;
+                    }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                 

@@ -27,7 +27,7 @@ export const getSectionsByCourse = async (courseId: number): Promise<SectionDto[
         const response = await api.get<ApiResponse<SectionDto[]> | SectionDto[]>(
             ENDPOINTS.SECTIONS.BY_COURSE(courseId)
         );
-        const payload = response.data as ApiResponse<SectionDto[]> | SectionDto[];
+        const payload = response.data as any;
         return Array.isArray(payload) ? payload : (payload.data ?? []);
     } catch {
         return [];
@@ -39,7 +39,7 @@ export const getSection = async (sectionId: string): Promise<SectionDto | null> 
         const response = await api.get<ApiResponse<SectionDto> | SectionDto>(
             ENDPOINTS.SECTIONS.GET(sectionId)
         );
-        const payload = response.data as ApiResponse<SectionDto> | SectionDto;
+        const payload = response.data as any;
         if (Array.isArray(payload)) return null;
         return ('data' in payload) ? (payload.data ?? null) : payload as SectionDto;
     } catch {

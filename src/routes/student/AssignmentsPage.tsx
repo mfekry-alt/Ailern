@@ -43,7 +43,7 @@ const mapApiToAssignment = (dto: GetAssignmentDto): Assignment => {
         status,
         points: 0,
         description: dto.instructions || 'No detailed instructions provided.',
-        attachments: dto.files?.map(f => f.fileName) || [],
+        attachments: dto.files?.map(f => f.fileName).filter((name): name is string => name !== undefined) || [],
         allowedFileTypes: ['PDF', 'DOC', 'DOCX', 'ZIP'],
         maxFileSize: '10 MB',
     };
