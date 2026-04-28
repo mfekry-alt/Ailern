@@ -190,10 +190,19 @@ html.dark body {
   0% {
     background-position: -1000px 0;
   }
-
   100% {
     background-position: 1000px 0;
   }
+}
+
+/* Shine effect for progress bars */
+@keyframes shine {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+.animate-shine {
+  animation: shine 2s infinite linear;
 }
 
 /* Utility classes */

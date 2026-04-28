@@ -22,6 +22,7 @@ export interface GetTokenResponseDto {
     instructorId?: number; // Numeric instructor ID (present for instructor logins)
     studentId?: number; // Numeric student ID (present for student logins)
     id?: number; // Generic user ID (if present)
+    imageUrl: string | null;
 }
 
 export interface GetRefreshTokenCommand {
@@ -50,6 +51,25 @@ export interface UserPasswordResetCommand {
 export interface ChangePasswordCommand {
     currentPassword: string;
     newPassword: string;
+}
+
+export interface ChangeEmailCommand {
+    newEmail: string;
+    currentPassword: string;
+}
+
+export interface ConfirmChangeUserEmailCommand {
+    token: string;
+    email: string;
+    newEmail: string;
+}
+
+export interface ChangeUserPhotoCommand {
+    Image: FileMetaData;
+}
+
+export interface DeleteUserPhotoCommand {
+    // Usually empty if authenticated, but matches command pattern
 }
 
 // ============================================================================
@@ -125,13 +145,15 @@ export interface DeleteUserRoleCommand {
 export interface CreateCourseCommand {
     code: string;
     name: string;
-    description: string;
+    description?: string;
+    Image?: FileMetaData;
 }
 
 export interface UpdateCourseDetailsCommand {
     code: string;
     name: string;
-    description: string;
+    description?: string;
+    Image?: FileMetaData;
 }
 
 export interface GetCourseDto {
@@ -143,6 +165,7 @@ export interface GetCourseDto {
     createdAt: string;
     instructorId: number;
     instructorName: string;
+    imageUrl?: string | null;
 }
 
 export interface GetAllCoursesDto {
@@ -155,6 +178,7 @@ export interface GetAllCoursesDto {
     totalStudents: number;
     totalSections: number;
     description: string | null;
+    imageUrl?: string | null;
 }
 
 export interface GetAllCoursesDtoPaginationResult {
@@ -278,9 +302,12 @@ export interface ConfirmAssignmentUploadCommand {
 export interface FileMetaData {
     id?: string;
     fileId?: string;
-    fileName: string;
-    fileSize: number; // int64
-    contentType: string;
+    fileName?: string;
+    FileName?: string;
+    fileSize?: number;
+    FileSize?: number;
+    contentType?: string;
+    ContentType?: string;
     fileUrl?: string;
 }
 

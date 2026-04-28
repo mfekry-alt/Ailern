@@ -12,9 +12,11 @@ import { HomePage } from '@/routes/HomePage';
 import { LoginPage } from '@/routes/LoginPage';
 import { SignupPage } from '@/routes/SignupPage';
 import { ConfirmEmailPage } from '@/routes/ConfirmEmailPage';
+import { ConfirmChangeEmailPage } from '@/routes/ConfirmChangeEmailPage';
 import { ForgotPasswordPage } from '@/routes/ForgotPasswordPage';
 import { SetPasswordPage } from '@/routes/SetPasswordPage';
 import { ChangePasswordPage } from '@/routes/ChangePasswordPage';
+import { ChangeEmailPage } from '@/routes/ChangeEmailPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 import { ForbiddenPage } from '@/routes/ForbiddenPage';
 import { NotificationsPage } from '@/routes/NotificationsPage';
@@ -94,6 +96,7 @@ export const AppRouter = () => {
             {/* Confirm email (accessible whether logged in or not) */}
             <Route element={<AuthLayout />}>
                 <Route path={ROUTES.CONFIRM_EMAIL} element={<ConfirmEmailPage />} />
+                <Route path={ROUTES.CONFIRM_CHANGE_EMAIL} element={<ConfirmChangeEmailPage />} />
             </Route>
 
             {/* File preview (standalone, no layout) */}
@@ -129,6 +132,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.LEARN} element={<LessonPlayerPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
+                <Route path={ROUTES.CHANGE_EMAIL} element={<ChangeEmailPage />} />
                 <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
                 <Route path="/quizzes/:id/attempts" element={<QuizAttemptsPage />} />
                 <Route path="/quizzes/:id/attempt" element={<QuizAttemptViewer />} />
@@ -171,6 +175,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_SUBMISSION_REVIEW} element={<InstructorQuizSubmissionReviewPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
+                <Route path={ROUTES.CHANGE_EMAIL} element={<ChangeEmailPage />} />
             </Route>
             {/* Protected admin routes */}
             <Route
@@ -189,6 +194,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettingsPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
+                <Route path={ROUTES.CHANGE_EMAIL} element={<ChangeEmailPage />} />
             </Route>
 
             {/* Catch all */}

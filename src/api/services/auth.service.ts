@@ -7,6 +7,7 @@ import { api, setAccessToken } from '../client';
 import { ENDPOINTS } from '../endpoints';
 import { storage } from '@/lib/storage';
 import { STORAGE_KEYS } from '@/lib/constants';
+import axios from 'axios';
 import type {
     UserLoginByEmailAndPasswordCommand,
     GetTokenResponseDto,
@@ -16,9 +17,14 @@ import type {
     ForgetPasswordCommand,
     UserPasswordResetCommand,
     ChangePasswordCommand,
+    ChangeEmailCommand,
+    ChangeUserPhotoCommand,
+    DeleteUserPhotoCommand,
     EmailConfirmationParams,
     ApiResponse,
     RegisterCommand,
+    FileMetaData,
+    ConfirmChangeUserEmailCommand,
 } from '@/types/api.types';
 
 /**
@@ -34,7 +40,11 @@ export const login = async (
         credentials
     );
 
-    const tokenData = response.data.data!;
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Login failed');
+    }
+
+    const tokenData = response.data.data;
 
     setAccessToken(tokenData.accessToken);
     storage.set(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
@@ -56,7 +66,11 @@ export const refreshToken = async (
         command
     );
 
-    const tokenData = response.data.data!;
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Token refresh failed');
+    }
+
+    const tokenData = response.data.data;
 
     // Update stored tokens
     setAccessToken(tokenData.accessToken);
@@ -115,6 +129,76 @@ export const resetPasswordWithToken = async (
  */
 export const changePassword = async (command: ChangePasswordCommand): Promise<void> => {
     await api.post<ApiResponse>(ENDPOINTS.AUTH.CHANGE_PASSWORD, command);
+};
+
+/**
+ * Change email while logged in — PUT /api/Auth/change-email
+ */
+export const changeEmail = async (command: ChangeEmailCommand): Promise<void> => {
+    await api.put<ApiResponse>(ENDPOINTS.AUTH.CHANGE_EMAIL, command);
+};
+
+/**
+ * Confirm change email — GET /api/Auth/confirm-change-email
+ */
+export const confirmChangeEmail = async (command: ConfirmChangeUserEmailCommand): Promise<void> => {
+    await api.get<ApiResponse>(ENDPOINTS.AUTH.CONFIRM_CHANGE_EMAIL, { params: command });
+};
+
+/**
+ * Change user photo — PUT /api/Auth/change-photo
+ */
+export const changePhoto = async (file: File): Promise<string> => {
+    // 1. Send metadata JSON to get the upload URL
+    const response = await api.put<ApiResponse<string>>(
+        ENDPOINTS.AUTH.CHANGE_PHOTO,
+        {
+            Image: {
+                FileName: file.name,
+                FileSize: file.size,
+                ContentType: file.type || 'application/octet-stream'
+            }
+        }
+    );
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Photo change failed');
+    }
+
+    const uploadUrl = response.data.data;
+
+    // 2. Upload the binary file directly to the returned URL
+    await axios.put(uploadUrl, file, {
+        headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+        },
+    });
+
+    // 3. Return the clean permanent URL for display (without pre-signed query params)
+    return uploadUrl.split('?')[0];
+};
+
+/**
+ * Delete user photo — DELETE /api/Auth/delete-photo
+ */
+export const deletePhoto = async (): Promise<void> => {
+    // Note: The API might expect an empty object as body for DELETE if it's a command
+    await api.delete<ApiResponse>(ENDPOINTS.AUTH.DELETE_PHOTO, { data: {} });
+};
+
+/**
+ * Check email confirmation status (polling)
+ */
+export const checkEmailConfirmationStatus = async (): Promise<{ isConfirmed: boolean }> => {
+    const response = await api.get<ApiResponse<{ isConfirmed: boolean }>>(
+        ENDPOINTS.AUTH.CHECK_EMAIL_CONFIRMATION_STATUS
+    );
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Confirmation status check failed');
+    }
+
+    return response.data.data;
 };
 
 /**

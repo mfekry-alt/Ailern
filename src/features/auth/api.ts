@@ -22,6 +22,7 @@ const transformApiUser = (apiUser: GetTokenResponseDto): User => {
         lastName: fullNameParts.slice(1).join(' ') || '',
         fullName: apiUser.userName,
         roles: [normalizeRole(apiUser.role)],
+        avatar: apiUser.imageUrl || undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };
@@ -120,5 +121,76 @@ export const useChangePassword = () => {
                 currentPassword: data.currentPassword,
                 newPassword: data.newPassword,
             }),
+    });
+};
+
+// Change email while logged in — PUT /api/Auth/change-email
+export const useChangeEmail = () => {
+    return useMutation({
+        mutationFn: (data: { newEmail: string; currentPassword: string }) =>
+            authService.changeEmail({
+                newEmail: data.newEmail,
+                currentPassword: data.currentPassword,
+            }),
+    });
+};
+
+// Change user photo — PUT /api/Auth/change-photo
+export const useChangePhoto = () => {
+    const setUser = useAuthStore((state) => state.setUser);
+    const user = useAuthStore((state) => state.user);
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: authService.changePhoto,
+        onSuccess: async (_data, file) => {
+            // 1. Optimistic Update: Show the image immediately using a local blob URL
+            const localUrl = URL.createObjectURL(file);
+            if (user) {
+                const optimisticUser = { ...user, avatar: localUrl };
+                setUser(optimisticUser);
+                queryClient.setQueryData(QUERY_KEYS.ME, optimisticUser);
+            }
+
+            // 2. Background Refresh: Get the official pre-signed GET URL from the server
+            // We wait a bit to ensure the backend is in sync
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            const rt = storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN);
+            if (rt) {
+                try {
+                    const data = await authService.refreshToken({ refreshToken: rt });
+                    const refreshedUser = transformApiUser(data);
+                    
+                    // If we got a real URL back, replace the local blob with it
+                    if (refreshedUser.avatar) {
+                        setUser(refreshedUser);
+                        queryClient.setQueryData(QUERY_KEYS.ME, refreshedUser);
+                        // Clean up the blob URL
+                        URL.revokeObjectURL(localUrl);
+                    }
+                } catch (error) {
+                    console.error('Failed to refresh user info after photo change:', error);
+                }
+            }
+        },
+    });
+};
+
+// Delete user photo — DELETE /api/Auth/delete-photo
+export const useDeletePhoto = () => {
+    const setUser = useAuthStore((state) => state.setUser);
+    const user = useAuthStore((state) => state.user);
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: authService.deletePhoto,
+        onSuccess: () => {
+            if (user) {
+                const updatedUser = { ...user, avatar: undefined };
+                setUser(updatedUser);
+                queryClient.setQueryData(QUERY_KEYS.ME, updatedUser);
+            }
+        },
     });
 };

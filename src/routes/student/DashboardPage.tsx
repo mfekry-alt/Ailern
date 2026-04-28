@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { getStudentDashboardData } from '@/api/services/student.service';
+import { StudentCourseCard } from '@/components/StudentCourseCard';
 
 // Material Symbol Icon Component
 const MaterialIcon = ({ name, className = '' }: { name: string; className?: string }) => (
@@ -136,17 +137,17 @@ export const DashboardPage = () => {
                     {/* KPI Cards Redesigned */}
                     <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[
-                            { title: 'Active Courses', value: totalCourses, icon: 'menu_book', color: 'blue' },
-                            { title: 'Pending Tasks', value: pendingTasks, icon: 'content_paste_go', color: 'purple' },
+                            { title: 'Active Courses', value: totalCourses, icon: 'menu_book', color: 'indigo' },
+                            { title: 'Pending Tasks', value: pendingTasks, icon: 'content_paste_go', color: 'blue' },
                             { title: 'Completed Quizzes', value: completedQuizzes, icon: 'task_alt', color: 'emerald' }
                         ].map((stat, idx) => (
-                            <div key={idx} className={`bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 p-6 rounded-3xl flex items-center justify-between hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group shadow-sm dark:shadow-none`}>
-                                <div className={`absolute top-0 left-0 w-1 h-full bg-${stat.color}-500 dark:shadow-[0_0_10px_currentColor] opacity-70 group-hover:opacity-100 transition-opacity`}></div>
+                            <div key={idx} className={`bg-white dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/50 p-6 rounded-3xl flex items-center justify-between hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]`}>
+                                <div className={`absolute top-0 left-0 w-1 h-full bg-${stat.color}-500 opacity-70 group-hover:opacity-100 transition-opacity`}></div>
                                 <div className="space-y-1 z-10 pl-2">
-                                    <p className="text-gray-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">{stat.title}</p>
-                                    <h3 className="text-4xl font-black text-gray-900 dark:text-white">{stat.value}</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">{stat.title}</p>
+                                    <h3 className={`text-4xl font-black text-${stat.color}-600 dark:text-${stat.color}-400`}>{stat.value}</h3>
                                 </div>
-                                <div className={`w-16 h-16 bg-gray-100 dark:bg-slate-900/50 rounded-2xl flex items-center justify-center border border-${stat.color}-200 dark:border-${stat.color}-500/20 group-hover:border-${stat.color}-500/50 transition-colors z-10 shadow-inner`}>
+                                <div className={`w-16 h-16 bg-${stat.color}-50 dark:bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center border border-${stat.color}-100 dark:border-${stat.color}-500/20 group-hover:bg-${stat.color}-100 transition-colors z-10`}>
                                     <MaterialIcon name={stat.icon} className={`text-3xl text-${stat.color}-600 dark:text-${stat.color}-400`} />
                                 </div>
                             </div>
@@ -183,47 +184,8 @@ export const DashboardPage = () => {
                                     </div>
                                 ) : (
                                     courses.map((course) => (
-                                        <div
-                                            key={course.id}
-                                            onClick={() => navigate(`/courses/${course.id}`)}
-                                            className="bg-white dark:bg-slate-800/40 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 rounded-[2rem] overflow-hidden group hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all cursor-pointer flex flex-col"
-                                        >
-                                            <div className="h-48 relative overflow-hidden bg-gray-200 dark:bg-slate-800">
-                                                <div className="absolute inset-0 bg-black/10 dark:bg-slate-900/20 z-10 group-hover:bg-transparent transition-colors duration-500"></div>
-                                                <img
-                                                    alt={course.title}
-                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
-                                                    src={course.image}
-                                                />
-                                                <div className="absolute top-4 left-4 z-20 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10">
-                                                    In Progress
-                                                </div>
-                                            </div>
-
-                                            <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                                                <div>
-                                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{course.title}</h3>
-                                                    <p className="text-gray-500 dark:text-slate-400 text-sm mt-1.5 flex items-center gap-1.5">
-                                                        <MaterialIcon name="person" className="text-[16px]" />
-                                                        {course.instructor}
-                                                    </p>
-                                                </div>
-
-                                                <div className="space-y-2 pt-2">
-                                                    <div className="flex justify-between text-sm font-medium">
-                                                        <span className="text-gray-500 dark:text-slate-400">Progress</span>
-                                                        <span className="text-blue-600 dark:text-blue-400">{course.progress}%</span>
-                                                    </div>
-                                                    <div className="h-2 bg-gray-200 dark:bg-slate-900/80 rounded-full overflow-hidden border border-gray-100 dark:border-white/5">
-                                                        <div
-                                                            className="h-full bg-gradient-to-r from-blue-600 to-indigo-400 rounded-full relative"
-                                                            style={{ width: `${course.progress}%` }}
-                                                        >
-                                                            <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 dark:bg-white/20 blur-[2px]"></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        <div key={course.id} className="h-full">
+                                            <StudentCourseCard course={course} />
                                         </div>
                                     ))
                                 )}
@@ -232,10 +194,10 @@ export const DashboardPage = () => {
 
                         {/* Right Column - Deadlines */}
                         <div className="w-full xl:w-96 space-y-6">
-                            <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 space-y-6 h-full shadow-sm dark:shadow-none">
-                                <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700/50 pb-4">
-                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <MaterialIcon name="alarm" className="text-purple-600 dark:text-purple-400" />
+                            <div className="bg-white dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/50 rounded-[2rem] p-6 space-y-6 h-full shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)]">
+                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/50 pb-4">
+                                    <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
+                                        <MaterialIcon name="alarm" className="text-indigo-600 dark:text-indigo-400" />
                                         Deadlines
                                     </h2>
                                 </div>
@@ -243,34 +205,34 @@ export const DashboardPage = () => {
                                 <div className="space-y-4">
                                     {upcomingDeadlines.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-10 opacity-60">
-                                            <MaterialIcon name="done_all" className="text-5xl mb-2 text-gray-400 dark:text-slate-400" />
-                                            <p className="text-gray-500 dark:text-slate-400 text-center text-sm">You're all caught up!<br />No upcoming deadlines.</p>
+                                            <MaterialIcon name="done_all" className="text-5xl mb-2 text-slate-400 dark:text-slate-500" />
+                                            <p className="text-slate-500 dark:text-slate-400 text-center text-sm font-bold">You're all caught up!<br />No upcoming deadlines.</p>
                                         </div>
                                     ) : (
                                         upcomingDeadlines.map((deadline) => (
                                             <div
                                                 key={deadline.id}
-                                                className="group flex space-x-4 p-4 rounded-2xl bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-slate-700/50 hover:border-purple-500/30 transition-all cursor-pointer"
+                                                className="group flex space-x-4 p-4 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 hover:bg-indigo-50/50 dark:hover:bg-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all cursor-pointer shadow-sm hover:shadow-md"
                                                 onClick={() => navigate(`/assignments/${deadline.id}`)}
                                             >
                                                 {/* Calendar Tear-off Design */}
-                                                <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-xl flex flex-col overflow-hidden border border-gray-300 dark:border-slate-700 flex-shrink-0 shadow-md">
-                                                    <div className="bg-purple-500 dark:bg-purple-600/80 text-white text-[10px] font-bold text-center py-0.5 uppercase tracking-wider">
+                                                <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                                    <div className="bg-indigo-500 dark:bg-indigo-600/80 text-white text-[10px] font-black text-center py-0.5 uppercase tracking-widest">
                                                         {deadline.dueDate.month}
                                                     </div>
-                                                    <div className="flex-1 flex items-center justify-center text-xl font-black text-gray-700 dark:text-slate-200 bg-gradient-to-b from-gray-100 to-white dark:from-slate-700 dark:to-slate-800">
+                                                    <div className="flex-1 flex items-center justify-center text-xl font-black text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800">
                                                         {deadline.dueDate.day}
                                                     </div>
                                                 </div>
 
                                                 <div className="space-y-1 flex-1 flex flex-col justify-center">
-                                                    <h4 className="font-bold text-sm leading-tight text-gray-900 dark:text-white line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">{deadline.title}</h4>
+                                                    <h4 className="font-bold text-sm leading-tight text-slate-900 dark:text-white line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{deadline.title}</h4>
                                                     <div className="flex items-center justify-between mt-1">
-                                                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md ${deadline.daysLeft <= 2 ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
+                                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${deadline.daysLeft <= 2 ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700'
                                                             }`}>
                                                             {deadline.daysLeft > 0 ? `${deadline.daysLeft} days left` : 'Due Today'}
                                                         </span>
-                                                        <MaterialIcon name="chevron_right" className="text-gray-400 dark:text-slate-500 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors text-sm" />
+                                                        <MaterialIcon name="chevron_right" className="text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-sm" />
                                                     </div>
                                                 </div>
                                             </div>

@@ -13,6 +13,11 @@ export const ENDPOINTS = {
         FORGET_PASSWORD: '/auth/forget-password',
         RESET_PASSWORD: '/auth/reset-password',
         CHANGE_PASSWORD: '/auth/change-password',
+        CHANGE_EMAIL: '/Auth/change-email',
+        CONFIRM_CHANGE_EMAIL: '/Auth/confirm-change-email',
+        CHECK_EMAIL_CONFIRMATION_STATUS: '/Auth/check-email-confirmation-status',
+        CHANGE_PHOTO: '/Auth/change-photo',
+        DELETE_PHOTO: '/Auth/delete-photo',
     },
 
     // Students endpoints (based on API: /api/Auth/students/* and /api/Users/students/*)
@@ -48,6 +53,12 @@ export const ENDPOINTS = {
         STUDENTS: (id: number) => `/Courses/${id}/students`,
         /** GET paginated quizzes; POST create draft quiz (body: CreateQuizBody) — same course segment as Assignments */
         QUIZZES: (courseId: number | string) => `/Courses/${courseId}/quizzes`,
+        /** AI Resources management */
+        AI_RESOURCES: {
+            BASE: (courseId: number | string) => `/Courses/${courseId}/ai-resources`,
+            CONFIRM: (courseId: number | string) => `/Courses/${courseId}/ai-resources/confirm`,
+            DELETE: (courseId: number | string, resourceId: string) => `/Courses/${courseId}/ai-resources/${resourceId}/delete`,
+        },
     },
 
     // Assignments endpoints (based on API: /api/Assignments/* and /api/Courses/*/Assignments)

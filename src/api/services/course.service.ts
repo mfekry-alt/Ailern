@@ -18,6 +18,7 @@ import type {
     PaginationParams,
     PaginationResult,
     ApiResponse,
+    GetStudentProfileDto,
 } from '@/types/api.types';
 
 const EMPTY_COURSES_RESULT: GetAllCoursesDtoPaginationResult = {
@@ -57,10 +58,11 @@ const mapCoursesResult = (payload: any): GetAllCoursesDtoPaginationResult => ({
     end: payload?.end || 0,
 });
 
-export const createCourse = async (command: CreateCourseCommand): Promise<void> => {
+export const createCourse = async (command: CreateCourseCommand): Promise<any> => {
     try {
         const response = await api.post<ApiResponse>(ENDPOINTS.COURSES.CREATE, command);
         console.log('[Courses] Create response:', response.data);
+        return response.data;
     } catch (error: any) {
         if (error.response?.data?.errors) {
             console.error('⚠️ Validation Errors:', JSON.stringify(error.response.data.errors, null, 2));
@@ -69,6 +71,11 @@ export const createCourse = async (command: CreateCourseCommand): Promise<void> 
         }
         throw error;
     }
+};
+
+export const updateCourse = async (id: number, command: UpdateCourseDetailsCommand): Promise<any> => {
+    const response = await api.put<ApiResponse>(ENDPOINTS.COURSES.UPDATE(id), command);
+    return response.data;
 };
 
 /**
@@ -196,13 +203,10 @@ export const getAllCourses = async (
 // --- Standard Functions (No changes needed) ---
 
 export const getCourseById = async (id: number): Promise<GetCourseDto> => {
-    const response = await api.get<ApiResponse<GetCourseDto>>(ENDPOINTS.COURSES.GET(id));
-    return response.data.data!;
+    const response = await api.get<any>(ENDPOINTS.COURSES.GET(id));
+    return response.data?.data || response.data;
 };
 
-export const updateCourse = async (id: number, command: UpdateCourseDetailsCommand): Promise<void> => {
-    await api.put<ApiResponse>(ENDPOINTS.COURSES.UPDATE(id), command);
-};
 
 export const deleteCourse = async (id: number): Promise<void> => {
     await api.delete<ApiResponse>(ENDPOINTS.COURSES.DELETE(id));
@@ -217,17 +221,17 @@ export const enrollInCourse = async (id: number): Promise<void> => {
 };
 
 export const getAvailableCourses = async (params?: PaginationParams): Promise<GetAvailableCoursesDtoPaginationResult> => {
-    const response = await api.get<ApiResponse<GetAvailableCoursesDtoPaginationResult>>(
+    const response = await api.get<any>(
         ENDPOINTS.COURSES.AVAILABLE_COURSES, { params }
     );
-    return response.data.data!;
+    return response.data?.data || response.data;
 };
 
 export const getEnrollmentRequests = async (id: number, params?: PaginationParams): Promise<GetEnrollmentRequestsDto[]> => {
-    const response = await api.get<ApiResponse<GetEnrollmentRequestsDto[]>>(
+    const response = await api.get<any>(
         ENDPOINTS.COURSES.ENROLLMENT_REQUESTS(id), { params }
     );
-    return response.data.data!;
+    return response.data?.data || response.data || [];
 };
 
 export const approveEnrollment = async (courseId: number, studentId: number): Promise<void> => {
@@ -246,7 +250,7 @@ export const getCourseStudents = async (
     id: number,
     params?: PaginationParams
 ): Promise<PaginationResult<GetStudentsByCourseIdDto>> => {
-    const response = await api.get<ApiResponse<PaginationResult<GetStudentsByCourseIdDto>>>(
+    const response = await api.get<any>(
         ENDPOINTS.COURSES.STUDENTS(id),
         {
             params: {
@@ -256,7 +260,7 @@ export const getCourseStudents = async (
             },
         }
     );
-    return response.data.data!;
+    return response.data?.data || response.data;
 };
 
 export const getStudentProfile = async (

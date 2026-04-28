@@ -27,7 +27,7 @@ export const PDFThumbnail = ({ url, className = "" }: PDFThumbnailProps) => {
             try {
                 const loadingTask = pdfjsLib.getDocument(url);
                 const pdf = await loadingTask.promise;
-                
+
                 if (!isMounted) return;
 
                 const page = await pdf.getPage(1);
@@ -48,10 +48,11 @@ export const PDFThumbnail = ({ url, className = "" }: PDFThumbnailProps) => {
                     canvas,
                     canvasContext: context,
                     viewport: viewport,
+                    canvas: canvas,
                 };
 
                 await page.render(renderContext).promise;
-                
+
                 if (isMounted) {
                     setLoading(false);
                 }
@@ -88,9 +89,9 @@ export const PDFThumbnail = ({ url, className = "" }: PDFThumbnailProps) => {
                     <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Generating...</span>
                 </div>
             )}
-            
-            <canvas 
-                ref={canvasRef} 
+
+            <canvas
+                ref={canvasRef}
                 className={`w-full h-full object-cover transition-opacity duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}
             />
 

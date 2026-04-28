@@ -8,8 +8,11 @@ interface CourseCardProps {
     instructor: string;
     progress?: number;
     thumbnail?: string;
+    imageUrl?: string;
     courseCode?: string;
 }
+
+const FALLBACK_IMAGE = "/course-default.png";
 
 export const CourseCard = ({
     id,
@@ -18,6 +21,7 @@ export const CourseCard = ({
     instructor,
     progress = 0,
     thumbnail,
+    imageUrl,
     courseCode,
 }: CourseCardProps) => {
     const navigate = useNavigate();
@@ -46,17 +50,14 @@ export const CourseCard = ({
         <div className="group bg-white dark:bg-slate-800/50 rounded-2xl overflow-hidden border border-gray-100 dark:border-slate-700/50 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full">
             {/* Thumbnail Section */}
             <div className="relative aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-slate-700">
-                {thumbnail ? (
-                    <img
-                        src={thumbnail}
-                        alt={title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                ) : (
-                    <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                        <BookOpen className="w-12 h-12 text-white/60" />
-                    </div>
-                )}
+                <img
+                    src={imageUrl || thumbnail || FALLBACK_IMAGE}
+                    alt={title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                        e.currentTarget.src = FALLBACK_IMAGE;
+                    }}
+                />
 
                 {/* Course Code Badge */}
                 {courseCode && (

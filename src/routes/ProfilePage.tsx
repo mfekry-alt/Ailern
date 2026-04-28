@@ -1,13 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useLogout } from '@/features/auth/api';
+import { useLogout, useChangePhoto, useDeletePhoto } from '@/features/auth/api';
 import { ROUTES } from '@/lib/constants';
 import { Card, CardContent } from '@/components/ui';
 import {
-    Edit, Save, X, LogOut, Lock, User, GraduationCap, Mail,
+    Edit, Save, X, LogOut, Lock, User as UserIcon, GraduationCap, Mail,
     Phone, MapPin, BadgeInfo, Bell, Briefcase, ShieldCheck,
-    CheckCircle2, Globe, Building, Award, Clock, ChevronRight
+    CheckCircle2, Globe, Building, Award, Clock, ChevronRight,
+    Camera, Trash2, Image as ImageIcon
 } from 'lucide-react';
 
 const inputCls = "w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all sm:text-sm font-semibold";
@@ -33,6 +34,45 @@ export const ProfilePage = () => {
         address: '',
         phoneNumber: ''
     });
+
+    const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
+    const [viewingImage, setViewingImage] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const changePhotoMutation = useChangePhoto();
+    const deletePhotoMutation = useDeletePhoto();
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            changePhotoMutation.mutate(file, {
+                onSuccess: () => {
+                    setIsAvatarDropdownOpen(false);
+                    showStatus('Photo updated successfully! 📸');
+                },
+                onError: (error: any) => {
+                    console.error('Failed to change photo:', error);
+                    showStatus('Failed to update photo. Please try again. ❌');
+                }
+            });
+        }
+        // Reset input value so same file can be selected again
+        e.target.value = '';
+    };
+
+    const handleDeletePhoto = () => {
+        deletePhotoMutation.mutate(undefined, {
+            onSuccess: () => {
+                setIsAvatarDropdownOpen(false);
+                showStatus('Photo removed! 🗑️');
+            },
+            onError: (error: any) => {
+                console.error('Failed to delete photo:', error);
+                showStatus('Failed to remove photo. ❌');
+            }
+        });
+    };
 
     // بيانات تختلف حسب الـ Role
     const [roleForm, setRoleForm] = useState({
@@ -73,7 +113,8 @@ export const ProfilePage = () => {
     }, [userRole]);
 
     return (
-        <div className="min-h-screen p-6 sm:p-10 lg:p-16 max-w-[1920px] mx-auto bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans pb-32 relative overflow-hidden">
+        <>
+            <div className="min-h-screen p-6 sm:p-10 lg:p-16 max-w-[1920px] mx-auto bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans pb-32 relative">
 
             {/* Background Accents */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-b from-blue-600/5 to-transparent pointer-events-none"></div>
@@ -90,20 +131,77 @@ export const ProfilePage = () => {
                 )}
 
                 {/* Profile Hero Header */}
-                <div className="relative rounded-[3rem] overflow-hidden bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 shadow-xl backdrop-blur-md">
-                    <div className="h-40 sm:h-60 w-full bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 relative">
+                <div className="relative z-50 rounded-[3rem] bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 shadow-xl backdrop-blur-md">
+                    <div className="h-40 sm:h-60 w-full bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 relative rounded-t-[3rem] overflow-hidden">
                         <div className="absolute inset-0 bg-black/10 opacity-40"></div>
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_70%)] from-white/10"></div>
                     </div>
 
                     <div className="px-8 sm:px-12 pb-10 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-8">
-                        <div className="flex flex-col sm:flex-row items-center sm:items-end gap-8 -mt-20 sm:-mt-24 relative z-10 text-center sm:text-left">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-end gap-8 -mt-20 sm:-mt-24 relative z-[60] text-center sm:text-left">
                             {/* Avatar */}
-                            <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-[3rem] bg-white dark:bg-slate-800 p-2.5 shadow-2xl ring-4 ring-black/5 dark:ring-white/5 transform transition-hover hover:scale-105 duration-500">
-                                <div className="w-full h-full rounded-[2.5rem] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-blue-600 dark:text-blue-400 overflow-hidden border border-gray-100 dark:border-slate-600">
-                                    <User className="w-16 h-16 opacity-50" />
+                            <div className="relative group" ref={dropdownRef}>
+                                <div 
+                                    className="w-40 h-40 sm:w-48 sm:h-48 rounded-[3rem] bg-white dark:bg-slate-800 p-2.5 shadow-2xl ring-4 ring-black/5 dark:ring-white/5 transform transition-hover hover:scale-105 duration-500 cursor-pointer overflow-hidden"
+                                    onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)}
+                                >
+                                    <div className="w-full h-full rounded-[2.5rem] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-blue-600 dark:text-blue-400 overflow-hidden border border-gray-100 dark:border-slate-600">
+                                        {user?.avatar ? (
+                                            <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <UserIcon className="w-16 h-16 opacity-50" />
+                                        )}
+                                    </div>
+                                    
+                                    {/* Edit Overlay */}
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem]">
+                                        <Camera className="w-8 h-8 text-white" />
+                                    </div>
                                 </div>
+
+                                {/* Avatar Management Dropdown */}
+                                {isAvatarDropdownOpen && (
+                                    <div className="absolute left-0 top-[calc(100%+12px)] w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-[2rem] overflow-hidden z-[60] animate-in fade-in slide-in-from-top-4">
+                                        <div className="p-3 space-y-1">
+                                            {user?.avatar && (
+                                                <button 
+                                                    onClick={() => { setViewingImage(true); setIsAvatarDropdownOpen(false); }}
+                                                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black text-gray-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-left"
+                                                >
+                                                    <ImageIcon className="w-5 h-5 text-blue-500" /> DISPLAY PHOTO
+                                                </button>
+                                            )}
+                                            <button 
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={changePhotoMutation.isPending}
+                                                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black text-gray-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all text-left disabled:opacity-50"
+                                            >
+                                                <Camera className={`w-5 h-5 text-emerald-500 ${changePhotoMutation.isPending ? 'animate-pulse' : ''}`} /> 
+                                                {changePhotoMutation.isPending ? 'UPLOADING...' : (user?.avatar ? 'CHANGE PHOTO' : 'ADD PHOTO')}
+                                            </button>
+                                            {user?.avatar && (
+                                                <button 
+                                                    onClick={handleDeletePhoto}
+                                                    disabled={deletePhotoMutation.isPending}
+                                                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-left disabled:opacity-50"
+                                                >
+                                                    <Trash2 className={`w-5 h-5 text-red-500 ${deletePhotoMutation.isPending ? 'animate-pulse' : ''}`} /> 
+                                                    {deletePhotoMutation.isPending ? 'DELETING...' : 'DELETE PHOTO'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                className="hidden" 
+                                accept="image/*" 
+                                onChange={handleFileChange} 
+                            />
+
 
                             {/* User Main Info */}
                             <div className="space-y-3 mb-2">
@@ -140,7 +238,7 @@ export const ProfilePage = () => {
                                 <div className="flex items-center justify-between mb-10">
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 shadow-inner">
-                                            <User className="w-6 h-6" />
+                                            <UserIcon className="w-6 h-6" />
                                         </div>
                                         <div>
                                             <h2 className="text-2xl font-black text-gray-900 dark:text-white">Personal Information</h2>
@@ -151,11 +249,11 @@ export const ProfilePage = () => {
                                         {isEditingPersonal ? <X className="w-5 h-5" /> : <Edit className="w-5 h-5" />}
                                     </button>
                                 </div>
-
+ 
                                 <div className="grid md:grid-cols-2 gap-8">
                                     {[
-                                        { id: 'firstName', label: 'First Name', icon: User },
-                                        { id: 'lastName', label: 'Last Name', icon: User },
+                                        { id: 'firstName', label: 'First Name', icon: UserIcon },
+                                        { id: 'lastName', label: 'Last Name', icon: UserIcon },
                                         { id: 'email', label: 'Email Address', icon: Mail },
                                         { id: 'phoneNumber', label: 'Phone Number', icon: Phone },
                                     ].map((f) => (
@@ -166,10 +264,10 @@ export const ProfilePage = () => {
                                                     <f.icon className="h-5 w-5 text-gray-400" />
                                                 </div>
                                                 <input
-                                                    disabled={!isEditingPersonal}
+                                                    disabled={!isEditingPersonal || f.id === 'email'}
                                                     value={(personalForm as any)[f.id]}
                                                     onChange={(e) => setPersonalForm({ ...personalForm, [f.id]: e.target.value })}
-                                                    className={`${inputCls} ${!isEditingPersonal && 'border-transparent bg-gray-50/30 dark:bg-slate-900/20 cursor-default opacity-80'}`}
+                                                    className={`${inputCls} ${(!isEditingPersonal || f.id === 'email') && 'border-transparent bg-gray-50/30 dark:bg-slate-900/20 cursor-default opacity-80'}`}
                                                 />
                                             </div>
                                         </div>
@@ -284,13 +382,22 @@ export const ProfilePage = () => {
                                     </div>
                                     <h2 className="text-xl font-black text-gray-900 dark:text-white">Security</h2>
                                 </div>
-                                <Link to={ROUTES.CHANGE_PASSWORD} className="group flex items-center justify-between p-6 rounded-3xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 hover:border-blue-400/50 transition-all">
-                                    <div className="space-y-1">
-                                        <h3 className="text-sm font-black text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">Change Password</h3>
-                                        <p className="text-xs font-semibold text-gray-500">Secure your account</p>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
-                                </Link>
+                                <div className="space-y-4">
+                                    <Link to={ROUTES.CHANGE_PASSWORD} className="group flex items-center justify-between p-6 rounded-3xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 hover:border-blue-400/50 transition-all">
+                                        <div className="space-y-1">
+                                            <h3 className="text-sm font-black text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">Change Password</h3>
+                                            <p className="text-xs font-semibold text-gray-500">Secure your account</p>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
+                                    </Link>
+                                    <Link to={ROUTES.CHANGE_EMAIL} className="group flex items-center justify-between p-6 rounded-3xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 hover:border-blue-400/50 transition-all">
+                                        <div className="space-y-1">
+                                            <h3 className="text-sm font-black text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">Change Email</h3>
+                                            <p className="text-xs font-semibold text-gray-500">Update primary email</p>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
+                                    </Link>
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -322,5 +429,34 @@ export const ProfilePage = () => {
                 </div>
             </div>
         </div>
+        {/* Full Screen Image Viewer Modal */}
+        {viewingImage && user?.avatar && (
+            <div 
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-[20px] animate-in fade-in duration-500"
+                onClick={() => setViewingImage(false)}
+            >
+                <div 
+                    className="relative max-w-[95vw] max-h-[95vh] rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-500"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <img 
+                        src={user.avatar} 
+                        alt="Full Profile" 
+                        className="w-auto h-auto max-w-full max-h-[90vh] object-contain shadow-2xl"
+                    />
+                    <button 
+                        onClick={() => setViewingImage(false)}
+                        className="absolute top-8 right-8 w-14 h-14 bg-white/10 hover:bg-white/20 backdrop-blur-2xl border border-white/20 rounded-2xl flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95 group"
+                    >
+                        <X className="w-7 h-7 group-hover:rotate-90 transition-transform duration-500" />
+                    </button>
+                    <div className="absolute bottom-0 left-0 right-0 p-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+                        <h3 className="text-white font-black text-2xl tracking-tight">{user.fullName}</h3>
+                        <p className="text-white/50 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Verified Profile Identity</p>
+                    </div>
+                </div>
+            </div>
+        )}
+    </>
     );
 };

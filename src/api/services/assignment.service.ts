@@ -30,7 +30,7 @@ export type GetAllAssignmentSubmissionsDto = GetAssignmentSubmissionDto;
  */
 export const createAssignment = async (courseId: number, command: AssignmentCreateCommand): Promise<AssignmentMutationResponse> => {
     const response = await api.post<ApiResponse<AssignmentMutationResponse>>(ENDPOINTS.ASSIGNMENTS.CREATE(courseId), command);
-    const payload = response.data;
+    const payload = response.data as any;
     // backend usually returns response inside payload.data
     return (payload?.data ?? payload) as AssignmentMutationResponse;
 };
@@ -55,7 +55,7 @@ export const updateAssignment = async (
     command: AssignmentUpdateCommand
 ): Promise<AssignmentMutationResponse> => {
     const response = await api.put<ApiResponse<AssignmentMutationResponse>>(ENDPOINTS.ASSIGNMENTS.UPDATE(id), command);
-    const payload = response.data;
+    const payload = response.data as any;
     return (payload?.data ?? payload) as AssignmentMutationResponse;
 };
 
@@ -93,7 +93,7 @@ export const deleteAssignment = async (id: number): Promise<void> => {
  */
 export const getAssignment = async (id: number): Promise<GetAssignmentDto> => {
     const response = await api.get<ApiResponse<GetAssignmentDto>>(ENDPOINTS.ASSIGNMENTS.GET(id));
-    return response.data.data!;
+    return (response.data as any).data!;
 };
 
 /**
@@ -127,7 +127,7 @@ export const getCourseAssignmentsForInstructor = async (
         ENDPOINTS.ASSIGNMENTS.COURSE_ASSIGNMENTS_INSTRUCTOR(courseId),
         { params: defaultParams }
     );
-    return response.data.data!;
+    return (response.data as any).data!;
 };
 
 /**
@@ -149,7 +149,7 @@ export const getCourseAssignmentsForStudent = async (
         ENDPOINTS.ASSIGNMENTS.COURSE_ASSIGNMENTS_STUDENT(courseId),
         { params: defaultParams }
     );
-    return response.data.data!;
+    return (response.data as any).data!;
 };
 
 /**
@@ -169,7 +169,7 @@ export const createSubmission = async (
     command: AssignmentSubmissionCreateCommand
 ): Promise<SubmissionCreateResponse> => {
     const response = await api.post<ApiResponse<SubmissionCreateResponse>>(ENDPOINTS.SUBMISSIONS.CREATE, command);
-    return response.data.data ?? {};
+    return (response.data as any).data ?? {};
 };
 
 /**
@@ -217,7 +217,7 @@ export const getMySubmissionByAssignment = async (
     const response = await api.get<ApiResponse<GetMySubmissionDto>>(
         ENDPOINTS.SUBMISSIONS.GET_MY_SUBMISSION(assignmentId)
     );
-    return response.data.data!;
+    return (response.data as any).data!;
 };
 
 /**
@@ -233,7 +233,7 @@ export const getSubmissionFiles = async (
     const response = await api.get<ApiResponse>(
         ENDPOINTS.SUBMISSIONS.GET_FILES(assignmentId, submissionId)
     );
-    return response.data.data;
+    return (response.data as any).data;
 };
 
 /**
