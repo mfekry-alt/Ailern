@@ -101,6 +101,7 @@ export const ENDPOINTS = {
     // Sections endpoints
     SECTIONS: {
         BY_COURSE: (courseId: number) => `/Sections/courses/${courseId}/sections`,
+        GET: (sectionId: string) => `/Sections/${sectionId}`,
         CREATE: '/Sections',
         UPDATE: (sectionId: string) => `/Sections/${sectionId}`,
         DELETE: (sectionId: string) => `/Sections/${sectionId}`,

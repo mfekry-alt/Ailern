@@ -1,13 +1,20 @@
 import { isAxiosError } from 'axios';
-import type { GetQuizDto } from '@/types/api.types';
+
+/** Course quiz list rows (e.g. GetAllQuizDto / GetQuizDto) exposing attempt state */
+export type QuizWithAttemptFlag = {
+    id: string;
+    hasActiveAttempt?: boolean;
+};
 
 /** True when the student has an unfinished quiz attempt for this course (from course quiz list). */
-export function hasActiveInProgressAttemptInCourse(quizzes: GetQuizDto[] | undefined): boolean {
+export function hasActiveInProgressAttemptInCourse(quizzes: QuizWithAttemptFlag[] | undefined): boolean {
     if (!quizzes?.length) return false;
     return quizzes.some((q) => q.hasActiveAttempt);
 }
 
-export function getFirstQuizWithActiveAttempt(quizzes: GetQuizDto[] | undefined): GetQuizDto | undefined {
+export function getFirstQuizWithActiveAttempt(
+    quizzes: QuizWithAttemptFlag[] | undefined
+): QuizWithAttemptFlag | undefined {
     return (quizzes ?? []).find((q) => q.hasActiveAttempt);
 }
 
