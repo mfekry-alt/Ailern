@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
 import type { ApiResponse, SectionCreateCommand, SectionUpdateCommand, MaterialFilesReorderCommand, RequestMaterialPresignedUrlCommand } from '@/types/api.types';
@@ -28,22 +29,16 @@ export const getSectionsByCourse = async (courseId: number): Promise<SectionDto[
             ENDPOINTS.SECTIONS.BY_COURSE(courseId)
         );
         const payload = response.data as ApiResponse<SectionDto[]> | SectionDto[];
-        return Array.isArray(payload) ? payload : (payload.data ?? []);
-    } catch {
+        if (Array.isArray(payload)) return payload;
+        if (payload && typeof payload === 'object' && 'data' in payload) {
+            return (payload as { data?: SectionDto[] }).data ?? [];
+        }
         return [];
-    }
-};
-
-export const getSection = async (sectionId: string): Promise<SectionDto | null> => {
-    try {
-        const response = await api.get<ApiResponse<SectionDto> | SectionDto>(
-            ENDPOINTS.SECTIONS.GET(sectionId)
-        );
-        const payload = response.data as ApiResponse<SectionDto> | SectionDto;
-        if (Array.isArray(payload)) return null;
-        return ('data' in payload) ? (payload.data ?? null) : payload as SectionDto;
-    } catch {
-        return null;
+    } catch (e) {
+        if (isAxiosError(e) && e.response?.status === 403) {
+            throw e;
+        }
+        return [];
     }
 };
 

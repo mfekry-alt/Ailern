@@ -5,10 +5,9 @@ import type { SectionDto } from '../types';
 
 interface SectionCardProps {
     section: SectionDto;
-    courseId: string;
 }
 
-export const SectionCard = memo(({ section, courseId }: SectionCardProps) => {
+export const SectionCard = memo(({ section }: SectionCardProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const files = section.sectionFiles ?? [];
 
@@ -73,7 +72,7 @@ export const SectionCard = memo(({ section, courseId }: SectionCardProps) => {
                         </div>
                     ) : (
                         files.map((file) => (
-                            <FileItem key={file.id} file={file} courseId={courseId} />
+                            <FileItem key={file.id} file={file} />
                         ))
                     )}
                 </div>

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { QUERY_KEYS } from '@/lib/constants';
 import { ChevronLeft, ChevronRight, Clock, Flag, Grid3x3, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { quizService, attemptsService } from '@/api/services';
 import { toast } from 'sonner';
@@ -27,6 +29,7 @@ interface QuizDetail {
 }
 
 export const QuizAttemptViewer = () => {
+    const queryClient = useQueryClient();
     const { id: quizId, attemptId: attemptIdFromUrl } = useParams<{ id: string, attemptId?: string }>();
     const navigate = useNavigate();
     const location = useLocation();
@@ -243,6 +246,11 @@ export const QuizAttemptViewer = () => {
             }
             await attemptsService.submitQuizAttempt(attemptId);
             toast.success('Quiz submitted successfully.');
+            if (state?.courseId) {
+                const cid = String(state.courseId);
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.COURSE_QUIZZES(cid) });
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.COURSE_SECTIONS(cid) });
+            }
             navigate(returnPath, { replace: true });
         } catch (err) {
             toast.error('Failed to submit quiz. Please check your connection and try again.');

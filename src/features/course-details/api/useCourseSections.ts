@@ -2,7 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/lib/constants';
 import { getSectionsByCourse } from '@/api/services/section.service';
 
-export const useCourseSections = (courseId: number) =>
+type UseCourseSectionsOptions = {
+    /** When false, the sections list is not requested (e.g. blocked while a quiz attempt is in progress). */
+    enabled?: boolean;
+};
+
+export const useCourseSections = (courseId: number, options?: UseCourseSectionsOptions) =>
     useQuery({
         queryKey: QUERY_KEYS.COURSE_SECTIONS(courseId.toString()),
         queryFn: async () => {
@@ -16,5 +21,5 @@ export const useCourseSections = (courseId: number) =>
                     ),
                 }));
         },
-        enabled: courseId > 0,
+        enabled: (options?.enabled !== false) && courseId > 0,
     });

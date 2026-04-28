@@ -45,6 +45,7 @@ export const PDFThumbnail = ({ url, className = "" }: PDFThumbnailProps) => {
                 canvas.width = viewport.width;
 
                 const renderContext = {
+                    canvas,
                     canvasContext: context,
                     viewport: viewport,
                 };

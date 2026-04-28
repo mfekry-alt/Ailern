@@ -1,8 +1,17 @@
-import { useOutletContext } from 'react-router-dom';
-import { useCourseSections } from '../api';
+import { useMemo } from 'react';
+import { Navigate, useOutletContext } from 'react-router-dom';
+import { isAxiosError } from 'axios';
+import { useCourseQuizzes, useCourseSections } from '../api';
 import { SectionCard } from '../components/SectionCard';
 import { EmptyState } from '../components/EmptyState';
 import { TabLoadingState } from '../components/TabLoadingState';
+import { CourseSectionsAccessBlockedPanel } from '../components/CourseSectionsAccessBlockedPanel';
+import { ROUTES } from '@/lib/constants';
+import {
+    getFirstQuizWithActiveAttempt,
+    getHttpErrorMessage,
+    hasActiveInProgressAttemptInCourse,
+} from '../utils/courseContentAccess';
 import { Layers, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface CourseContext {
@@ -12,9 +21,61 @@ interface CourseContext {
 
 export const SectionsTab = () => {
     const { courseId, numericCourseId } = useOutletContext<CourseContext>();
-    const { data: sections, isLoading, error, refetch } = useCourseSections(numericCourseId ?? 0);
+    const courseKey = numericCourseId ?? 0;
+    const quizzesQuery = useCourseQuizzes(courseKey);
 
-    if (isLoading) return <TabLoadingState />;
+    const blockByInProgressAttempt = useMemo(
+        () => (quizzesQuery.isSuccess ? hasActiveInProgressAttemptInCourse(quizzesQuery.data) : false),
+        [quizzesQuery.isSuccess, quizzesQuery.data]
+    );
+
+    const activeQuiz = useMemo(
+        () => (quizzesQuery.isSuccess ? getFirstQuizWithActiveAttempt(quizzesQuery.data) : undefined),
+        [quizzesQuery.isSuccess, quizzesQuery.data]
+    );
+
+    const sectionsEnabled =
+        courseKey > 0 &&
+        (quizzesQuery.isError || quizzesQuery.isSuccess) &&
+        !blockByInProgressAttempt;
+
+    const { data: sections, isLoading, error, refetch, isFetching } = useCourseSections(courseKey, {
+        enabled: sectionsEnabled,
+    });
+
+    if (quizzesQuery.isLoading) return <TabLoadingState />;
+
+    if (blockByInProgressAttempt) {
+        const quizListPath = `/courses/${courseId}/quizzes`;
+        return (
+            <CourseSectionsAccessBlockedPanel
+                courseId={courseId}
+                activeQuizId={activeQuiz?.id}
+                quizListPath={quizListPath}
+            />
+        );
+    }
+
+    if (isAxiosError(error) && error.response?.status === 403) {
+        return (
+            <Navigate
+                to={ROUTES.FORBIDDEN}
+                replace
+                state={{
+                    title: 'Access denied',
+                    message: getHttpErrorMessage(
+                        error,
+                        'Course content is not available right now. If you have a quiz in progress, complete it first.'
+                    ),
+                    backTo: `/courses/${courseId}/quizzes`,
+                }}
+            />
+        );
+    }
+
+    const showSectionsLoading = isLoading || (sectionsEnabled && isFetching && !sections);
+
+    if (showSectionsLoading) return <TabLoadingState />;
 
     if (error) {
         return (
@@ -67,7 +128,7 @@ export const SectionsTab = () => {
 
             <div className="space-y-3">
                 {sections.map((section) => (
-                    <SectionCard key={section.id} section={section} courseId={courseId} />
+                    <SectionCard key={section.id} section={section} />
                 ))}
             </div>
         </div>

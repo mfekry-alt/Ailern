@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Outlet, useParams, useNavigate, NavLink } from 'react-router-dom';
-import { useCourseOverview } from '../api';
+import { useCourseOverview, useCourseQuizzes } from '../api';
+import { hasActiveInProgressAttemptInCourse } from '../utils/courseContentAccess';
 import {
     ChevronLeft,
     ChevronRight,
@@ -30,6 +31,9 @@ export const CourseDetailsLayout = () => {
     }, [courseId]);
 
     const { data: course, isLoading } = useCourseOverview(numericId ?? 0);
+    const { data: courseQuizzes, isSuccess: courseQuizzesReady } = useCourseQuizzes(numericId ?? 0);
+    const sectionsLocked =
+        Boolean(numericId) && courseQuizzesReady && hasActiveInProgressAttemptInCourse(courseQuizzes);
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -92,25 +96,42 @@ export const CourseDetailsLayout = () => {
                 </div>
 
                 <nav className="flex-1 p-3 space-y-1 overflow-y-auto no-scrollbar">
-                    {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
-                        <NavLink
-                            key={to}
-                            to={`${linkBase}/${to}`}
-                            onClick={() => setMobileOpen(false)}
-                            className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all group
-                                ${collapsed ? 'justify-center' : ''}
-                                ${
-                                    isActive
-                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                                        : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white'
-                                }`
-                            }
-                        >
-                            <Icon className="w-5 h-5 shrink-0" />
-                            {!collapsed && <span className="truncate">{label}</span>}
-                        </NavLink>
-                    ))}
+                    {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
+                        const lockedTab = to === 'sections' && sectionsLocked;
+                        return (
+                            <NavLink
+                                key={to}
+                                to={`${linkBase}/${to}`}
+                                onClick={() => setMobileOpen(false)}
+                                title={
+                                    lockedTab
+                                        ? 'Course materials are limited while a quiz is in progress. Open Sections for details or resume the quiz from here.'
+                                        : undefined
+                                }
+                                className={({ isActive }) => {
+                                    const base = `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all group
+                                        ${collapsed ? 'justify-center' : ''}`;
+                                    if (lockedTab) {
+                                        return `${base} ${
+                                            isActive
+                                                ? 'bg-amber-500/20 text-amber-950 dark:text-amber-100 border border-amber-300/60 dark:border-amber-500/40'
+                                                : 'text-amber-900/90 dark:text-amber-200/90 border border-transparent hover:bg-amber-500/10 dark:hover:bg-amber-500/10'
+                                        }`;
+                                    }
+                                    return `${base} ${
+                                        isActive
+                                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                            : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white'
+                                    }`;
+                                }}
+                            >
+                                <Icon className="w-5 h-5 shrink-0" />
+                                {!collapsed && (
+                                    <span className="truncate">{lockedTab ? `${label} · locked` : label}</span>
+                                )}
+                            </NavLink>
+                        );
+                    })}
                 </nav>
 
                 <div className="p-3 border-t border-gray-100 dark:border-slate-700/50">
