@@ -1,165 +1,272 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+
 import { Navigate, useOutletContext } from 'react-router-dom';
+
 import { isAxiosError } from 'axios';
+
 import { useCourseQuizzes, useCourseSections } from '../api';
+
 import { SectionCard } from '../components/SectionCard';
+
 import { EmptyState } from '../components/EmptyState';
+
 import { TabLoadingState } from '../components/TabLoadingState';
+
 import { CourseSectionsAccessBlockedPanel } from '../components/CourseSectionsAccessBlockedPanel';
+
 import { ROUTES } from '@/lib/constants';
+
 import {
+
     getFirstQuizWithActiveAttempt,
+
     getHttpErrorMessage,
+
     hasActiveInProgressAttemptInCourse,
+
 } from '../utils/courseContentAccess';
-import { Layers, AlertCircle, RefreshCw, Search, Sparkles } from 'lucide-react';
+
+import { Layers, AlertCircle, RefreshCw } from 'lucide-react';
+
+
 
 interface CourseContext {
+
     courseId: string;
+
     numericCourseId: number | null;
+
 }
 
+
+
 export const SectionsTab = () => {
+
     const { courseId, numericCourseId } = useOutletContext<CourseContext>();
+
     const courseKey = numericCourseId ?? 0;
+
     const quizzesQuery = useCourseQuizzes(courseKey);
 
+
+
     const blockByInProgressAttempt = useMemo(
+
         () => (quizzesQuery.isSuccess ? hasActiveInProgressAttemptInCourse(quizzesQuery.data) : false),
+
         [quizzesQuery.isSuccess, quizzesQuery.data]
+
     );
+
+
 
     const activeQuiz = useMemo(
+
         () => (quizzesQuery.isSuccess ? getFirstQuizWithActiveAttempt(quizzesQuery.data) : undefined),
+
         [quizzesQuery.isSuccess, quizzesQuery.data]
+
     );
 
+
+
     const sectionsEnabled =
+
         courseKey > 0 &&
+
         (quizzesQuery.isError || quizzesQuery.isSuccess) &&
+
         !blockByInProgressAttempt;
 
+
+
     const { data: sections, isLoading, error, refetch, isFetching } = useCourseSections(courseKey, {
+
         enabled: sectionsEnabled,
+
     });
 
-    const [searchQuery, setSearchQuery] = useState('');
 
-    const filteredSections = useMemo(() => {
-        if (!sections) return [];
-        if (!searchQuery.trim()) return sections;
-        const term = searchQuery.toLowerCase();
-        return sections.filter(
-            (s) => s.title.toLowerCase().startsWith(term) || s.sectionNumber.toString().startsWith(term)
-        );
-    }, [sections, searchQuery]);
 
     if (quizzesQuery.isLoading) return <TabLoadingState />;
 
+
+
     if (blockByInProgressAttempt) {
+
         const quizListPath = `/courses/${courseId}/quizzes`;
+
         return (
+
             <CourseSectionsAccessBlockedPanel
+
                 courseId={courseId}
+
                 activeQuizId={activeQuiz?.id}
+
                 quizListPath={quizListPath}
+
             />
+
         );
+
     }
 
+
+
     if (isAxiosError(error) && error.response?.status === 403) {
+
         return (
+
             <Navigate
+
                 to={ROUTES.FORBIDDEN}
+
                 replace
+
                 state={{
+
                     title: 'Access denied',
+
                     message: getHttpErrorMessage(
+
                         error,
+
                         'Course content is not available right now. If you have a quiz in progress, complete it first.'
+
                     ),
+
                     backTo: `/courses/${courseId}/quizzes`,
+
                 }}
+
             />
+
         );
+
     }
+
+
 
     const showSectionsLoading = isLoading || (sectionsEnabled && isFetching && !sections);
 
+
+
     if (showSectionsLoading) return <TabLoadingState />;
 
+
+
     if (error) {
+
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in-95 duration-500">
-                <div className="w-20 h-20 bg-red-50 dark:bg-red-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-red-100 dark:border-red-500/20 shadow-sm shadow-red-500/5">
-                    <AlertCircle className="w-10 h-10 text-red-500" />
+
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+
+                    <AlertCircle className="w-8 h-8 text-red-500" />
+
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
+
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+
                     Failed to load sections
+
                 </h2>
-                <p className="text-gray-500 dark:text-slate-400 text-sm mb-8 max-w-sm mx-auto font-medium">
-                    Could not fetch course sections. Please check your connection and try again.
+
+                <p className="text-gray-500 dark:text-slate-400 text-sm mb-6">
+
+                    Could not fetch course sections. Please try again.
+
                 </p>
+
                 <button
+
                     onClick={() => refetch()}
-                    className="flex items-center gap-2 px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-red-600/20 active:scale-95"
+
+                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors"
+
                 >
+
                     <RefreshCw className="w-4 h-4" />
-                    Retry Loading
+
+                    Retry
+
                 </button>
+
             </div>
+
         );
+
     }
+
+
 
     if (!sections || sections.length === 0) {
+
         return (
+
             <EmptyState
+
                 icon={Layers}
+
                 title="No sections yet"
+
                 description="This course doesn't have any sections or materials yet. Check back later."
+
             />
+
         );
+
     }
 
+
+
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-2">
-                    <Layers className="w-6 h-6 text-[#21A9FF]" />
-                    <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">Sections</h2>
-                    <Sparkles className="w-5 h-5 text-amber-400/90 hidden sm:block animate-pulse shrink-0" aria-hidden />
+
+        <div className="space-y-8 animate-fade-in">
+
+            <div className="flex items-center gap-4">
+
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center border border-blue-200/50 dark:border-blue-800/50">
+
+                    <Layers className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+
                 </div>
 
-                <div className="relative group w-full md:w-80">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#21A9FF] transition-colors">
-                        <Search className="w-4.5 h-4.5" />
-                    </div>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search materials..."
-                        className="w-full pl-11 pr-4 py-3.5 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-[#21A9FF]/10 focus:border-[#21A9FF]/50 transition-all shadow-sm group-hover:border-slate-300 dark:group-hover:border-slate-600"
-                    />
+                <div>
+
+                    <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+
+                        Course Sections
+
+                    </h2>
+
+                    <p className="text-gray-500 dark:text-slate-400 text-sm mt-0.5">
+
+                        {sections.length} {sections.length === 1 ? 'section' : 'sections'} available
+
+                    </p>
+
                 </div>
+
             </div>
 
-            <div className="space-y-4">
-                {filteredSections.length > 0 ? (
-                    filteredSections.map((section) => (
-                        <SectionCard key={section.id} section={section} courseId={courseId} />
-                    ))
-                ) : (
-                    <div className="text-center py-20 bg-white dark:bg-slate-800/40 rounded-[2.5rem] border-2 border-dashed border-slate-100 dark:border-slate-700/50">
-                        <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
-                            <Search className="w-8 h-8 text-slate-400" />
-                        </div>
-                        <p className="text-slate-500 dark:text-slate-400 font-bold">
-                            No sections found matching &quot;{searchQuery}&quot;
-                        </p>
-                    </div>
-                )}
+
+
+            <div className="space-y-3">
+
+                {sections.map((section) => (
+
+                    <SectionCard key={section.id} section={section} courseId={courseId} />
+
+                ))}
+
             </div>
+
         </div>
+
     );
+
 };
+
