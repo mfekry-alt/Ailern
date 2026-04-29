@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ROUTES, APP_NAME, ROLES } from '@/lib/constants';
 import { normalizeRole } from '@/lib/constants';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui';
 import {
     Menu,
@@ -19,6 +20,8 @@ import {
     Check,
     Crown,
     LayoutDashboard,
+    Sun,
+    Moon,
 } from 'lucide-react';
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import ParticleNetwork from '@/components/ParticleNetwork';
@@ -63,6 +66,7 @@ function RevealSection({ children, className = '', delay = 0 }: { children: Reac
 
 export const HomePage = () => {
     const { isAuthenticated, user } = useAuth();
+    const { isDark, toggleTheme } = useTheme();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
 
@@ -112,6 +116,16 @@ export const HomePage = () => {
                         </div>
 
                         <div className="hidden md:flex items-center gap-3">
+                            {/* Theme Toggle */}
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                className="p-2 rounded-xl text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-[#0F5A9C] dark:hover:text-blue-400 transition-all duration-200 cursor-pointer"
+                                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                            >
+                                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                            </button>
+
                             {isAuthenticated ? (
                                 <Link to={getDashboardRoute()}>
                                     <Button
@@ -163,6 +177,19 @@ export const HomePage = () => {
                                     {item}
                                 </a>
                             ))}
+                            <div className="h-px bg-slate-100 dark:bg-zinc-800 my-1" />
+                            {/* Mobile Theme Toggle */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    toggleTheme();
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className="flex items-center gap-3 text-base font-medium text-slate-600 dark:text-zinc-300 hover:text-[#0F5A9C] py-2.5 cursor-pointer"
+                            >
+                                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                                <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                            </button>
                             <div className="h-px bg-slate-100 dark:bg-zinc-800 my-1" />
                             {isAuthenticated ? (
                                 <Link to={getDashboardRoute()} onClick={() => setIsMobileMenuOpen(false)}>

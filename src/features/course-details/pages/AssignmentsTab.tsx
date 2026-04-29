@@ -11,7 +11,7 @@ import { SubmitAssignmentModal } from '../components/SubmitAssignmentModal';
 import { ViewSubmissionPanel } from '../components/ViewSubmissionPanel';
 import { EmptyState } from '../components/EmptyState';
 import { TabLoadingState } from '../components/TabLoadingState';
-import { FileText, AlertCircle, RefreshCw, Search, Filter, ChevronDown } from 'lucide-react';
+import { FileText, AlertCircle, RefreshCw, Search, Filter, ChevronDown, Trash2, X } from 'lucide-react';
 import type { GetAssignmentDto } from '../types';
 
 interface CourseContext {
@@ -35,6 +35,7 @@ export const AssignmentsTab = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'submitted' | 'not_submitted' | 'open' | 'closed'>('all');
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; submissionId: number | null }>({ open: false, submissionId: null });
 
     const {
         data: submissionData,
@@ -95,12 +96,21 @@ export const AssignmentsTab = () => {
 
     const handleDeleteSubmission = useCallback(
         async (submissionId: number) => {
-            if (!window.confirm('Are you sure you want to delete your submission?')) return;
-            await deleteMutation.mutateAsync(submissionId);
-            handleCloseSubmission();
+            setDeleteConfirm({ open: true, submissionId });
         },
-        [deleteMutation, handleCloseSubmission]
+        []
     );
+
+    const confirmDelete = useCallback(async () => {
+        if (!deleteConfirm.submissionId) return;
+        await deleteMutation.mutateAsync(deleteConfirm.submissionId);
+        setDeleteConfirm({ open: false, submissionId: null });
+        handleCloseSubmission();
+    }, [deleteConfirm.submissionId, deleteMutation, handleCloseSubmission]);
+
+    const cancelDelete = useCallback(() => {
+        setDeleteConfirm({ open: false, submissionId: null });
+    }, []);
 
     if (isLoading) return <TabLoadingState />;
 
@@ -242,6 +252,69 @@ export const AssignmentsTab = () => {
                 isDeleting={deleteMutation.isPending}
                 error={submissionError}
             />
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm.open && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={cancelDelete} />
+                    <div className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 p-6 animate-in zoom-in-95 duration-200">
+                        {/* Close button */}
+                        <button
+                            onClick={cancelDelete}
+                            className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="text-center">
+                            {/* Icon */}
+                            <div className="w-14 h-14 bg-red-50 dark:bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-100 dark:border-red-500/20">
+                                <Trash2 className="w-7 h-7 text-red-500" />
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                Delete Submission?
+                            </h3>
+
+                            {/* Description */}
+                            <p className="text-sm text-gray-500 dark:text-slate-400 mb-6 max-w-xs mx-auto">
+                                Are you sure you want to delete your submission? This action cannot be undone.
+                            </p>
+
+                            {/* Buttons */}
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    onClick={cancelDelete}
+                                    className="px-5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-white font-semibold text-sm rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-all active:scale-95"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    disabled={deleteMutation.isPending}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 disabled:bg-red-400 text-white font-semibold text-sm rounded-xl transition-all shadow-lg shadow-red-500/25 active:scale-95 disabled:cursor-not-allowed"
+                                >
+                                    {deleteMutation.isPending ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                            </svg>
+                                            Deleting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="w-4 h-4" />
+                                            Delete
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

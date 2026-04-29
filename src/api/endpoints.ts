@@ -27,6 +27,7 @@ export const ENDPOINTS = {
 
     // Users endpoints (based on API: /api/Users/*)
     USERS: {
+        ME: '/Users/me', // Get current authenticated user
         GET: (id: number) => `/Users/${id}`,
         ADD_ROLE: (id: number) => `/Users/${id}/roles`,
         REMOVE_ROLE: (id: number) => `/Users/${id}/roles`,

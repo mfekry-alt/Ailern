@@ -16,6 +16,41 @@ import type {
 } from '@/types/api.types';
 
 /**
+ * Current authenticated user response from /users/me
+ */
+export interface MeResponseDto {
+    id: number;
+    userName: string;
+    email: string;
+    fullName: string;
+    role: string;
+    imageUrl: string | null;
+    phoneNumber?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+/**
+ * Get current authenticated user
+ * @returns Current user details
+ */
+export const getMe = async (): Promise<MeResponseDto> => {
+    const response = await api.get<ApiResponse<MeResponseDto>>(ENDPOINTS.USERS.ME);
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to fetch user data');
+    }
+
+    const userData = response.data.data;
+
+    if (!userData) {
+        throw new Error('User data not found');
+    }
+
+    return userData;
+};
+
+/**
  * Get user by ID
  * @param id - User ID
  * @returns User details
