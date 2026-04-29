@@ -147,6 +147,20 @@ export const confirmChangeEmail = async (command: ConfirmChangeUserEmailCommand)
 
 /**
  * Change user photo — PUT /api/Auth/change-photo
+ * 
+ * ⚠️ IMPORTANT: The URL returned by this function is NOT the source of truth!
+ * The backend returns a storage/upload URL, not the final CDN URL.
+ * 
+ * ✅ CORRECT PATTERN:
+ *   1. Call changePhoto() to upload the file
+ *   2. IGNORE the returned URL
+ *   3. Call GET /users/me to get the canonical user data
+ *   4. Use the avatar URL from /users/me response ONLY
+ * 
+ * This ensures the avatar URL is always the correct, final CDN URL.
+ * 
+ * @param file - The image file to upload
+ * @returns The upload URL (for logging/debug only - DO NOT use for UI)
  */
 export const changePhoto = async (file: File): Promise<string> => {
     // 1. Send metadata JSON to get the upload URL
@@ -174,7 +188,8 @@ export const changePhoto = async (file: File): Promise<string> => {
         },
     });
 
-    // 3. Return the clean permanent URL for display (without pre-signed query params)
+    // 3. Return URL for debug/logging only.
+    // ⚠️ DO NOT use this URL for UI display - always fetch from /users/me!
     return uploadUrl.split('?')[0];
 };
 

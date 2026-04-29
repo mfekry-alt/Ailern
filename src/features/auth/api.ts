@@ -3,8 +3,12 @@ import { normalizeRole, QUERY_KEYS, STORAGE_KEYS } from '@/lib/constants';
 import { useAuthStore } from './store';
 import { storage } from '@/lib/storage';
 import { authService } from '@/api/services';
+import * as userService from '@/api/services/user.service';
+import type { MeResponseDto } from '@/api/services/user.service';
+import { setOnTokenRefreshedCallback } from '@/api/client';
 import type { User } from '@/types';
 import type { GetTokenResponseDto } from '@/types/api.types';
+import { useEffect } from 'react';
 
 // Helper to transform API user to app User type
 const transformApiUser = (apiUser: GetTokenResponseDto): User => {
@@ -28,46 +32,150 @@ const transformApiUser = (apiUser: GetTokenResponseDto): User => {
     };
 };
 
-// Get current user (Note: API doesn't have /me endpoint, so we use stored user)
+// Helper to transform MeResponseDto to User type
+const transformMeResponse = (meData: MeResponseDto): User => {
+    const fullNameParts = meData.fullName.split(' ');
+
+    return {
+        id: meData.id,
+        email: meData.email,
+        firstName: fullNameParts[0] || meData.userName,
+        lastName: fullNameParts.slice(1).join(' ') || '',
+        fullName: meData.fullName,
+        roles: [normalizeRole(meData.role)],
+        avatar: meData.imageUrl || undefined,
+        createdAt: meData.createdAt || new Date().toISOString(),
+        updatedAt: meData.updatedAt || new Date().toISOString(),
+    };
+};
+
+// Get cached user from localStorage for initial data
+const getCachedUser = (): User | null => {
+    try {
+        return storage.get<User>(STORAGE_KEYS.USER);
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Hook to fetch and manage current user data
+ * Implements stale-while-revalidate pattern:
+ * - Shows cached data immediately (instant UI)
+ * - Refetches in background to get fresh data
+ * - Updates UI automatically when fresh data arrives
+ */
 export const useMe = () => {
     const setUser = useAuthStore((state) => state.setUser);
-    const setLoading = useAuthStore((state) => state.setLoading);
+    const queryClient = useQueryClient();
 
-    return useQuery({
+    const query = useQuery({
         queryKey: QUERY_KEYS.ME,
         queryFn: async () => {
-            // Since API doesn't have /me endpoint, return stored user
-            const storedUser = storage.get<User>(STORAGE_KEYS.USER);
-            if (storedUser) {
-                setUser(storedUser);
-                setLoading(false);
-                return storedUser;
-            }
-            // Return null instead of throwing to prevent blocking the app
-            setLoading(false);
-            return null;
+            console.log('[Auth] Fetching /users/me...');
+            const meData = await userService.getMe();
+            const user = transformMeResponse(meData);
+            setUser(user);
+            console.log('[Auth] User data refreshed:', user.email, 'avatar:', user.avatar);
+            return user;
         },
-        retry: false,
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        // Stale-while-revalidate configuration:
+        // - Use cached data immediately (no loading state for cached data)
+        // - Refetch in background when stale
+        initialData: getCachedUser, // Show cached user instantly
+        staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
+        gcTime: 10 * 60 * 1000, // Keep cache for 10 minutes
+        retry: 2,
+        retryDelay: 1000,
+        // Only run query if we have an access token
         enabled: !!storage.get(STORAGE_KEYS.ACCESS_TOKEN),
-        // Important: Set initialData so the query doesn't block rendering
-        initialData: null,
+        // Don't refetch on window focus (we'll handle that manually if needed)
+        refetchOnWindowFocus: false,
     });
+
+    // Set up callback for token refresh to refetch user data
+    useEffect(() => {
+        const handleTokenRefresh = () => {
+            console.log('[Auth] Token refreshed, refetching user data...');
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ME });
+        };
+
+        setOnTokenRefreshedCallback(handleTokenRefresh);
+
+        return () => {
+            setOnTokenRefreshedCallback(null);
+        };
+    }, [queryClient]);
+
+    return query;
+};
+
+/**
+ * Manual refetch helper for use after login or when explicitly needed
+ */
+export const useRefreshUser = () => {
+    const queryClient = useQueryClient();
+
+    return async () => {
+        console.log('[Auth] Manually refreshing user data...');
+        await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ME });
+        return queryClient.fetchQuery({ queryKey: QUERY_KEYS.ME });
+    };
 };
 
 // Login mutation - Uses real API
 export const useLogin = () => {
     const setUser = useAuthStore((state) => state.setUser);
+    const setAccessToken = useAuthStore((state) => state.setAccessToken);
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: authService.login, // Use real API service
-        onSuccess: (data) => {
-            // Transform API response to User format
-            const user = transformApiUser(data);
-            setUser(user);
-            queryClient.setQueryData(QUERY_KEYS.ME, user);
+        mutationFn: async (credentials: { email: string; password: string }) => {
+            // Step 1: Login to get tokens
+            const loginData = await authService.login(credentials);
+
+            // Step 2: Set tokens in storage
+            setAccessToken(loginData.accessToken);
+
+            // Step 3: Fetch full user data from /users/me
+            // This ensures we have the most up-to-date user info including avatar
+            try {
+                const meData = await userService.getMe();
+                return { loginData, meData };
+            } catch (meError) {
+                console.error('[Auth] Failed to fetch /users/me after login:', meError);
+                // Fallback: use login response data
+                return { loginData, meData: null };
+            }
         },
+        onSuccess: ({ loginData, meData }) => {
+            // Step 4: Transform and store user data
+            let user: User;
+
+            if (meData) {
+                // Use fresh /users/me data
+                user = transformMeResponse(meData);
+                console.log('[Auth] Login successful with /users/me data, avatar:', user.avatar);
+            } else {
+                // Fallback to login response data
+                user = transformApiUser(loginData);
+                console.log('[Auth] Login successful with login response data, avatar:', user.avatar);
+            }
+
+            // Update global state
+            setUser(user);
+
+            // Update React Query cache
+            queryClient.setQueryData(QUERY_KEYS.ME, user);
+
+            // Schedule a background refresh to ensure we have the latest data
+            // This handles cases where /me failed initially or data changed during login
+            setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ME });
+            }, 100);
+        },
+        // Prevent error from propagating to error boundaries - handled by component
+        throwOnError: false,
     });
 };
 
@@ -142,37 +250,26 @@ export const useChangePhoto = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: authService.changePhoto,
-        onSuccess: async (_data, file) => {
-            // 1. Optimistic Update: Show the image immediately using a local blob URL
-            const localUrl = URL.createObjectURL(file);
-            if (user) {
-                const optimisticUser = { ...user, avatar: localUrl };
-                setUser(optimisticUser);
-                queryClient.setQueryData(QUERY_KEYS.ME, optimisticUser);
-            }
-
-            // 2. Background Refresh: Get the official pre-signed GET URL from the server
-            // We wait a bit to ensure the backend is in sync
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            const rt = storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN);
-            if (rt) {
-                try {
-                    const data = await authService.refreshToken({ refreshToken: rt });
-                    const refreshedUser = transformApiUser(data);
-                    
-                    // If we got a real URL back, replace the local blob with it
-                    if (refreshedUser.avatar) {
-                        setUser(refreshedUser);
-                        queryClient.setQueryData(QUERY_KEYS.ME, refreshedUser);
-                        // Clean up the blob URL
-                        URL.revokeObjectURL(localUrl);
-                    }
-                } catch (error) {
-                    console.error('Failed to refresh user info after photo change:', error);
-                }
-            }
+        // We call change-photo endpoint but IGNORE the response URL completely.
+        // The ONLY source of truth for avatar URL is GET /users/me.
+        mutationFn: async (file: File) => {
+            await authService.changePhoto(file);
+            // Immediately fetch the canonical user data from /users/me
+            // This is the ONLY valid source for avatar URL
+            return userService.getMe();
+        },
+        onSuccess: (meData) => {
+            // Transform and update state ONLY from /users/me response
+            const freshUser = transformMeResponse(meData);
+            setUser(freshUser);
+            queryClient.setQueryData(QUERY_KEYS.ME, freshUser);
+            console.log('[Auth] Photo updated via /users/me, avatar:', freshUser.avatar);
+        },
+        onError: (error) => {
+            console.error('[Auth] Photo upload or /users/me fetch failed:', error);
+            // DO NOT update state on error - keep existing valid avatar
+            // The UI will continue showing the current avatar from cache
+            throw error;
         },
     });
 };
@@ -180,17 +277,26 @@ export const useChangePhoto = () => {
 // Delete user photo — DELETE /api/Auth/delete-photo
 export const useDeletePhoto = () => {
     const setUser = useAuthStore((state) => state.setUser);
-    const user = useAuthStore((state) => state.user);
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: authService.deletePhoto,
-        onSuccess: () => {
-            if (user) {
-                const updatedUser = { ...user, avatar: undefined };
-                setUser(updatedUser);
-                queryClient.setQueryData(QUERY_KEYS.ME, updatedUser);
-            }
+        // Call delete endpoint then immediately fetch canonical data from /users/me
+        mutationFn: async () => {
+            await authService.deletePhoto();
+            // /users/me is the ONLY source of truth for user state
+            return userService.getMe();
+        },
+        onSuccess: (meData) => {
+            // Update state ONLY from /users/me response
+            const freshUser = transformMeResponse(meData);
+            setUser(freshUser);
+            queryClient.setQueryData(QUERY_KEYS.ME, freshUser);
+            console.log('[Auth] Photo deleted via /users/me, avatar:', freshUser.avatar);
+        },
+        onError: (error) => {
+            console.error('[Auth] Photo delete or /users/me fetch failed:', error);
+            // DO NOT update state on error - keep existing valid data
+            throw error;
         },
     });
 };

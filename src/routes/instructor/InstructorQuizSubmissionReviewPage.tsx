@@ -141,7 +141,7 @@ export const InstructorQuizSubmissionReviewPage = () => {
         { label: 'Status', value: data.status, icon: Target, color: data.status === 'Reviewed' ? 'emerald' : 'blue' },
         { label: 'Score', value: `${data.score} / ${data.totalScore}`, icon: FileText, color: 'violet' },
         { label: 'Questions', value: answers.length, icon: MessageSquare, color: 'orange' },
-        { label: 'Time Spent', value: `${Math.floor(data.timeSpent / 60)}m ${data.timeSpent % 60}s`, icon: Clock, color: 'emerald' },
+        { label: 'Time Spent', value: `${data.timeSpent || 0}m`, icon: Clock, color: 'emerald' },
     ];
 
     return (

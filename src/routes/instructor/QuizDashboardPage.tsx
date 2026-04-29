@@ -15,13 +15,36 @@ import type { DashboardMode } from '@/types/quiz-dashboard.types';
 import { ROUTES } from '@/lib/constants';
 
 // ── Color palette ─────────────────────────────────────────────────────────
+// Primary: #21A9FF (app main color)
+// Using cohesive blue-based palette with accessible variations
 const COLORS = {
-    pass:    '#10b981', // emerald-500
-    fail:    '#ef4444', // red-500
-    bar:     '#6366f1', // indigo-500
-    bar2:    '#8b5cf6', // violet-500
-    neutral: '#3b82f6', // blue-500
-    attempt: ['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#e0d7ff'],
+    // Status colors (standard semantic colors)
+    pass:    '#10b981', // emerald-500 - success/pass (accessible green)
+    fail:    '#f43f5e', // rose-500 - fail/danger (softer red, better for dark mode)
+
+    // Primary blues (main app color #21A9FF and variations)
+    primary:      '#21A9FF', // main app blue
+    primaryDark:  '#0094F2', // hover/active state
+    primaryLight: '#7DD3FC', // lighter variant
+    secondary:    '#0EA5E9', // sky-500 - complementary
+    tertiary:     '#38BDF8', // sky-400 - lighter complement
+
+    // Gradient palette for multi-segment charts (attempts distribution)
+    // Blues that work together and maintain accessibility
+    attempt: [
+        '#21A9FF', // primary blue
+        '#0EA5E9', // sky-500
+        '#38BDF8', // sky-400
+        '#7DD3FC', // sky-300
+        '#BAE6FD', // sky-200 (lighter for variety)
+    ],
+
+    // For question bars - alternating subtle variations
+    bar:  '#21A9FF', // primary
+    bar2: '#0EA5E9', // slightly different for contrast
+
+    // Neutral/Submission time
+    neutral: '#64748B', // slate-500 - subtle, professional
 };
 
 // ── Re-usable skeleton block ──────────────────────────────────────────────
@@ -232,13 +255,17 @@ export const QuizDashboardPage = () => {
     );
 
     // ── Tooltip styles ─────────────────────────────────────────────────────
+    // Using blue-based theme colors for consistency
     const tooltipStyle = {
         contentStyle: {
-            background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(99,102,241,0.3)',
-            borderRadius: '12px', padding: '10px 14px',
+            background: 'rgba(15, 23, 42, 0.95)',
+            border: '1px solid rgba(33, 169, 255, 0.3)',
+            borderRadius: '12px',
+            padding: '10px 14px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
         },
-        labelStyle:  { color: '#e2e8f0', fontWeight: 700, fontSize: 12 },
-        itemStyle:   { color: '#a5b4fc', fontWeight: 600, fontSize: 12 },
+        labelStyle:  { color: '#f8fafc', fontWeight: 700, fontSize: 12 },
+        itemStyle:   { color: '#7DD3FC', fontWeight: 600, fontSize: 12 },
     };
 
     // ── Render ─────────────────────────────────────────────────────────────
@@ -451,7 +478,7 @@ export const QuizDashboardPage = () => {
                         ) : (
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={questionBarData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,102,241,0.1)" vertical={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(33, 169, 255, 0.15)" vertical={false} />
                                     <XAxis
                                         dataKey="name"
                                         tick={{ fontSize: 11, fill: '#a3aebfff', fontWeight: 600 }}
@@ -501,7 +528,7 @@ export const QuizDashboardPage = () => {
                         ) : (
                             <ResponsiveContainer width="100%" height={280}>
                                 <BarChart data={submissionTimeData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,102,241,0.1)" vertical={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(33, 169, 255, 0.15)" vertical={false} />
                                     <XAxis
                                         dataKey="name"
                                         tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 600 }}
