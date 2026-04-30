@@ -57,8 +57,14 @@ export const ENDPOINTS = {
         AI_RESOURCES: {
             BASE: (courseId: number | string) => `/Courses/${courseId}/ai-resources`,
             CONFIRM: (courseId: number | string) => `/Courses/${courseId}/ai-resources/confirm`,
+            /** GET — per-file AI ingestion status (Pending | Processing | Completed | Failed) */
+            AI_STATUS: (courseId: number | string) => `/Courses/${courseId}/ai-status`,
             DELETE: (courseId: number | string, resourceId: string) => `/Courses/${courseId}/ai-resources/${resourceId}/delete`,
         },
+        /** Student — resume position (video seconds / PDF page) */
+        STUDENT_PROGRESS: (courseId: number) => `/Courses/${courseId}/progress`,
+        /** Student — continue learning / recent activity */
+        MY_LEARNING: '/Courses/my-learning',
     },
 
     // Assignments endpoints (based on API: /api/Assignments/* and /api/Courses/*/Assignments)
@@ -105,6 +111,8 @@ export const ENDPOINTS = {
         CREATE: '/Sections',
         UPDATE: (sectionId: string) => `/Sections/${sectionId}`,
         DELETE: (sectionId: string) => `/Sections/${sectionId}`,
+        /** Student — mark section complete/incomplete */
+        STUDENT_PROGRESS: (sectionId: string) => `/Sections/${sectionId}/progress`,
     },
 
     // Quiz Attempts endpoints

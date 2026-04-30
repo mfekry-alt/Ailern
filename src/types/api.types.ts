@@ -240,6 +240,31 @@ export interface GetStudentCoursesDto {
     description: string;
     instructorId: number;
     instructorName: string;
+    /** Overall completion 0–100 from section completions; omitted on older payloads */
+    progress?: number;
+}
+
+/** Learning resume row — GET /Courses/my-learning */
+export enum LearningType {
+    None = 0,
+    File = 1,
+    Video = 2,
+}
+
+export interface GetMyLearningDto {
+    courseId: number;
+    name: string;
+    lastLearningItemId?: string | null;
+    lastPageNumber?: number | null;
+    lastWatchedTime?: number | null;
+    type: LearningType;
+}
+
+/** Body — PUT /Courses/{courseId}/progress */
+export interface UpdateStudentCourseProgressCommand {
+    lastWatchedTime?: number;
+    lastPageNumber?: number;
+    lastOpenedFileId?: string | null;
 }
 
 // ============================================================================

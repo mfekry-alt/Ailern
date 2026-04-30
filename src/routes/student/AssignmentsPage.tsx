@@ -64,7 +64,7 @@ export const AssignmentsPage = () => {
 
     // Fetch student's enrolled courses
     const { data: enrolledCoursesData } = useQuery({
-        queryKey: ['student-courses'],
+        queryKey: QUERY_KEYS.STUDENT_MY_COURSES,
         queryFn: () => getMyStudentCourses(),
     });
 

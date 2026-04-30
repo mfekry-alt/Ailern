@@ -256,9 +256,15 @@ export const SectionsTab = () => {
 
             <div className="space-y-3">
 
-                {sections.map((section) => (
+                {sections.map((section, index) => (
 
-                    <SectionCard key={section.id} section={section} courseId={courseId} />
+                    <SectionCard
+                        key={section.id}
+                        section={section}
+                        sectionOrder={index + 1}
+                        courseId={courseId}
+                        numericCourseId={courseKey}
+                    />
 
                 ))}
 

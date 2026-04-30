@@ -1,16 +1,22 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, Loader2, Monitor, ShieldAlert, ArrowRight } from 'lucide-react';
 import { useCourseQuizzes } from '../api';
 import { getFirstQuizWithActiveAttempt, hasActiveInProgressAttemptInCourse } from '../utils/courseContentAccess';
+import { useAuth } from '@/hooks/useAuth';
+import { updateStudentCourseProgress } from '@/api/services/course.service';
 
 export const VideoViewerPage = () => {
-    const { courseId } = useParams<{ courseId: string; fileId: string }>();
+    const { courseId, fileId: fileIdParam } = useParams<{ courseId: string; fileId: string }>();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { hasRole } = useAuth();
+    const isStudent = hasRole('Student');
 
     const videoUrl = searchParams.get('url');
     const decodedUrl = videoUrl ? decodeURIComponent(videoUrl) : null;
+
+    const fileGuid = fileIdParam ? decodeURIComponent(fileIdParam) : null;
 
     const numericCourseId = useMemo(() => {
         const n = Number(courseId);
@@ -30,11 +36,43 @@ export const VideoViewerPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const lastReportedSeconds = useRef(-1);
+
+    const flushCourseProgress = useCallback(() => {
+        const video = videoRef.current;
+        if (!isStudent || !numericCourseId || !fileGuid || !video) return;
+        const secs = Math.max(0, Math.floor(video.currentTime));
+        if (secs === lastReportedSeconds.current) return;
+        lastReportedSeconds.current = secs;
+        updateStudentCourseProgress(numericCourseId, {
+            lastWatchedTime: secs,
+            lastOpenedFileId: fileGuid,
+        }).catch(() => {});
+    }, [isStudent, numericCourseId, fileGuid]);
 
     useEffect(() => {
         setIsLoading(true);
         setHasError(false);
     }, [decodedUrl]);
+
+    useEffect(() => {
+        lastReportedSeconds.current = -1;
+    }, [decodedUrl, fileGuid]);
+
+    /** Students: save resume position periodically while watching */
+    useEffect(() => {
+        if (!decodedUrl || !isStudent || !numericCourseId || !fileGuid) return;
+        const interval = window.setInterval(() => flushCourseProgress(), 15000);
+
+        const onUnload = () => {
+            flushCourseProgress();
+        };
+        window.addEventListener('beforeunload', onUnload);
+        return () => {
+            window.clearInterval(interval);
+            window.removeEventListener('beforeunload', onUnload);
+        };
+    }, [decodedUrl, isStudent, numericCourseId, fileGuid, flushCourseProgress]);
 
     const handleBack = () => {
         if (courseId) {
@@ -167,6 +205,8 @@ export const VideoViewerPage = () => {
                     controls
                     autoPlay
                     onCanPlay={() => setIsLoading(false)}
+                    onPause={() => flushCourseProgress()}
+                    onEnded={() => flushCourseProgress()}
                     onError={() => {
                         setIsLoading(false);
                         setHasError(true);

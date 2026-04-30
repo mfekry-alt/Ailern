@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Outlet, useParams, useNavigate, NavLink } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCourse } from '@/features/courses/api';
+import { QUERY_KEYS } from '@/lib/constants';
 import { ChevronLeft, ChevronRight, Layers, FileText, HelpCircle, Users, Menu, X, Sparkles } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -14,6 +16,7 @@ const NAV_ITEMS = [
 export const CourseManageLayout = () => {
     const { id: courseId } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const numericId = useMemo(() => {
         const n = Number(courseId);
         return Number.isFinite(n) && n > 0 ? n : null;
@@ -24,6 +27,14 @@ export const CourseManageLayout = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
 
     const linkBase = `/instructor/courses/${courseId}/manage`;
+
+    const handleBackToInstructorCourses = () => {
+        void queryClient.invalidateQueries({ queryKey: [...QUERY_KEYS.COURSES, 'instructor'] });
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.INSTRUCTOR_MY_COURSES });
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.INSTRUCTOR_STATS });
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.UPCOMING_EVENTS });
+        navigate('/instructor/courses');
+    };
 
     return (
         <div className="flex bg-gray-50 dark:bg-slate-900" style={{ minHeight: 'calc(100vh - 72px)' }}>
@@ -95,7 +106,7 @@ export const CourseManageLayout = () => {
                 {/* Back button */}
                 <div className="p-3 border-t border-gray-100 dark:border-slate-700/50">
                     <button
-                        onClick={() => navigate('/instructor/courses')}
+                        onClick={handleBackToInstructorCourses}
                         className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-bold text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white transition-all ${collapsed ? 'justify-center' : ''}`}
                     >
                         <ChevronLeft className="w-5 h-5 shrink-0" />

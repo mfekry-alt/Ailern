@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useParams, useNavigate, NavLink } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCourseOverview, useCourseQuizzes } from '../api';
 import { hasActiveInProgressAttemptInCourse } from '../utils/courseContentAccess';
 import type { GetCourseDto } from '@/types/api.types';
 import { useAuth } from '@/hooks/useAuth';
+import { QUERY_KEYS } from '@/lib/constants';
 import {
     ChevronLeft,
     ChevronRight,
@@ -87,6 +89,7 @@ function SidebarUserChip({ collapsed }: { collapsed: boolean }) {
 export const CourseDetailsLayout = () => {
     const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const numericId = useMemo(() => {
         const n = Number(courseId);
@@ -114,6 +117,12 @@ export const CourseDetailsLayout = () => {
         courseThumbFailed || !rawCourseImage ? FALLBACK_COURSE_IMAGE : rawCourseImage;
     const courseTitle = courseData?.name || 'Course';
     const courseCode = courseData?.code || `#${courseId}`;
+
+    const handleBackToCourseCatalog = () => {
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.STUDENT_MY_COURSES });
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.STUDENT_DASHBOARD });
+        navigate('/courses');
+    };
 
     return (
         <div className="flex bg-gray-50 dark:bg-slate-900" style={{ minHeight: 'calc(100vh - 72px)' }}>
@@ -239,7 +248,7 @@ export const CourseDetailsLayout = () => {
                 <div className="p-4 border-t border-gray-100 dark:border-slate-800/50">
                     <button
                         type="button"
-                        onClick={() => navigate('/courses')}
+                        onClick={handleBackToCourseCatalog}
                         className={`flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl text-sm font-black text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white transition-all group ${
                             collapsed ? 'justify-center px-0' : ''
                         }`}
