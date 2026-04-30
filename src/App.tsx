@@ -4,21 +4,22 @@ import { AppRouter } from './app/router';
 import { ErrorBoundary } from './app/ErrorBoundary';
 import { GlobalErrorOverlay } from './app/GlobalErrorOverlay';
 import { LoadingSpinner } from './components/LoadingSpinner';
-import { useMe } from './features/auth/api';
-import { useAuthStore } from './features/auth/store';
+import { AuthProvider } from './features/auth';
 
+/**
+ * AppContent handles the initial loading state for the application.
+ * Note: AuthProvider handles auth initialization, we just need a brief
+ * delay to ensure all providers are ready.
+ */
 function AppContent() {
-  const { isLoading, isFetching } = useMe();
-  const setLoading = useAuthStore((state) => state.setLoading);
   const [ready, setReady] = useState(false);
   const [showSpinner, setShowSpinner] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && !isFetching) {
-      setLoading(false);
-      setReady(true);
-    }
-  }, [isLoading, isFetching, setLoading]);
+    // Brief delay to ensure all providers are initialized
+    const timer = setTimeout(() => setReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!ready) return;
@@ -37,9 +38,11 @@ function AppContent() {
 function App() {
   return (
     <AppProviders>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
+      <AuthProvider>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+      </AuthProvider>
       <GlobalErrorOverlay />
     </AppProviders>
   );

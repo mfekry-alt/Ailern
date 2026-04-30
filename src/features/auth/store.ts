@@ -7,13 +7,20 @@ interface AuthState {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    accessToken: string | null;
     setUser: (user: User | null) => void;
+    setAccessToken: (token: string | null) => void;
     setLoading: (loading: boolean) => void;
     logout: () => void;
     hasRole: (role: string) => boolean;
     hasAnyRole: (roles: string[]) => boolean;
+    // Initialize from cache on app load
+    initFromCache: () => void;
 }
 
+/**
+ * Normalize user roles to ensure consistent format
+ */
 const normalizeUser = (user: User | null): User | null => {
     if (!user) return null;
 
@@ -32,10 +39,35 @@ const normalizeUser = (user: User | null): User | null => {
     };
 };
 
+/**
+ * Load cached user from localStorage
+ */
+const loadCachedUser = (): User | null => {
+    try {
+        const cachedUser = storage.get<User>(STORAGE_KEYS.USER);
+        return normalizeUser(cachedUser);
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Load cached access token from localStorage
+ */
+const loadCachedToken = (): string | null => {
+    try {
+        return storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
+    } catch {
+        return null;
+    }
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-    user: normalizeUser(storage.get<User>(STORAGE_KEYS.USER)),
-    isAuthenticated: !!storage.get<User>(STORAGE_KEYS.USER),
-    isLoading: true,
+    // Initialize from cache for instant UI (navbar avatar, etc.)
+    user: loadCachedUser(),
+    isAuthenticated: !!loadCachedUser(),
+    isLoading: false, // Start as false to prevent login page flash/reset
+    accessToken: loadCachedToken(),
 
     setUser: (user) => {
         const normalizedUser = normalizeUser(user);
@@ -49,6 +81,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
+    setAccessToken: (token) => {
+        if (token) {
+            storage.set(STORAGE_KEYS.ACCESS_TOKEN, token);
+        } else {
+            storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
+        }
+        set({ accessToken: token });
+    },
+
     setLoading: (loading) => set({ isLoading: loading }),
 
     logout: () => {
@@ -57,7 +98,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
         storage.remove(STORAGE_KEYS.EXPIRES_ON);
         storage.remove(STORAGE_KEYS.CSRF_TOKEN);
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false, accessToken: null });
     },
 
     hasRole: (role) => {
@@ -71,5 +112,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const normalizedTargetRoles = roles.map((role) => normalizeRole(role));
         const userRoles = user?.roles?.map((userRole) => normalizeRole(userRole)) ?? [];
         return normalizedTargetRoles.some((role) => userRoles.includes(role));
+    },
+
+    // Initialize auth state from cache - called on app load
+    initFromCache: () => {
+        const cachedUser = loadCachedUser();
+        const cachedToken = loadCachedToken();
+
+        set({
+            user: cachedUser,
+            isAuthenticated: !!cachedUser,
+            accessToken: cachedToken,
+            isLoading: false,
+        });
     },
 }));

@@ -50,6 +50,17 @@ let failedQueue: Array<{
     reject: (reason?: any) => void;
 }> = [];
 
+// Callback to notify auth system to refetch user after token refresh
+let onTokenRefreshedCallback: (() => void) | null = null;
+
+/**
+ * Set callback to be called after successful token refresh
+ * This allows auth system to refetch user data with new token
+ */
+export const setOnTokenRefreshedCallback = (callback: (() => void) | null) => {
+    onTokenRefreshedCallback = callback;
+};
+
 const processQueue = (error: any = null, token: string | null = null) => {
     failedQueue.forEach((promise) => {
         if (error) {
@@ -129,9 +140,18 @@ api.interceptors.response.use(
             // Update the failed request config with new token
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-
             if (newRefreshToken) {
                 storage.set(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+            }
+
+            // Notify auth system to refetch user data with new token
+            // This ensures avatar and other user data is fresh after refresh
+            if (onTokenRefreshedCallback) {
+                try {
+                    onTokenRefreshedCallback();
+                } catch (e) {
+                    console.error('[API] Error in token refresh callback:', e);
+                }
             }
 
             // Resolve queue with new token

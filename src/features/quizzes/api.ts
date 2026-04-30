@@ -102,7 +102,7 @@ export const useUpsertQuizQuestions = (quizId: string) => {
  */
 export const useQuizSubmissions = (
     quizId: string,
-    status?: 'InProgress' | 'Submitted' | 'Reviewed',
+    status?: 'InProgress' | 'Submitted' | 'Reviewed' | null,
     pageNo: number = 1,
     pageSize: number = 10
 ) =>

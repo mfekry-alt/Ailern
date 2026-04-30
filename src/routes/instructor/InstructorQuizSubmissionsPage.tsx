@@ -30,7 +30,7 @@ export const InstructorQuizSubmissionsPage = () => {
     const { quizId = '' } = useParams<{ quizId: string }>();
     const navigate = useNavigate();
 
-    const [statusFilter, setStatusFilter] = useState<AttemptStatus | 'all'>('Submitted');
+    const [statusFilter, setStatusFilter] = useState<AttemptStatus | 'all'>('all');
     const [search, setSearch] = useState('');
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [pageNo, setPageNo] = useState(1);
@@ -39,7 +39,7 @@ export const InstructorQuizSubmissionsPage = () => {
     const { data: quizMeta } = useQuiz(quizId);
     const { data: page, isLoading, isError, refetch } = useQuizSubmissions(
         quizId,
-        statusFilter === 'all' ? undefined : statusFilter,
+        statusFilter === 'all' ? null : statusFilter,
         pageNo,
         pageSize
     );
