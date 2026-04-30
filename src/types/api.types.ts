@@ -244,12 +244,14 @@ export interface GetStudentCoursesDto {
     progress?: number;
 }
 
-/** Learning resume row — GET /Courses/my-learning */
-export enum LearningType {
-    None = 0,
-    File = 1,
-    Video = 2,
-}
+/** Learning resume row — GET /Courses/my-learning (numeric codes from API) */
+export const LearningType = {
+    None: 0,
+    File: 1,
+    Video: 2,
+} as const;
+
+export type LearningType = (typeof LearningType)[keyof typeof LearningType];
 
 export interface GetMyLearningDto {
     courseId: number;

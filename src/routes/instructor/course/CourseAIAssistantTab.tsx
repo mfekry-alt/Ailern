@@ -13,26 +13,18 @@ import {
     Loader2,
     FilePieChart,
     Plus,
-    Clock,
     FileBadge,
     Database,
     Search,
-    Filter,
     BrainCircuit,
     RotateCcw,
-    Send,
     AlertTriangle
 } from 'lucide-react';
 import { PDFThumbnail } from '@/components/PDFThumbnail';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { toast } from 'sonner';
-import {
-    aiResourcesService,
-    areAllAiFilesTerminal,
-    isAiProcessingTerminal,
-    type AiResourceProcessingStatus,
-} from '@/api/services/ai-resources.service';
+import { aiResourcesService } from '@/api/services/ai-resources.service';
 import { handleApiError } from '@/api/client';
 
 // --- Interfaces ---
@@ -58,8 +50,6 @@ interface UploadedFile {
     type: string;
     uploadDate: string;
     url?: string;
-    /** From GET .../ai-status after confirm; drives live AI ingestion UI */
-    aiProcessingStatus?: AiResourceProcessingStatus;
 }
 
 // --- Helpers ---
@@ -80,21 +70,6 @@ const getFileIcon = (fileName: string) => {
     return <FileIcon className="w-8 h-8 text-slate-400" />;
 };
 
-const aiStatusBadgeClass = (status: AiResourceProcessingStatus): string => {
-    switch (status) {
-        case 'Pending':
-            return 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border-amber-200/80 dark:border-amber-500/25';
-        case 'Processing':
-            return 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 border-indigo-200/80 dark:border-indigo-500/25';
-        case 'Completed':
-            return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-500/25';
-        case 'Failed':
-            return 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300 border-red-200/80 dark:border-red-500/25';
-        default:
-            return 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700';
-    }
-};
-
 export const CourseAIAssistantTab = () => {
     const { courseId } = useOutletContext<CourseContext>();
 
@@ -105,9 +80,6 @@ export const CourseAIAssistantTab = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [failedUploads, setFailedUploads] = useState<string[]>([]);
-    const [aiStatusPolling, setAiStatusPolling] = useState(false);
-    /** When the API returns [] briefly after confirm, keep polling until we see these ids or all are terminal */
-    const aiPollTargetIdsRef = useRef<Set<string> | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -116,18 +88,16 @@ export const CourseAIAssistantTab = () => {
         try {
             const response = await aiResourcesService.getAiResources(courseId);
             if (response.success && response.data) {
-                setUploadedFiles((prev) => {
-                    const prevAiById = new Map(prev.map((f) => [f.id, f.aiProcessingStatus]));
-                    return response.data!.map((item: any) => ({
+                setUploadedFiles(
+                    response.data!.map((item: any) => ({
                         id: item.id || item.fileId,
                         name: item.name || item.fileName || 'Unnamed File',
                         size: item.size || item.fileSize || 0,
                         type: item.contentType || item.type || 'application/pdf',
                         uploadDate: item.createdAt || item.uploadDate || new Date().toISOString(),
                         url: item.url || item.fileUrl,
-                        aiProcessingStatus: prevAiById.get(item.id || item.fileId),
-                    }));
-                });
+                    }))
+                );
             }
         } catch (error) {
             console.error('Failed to fetch AI resources:', error);
@@ -140,54 +110,6 @@ export const CourseAIAssistantTab = () => {
     useEffect(() => {
         fetchFiles();
     }, [fetchFiles]);
-
-    useEffect(() => {
-        if (!courseId || !aiStatusPolling) return;
-
-        let cancelled = false;
-
-        const runPoll = async () => {
-            if (cancelled) return;
-            try {
-                const items = await aiResourcesService.getAiProcessingStatus(courseId);
-                if (cancelled) return;
-
-                setUploadedFiles((prev) =>
-                    prev.map((f) => {
-                        const row = items.find((i) => i.id === f.id);
-                        return row ? { ...f, aiProcessingStatus: row.status } : f;
-                    })
-                );
-
-                const target = aiPollTargetIdsRef.current;
-                if (target && target.size > 0) {
-                    const byId = new Map(items.map((i) => [i.id, i.status]));
-                    const allSeen = [...target].every((id) => byId.has(id));
-                    if (allSeen) {
-                        const allTerminal = [...target].every((id) =>
-                            isAiProcessingTerminal(byId.get(id)!)
-                        );
-                        if (allTerminal) {
-                            aiPollTargetIdsRef.current = null;
-                            setAiStatusPolling(false);
-                        }
-                    }
-                } else if (areAllAiFilesTerminal(items)) {
-                    aiPollTargetIdsRef.current = null;
-                    setAiStatusPolling(false);
-                }
-            } catch (e) {
-                console.error('[AI status poll]', e);
-            }
-        };
-
-        void runPoll();
-        const intervalId = window.setInterval(() => void runPoll(), 1000);
-        return () => {
-            cancelled = true;
-            window.clearInterval(intervalId);
-        };
-    }, [courseId, aiStatusPolling]);
 
     // --- Handlers ---
 
@@ -291,12 +213,6 @@ export const CourseAIAssistantTab = () => {
                     await fetchFiles();
                     // Clear completed from uploading list
                     setUploadingFiles(prev => prev.filter(f => f.status === 'error'));
-                    if (successFileIds.length > 0) {
-                        const next = new Set(aiPollTargetIdsRef.current ?? []);
-                        successFileIds.forEach((id) => next.add(id));
-                        aiPollTargetIdsRef.current = next;
-                    }
-                    setAiStatusPolling(true);
                 } catch (confirmError) {
                     const apiError = handleApiError(confirmError);
                     toast.error('Confirmation failed', { description: apiError.message });
@@ -522,14 +438,6 @@ export const CourseAIAssistantTab = () => {
 
                     {/* Search & Stats */}
                     <div className="flex flex-col gap-4 bg-white dark:bg-slate-900/40 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
-                        {aiStatusPolling && (
-                            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 text-indigo-800 dark:text-indigo-200">
-                                <Loader2 className="w-4 h-4 shrink-0 animate-spin text-indigo-600 dark:text-indigo-400" />
-                                <p className="text-sm font-bold">
-                                    AI is ingesting your materials—status updates every second.
-                                </p>
-                            </div>
-                        )}
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
                         <div className="relative w-full sm:w-72">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -650,27 +558,6 @@ export const CourseAIAssistantTab = () => {
                                                 <FilePieChart className="w-3 h-3" />
                                                 {formatFileSize(file.size)}
                                             </span>
-                                            {file.aiProcessingStatus && (
-                                                <span
-                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border font-black tracking-tight normal-case text-[9px] ${aiStatusBadgeClass(
-                                                        file.aiProcessingStatus
-                                                    )}`}
-                                                >
-                                                    {file.aiProcessingStatus === 'Processing' && (
-                                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                                    )}
-                                                    {file.aiProcessingStatus === 'Pending' && (
-                                                        <Clock className="w-3 h-3" />
-                                                    )}
-                                                    {file.aiProcessingStatus === 'Completed' && (
-                                                        <CheckCircle2 className="w-3 h-3" />
-                                                    )}
-                                                    {file.aiProcessingStatus === 'Failed' && (
-                                                        <AlertCircle className="w-3 h-3" />
-                                                    )}
-                                                    {file.aiProcessingStatus}
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
                                 </div>

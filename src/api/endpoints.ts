@@ -58,8 +58,6 @@ export const ENDPOINTS = {
         AI_RESOURCES: {
             BASE: (courseId: number | string) => `/Courses/${courseId}/ai-resources`,
             CONFIRM: (courseId: number | string) => `/Courses/${courseId}/ai-resources/confirm`,
-            /** GET — per-file AI ingestion status (Pending | Processing | Completed | Failed) */
-            AI_STATUS: (courseId: number | string) => `/Courses/${courseId}/ai-status`,
             DELETE: (courseId: number | string, resourceId: string) => `/Courses/${courseId}/ai-resources/${resourceId}/delete`,
         },
         /** Student — resume position (video seconds / PDF page) */

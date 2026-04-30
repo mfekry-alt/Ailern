@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
-import type { ApiResponse, ApiSuccess } from '@/types/api.types';
+import type { ApiResponse } from '@/types/api.types';
 
 export interface AIResourceGenerateUrlsRequest {
     Files: {
