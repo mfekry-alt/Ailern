@@ -17,7 +17,7 @@ interface ViewerState {
     progress: number; // 0 to 1 for video, or page number for pdf
 
     setFile: (file: ViewerFile) => void;
-    setStatus: (status: 'idle' | 'loading' | 'ready' | 'error', error?: string) => void;
+    setStatus: (status: 'idle' | 'loading' | 'ready' | 'error', error?: string | null) => void;
     setProgress: (progress: number) => void;
     clear: () => void;
 }
@@ -30,7 +30,8 @@ export const useViewerStore = create<ViewerState>((set) => ({
 
     setFile: (file) =>
         set({ currentFile: file, status: 'loading', error: null, progress: 0 }),
-    setStatus: (status, error = null) => set({ status, error }),
+    setStatus: (status, error?: string | null) =>
+        set({ status, error: error === null || error === undefined ? null : error }),
     setProgress: (progress) => set({ progress }),
     clear: () => set({ currentFile: null, status: 'idle', error: null, progress: 0 }),
 }));

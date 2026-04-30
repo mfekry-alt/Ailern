@@ -89,7 +89,8 @@ export const LoginPage = () => {
 
         try {
             const loginResponse = await login.mutateAsync(data);
-            const redirectPath = from || getRedirectPath(loginResponse.role);
+            const role = loginResponse.meData?.role ?? loginResponse.loginData.role;
+            const redirectPath = from || getRedirectPath(role);
             navigate(redirectPath, { replace: true });
         } catch (err: any) {
             if (isEmailNotVerifiedError(err)) {

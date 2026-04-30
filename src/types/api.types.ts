@@ -60,8 +60,8 @@ export interface ChangeEmailCommand {
 
 export interface ConfirmChangeUserEmailCommand {
     token: string;
-    email: string;
     newEmail: string;
+    userId: string;
 }
 
 export interface ChangeUserPhotoCommand {
@@ -376,6 +376,8 @@ export interface GetMySubmissionDto {
     studentId: number;
     assignmentId: number;
     feedback: string | null;
+    /** Set when instructor has graded */
+    grade?: number | null;
     isLate: boolean;
     filesUrls: {
         id: string;

@@ -31,7 +31,7 @@ export function VideoPlayer() {
     const [playbackRate, setPlaybackRate] = useState(1);
     const [showSettings, setShowSettings] = useState(false);
     
-    const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+    const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Initialize Video.js

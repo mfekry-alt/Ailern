@@ -63,7 +63,8 @@ export function PDFReader() {
 
                 const renderContext = {
                     canvasContext: context,
-                    viewport: viewport
+                    viewport,
+                    canvas,
                 };
 
                 await page.render(renderContext).promise;
