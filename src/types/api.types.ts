@@ -240,6 +240,33 @@ export interface GetStudentCoursesDto {
     description: string;
     instructorId: number;
     instructorName: string;
+    /** Overall completion 0–100 from section completions; omitted on older payloads */
+    progress?: number;
+}
+
+/** Learning resume row — GET /Courses/my-learning (numeric codes from API) */
+export const LearningType = {
+    None: 0,
+    File: 1,
+    Video: 2,
+} as const;
+
+export type LearningType = (typeof LearningType)[keyof typeof LearningType];
+
+export interface GetMyLearningDto {
+    courseId: number;
+    name: string;
+    lastLearningItemId?: string | null;
+    lastPageNumber?: number | null;
+    lastWatchedTime?: number | null;
+    type: LearningType;
+}
+
+/** Body — PUT /Courses/{courseId}/progress */
+export interface UpdateStudentCourseProgressCommand {
+    lastWatchedTime?: number;
+    lastPageNumber?: number;
+    lastOpenedFileId?: string | null;
 }
 
 // ============================================================================
@@ -349,7 +376,8 @@ export interface GetMySubmissionDto {
     studentId: number;
     assignmentId: number;
     feedback: string | null;
-    grade?: number;
+    /** Set when instructor has graded */
+    grade?: number | null;
     isLate: boolean;
     filesUrls: {
         id: string;

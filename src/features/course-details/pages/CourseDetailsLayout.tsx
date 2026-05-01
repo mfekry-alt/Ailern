@@ -1,16 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useParams, useNavigate, NavLink } from 'react-router-dom';
-import { useCourseOverview } from '../api';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCourseOverview, useCourseQuizzes } from '../api';
+import { hasActiveInProgressAttemptInCourse } from '../utils/courseContentAccess';
+import type { GetCourseDto } from '@/types/api.types';
+import { useAuth } from '@/hooks/useAuth';
+import { QUERY_KEYS } from '@/lib/constants';
 import {
     ChevronLeft,
     ChevronRight,
     Layers,
-    FileText,
     HelpCircle,
     ListChecks,
     LayoutDashboard,
     Menu,
-    X,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -20,9 +23,73 @@ const NAV_ITEMS = [
     { to: 'quizzes', label: 'Quizzes', icon: HelpCircle },
 ] as const;
 
+const FALLBACK_COURSE_IMAGE = '/course-default.png';
+
+function UserAvatarBadge({
+    size = 'md',
+    title,
+}: {
+    size?: 'sm' | 'md';
+    title?: string;
+}) {
+    const { user } = useAuth();
+    const [avatarFailed, setAvatarFailed] = useState(false);
+
+    useEffect(() => {
+        setAvatarFailed(false);
+    }, [user?.avatar]);
+
+    const initials =
+        `${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}`.trim() ||
+        user?.email?.charAt(0)?.toUpperCase() ||
+        '?';
+    const showImg = Boolean(user?.avatar?.trim()) && !avatarFailed;
+    const dims = size === 'sm' ? 'w-9 h-9 text-[10px]' : 'w-10 h-10 text-[11px]';
+
+    return (
+        <div
+            className={`${dims} rounded-full overflow-hidden shrink-0 ring-2 ring-white dark:ring-slate-700 shadow-sm bg-gradient-to-tr from-[#21A9FF] to-[#0094F2] flex items-center justify-center text-white font-black select-none`}
+            title={title}
+        >
+            {showImg ? (
+                <img
+                    src={user!.avatar}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={() => setAvatarFailed(true)}
+                />
+            ) : (
+                initials
+            )}
+        </div>
+    );
+}
+
+function SidebarUserChip({ collapsed }: { collapsed: boolean }) {
+    const { user } = useAuth();
+
+    const displayName =
+        `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || user?.email?.split('@')[0] || 'Student';
+
+    return (
+        <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800/50">
+            <div className={`flex items-center gap-3 min-w-0 ${collapsed ? 'justify-center' : ''}`}>
+                <UserAvatarBadge size="md" title={displayName} />
+                {!collapsed && (
+                    <div className="min-w-0 flex-1">
+                        <p className="text-xs font-black text-gray-900 dark:text-white truncate">{displayName}</p>
+                        <p className="text-[10px] font-semibold text-slate-400 truncate">Learning</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export const CourseDetailsLayout = () => {
     const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const numericId = useMemo(() => {
         const n = Number(courseId);
@@ -30,10 +97,32 @@ export const CourseDetailsLayout = () => {
     }, [courseId]);
 
     const { data: course, isLoading } = useCourseOverview(numericId ?? 0);
+    const { data: courseQuizzes, isSuccess: courseQuizzesReady } = useCourseQuizzes(numericId ?? 0);
+    const sectionsLocked =
+        Boolean(numericId) && courseQuizzesReady && hasActiveInProgressAttemptInCourse(courseQuizzes);
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [courseThumbFailed, setCourseThumbFailed] = useState(false);
 
     const linkBase = `/courses/${courseId}`;
+
+    const courseData = course as GetCourseDto | undefined;
+    const rawCourseImage = courseData?.imageUrl?.trim();
+
+    useEffect(() => {
+        setCourseThumbFailed(false);
+    }, [numericId, rawCourseImage]);
+
+    const courseImageSrc =
+        courseThumbFailed || !rawCourseImage ? FALLBACK_COURSE_IMAGE : rawCourseImage;
+    const courseTitle = courseData?.name || 'Course';
+    const courseCode = courseData?.code || `#${courseId}`;
+
+    const handleBackToCourseCatalog = () => {
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.STUDENT_MY_COURSES });
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.STUDENT_DASHBOARD });
+        navigate('/courses');
+    };
 
     return (
         <div className="flex bg-gray-50 dark:bg-slate-900" style={{ minHeight: 'calc(100vh - 72px)' }}>
@@ -57,26 +146,44 @@ export const CourseDetailsLayout = () => {
             >
                 <div className="flex flex-col border-b border-gray-100 dark:border-slate-800/50">
                     <div
-                        className={`px-6 pb-6 pt-8 flex items-center ${
-                            collapsed ? 'justify-center' : 'justify-between'
-                        } gap-3`}
+                        className={`px-6 pb-6 pt-8 flex gap-3 ${
+                            collapsed ? 'flex-col items-center' : 'items-center justify-between'
+                        }`}
                     >
-                        {!collapsed && (
-                            <div className="min-w-0 flex-1">
-                                <h2 className="text-sm font-extrabold text-gray-900 dark:text-white truncate">
-                                    {isLoading ? 'Loading...' : (course as any)?.name || 'Course'}
-                                </h2>
-                                <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 truncate mt-0.5">
-                                    {(course as any)?.code || `#${courseId}`}
-                                </p>
+                        {!collapsed ? (
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                                <img
+                                    src={courseImageSrc}
+                                    alt=""
+                                    className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
+                                    loading="lazy"
+                                    onError={() => setCourseThumbFailed(true)}
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <h2 className="text-sm font-extrabold text-gray-900 dark:text-white truncate">
+                                        {isLoading ? 'Loading...' : courseTitle}
+                                    </h2>
+                                    <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 truncate mt-0.5">
+                                        {courseCode}
+                                    </p>
+                                </div>
                             </div>
+                        ) : (
+                            <img
+                                src={courseImageSrc}
+                                alt=""
+                                className="w-11 h-11 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
+                                loading="lazy"
+                                onError={() => setCourseThumbFailed(true)}
+                            />
                         )}
                         <button
+                            type="button"
                             onClick={() => {
                                 setCollapsed(!collapsed);
                                 setMobileOpen(false);
                             }}
-                            className="hidden lg:flex w-8 h-8 items-center justify-center rounded-xl text-slate-400 hover:text-[#21A9FF] dark:hover:text-white hover:bg-[#21A9FF]/10 transition-all active:scale-90"
+                            className="hidden lg:flex w-8 h-8 items-center justify-center rounded-xl text-slate-400 hover:text-[#21A9FF] dark:hover:text-white hover:bg-[#21A9FF]/10 transition-all active:scale-90 shrink-0"
                         >
                             {collapsed ? (
                                 <ChevronRight className="w-5 h-5" />
@@ -87,36 +194,61 @@ export const CourseDetailsLayout = () => {
                     </div>
                 </div>
 
-                {/* Navigation Items */}
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar">
-                    {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
-                        <NavLink
-                            key={to}
-                            to={`${linkBase}/${to}`}
-                            onClick={() => setMobileOpen(false)}
-                            className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black transition-all duration-300 group relative
-                                ${collapsed ? 'justify-center px-0' : ''}
-                                ${
-                                    isActive
-                                        ? 'bg-[#21A9FF]/10 text-[#21A9FF] active shadow-sm'
-                                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
-                                }`
-                            }
-                        >
-                            {/* Active Indicator Bar */}
-                            <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-[#21A9FF] rounded-r-full transition-all duration-500 opacity-0 group-[.active]:opacity-100 ${collapsed ? '-left-1' : ''}`} />
-                            
-                            <Icon className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${collapsed ? '' : 'ml-1'}`} />
-                            {!collapsed && <span className="truncate tracking-tight">{label}</span>}
-                        </NavLink>
-                    ))}
+                <nav className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar min-h-0">
+                    {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
+                        const lockedTab = to === 'sections' && sectionsLocked;
+                        return (
+                            <NavLink
+                                key={to}
+                                to={`${linkBase}/${to}`}
+                                onClick={() => setMobileOpen(false)}
+                                title={
+                                    lockedTab
+                                        ? 'Course materials are limited while a quiz is in progress. Open Sections for details or resume the quiz from here.'
+                                        : undefined
+                                }
+                                className={({ isActive }) => {
+                                    const base = `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black transition-all duration-300 group relative
+                                        ${collapsed ? 'justify-center px-0' : ''}`;
+                                    if (lockedTab) {
+                                        return `${base} ${
+                                            isActive
+                                                ? 'bg-amber-500/20 text-amber-950 dark:text-amber-100 border border-amber-300/60 dark:border-amber-500/40'
+                                                : 'text-amber-900/90 dark:text-amber-200/90 border border-transparent hover:bg-amber-500/10 dark:hover:bg-amber-500/10'
+                                        }`;
+                                    }
+                                    return `${base} ${
+                                        isActive
+                                            ? 'bg-[#21A9FF]/10 text-[#21A9FF] active shadow-sm'
+                                            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
+                                    }`;
+                                }}
+                            >
+                                {!lockedTab && (
+                                    <div
+                                        className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-[#21A9FF] rounded-r-full transition-all duration-500 opacity-0 group-[.active]:opacity-100 ${collapsed ? '-left-1' : ''}`}
+                                    />
+                                )}
+
+                                <Icon
+                                    className={`w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110 ${collapsed ? '' : 'ml-1'}`}
+                                />
+                                {!collapsed && (
+                                    <span className="truncate tracking-tight">
+                                        {lockedTab ? `${label} · locked` : label}
+                                    </span>
+                                )}
+                            </NavLink>
+                        );
+                    })}
                 </nav>
 
-                {/* Footer / Back Button */}
+                <SidebarUserChip collapsed={collapsed} />
+
                 <div className="p-4 border-t border-gray-100 dark:border-slate-800/50">
                     <button
-                        onClick={() => navigate('/courses')}
+                        type="button"
+                        onClick={handleBackToCourseCatalog}
                         className={`flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl text-sm font-black text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white transition-all group ${
                             collapsed ? 'justify-center px-0' : ''
                         }`}
@@ -134,16 +266,25 @@ export const CourseDetailsLayout = () => {
             >
                 <div className="lg:hidden flex items-center gap-3 p-4 bg-white dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-700/50 sticky top-0 z-20">
                     <button
+                        type="button"
                         onClick={() => setMobileOpen(true)}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 shrink-0"
                     >
                         <Menu className="w-5 h-5" />
                     </button>
+                    <img
+                        src={courseImageSrc}
+                        alt=""
+                        className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900"
+                        loading="lazy"
+                        onError={() => setCourseThumbFailed(true)}
+                    />
                     <div className="min-w-0 flex-1">
                         <h2 className="text-sm font-extrabold text-gray-900 dark:text-white truncate">
-                            {isLoading ? 'Loading...' : (course as any)?.name || 'Course'}
+                            {isLoading ? 'Loading...' : courseTitle}
                         </h2>
                     </div>
+                    <UserAvatarBadge size="sm" />
                 </div>
 
                 <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto no-scrollbar">

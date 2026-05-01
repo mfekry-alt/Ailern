@@ -55,11 +55,9 @@ interface GuestOnlyProps {
 export const GuestOnly = ({ children }: GuestOnlyProps) => {
     const { isAuthenticated, isLoading, user } = useAuth();
 
-    if (isLoading) {
-        return <LoadingSpinner />;
-    }
-
-    if (isAuthenticated) {
+    // Only redirect if definitely authenticated - don't unmount children during auth check
+    // This prevents the login page from resetting when auth state is loading
+    if (!isLoading && isAuthenticated) {
         const userRoles = user?.roles?.map((role) => normalizeRole(role)) ?? [];
         if (userRoles.includes(ROLES.ADMIN)) {
             return <Navigate to={ROUTES.ADMIN} replace />;
@@ -70,6 +68,8 @@ export const GuestOnly = ({ children }: GuestOnlyProps) => {
         return <Navigate to={ROUTES.DASHBOARD} replace />;
     }
 
+    // Always render children - even during loading state
+    // This prevents UI flash/remount on login page
     return <>{children}</>;
 };
 

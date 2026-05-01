@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { getStudentDashboardData } from '@/api/services/student.service';
 import { StudentCourseCard } from '@/components/StudentCourseCard';
+import { QUERY_KEYS } from '@/lib/constants';
 
 // Material Symbol Icon Component
 const MaterialIcon = ({ name, className = '' }: { name: string; className?: string }) => (
@@ -41,7 +42,7 @@ export const DashboardPage = () => {
     const navigate = useNavigate();
 
     const { data, isLoading, error } = useQuery({
-        queryKey: ['student-dashboard'],
+        queryKey: QUERY_KEYS.STUDENT_DASHBOARD,
         queryFn: getStudentDashboardData,
         staleTime: 5 * 60 * 1000
     });
@@ -77,15 +78,17 @@ export const DashboardPage = () => {
         daysLeft: Math.ceil((new Date(a.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     })) || [];
 
-    const courses = Array.isArray(data?.courses)
-        ? data.courses.slice(0, 2).map(c => ({
-            id: c.id,
-            title: c.name,
-            instructor: c.instructorName,
-            progress: Math.floor(Math.random() * 100), // Replace with real progress when ready
-            image: getRandomCourseImage()
-        }))
-        : [];
+    const continueLearningRows = Array.isArray(data?.continueLearning) ? data!.continueLearning : [];
+
+    const courses = continueLearningRows.map((c) => ({
+        id: c.courseId,
+        title: c.name,
+        instructor: c.instructorName || 'Course',
+        progress: typeof c.progress === 'number' ? Math.min(100, Math.max(0, c.progress)) : 0,
+        image: getRandomCourseImage(),
+        description: c.subtitle,
+        courseCode: c.code || '',
+    }));
 
     const totalCourses = data?.stats?.totalCourses || 0;
     const pendingTasks = data?.stats?.pendingAssignments || 0;
@@ -174,7 +177,11 @@ export const DashboardPage = () => {
                                 {courses.length === 0 ? (
                                     <div className="col-span-full p-10 text-center bg-white dark:bg-slate-800/30 rounded-[2rem] border border-dashed border-gray-300 dark:border-slate-700 flex flex-col items-center justify-center">
                                         <MaterialIcon name="inbox" className="text-6xl text-gray-400 dark:text-slate-600 mb-4" />
-                                        <p className="text-gray-600 dark:text-slate-400 text-lg">You're not enrolled in any courses yet.</p>
+                                        <p className="text-gray-600 dark:text-slate-400 text-lg">
+                                            {totalCourses > 0
+                                                ? 'Courses you have started will appear here once your progress is saved (watch a video or read a document).'
+                                                : "You're not enrolled in any courses yet."}
+                                        </p>
                                         <button
                                             onClick={() => navigate('/courses')}
                                             className="mt-6 bg-blue-600 hover:bg-blue-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-6 py-2 rounded-xl transition-colors font-medium"

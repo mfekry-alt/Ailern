@@ -1,93 +1,175 @@
 import { memo, useState } from 'react';
-import { ChevronDown, Layers, FileText, Sparkles } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, ChevronUp, Layers, Loader2, Check } from 'lucide-react';
+
 import { FileItem } from './FileItem';
+
 import type { SectionDto } from '../types';
+
+import { useAuth } from '@/hooks/useAuth';
+import { updateStudentSectionProgress } from '@/api/services/section.service';
+import { QUERY_KEYS } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 interface SectionCardProps {
     section: SectionDto;
+    /** 1-based index from sorted API order — not raw `sectionNumber` which may be 0 */
+    sectionOrder: number;
     courseId: string;
+    numericCourseId: number;
 }
 
-export const SectionCard = memo(({ section, courseId }: SectionCardProps) => {
+export const SectionCard = memo(({ section, sectionOrder, courseId, numericCourseId }: SectionCardProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const files = section.sectionFiles ?? [];
+    const { hasRole } = useAuth();
+    const student = hasRole('Student');
+    const queryClient = useQueryClient();
+
+    const completion = useMutation({
+        mutationFn: (completed: boolean) => updateStudentSectionProgress(section.id, completed),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.COURSE_SECTIONS(numericCourseId.toString()) });
+        },
+    });
+
+    const done = Boolean(section.isCompleted);
 
     return (
         <div
-            className={`group border rounded-2xl overflow-hidden transition-all duration-500 bg-white dark:bg-slate-800/40 ${
-                isExpanded
-                    ? 'border-indigo-200/60 dark:border-indigo-500/30 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
-                    : 'border-slate-200/60 dark:border-slate-700/50 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-500/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-0.5'
-            }`}
+            className={cn(
+                'border rounded-2xl overflow-hidden transition-all duration-300',
+                isExpanded &&
+                    'border-[#21A9FF]/35 bg-gradient-to-br from-[#21A9FF]/[0.08] via-white to-slate-50/85 shadow-[0_2px_24px_-8px_rgba(33,169,255,0.22)] dark:from-[#21A9FF]/10 dark:via-slate-900/55 dark:to-slate-900/35',
+                !isExpanded &&
+                    done &&
+                    'border-[#21A9FF]/30 bg-[#21A9FF]/[0.04] dark:bg-[#21A9FF]/[0.07]',
+                !isExpanded &&
+                    !done &&
+                    'border-slate-200/95 dark:border-slate-700/85 bg-white dark:bg-slate-900/40 hover:border-[#21A9FF]/28 hover:shadow-[0_2px_20px_-10px_rgba(33,169,255,0.18)]'
+            )}
         >
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center justify-between p-5 sm:p-6 transition-all duration-300 relative overflow-hidden"
-            >
-                {/* Active Hover Background */}
-                <div className={`absolute inset-0 bg-gradient-to-r from-[#21A9FF]/5 to-transparent transition-opacity duration-500 ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
+            <div className="flex items-stretch gap-0">
+                <button
+                    type="button"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="flex-1 flex items-center justify-between p-4 sm:p-5 transition-colors text-left min-w-0"
+                >
+                    <div className="flex items-center gap-4 min-w-0">
+                        <div
+                            className={cn(
+                                'w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center text-sm font-extrabold tabular-nums transition-all duration-300',
+                                'ring-1 shadow-sm',
+                                isExpanded &&
+                                    'bg-[#21A9FF] text-white ring-[#21A9FF]/35 shadow-[0_10px_26px_-10px_rgba(33,169,255,0.55)]',
+                                !isExpanded &&
+                                    done &&
+                                    'bg-[#21A9FF]/12 text-[#0094F2] dark:text-[#5ec5ff] ring-[#21A9FF]/28',
+                                !isExpanded &&
+                                    !done &&
+                                    'bg-slate-100 text-slate-800 ring-slate-200/90 dark:bg-slate-800/95 dark:text-slate-100 dark:ring-slate-600'
+                            )}
+                            aria-hidden
+                        >
+                            {sectionOrder}
+                        </div>
 
-                <div className="flex items-center gap-5 relative z-10">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50 shadow-sm group-hover:scale-105 transition-transform">
-                        <Layers className={`w-5 h-5 transition-colors duration-300 ${isExpanded ? 'text-indigo-500' : 'text-slate-400 group-hover:text-indigo-500'}`} />
-                    </div>
-                    <div className="text-left">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="min-w-0">
                             <h3
-                                className={`text-lg sm:text-xl font-black tracking-tight transition-colors duration-300 ${
+                                className={cn(
+                                    'font-semibold transition-colors',
                                     isExpanded
-                                        ? 'text-indigo-600 dark:text-indigo-400'
-                                        : 'text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
-                                }`}
+                                        ? 'text-[#0094F2] dark:text-[#5ec5ff]'
+                                        : 'text-gray-900 dark:text-white'
+                                )}
                             >
                                 {section.title}
                             </h3>
-                            {isExpanded && <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />}
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>{files.length} {files.length === 1 ? 'Material' : 'Materials'}</span>
-                            </div>
+
+                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                                {files.length} {files.length === 1 ? 'file' : 'files'}
+                            </p>
                         </div>
                     </div>
-                </div>
 
-                <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 relative z-10 border ${
-                        isExpanded
-                            ? 'bg-indigo-50 border-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:border-indigo-500/20 dark:text-indigo-400 rotate-180'
-                            : 'bg-white border-slate-200 text-slate-400 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-500 group-hover:bg-indigo-50 group-hover:border-indigo-100 group-hover:text-indigo-600 dark:group-hover:bg-indigo-500/10 dark:group-hover:border-indigo-500/20 dark:group-hover:text-indigo-400 shadow-sm'
-                    }`}
-                >
-                    <ChevronDown className="w-5 h-5 transition-transform duration-500" />
-                </div>
-            </button>
+                    <div
+                        className={cn(
+                            'w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-colors',
+                            isExpanded
+                                ? 'bg-[#21A9FF]/14 text-[#0094F2] dark:bg-[#21A9FF]/22 dark:text-[#5ec5ff]'
+                                : 'text-slate-400 dark:text-slate-500'
+                        )}
+                    >
+                        {isExpanded ? (
+                            <ChevronUp className="w-[18px] h-[18px]" />
+                        ) : (
+                            <ChevronDown className="w-[18px] h-[18px]" />
+                        )}
+                    </div>
+                </button>
 
-            {/* Smooth Expandable Content */}
-            <div 
-                className={`grid transition-all duration-500 ease-in-out ${
-                    isExpanded ? 'grid-template-rows-[1fr] opacity-100' : 'grid-template-rows-[0fr] opacity-0 overflow-hidden'
-                }`}
-                style={{ display: 'grid', gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
-            >
-                <div className="overflow-hidden">
-                    <div className="p-5 sm:p-6 pt-0 border-t border-slate-100 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/10 mt-2">
-                        <div className="mt-5 space-y-3">
-                            {files.length === 0 ? (
-                                <div className="text-center py-10 px-4 bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700/50 flex flex-col items-center gap-2">
-                                    <Layers className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-1" />
-                                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">No materials uploaded for this section.</p>
-                                </div>
-                            ) : (
-                                files.map((file) => (
-                                    <FileItem key={file.id} file={file} courseId={courseId} />
-                                ))
+                {student && (
+                    <div className="relative flex shrink-0 items-center pr-4 pl-3 sm:pr-5">
+                        <div
+                            className="absolute left-0 top-1/2 hidden h-[55%] w-px -translate-y-1/2 bg-gradient-to-b from-transparent via-slate-200/95 to-transparent dark:via-slate-600 sm:block"
+                            aria-hidden
+                        />
+                        <button
+                            type="button"
+                            aria-pressed={done}
+                            disabled={completion.isPending}
+                            onClick={() => completion.mutate(!done)}
+                            className={cn(
+                                'group/finish rounded-xl outline-none transition-transform duration-200',
+                                !completion.isPending && 'hover:scale-[1.04] active:scale-[0.97]',
+                                'disabled:opacity-55 disabled:pointer-events-none',
+                                'focus-visible:ring-2 focus-visible:ring-[#21A9FF]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900'
                             )}
-                        </div>
+                        >
+                            {completion.isPending ? (
+                                <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#21A9FF]/30 bg-[#21A9FF]/[0.06] dark:bg-[#21A9FF]/12">
+                                    <Loader2 className="h-5 w-5 animate-spin text-[#21A9FF]" aria-hidden />
+                                </span>
+                            ) : (
+                                <span
+                                    className={cn(
+                                        'relative flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-all duration-300',
+                                        done
+                                            ? 'border-[#21A9FF] bg-[#21A9FF] text-white shadow-[0_14px_36px_-10px_rgba(33,169,255,0.5)] dark:shadow-[0_14px_40px_-10px_rgba(33,169,255,0.35)]'
+                                            : cn(
+                                                  'border-slate-200/95 bg-white dark:border-slate-600 dark:bg-slate-950/92',
+                                                  'hover:border-[#21A9FF]/50 hover:bg-[#21A9FF]/[0.06]'
+                                              )
+                                    )}
+                                >
+                                    <span className="sr-only">Section completion</span>
+                                    {done ? (
+                                        <Check className="h-5 w-5 stroke-[2.75]" strokeLinecap="round" aria-hidden />
+                                    ) : (
+                                        <span
+                                            className="h-[8px] w-[8px] rounded-full bg-slate-300/90 opacity-95 dark:bg-slate-500 group-hover/finish:bg-[#21A9FF] group-hover/finish:scale-110 transition-all duration-300"
+                                            aria-hidden
+                                        />
+                                    )}
+                                </span>
+                            )}
+                        </button>
                     </div>
-                </div>
+                )}
             </div>
+
+            {isExpanded && (
+                <div className="px-5 py-5 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/55 space-y-2.5">
+                    {files.length === 0 ? (
+                        <div className="text-center py-6 text-gray-500 dark:text-slate-400 text-sm flex items-center justify-center gap-2">
+                            <Layers className="w-4 h-4" />
+                            No files in this section
+                        </div>
+                    ) : (
+                        files.map((file) => <FileItem key={file.id} file={file} courseId={courseId} />)
+                    )}
+                </div>
+            )}
         </div>
     );
 });

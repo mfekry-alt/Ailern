@@ -1,6 +1,6 @@
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Ailern';
 export const API_URL =
-    import.meta.env.VITE_API_URL ?? 'https://ailern.runasp.net/';
+    import.meta.env.VITE_API_URL ?? 'https://localhost:7080/api';
 
 export const ROLES = {
     ADMIN: 'Admin',
@@ -94,7 +94,7 @@ export const QUERY_KEYS = {
     ENROLLMENT: (id: string) => ['enrollment', id],
     QUIZZES: (courseId: string) => ['quizzes', courseId],
     QUIZ: (id: string) => ['quiz', id],
-    QUIZ_SUBMISSIONS: (quizId: string, status?: string) => status
+    QUIZ_SUBMISSIONS: (quizId: string, status?: string | null) => status
         ? ['quiz-submissions', quizId, status]
         : ['quiz-submissions', quizId],
     USERS: ['users'],
@@ -110,6 +110,9 @@ export const QUERY_KEYS = {
     INSTRUCTOR_STATS: ['instructor-stats'],
     UPCOMING_EVENTS: ['upcoming-events'],
     INSTRUCTOR_MY_COURSES: ['instructor-my-courses'],
+    /** Student — GET /Users/students/my-courses */
+    STUDENT_MY_COURSES: ['student-courses'],
+    STUDENT_DASHBOARD: ['student-dashboard'],
     COURSE_SECTIONS: (courseId: string) => ['course-sections', courseId],
     COURSE_ASSIGNMENTS: (courseId: string) => ['course-assignments', courseId],
     COURSE_QUIZZES: (courseId: string) => ['course-quizzes', courseId],

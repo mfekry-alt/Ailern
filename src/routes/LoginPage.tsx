@@ -5,7 +5,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLogin } from '@/features/auth/api';
 import { authService } from '@/api/services';
 import { normalizeRole, ROLES, ROUTES, APP_NAME } from '@/lib/constants';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Eye, EyeOff, ArrowLeft, MailCheck } from 'lucide-react';
 
 const loginSchema = z.object({
@@ -59,18 +59,38 @@ export const LoginPage = () => {
         register,
         handleSubmit,
         formState: { errors },
+        watch,
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
     });
 
-    const onSubmit = async (data: LoginFormData) => {
-        setError('');
-        setUnverifiedEmail('');
+    // Watch email and password fields to clear error when user starts typing again
+    const watchedEmail = watch('email');
+    const watchedPassword = watch('password');
+
+    // Clear error when user modifies input (not on submit)
+    const clearErrorOnInputChange = useCallback(() => {
+        if (error) setError('');
+        if (unverifiedEmail) setUnverifiedEmail('');
+    }, [error, unverifiedEmail]);
+
+    // Effect to clear errors when user modifies input fields
+    useState(() => {
+        clearErrorOnInputChange();
+    });
+
+    const onSubmit = async (data: LoginFormData, event?: React.BaseSyntheticEvent) => {
+        // Prevent any default form submission behavior
+        event?.preventDefault();
+
+        // Only clear resend-related states on submit, NOT the main error
         setResendSuccess(false);
         setResendError('');
+
         try {
             const loginResponse = await login.mutateAsync(data);
-            const redirectPath = from || getRedirectPath(loginResponse.role);
+            const role = loginResponse.meData?.role ?? loginResponse.loginData.role;
+            const redirectPath = from || getRedirectPath(role);
             navigate(redirectPath, { replace: true });
         } catch (err: any) {
             if (isEmailNotVerifiedError(err)) {
@@ -78,6 +98,7 @@ export const LoginPage = () => {
                 setError('');
                 return;
             }
+            // Keep error visible until user changes input
             setError(err.response?.data?.message || 'Login failed. Please try again.');
         }
     };
@@ -135,7 +156,7 @@ export const LoginPage = () => {
                             type="email"
                             placeholder="you@example.com"
                             className={inputClass}
-                            {...register('email')}
+                            {...register('email', { onChange: clearErrorOnInputChange })}
                         />
                         {errors.email && (
                             <p className={errorClass}>{errors.email.message}</p>
@@ -152,7 +173,7 @@ export const LoginPage = () => {
                                 type={showPassword ? 'text' : 'password'}
                                 placeholder="Enter your password"
                                 className={`${inputClass} pr-11`}
-                                {...register('password')}
+                                {...register('password', { onChange: clearErrorOnInputChange })}
                             />
                             <button
                                 type="button"

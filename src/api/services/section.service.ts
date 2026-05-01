@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
 import type { ApiResponse, SectionCreateCommand, SectionUpdateCommand, MaterialFilesReorderCommand, RequestMaterialPresignedUrlCommand } from '@/types/api.types';
@@ -8,6 +9,8 @@ export interface SectionDto {
     sectionNumber: number;
     courseId: number;
     sectionFiles?: SectionFileDto[];
+    /** Present for enrolled students — section marked complete via section progress API */
+    isCompleted?: boolean;
 }
 
 export interface SectionFileDto {
@@ -29,7 +32,10 @@ export const getSectionsByCourse = async (courseId: number): Promise<SectionDto[
         );
         const payload = response.data as any;
         return Array.isArray(payload) ? payload : (payload.data ?? []);
-    } catch {
+    } catch (e) {
+        if (isAxiosError(e) && e.response?.status === 403) {
+            throw e;
+        }
         return [];
     }
 };
@@ -82,4 +88,9 @@ export const deleteMaterialFile = async (sectionId: string, fileId: string): Pro
 
 export const reorderMaterialFiles = async (sectionId: string, cmd: MaterialFilesReorderCommand): Promise<void> => {
     await api.put(`/Sections/${sectionId}/files/reorder`, cmd);
+};
+
+/** Student — mark section completed or reopen */
+export const updateStudentSectionProgress = async (sectionId: string, completed: boolean): Promise<void> => {
+    await api.put(ENDPOINTS.SECTIONS.STUDENT_PROGRESS(sectionId), {}, { params: { completed } });
 };

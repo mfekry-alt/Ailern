@@ -27,6 +27,7 @@ export const ENDPOINTS = {
 
     // Users endpoints (based on API: /api/Users/*)
     USERS: {
+        ME: '/Users/me', // Get current authenticated user
         GET: (id: number) => `/Users/${id}`,
         ADD_ROLE: (id: number) => `/Users/${id}/roles`,
         REMOVE_ROLE: (id: number) => `/Users/${id}/roles`,
@@ -59,6 +60,10 @@ export const ENDPOINTS = {
             CONFIRM: (courseId: number | string) => `/Courses/${courseId}/ai-resources/confirm`,
             DELETE: (courseId: number | string, resourceId: string) => `/Courses/${courseId}/ai-resources/${resourceId}/delete`,
         },
+        /** Student — resume position (video seconds / PDF page) */
+        STUDENT_PROGRESS: (courseId: number) => `/Courses/${courseId}/progress`,
+        /** Student — continue learning / recent activity */
+        MY_LEARNING: '/Courses/my-learning',
     },
 
     // Assignments endpoints (based on API: /api/Assignments/* and /api/Courses/*/Assignments)
@@ -105,6 +110,8 @@ export const ENDPOINTS = {
         CREATE: '/Sections',
         UPDATE: (sectionId: string) => `/Sections/${sectionId}`,
         DELETE: (sectionId: string) => `/Sections/${sectionId}`,
+        /** Student — mark section complete/incomplete */
+        STUDENT_PROGRESS: (sectionId: string) => `/Sections/${sectionId}/progress`,
     },
 
     // Quiz Attempts endpoints

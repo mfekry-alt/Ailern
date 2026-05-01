@@ -13,14 +13,11 @@ import {
     Loader2,
     FilePieChart,
     Plus,
-    Clock,
     FileBadge,
     Database,
     Search,
-    Filter,
     BrainCircuit,
     RotateCcw,
-    Send,
     AlertTriangle
 } from 'lucide-react';
 import { PDFThumbnail } from '@/components/PDFThumbnail';
@@ -91,15 +88,16 @@ export const CourseAIAssistantTab = () => {
         try {
             const response = await aiResourcesService.getAiResources(courseId);
             if (response.success && response.data) {
-                const mappedFiles: UploadedFile[] = response.data.map((item: any) => ({
-                    id: item.id || item.fileId,
-                    name: item.name || item.fileName || 'Unnamed File',
-                    size: item.size || item.fileSize || 0,
-                    type: item.contentType || item.type || 'application/pdf',
-                    uploadDate: item.createdAt || item.uploadDate || new Date().toISOString(),
-                    url: item.url || item.fileUrl
-                }));
-                setUploadedFiles(mappedFiles);
+                setUploadedFiles(
+                    response.data!.map((item: any) => ({
+                        id: item.id || item.fileId,
+                        name: item.name || item.fileName || 'Unnamed File',
+                        size: item.size || item.fileSize || 0,
+                        type: item.contentType || item.type || 'application/pdf',
+                        uploadDate: item.createdAt || item.uploadDate || new Date().toISOString(),
+                        url: item.url || item.fileUrl,
+                    }))
+                );
             }
         } catch (error) {
             console.error('Failed to fetch AI resources:', error);
@@ -439,7 +437,8 @@ export const CourseAIAssistantTab = () => {
                 <div className="lg:col-span-2 space-y-6">
 
                     {/* Search & Stats */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900/40 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <div className="flex flex-col gap-4 bg-white dark:bg-slate-900/40 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
                         <div className="relative w-full sm:w-72">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
@@ -460,6 +459,7 @@ export const CourseAIAssistantTab = () => {
                                 <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Storage</span>
                                 <span className="text-xl font-black text-slate-900 dark:text-white">{formatFileSize(uploadedFiles.reduce((acc, f) => acc + f.size, 0))}</span>
                             </div>
+                        </div>
                         </div>
                     </div>
 
@@ -553,7 +553,7 @@ export const CourseAIAssistantTab = () => {
                                         <h3 className="text-base font-black text-slate-900 dark:text-white truncate tracking-tight" title={file.name}>
                                             {file.name}
                                         </h3>
-                                        <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                                             <span className="flex items-center gap-1">
                                                 <FilePieChart className="w-3 h-3" />
                                                 {formatFileSize(file.size)}

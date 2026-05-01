@@ -136,8 +136,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
                 <Route path="/quizzes/:id/attempts" element={<QuizAttemptsPage />} />
                 <Route path="/quizzes/:id/attempt" element={<QuizAttemptViewer />} />
-                <Route path="/quizzes/:id/attempt/:attemptId" element={<QuizAttemptViewer />} />
-                <Route path="/quizzes/:id/attempt/:attemptId/result" element={<QuizResultViewer />} />
+                <Route path="/quizzes/:id/attempt/:attemptId" element={<QuizResultViewer />} />
             </Route>
 
             {/* Protected instructor routes */}

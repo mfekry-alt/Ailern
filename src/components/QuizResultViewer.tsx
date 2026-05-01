@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertCircle, Trophy, CheckCircle2, XCircle, FileText, MessageSquare } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Trophy, CheckCircle2, XCircle, FileText, MessageSquare, Clock } from 'lucide-react';
 import { attemptsService } from '@/api/services';
 import type { AttemptResult } from '@/api/services/attempts.service';
 import type { AnswerDto } from '@/types/api.types';
@@ -94,36 +94,29 @@ export const QuizResultViewer = () => {
             </header>
 
             <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fade-in">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 shadow-xl border border-white/10 p-8 sm:p-10">
-                        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:24px_24px]" />
-                        <div className="relative z-10">
-                            <p className="text-blue-100 font-bold uppercase tracking-widest text-xs mb-3">Final Score</p>
-                            <div className="flex items-baseline gap-2 mb-2">
-                                <span className="text-6xl sm:text-7xl font-black text-white leading-none">{result.score}</span>
-                                <span className="text-2xl sm:text-3xl font-bold text-blue-200">/ {result.totalScore}</span>
+                <div className="bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 sm:p-8 shadow-sm">
+                    <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-6">
+                        {result.raw?.quizTitle || 'Quiz Results'}
+                    </h1>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl p-5 text-white">
+                            <p className="text-blue-100 font-bold uppercase tracking-wider text-xs mb-2">Score</p>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-black">{result.score}</span>
+                                <span className="text-xl font-bold text-blue-200">/ {result.totalScore}</span>
                             </div>
-                            <p className="text-blue-100 font-medium text-lg">{percentage.toFixed(1)}%</p>
-                            <div className="mt-6 w-full bg-black/20 h-3 rounded-full overflow-hidden border border-white/10">
-                                <div
-                                    className="h-full bg-gradient-to-r from-blue-300 to-green-300 rounded-full"
-                                    style={{ width: `${Math.max(0, Math.min(100, percentage))}%` }}
-                                />
-                            </div>
+                            <p className="text-blue-100 text-sm mt-1">{percentage.toFixed(1)}%</p>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm">
-                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Questions</p>
-                            <p className="text-3xl font-black text-gray-900 dark:text-white">{totalQuestions}</p>
+                        <div className="bg-gray-50 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
+                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2 flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> Time Spent
+                            </p>
+                            <p className="text-3xl font-black text-gray-900 dark:text-white">
+                                {result.timeSpent || 0}m
+                            </p>
                         </div>
-                        <div className="bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm">
-                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Correct</p>
-                            <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{correctQuestions}</p>
-                        </div>
-                        <div className="col-span-2 bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm">
-                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Attempt Status</p>
+                        <div className="bg-gray-50 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
+                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Status</p>
                             <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{result.status}</p>
                         </div>
                     </div>
@@ -165,14 +158,12 @@ export const QuizResultViewer = () => {
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-black text-gray-900 dark:text-white">{answer.score} / {answer.maxScore}</p>
-                                                <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${
-                                                    isCorrect
-                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20'
-                                                        : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20'
-                                                }`}>
-                                                    {isCorrect ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                                                    {isCorrect ? 'Correct' : 'Needs Review'}
-                                                </div>
+                                                {isCorrect && (
+                                                    <div className="mt-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20">
+                                                        <CheckCircle2 className="w-3 h-3" />
+                                                        Correct
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -182,25 +173,31 @@ export const QuizResultViewer = () => {
                                                     .slice()
                                                     .sort((a, b) => a.order - b.order)
                                                     .map((option) => {
-                                                        const optionState = option.isSelected
-                                                            ? 'border-blue-300 bg-blue-50 dark:border-blue-500/40 dark:bg-blue-500/10'
-                                                            : option.isCorrect
-                                                                ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10'
-                                                                : 'border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/40';
+                                                        const isSelectedWrong = option.isSelected && !option.isCorrect;
+                                                        const isCorrect = option.isCorrect;
+
+                                                        let optionState = 'border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/40';
+                                                        if (isCorrect) {
+                                                            optionState = 'border-emerald-500 bg-emerald-50 dark:border-emerald-500/50 dark:bg-emerald-500/15';
+                                                        } else if (isSelectedWrong) {
+                                                            optionState = 'border-red-500 bg-red-50 dark:border-red-500/50 dark:bg-red-500/15';
+                                                        }
 
                                                         return (
                                                             <div key={`${answer.order}-${option.order}`} className={`rounded-xl border px-4 py-3 ${optionState}`}>
                                                                 <div className="flex items-center justify-between gap-3">
-                                                                    <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{option.optionText}</p>
+                                                                    <p className={`text-sm font-medium ${isCorrect ? 'text-emerald-800 dark:text-emerald-200' : isSelectedWrong ? 'text-red-800 dark:text-red-200' : 'text-gray-800 dark:text-slate-200'}`}>
+                                                                        {option.optionText}
+                                                                    </p>
                                                                     <div className="flex items-center gap-2">
-                                                                        {option.isCorrect && (
-                                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-                                                                                Correct
+                                                                        {option.isSelected && (
+                                                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded ${isCorrect ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-500/20' : 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-500/20'}`}>
+                                                                                {isCorrect ? 'Correct' : 'Incorrect'}
                                                                             </span>
                                                                         )}
-                                                                        {option.isSelected && (
-                                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-                                                                                Your choice
+                                                                        {!option.isSelected && isCorrect && (
+                                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-500/20 px-2 py-1 rounded">
+                                                                                Correct
                                                                             </span>
                                                                         )}
                                                                     </div>
@@ -212,9 +209,21 @@ export const QuizResultViewer = () => {
                                         )}
 
                                         {answer.type === 'Written' && (
-                                            <div className="rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-4">
+                                            <div className={`rounded-xl border p-4 ${
+                                                answer.score === answer.maxScore && answer.maxScore > 0
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-500/50 dark:bg-emerald-500/10'
+                                                    : answer.score === 0
+                                                        ? 'border-red-500 bg-red-50 dark:border-red-500/50 dark:bg-red-500/10'
+                                                        : 'border-amber-400 bg-amber-50 dark:border-amber-400/50 dark:bg-amber-400/10'
+                                            }`}>
                                                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Your Answer</p>
-                                                <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap">
+                                                <p className={`text-sm whitespace-pre-wrap ${
+                                                    answer.score === answer.maxScore && answer.maxScore > 0
+                                                        ? 'text-emerald-900 dark:text-emerald-100'
+                                                        : answer.score === 0
+                                                            ? 'text-red-900 dark:text-red-100'
+                                                            : 'text-amber-900 dark:text-amber-100'
+                                                }`}>
                                                     {answer.answer?.trim() ? answer.answer : 'No answer submitted.'}
                                                 </p>
                                             </div>

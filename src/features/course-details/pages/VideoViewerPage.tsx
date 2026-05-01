@@ -1,23 +1,78 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertCircle, Loader2, Monitor } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader2, Monitor, ShieldAlert, ArrowRight } from 'lucide-react';
+import { useCourseQuizzes } from '../api';
+import { getFirstQuizWithActiveAttempt, hasActiveInProgressAttemptInCourse } from '../utils/courseContentAccess';
+import { useAuth } from '@/hooks/useAuth';
+import { updateStudentCourseProgress } from '@/api/services/course.service';
 
 export const VideoViewerPage = () => {
-    const { courseId } = useParams<{ courseId: string; fileId: string }>();
+    const { courseId, fileId: fileIdParam } = useParams<{ courseId: string; fileId: string }>();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { hasRole } = useAuth();
+    const isStudent = hasRole('Student');
 
     const videoUrl = searchParams.get('url');
     const decodedUrl = videoUrl ? decodeURIComponent(videoUrl) : null;
 
+    const fileGuid = fileIdParam ? decodeURIComponent(fileIdParam) : null;
+
+    const numericCourseId = useMemo(() => {
+        const n = Number(courseId);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+    }, [courseId]);
+
+    const { data: courseQuizzes, isLoading: quizzesLoading, isError: quizzesError } =
+        useCourseQuizzes(numericCourseId);
+
+    const contentBlockedByAttempt = useMemo(
+        () => !quizzesError && hasActiveInProgressAttemptInCourse(courseQuizzes),
+        [quizzesError, courseQuizzes]
+    );
+
+    const activeQuiz = useMemo(() => getFirstQuizWithActiveAttempt(courseQuizzes), [courseQuizzes]);
+
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const lastReportedSeconds = useRef(-1);
+
+    const flushCourseProgress = useCallback(() => {
+        const video = videoRef.current;
+        if (!isStudent || !numericCourseId || !fileGuid || !video) return;
+        const secs = Math.max(0, Math.floor(video.currentTime));
+        if (secs === lastReportedSeconds.current) return;
+        lastReportedSeconds.current = secs;
+        updateStudentCourseProgress(numericCourseId, {
+            lastWatchedTime: secs,
+            lastOpenedFileId: fileGuid,
+        }).catch(() => {});
+    }, [isStudent, numericCourseId, fileGuid]);
 
     useEffect(() => {
         setIsLoading(true);
         setHasError(false);
     }, [decodedUrl]);
+
+    useEffect(() => {
+        lastReportedSeconds.current = -1;
+    }, [decodedUrl, fileGuid]);
+
+    /** Students: save resume position periodically while watching */
+    useEffect(() => {
+        if (!decodedUrl || !isStudent || !numericCourseId || !fileGuid) return;
+        const interval = window.setInterval(() => flushCourseProgress(), 15000);
+
+        const onUnload = () => {
+            flushCourseProgress();
+        };
+        window.addEventListener('beforeunload', onUnload);
+        return () => {
+            window.clearInterval(interval);
+            window.removeEventListener('beforeunload', onUnload);
+        };
+    }, [decodedUrl, isStudent, numericCourseId, fileGuid, flushCourseProgress]);
 
     const handleBack = () => {
         if (courseId) {
@@ -47,6 +102,56 @@ export const VideoViewerPage = () => {
                         <ArrowLeft className="w-4 h-4" />
                         Back to Sections
                     </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (numericCourseId > 0 && quizzesLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-8">
+                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+            </div>
+        );
+    }
+
+    if (courseId && contentBlockedByAttempt) {
+        const quizListPath = `/courses/${courseId}/quizzes`;
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-8 transition-colors">
+                <div className="bg-white dark:bg-slate-800/50 border border-amber-200 dark:border-amber-500/30 p-8 rounded-[2rem] max-w-md text-center shadow-xl">
+                    <div className="w-16 h-16 bg-amber-100 dark:bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <ShieldAlert className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        Video unavailable during quiz
+                    </h2>
+                    <p className="text-gray-500 dark:text-slate-400 mb-6 text-sm">
+                        Finish your in-progress quiz attempt to access course videos and materials again.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                        {activeQuiz?.id ? (
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    navigate(`/quizzes/${activeQuiz.id}/attempt`, {
+                                        state: { resume: true, courseId },
+                                    })
+                                }
+                                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors w-full flex items-center justify-center gap-2"
+                            >
+                                Resume quiz
+                                <ArrowRight className="w-4 h-4" />
+                            </button>
+                        ) : null}
+                        <button
+                            type="button"
+                            onClick={() => navigate(quizListPath)}
+                            className="px-6 py-3 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-200 rounded-xl font-semibold transition-colors w-full"
+                        >
+                            Go to quizzes
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -100,6 +205,8 @@ export const VideoViewerPage = () => {
                     controls
                     autoPlay
                     onCanPlay={() => setIsLoading(false)}
+                    onPause={() => flushCourseProgress()}
+                    onEnded={() => flushCourseProgress()}
                     onError={() => {
                         setIsLoading(false);
                         setHasError(true);

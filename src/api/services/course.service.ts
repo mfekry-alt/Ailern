@@ -19,6 +19,8 @@ import type {
     PaginationResult,
     ApiResponse,
     GetStudentProfileDto,
+    UpdateStudentCourseProgressCommand,
+    GetMyLearningDto,
 } from '@/types/api.types';
 
 const EMPTY_COURSES_RESULT: GetAllCoursesDtoPaginationResult = {
@@ -271,4 +273,46 @@ export const getStudentProfile = async (
         ENDPOINTS.USERS.STUDENT_PROFILE(courseId, studentId)
     );
     return response.data?.data || response.data;
+};
+
+const unwrapPaginationResult = <T>(raw: unknown): PaginationResult<T> => {
+    const layer = raw as Record<string, unknown> | undefined;
+    const inner = layer && typeof layer === 'object' && 'data' in layer ? (layer as any).data : layer;
+    if (!inner || typeof inner !== 'object' || !('items' in inner)) {
+        return { items: [], totalResults: 0, pagesCount: 0, start: 0, end: 0 };
+    }
+    const p = inner as PaginationResult<T>;
+    return {
+        items: p.items ?? [],
+        totalResults: p.totalResults ?? 0,
+        pagesCount: p.pagesCount ?? (p as any).totalPages ?? 0,
+        start: p.start ?? 0,
+        end: p.end ?? 0,
+    };
+};
+
+/** Student — save resume position (video seconds and/or PDF page + optional last file id). */
+export const updateStudentCourseProgress = async (
+    courseId: number,
+    body: UpdateStudentCourseProgressCommand
+): Promise<void> => {
+    await api.put<ApiResponse<unknown>>(ENDPOINTS.COURSES.STUDENT_PROGRESS(courseId), body);
+};
+
+export type MyLearningQueryParams = { pageNo?: number; pageSize?: number };
+
+/** Student — courses with saved CourseProgress rows, newest first */
+export const getMyLearning = async (
+    params?: MyLearningQueryParams
+): Promise<PaginationResult<GetMyLearningDto>> => {
+    const response = await api.get<ApiResponse<PaginationResult<GetMyLearningDto>>>(
+        ENDPOINTS.COURSES.MY_LEARNING,
+        {
+            params: {
+                pageNo: params?.pageNo ?? 1,
+                pageSize: params?.pageSize ?? 5,
+            },
+        }
+    );
+    return unwrapPaginationResult<GetMyLearningDto>(response.data);
 };

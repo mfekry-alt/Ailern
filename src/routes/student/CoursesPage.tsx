@@ -10,6 +10,7 @@ import { studentService } from '@/api/services';
 import { handleApiError } from '@/api/client';
 import { ParallaxTiltCard } from '@/components/ui';
 import { StudentCourseCard } from '@/components/StudentCourseCard';
+import { QUERY_KEYS } from '@/lib/constants';
 
 
 
@@ -37,7 +38,7 @@ export const CoursesPage = () => {
 
     // Fetch student's enrolled courses
     const { data: enrolledCoursesData, isLoading, error } = useQuery({
-        queryKey: ['student-courses'],
+        queryKey: QUERY_KEYS.STUDENT_MY_COURSES,
         queryFn: () => studentService.getMyStudentCourses(),
     });
 
@@ -65,7 +66,7 @@ export const CoursesPage = () => {
             description: c.description || 'No description available for this course.',
             instructor: c.instructorName || 'Unknown Instructor',
             courseCode: c.code || '',
-            progress: Math.floor(Math.random() * 60) + 10, // Mock progress for UI visual enhancement
+            progress: typeof c.progress === 'number' ? Math.min(100, Math.max(0, c.progress)) : 0,
         }));
     }, [enrolledCourses]);
 
@@ -327,4 +328,4 @@ export const CoursesPage = () => {
             </div>
         </div>
     );
-};
+};
