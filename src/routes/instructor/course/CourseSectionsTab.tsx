@@ -1,10 +1,20 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { useOutletContext, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sectionService } from '@/api/services';
 import type { SectionDto, SectionFileDto } from '@/api/services/section.service';
 import { toast } from 'sonner';
-import { Layers, Plus, Loader2, Pencil, Trash2, X, Upload, GripVertical, FileText, Download, Eye, Search, Edit, Check } from 'lucide-react';
+import { 
+    Layers, Plus, Loader2, Pencil, Trash2, X, Upload, 
+    GripVertical, FileText, Download, Eye, Search, Edit, Check,
+    AlertCircle
+} from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import type { SubmitHandler } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { mapServerErrors } from '@/utils/mapServerErrors';
+import { scrollToFirstError } from '@/utils/form-utils';
 
 interface Ctx { courseId: string; numericCourseId: number | null }
 
@@ -14,6 +24,15 @@ const isVideoFile = (contentType: string, fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase() || '';
     return VIDEO_EXTS.includes(ext);
 };
+
+const sectionSchema = yup.object().shape({
+    title: yup.string()
+        .min(3, 'Section name must be at least 3 characters.')
+        .required('Section name is required.'),
+    files: yup.array().of(yup.mixed<File>()).optional().default([])
+});
+
+type SectionFormData = yup.InferType<typeof sectionSchema>;
 
 export const CourseSectionsTab = () => {
     const { numericCourseId } = useOutletContext<Ctx>();
@@ -168,35 +187,61 @@ export const CourseSectionsTab = () => {
 
 function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numericCourseId: number; onClose: () => void; qk: any[]; sections: SectionDto[] }) {
     const qc = useQueryClient();
-    const [title, setTitle] = useState('');
-    const [files, setFiles] = useState<File[]>([]);
-    const [error, setError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [globalError, setGlobalError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleCreate = async () => {
-        setError('');
-        const t = title.trim();
-        const num = sections.length + 1;
-        if (!t) return setError('Section name is required');
-        if (sections.some(s => s.title.toLowerCase() === t.toLowerCase())) return setError('Section name must be unique');
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        setError,
+        formState: { errors, isSubmitting },
+    } = useForm<SectionFormData>({
+        resolver: yupResolver(sectionSchema) as any,
+        defaultValues: {
+            title: '',
+            files: [],
+        }
+    });
 
-        setIsSubmitting(true);
+    const files = (watch('files') || []).filter((f): f is File => !!f);
+
+    const onSubmit: SubmitHandler<SectionFormData> = async (data) => {
+        setGlobalError('');
+        const t = data.title.trim();
+        const num = sections.length + 1;
+        
+        // Uniqueness check
+        if (sections.some(s => s.title.toLowerCase() === t.toLowerCase())) {
+            setError('title', { message: 'Section name must be unique' });
+            return;
+        }
+
         try {
             const section = await sectionService.createSection({ title: t, sectionNumber: num, courseId: numericCourseId });
-            if (files.length > 0) {
-                const fileMetas = files.map(f => ({ fileName: f.name, fileSize: f.size, contentType: f.type || 'application/octet-stream' }));
+            
+            if (data.files && data.files.length > 0) {
+                const validFiles = data.files.filter((f): f is File => !!f);
+                const fileMetas = validFiles.map(f => ({ 
+                    fileName: f.name, 
+                    fileSize: f.size, 
+                    contentType: f.type || 'application/octet-stream' 
+                }));
                 const urls = await sectionService.requestPresignedUrls(section.id, { files: fileMetas });
-                await Promise.all(urls.map((url, i) => sectionService.uploadFileToPresignedUrl(url, files[i])));
+                await Promise.all(urls.map((url, i) => sectionService.uploadFileToPresignedUrl(url, validFiles[i])));
             }
+            
             toast.success('Section created successfully');
             qc.invalidateQueries({ queryKey: qk });
             onClose();
         } catch (err: any) {
-            setError(err?.response?.data?.message || err.message || 'Failed to create section');
-            qc.invalidateQueries({ queryKey: qk }); // partial creation could have happened
-        } finally {
-            setIsSubmitting(false);
+            if (err?.response?.data?.errors) {
+                mapServerErrors(err.response.data.errors, setError);
+                setTimeout(() => scrollToFirstError(err.response.data.errors), 100);
+            }
+            setGlobalError(err?.response?.data?.message || err.message || 'Failed to create section');
+            qc.invalidateQueries({ queryKey: qk });
         }
     };
 
@@ -211,41 +256,65 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
                     </button>
                 </div>
                 
-                <div className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit, (err) => scrollToFirstError(err))} className="space-y-4">
+                    {globalError && (
+                        <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-bold animate-in slide-in-from-top-2">
+                            <AlertCircle className="w-4 h-4" />
+                            {globalError}
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Name</label>
-                        <input value={title} onChange={e => setTitle(e.target.value)} disabled={isSubmitting} placeholder="e.g. Introduction" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
+                        <input 
+                            {...register('title')}
+                            disabled={isSubmitting} 
+                            placeholder="e.g. Introduction" 
+                            className={`w-full bg-gray-50 dark:bg-slate-900/50 border ${errors.title ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-200 dark:border-slate-700 focus:ring-[#21A9FF]/50'} rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 text-gray-900 dark:text-white transition-all`} 
+                        />
+                        {errors.title && <p className="text-[11px] font-bold text-red-500 mt-1.5 ml-1 animate-in fade-in slide-in-from-top-1">{errors.title.message}</p>}
                     </div>
+
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Include Files (Optional)</label>
                         <div className="flex flex-col gap-2">
                             <label className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${isSubmitting ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-300 dark:border-slate-600'}`}>
                                 <Upload className="w-5 h-5 text-gray-400" />
                                 <span className="text-sm font-semibold text-gray-600 dark:text-slate-400">Select Files</span>
-                                <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => {
-                                    if (e.target.files) setFiles(prev => [...prev, ...Array.from(e.target.files!)]);
-                                }} />
+                                <input 
+                                    ref={fileInputRef} 
+                                    type="file" 
+                                    multiple 
+                                    className="hidden" 
+                                    onChange={(e) => {
+                                        if (e.target.files) {
+                                            const newFiles = Array.from(e.target.files);
+                                            setValue('files', [...files, ...newFiles], { shouldValidate: true });
+                                        }
+                                    }} 
+                                />
                             </label>
+
                             {files.length > 0 && (
-                                <div className="space-y-1.5 mt-2">
+                                <div className="space-y-1.5 mt-2 max-h-48 overflow-y-auto pr-1">
                                 {files.map((file, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                                        <div className="flex items-center gap-3.5 flex-1 truncate pr-2">
-                                            <div className="w-11 h-11 bg-gray-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700/50">
+                                    <div key={i} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                                        <div className="flex items-center gap-3 flex-1 truncate pr-2">
+                                            <div className="w-10 h-10 bg-gray-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700/50">
                                                 <FileText className="w-5 h-5 text-[#21A9FF]" />
                                             </div>
                                             <div className="truncate pr-2">
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{file.name}</p>
-                                                <div className="flex items-center gap-2 mt-0.5 truncate">
-                                                    <span className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 shrink-0">
-                                                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                                                    </span>
-                                                    <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600 shrink-0"></span>
-                                                    <span className="text-[9px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-2 py-0.5 rounded-lg w-fit uppercase tracking-tighter">New Attached</span>
-                                                </div>
+                                                <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{file.name}</p>
+                                                <p className="text-[10px] font-semibold text-gray-500 dark:text-slate-400">
+                                                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                                                </p>
                                             </div>
                                         </div>
-                                        <button onClick={() => setFiles(f => f.filter((_, idx) => idx !== i))} className="w-9 h-9 flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-all shadow-sm">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setValue('files', files.filter((_, idx) => idx !== i))} 
+                                            className="w-8 h-8 flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-all shadow-sm"
+                                        >
                                             <X className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -254,12 +323,22 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
                             )}
                         </div>
                     </div>
-                    {error && <p className="text-xs font-bold text-red-500">{error}</p>}
-                </div>
+                </form>
 
                 <div className="mt-8 flex gap-3 justify-end">
-                    <button onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition">Cancel</button>
-                    <button onClick={handleCreate} disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm rounded-xl transition-all shadow disabled:opacity-50">
+                    <button 
+                        type="button"
+                        onClick={onClose} 
+                        disabled={isSubmitting} 
+                        className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition active:scale-95 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={handleSubmit(onSubmit, (err) => scrollToFirstError(err))} 
+                        disabled={isSubmitting} 
+                        className="flex items-center gap-2 px-8 py-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-blue-500/25 active:scale-95 disabled:opacity-50"
+                    >
                         {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                         Save Section
                     </button>
@@ -271,12 +350,26 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
 
 function EditSectionModal({ section, onClose, qk, sections }: { section: SectionDto; onClose: () => void; qk: any[]; sections: SectionDto[] }) {
     const qc = useQueryClient();
-    const [title, setTitle] = useState(section.title);
+    const [globalError, setGlobalError] = useState('');
     const [existingFiles, setExistingFiles] = useState<SectionFileDto[]>(section.sectionFiles || []);
-    const [files, setFiles] = useState<File[]>([]);
-    const [error, setError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        setError,
+        formState: { errors, isSubmitting },
+    } = useForm<SectionFormData>({
+        resolver: yupResolver(sectionSchema) as any,
+        defaultValues: {
+            title: section.title,
+            files: [],
+        }
+    });
+
+    const files = (watch('files') || []).filter((f): f is File => !!f);
 
     const removeExistingFile = async (fileId: string) => {
         if (!window.confirm('Delete this file?')) return;
@@ -290,30 +383,40 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
         }
     };
 
-    const handleUpdate = async () => {
-        setError('');
-        const t = title.trim();
+    const onSubmit: SubmitHandler<SectionFormData> = async (data) => {
+        setGlobalError('');
+        const t = data.title.trim();
         const num = section.sectionNumber;
-        if (!t) return setError('Section name is required');
-        if (sections.some(s => s.id !== section.id && s.title.toLowerCase() === t.toLowerCase())) return setError('Section name must be unique');
 
-        setIsSubmitting(true);
+        // Uniqueness check
+        if (sections.some(s => s.id !== section.id && s.title.toLowerCase() === t.toLowerCase())) {
+            setError('title', { message: 'Section name must be unique' });
+            return;
+        }
+
         try {
             await sectionService.updateSection(section.id, { id: section.id, title: t, sectionNumber: num });
 
-            if (files.length > 0) {
-                const fileMetas = files.map(f => ({ fileName: f.name, fileSize: f.size, contentType: f.type || 'application/octet-stream' }));
+            if (data.files && data.files.length > 0) {
+                const validFiles = data.files.filter((f): f is File => !!f);
+                const fileMetas = validFiles.map(f => ({ 
+                    fileName: f.name, 
+                    fileSize: f.size, 
+                    contentType: f.type || 'application/octet-stream' 
+                }));
                 const urls = await sectionService.requestPresignedUrls(section.id, { files: fileMetas });
-                await Promise.all(urls.map((url, i) => sectionService.uploadFileToPresignedUrl(url, files[i])));
+                await Promise.all(urls.map((url, i) => sectionService.uploadFileToPresignedUrl(url, validFiles[i])));
             }
 
             toast.success('Section updated successfully');
             qc.invalidateQueries({ queryKey: qk });
             onClose();
         } catch (err: any) {
-            setError(err?.response?.data?.message || 'Failed to update section');
-        } finally {
-            setIsSubmitting(false);
+            if (err?.response?.data?.errors) {
+                mapServerErrors(err.response.data.errors, setError);
+                setTimeout(() => scrollToFirstError(err.response.data.errors), 100);
+            }
+            setGlobalError(err?.response?.data?.message || 'Failed to update section');
         }
     };
 
@@ -328,30 +431,46 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                     </button>
                 </div>
 
-                <div className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit, (err) => scrollToFirstError(err))} className="space-y-4">
+                    {globalError && (
+                        <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-bold animate-in slide-in-from-top-2">
+                            <AlertCircle className="w-4 h-4" />
+                            {globalError}
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Section Name</label>
-                        <input value={title} onChange={e => setTitle(e.target.value)} disabled={isSubmitting} placeholder="Section name" className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white" />
+                        <input 
+                            {...register('title')}
+                            disabled={isSubmitting} 
+                            placeholder="Section name" 
+                            className={`w-full bg-gray-50 dark:bg-slate-900/50 border ${errors.title ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-200 dark:border-slate-700 focus:ring-[#21A9FF]/50'} rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 text-gray-900 dark:text-white transition-all`} 
+                        />
+                        {errors.title && <p className="text-[11px] font-bold text-red-500 mt-1.5 ml-1 animate-in fade-in slide-in-from-top-1">{errors.title.message}</p>}
                     </div>
 
                     {existingFiles.length > 0 && (
                         <div>
                             <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Existing Files</label>
-                            <div className="space-y-2">
+                            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                                 {existingFiles.map((file) => (
-                                    <div key={file.id} className="flex items-center justify-between p-3.5 bg-blue-50/20 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-500/20 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                                    <div key={file.id} className="flex items-center justify-between p-3 bg-blue-50/20 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-500/20 rounded-2xl shadow-sm hover:shadow-md transition-all">
                                         <div className="flex items-center gap-3.5 flex-1 truncate pr-2">
-                                            <div className="w-11 h-11 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-[#21A9FF]/20 dark:border-blue-500/10">
+                                            <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-[#21A9FF]/20 dark:border-blue-500/10">
                                                 <FileText className="w-5 h-5 text-[#21A9FF]" />
                                             </div>
                                                 <div className="truncate">
-                                                    <p className="text-sm font-bold text-[#21A9FF] truncate">{file.fileName}</p>
-                                                    <div className="flex flex-col gap-1 mt-0.5">
-                                                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-lg w-fit uppercase tracking-tighter">Previously Uploaded</span>
-                                                    </div>
+                                                    <p className="text-xs font-bold text-[#21A9FF] truncate">{file.fileName}</p>
+                                                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-lg w-fit uppercase tracking-tighter">Uploaded</span>
                                                 </div>
                                         </div>
-                                        <button onClick={() => removeExistingFile(file.id)} className="w-9 h-9 flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-all shadow-sm" title="Remove File">
+                                        <button 
+                                            type="button"
+                                            onClick={() => removeExistingFile(file.id)} 
+                                            className="w-8 h-8 flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-all shadow-sm" 
+                                            title="Remove File"
+                                        >
                                             <X className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -366,30 +485,39 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                             <label className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${isSubmitting ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-300 dark:border-slate-600'}`}>
                                 <Upload className="w-5 h-5 text-gray-400" />
                                 <span className="text-sm font-semibold text-gray-600 dark:text-slate-400">Select Files</span>
-                                <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => {
-                                    if (e.target.files) setFiles(prev => [...prev, ...Array.from(e.target.files!)]);
-                                }} />
+                                <input 
+                                    ref={fileInputRef} 
+                                    type="file" 
+                                    multiple 
+                                    className="hidden" 
+                                    onChange={(e) => {
+                                        if (e.target.files) {
+                                            const newFiles = Array.from(e.target.files);
+                                            setValue('files', [...files, ...newFiles], { shouldValidate: true });
+                                        }
+                                    }} 
+                                />
                             </label>
                             {files.length > 0 && (
-                                <div className="space-y-2 mt-3">
+                                <div className="space-y-2 mt-3 max-h-40 overflow-y-auto pr-1">
                                     {files.map((file, i) => (
                                         <div key={i} className="flex items-center justify-between p-3.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all">
                                             <div className="flex items-center gap-3.5 flex-1 truncate pr-2">
-                                                <div className="w-11 h-11 bg-gray-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700/50">
+                                                <div className="w-10 h-10 bg-gray-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-gray-100 dark:border-slate-700/50">
                                                     <FileText className="w-5 h-5 text-[#21A9FF]" />
                                                 </div>
                                                 <div className="truncate pr-2">
-                                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{file.name}</p>
-                                                    <div className="flex items-center gap-2 mt-0.5 truncate">
-                                                        <span className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 shrink-0">
-                                                            {(file.size / 1024 / 1024).toFixed(2)} MB
-                                                        </span>
-                                                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600 shrink-0"></span>
-                                                        <span className="text-[9px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-2 py-0.5 rounded-lg w-fit uppercase tracking-tighter">New Attached</span>
-                                                    </div>
+                                                    <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{file.name}</p>
+                                                    <p className="text-[10px] font-semibold text-gray-500 dark:text-slate-400">
+                                                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <button onClick={() => setFiles(f => f.filter((_, idx) => idx !== i))} className="w-9 h-9 flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-all shadow-sm">
+                                            <button 
+                                                type="button"
+                                                onClick={() => setValue('files', files.filter((_, idx) => idx !== i))} 
+                                                className="w-8 h-8 flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-all shadow-sm"
+                                            >
                                                 <X className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -398,13 +526,24 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                             )}
                         </div>
                     </div>
-                    {error && <p className="text-xs font-bold text-red-500">{error}</p>}
-                </div>
+                </form>
 
                 <div className="mt-8 flex gap-3 justify-end">
-                    <button onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition">Cancel</button>
-                    <button onClick={handleUpdate} disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 disabled:opacity-50">
-                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Save Changes
+                    <button 
+                        type="button"
+                        onClick={onClose} 
+                        disabled={isSubmitting} 
+                        className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition active:scale-95 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={handleSubmit(onSubmit, (err) => scrollToFirstError(err))} 
+                        disabled={isSubmitting} 
+                        className="flex items-center gap-2 px-8 py-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 disabled:opacity-50"
+                    >
+                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} 
+                        Save Changes
                     </button>
                 </div>
             </div>

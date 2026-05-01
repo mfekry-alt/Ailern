@@ -38,6 +38,11 @@ export interface GenerateQuizByAIPayload {
         Hard: number;
     };
     query?: string;
+    options?: {
+        useSelectedOnly: boolean;
+        style: 'conceptual' | 'practical' | 'mixed';
+        bloomLevel?: string;
+    };
 }
 
 const unwrapEnvelope = <T>(payload: ApiEnvelope<T> | T | undefined): T | undefined => {
@@ -71,6 +76,14 @@ const buildGenerateFormData = (payload: GenerateQuizByAIPayload): FormData => {
 
     if (payload.query?.trim()) {
         formData.append('Query', payload.query.trim());
+    }
+
+    if (payload.options) {
+        formData.append('Options.UseSelectedOnly', String(payload.options.useSelectedOnly));
+        formData.append('Options.Style', payload.options.style);
+        if (payload.options.bloomLevel) {
+            formData.append('Options.BloomLevel', payload.options.bloomLevel);
+        }
     }
 
     return formData;

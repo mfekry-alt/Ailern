@@ -60,7 +60,7 @@ export interface ChangeEmailCommand {
 
 export interface ConfirmChangeUserEmailCommand {
     token: string;
-    email: string;
+    userId: string;
     newEmail: string;
 }
 
@@ -349,6 +349,7 @@ export interface GetMySubmissionDto {
     studentId: number;
     assignmentId: number;
     feedback: string | null;
+    grade?: number;
     isLate: boolean;
     filesUrls: {
         id: string;

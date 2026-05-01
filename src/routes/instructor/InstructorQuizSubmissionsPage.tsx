@@ -101,7 +101,13 @@ export const InstructorQuizSubmissionsPage = () => {
                 {/* Header */}
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => navigate(quizMeta?.courseId ? `/instructor/courses/${quizMeta.courseId}/manage/quizzes` : -1)}
+                        onClick={() => {
+                            if (quizMeta?.courseId) {
+                                navigate(`/instructor/courses/${quizMeta.courseId}/manage/quizzes`);
+                            } else {
+                                navigate(-1);
+                            }
+                        }}
                         className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm"
                     >
                         <ArrowLeft className="w-5 h-5" />
