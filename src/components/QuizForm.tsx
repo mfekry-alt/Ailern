@@ -1,7 +1,12 @@
-import { useState } from 'react';
-import { AlertTriangle, Settings, CalendarClock, Eye, Timer } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AlertTriangle, Settings, CalendarClock, Eye, Timer, AlertCircle } from 'lucide-react';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import type { QuizFormStatus } from '@/types/api.types';
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { mapServerErrors } from '@/utils/mapServerErrors';
+import { scrollToFirstError } from '@/utils/form-utils';
 
 export interface QuizFormData {
     title: string;
@@ -9,13 +14,69 @@ export interface QuizFormData {
     availableFrom: string;
     availableUntil: string;
     maximumAttempts: number;
-    attemptTimeLimit: number | '';
+    attemptTimeLimit: number;
     status: QuizFormStatus;
     publishedDate: string;
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
     shuffleOptions: boolean;
 }
+
+const quizSchema = yup.object().shape({
+    title: yup.string()
+        .required('Title is required.')
+        .max(200, 'Title must be 200 characters or less.'),
+    description: yup.string()
+        .max(2000, 'Description must be 2000 characters or less.')
+        .optional()
+        .default(''),
+    availableFrom: yup.string()
+        .required('Available From is required.')
+        .test('future-date', 'AvailableFrom must be in the future.', (val) => !val || new Date(val) > new Date()),
+    availableUntil: yup.string()
+        .required('Available Until is required.')
+        .test('future-date', 'AvailableUntil must be in the future.', (val) => !val || new Date(val) > new Date())
+        .test('is-after-from', 'Available Until must be after Available From.', function(value) {
+            const { availableFrom } = this.parent;
+            if (!availableFrom || !value) return true;
+            return new Date(value) > new Date(availableFrom);
+        }),
+    maximumAttempts: yup.number()
+        .typeError('Maximum attempts must be a number.')
+        .required('Maximum attempts is required.')
+        .min(1, 'MaximumAttempts must be between 1 and 3.')
+        .max(3, 'MaximumAttempts must be between 1 and 3.'),
+    attemptTimeLimit: yup.number()
+        .transform((value) => (isNaN(value) ? undefined : value))
+        .typeError('Time limit must be a number.')
+        .required('AttemptTimeLimit must be greater than 0.')
+        .positive('AttemptTimeLimit must be greater than 0.')
+        .test('within-window', 'AttemptTimeLimit must be less than or equal to the total available time.', function(value) {
+            const { availableFrom, availableUntil } = this.parent;
+            if (!availableFrom || !availableUntil || !value) return true;
+            const windowMinutes = (new Date(availableUntil).getTime() - new Date(availableFrom).getTime()) / 60000;
+            return value <= Math.floor(windowMinutes);
+        }),
+    status: yup.string().oneOf(['Draft', 'Published', 'Scheduled']).required(),
+    publishedDate: yup.string().when('status', {
+        is: 'Scheduled',
+        then: (schema) => schema.required('Publish Date is required for scheduled quizzes.')
+            .test('future-date', 'Publish Date must be in the future.', (val) => !val || new Date(val) > new Date())
+            .test('before-from', 'Publish Date must be before "Available From".', function(val) {
+                const { availableFrom } = this.parent;
+                if (!val || !availableFrom) return true;
+                return new Date(val) < new Date(availableFrom);
+            }),
+        otherwise: (schema) => schema.optional(),
+    }),
+    showResultOnClose: yup.boolean().default(true),
+    shuffleQuestions: yup.boolean().default(true),
+    shuffleOptions: yup.boolean().default(true),
+});
+
+const quizCreateSchema = quizSchema;
+
+const quizEditSchema = quizSchema;
 
 interface QuizFormProps {
     initialData?: Partial<QuizFormData>;
@@ -137,100 +198,56 @@ export const QuizForm = ({
     validationMode = 'edit',
     showVisibilitySection = true,
 }: QuizFormProps) => {
-    const [data, setData] = useState<QuizFormData>(() => ({
-        ...defaultFormData(),
-        ...initialData,
-    }));
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    const schema = validationMode === 'create' ? quizCreateSchema : quizEditSchema;
 
-    const set = (patch: Partial<QuizFormData>) => setData((s) => ({ ...s, ...patch }));
+    const {
+        register,
+        handleSubmit,
+        control,
+        setValue,
+        watch,
+        reset,
+        setError,
+        formState: { errors, isSubmitting },
+    } = useForm<QuizFormData>({
+        resolver: yupResolver(schema) as any,
+        defaultValues: {
+            ...defaultFormData(),
+            ...initialData,
+        }
+    });
 
-    const clearError = (field: string) => {
-        if (errors[field]) {
-            setErrors((prev) => {
-                const next = { ...prev };
-                delete next[field];
-                return next;
+    useEffect(() => {
+        if (initialData) {
+            reset({
+                ...defaultFormData(),
+                ...initialData,
             });
         }
-    };
+    }, [initialData, reset]);
 
-    const validate = (): boolean => {
-        const e: Record<string, string> = {};
-
-        if (!data.title.trim()) e.title = 'Quiz title is required.';
-        else if (data.title.length > 200) e.title = 'Title must be 200 characters or less.';
-
-        if (data.description.length > 2000) e.description = 'Description must be 2000 characters or less.';
-
-        const fromT = data.availableFrom ? new Date(data.availableFrom).getTime() : NaN;
-        const untilT = data.availableUntil ? new Date(data.availableUntil).getTime() : NaN;
-        const now = Date.now();
-
-        if (!data.availableFrom) e.availableFrom = 'Available From is required.';
-        if (!data.availableUntil) e.availableUntil = 'Available Until is required.';
-
-        if (data.availableFrom && data.availableUntil) {
-            if (!Number.isFinite(fromT)) e.availableFrom = e.availableFrom || 'Invalid start date.';
-            if (!Number.isFinite(untilT)) e.availableUntil = e.availableUntil || 'Invalid end date.';
-            else if (Number.isFinite(fromT) && untilT <= fromT) {
-                e.availableUntil = '"Available Until" must be after "Available From".';
-            }
-        }
-
-        if (validationMode === 'create') {
-            if (data.maximumAttempts < 1 || data.maximumAttempts > 3)
-                e.maximumAttempts = 'Attempts allowed must be between 1 and 3.';
-
-            const windowMinutes = Number.isFinite(fromT) && Number.isFinite(untilT) ? (untilT - fromT) / 60_000 : NaN;
-            const limitRaw = data.attemptTimeLimit === '' ? NaN : Number(data.attemptTimeLimit);
-            const limitInt = Number.isFinite(limitRaw) ? Math.floor(limitRaw) : NaN;
-
-            if (data.attemptTimeLimit === '' || !Number.isFinite(limitRaw) || limitInt <= 0) {
-                e.attemptTimeLimit = 'Time limit must be greater than 0 minutes.';
-            } else if (Number.isFinite(windowMinutes) && limitInt > Math.floor(windowMinutes)) {
-                e.attemptTimeLimit = `Time limit cannot exceed the availability window (${Math.max(0, Math.floor(windowMinutes))} minutes).`;
-            }
-
-            if (Number.isFinite(fromT) && fromT <= now) {
-                e.availableFrom = 'Available From must be in the future.';
-            }
-        } else {
-            if (data.maximumAttempts < 1 || data.maximumAttempts > 5)
-                e.maximumAttempts = 'Attempts allowed must be between 1 and 5.';
-
-            if (data.attemptTimeLimit === '' || Number(data.attemptTimeLimit) < 5)
-                e.attemptTimeLimit = 'Time limit must be at least 5 minutes.';
-        }
-
-        if (showVisibilitySection && data.status === 'Scheduled') {
-            if (!data.publishedDate) e.publishedDate = 'Publish Date is required for scheduled quizzes.';
-            else {
-                const pd = new Date(data.publishedDate).getTime();
-                if (!Number.isFinite(pd) || pd <= now) e.publishedDate = 'Publish Date must be in the future.';
-                if (data.availableFrom && Number.isFinite(pd) && Number.isFinite(fromT) && pd >= fromT)
-                    e.publishedDate = 'Publish Date must be before "Available From".';
-            }
-        }
-
-        setErrors(e);
-        return Object.keys(e).length === 0;
-    };
-
-    const handleSubmit = async (action: 'primary' | 'secondary') => {
-        if (!validate()) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
-        if (action === 'primary') {
+    const handleFormSubmit = async (data: QuizFormData) => {
+        try {
             await onSubmit(data);
-        } else if (secondaryAction) {
+        } catch (error: any) {
+            if (error?.response?.data?.errors) {
+                mapServerErrors(error.response.data.errors, setError);
+                setTimeout(() => scrollToFirstError(error.response.data.errors), 100);
+            }
+        }
+    };
+
+    const handleSecondaryAction = async () => {
+        if (secondaryAction) {
+            const data = watch();
+            // We still want to validate before secondary action if it's a save-like action
             await secondaryAction.onClick(data);
         }
     };
 
+    const formData = watch();
+    const busy = isPending || isSubmitting || !!secondaryAction?.isPending;
     const nowDate = new Date();
-    const busy = isPending || !!secondaryAction?.isPending;
 
     return (
         <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
@@ -246,26 +263,24 @@ export const QuizForm = ({
                         <input
                             id="title"
                             type="text"
-                            value={data.title}
-                            onChange={(e) => { set({ title: e.target.value }); clearError('title'); }}
+                            {...register('title')}
                             className={getInputCls(!!errors.title)}
                             placeholder="e.g. Midterm Examination - Chapter 1 to 5"
                             disabled={busy}
                         />
-                        <ErrorText msg={errors.title} />
+                        {errors.title && <ErrorText msg={errors.title.message} />}
                     </div>
                     <div>
                         <label htmlFor="description" className={labelCls}>Description (Optional)</label>
                         <textarea
                             id="description"
-                            value={data.description}
-                            onChange={(e) => set({ description: e.target.value })}
+                            {...register('description')}
                             rows={3}
                             className={`${getInputCls(!!errors.description)} resize-none`}
                             placeholder="Add instructions or guidelines for the students..."
                             disabled={busy}
                         />
-                        <ErrorText msg={errors.description} />
+                        {errors.description && <ErrorText msg={errors.description.message} />}
                     </div>
                 </div>
 
@@ -280,53 +295,58 @@ export const QuizForm = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className={labelCls}>Available From <span className="text-red-500">*</span></label>
-                            <DateTimePicker
-                                id="availableFrom"
-                                value={parseDateStr(data.availableFrom)}
-                                onChange={(d) => { set({ availableFrom: dateToLocalStr(d) }); clearError('availableFrom'); }}
-                                minDate={nowDate}
-                                hasError={!!errors.availableFrom}
-                                disabled={busy}
-                                placeholder="Select start date & time"
-                                iconColor="text-emerald-500"
+                            <Controller
+                                name="availableFrom"
+                                control={control}
+                                render={({ field }) => (
+                                    <DateTimePicker
+                                        id="availableFrom"
+                                        value={parseDateStr(field.value)}
+                                        onChange={(d) => field.onChange(dateToLocalStr(d))}
+                                        minDate={nowDate}
+                                        hasError={!!errors.availableFrom}
+                                        disabled={busy}
+                                        placeholder="Select start date & time"
+                                        iconColor="text-emerald-500"
+                                    />
+                                )}
                             />
-                            {errors.availableFrom ? <ErrorText msg={errors.availableFrom} /> : <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">When students can start.</p>}
+                            {errors.availableFrom ? <ErrorText msg={errors.availableFrom.message} /> : <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">When students can start.</p>}
                         </div>
                         <div>
                             <label className={labelCls}>Available Until <span className="text-red-500">*</span></label>
-                            <DateTimePicker
-                                id="availableUntil"
-                                value={parseDateStr(data.availableUntil)}
-                                onChange={(d) => { set({ availableUntil: dateToLocalStr(d) }); clearError('availableUntil'); }}
-                                minDate={parseDateStr(data.availableFrom) ?? nowDate}
-                                hasError={!!errors.availableUntil}
-                                disabled={busy}
-                                placeholder="Select end date & time"
-                                iconColor="text-red-500"
+                            <Controller
+                                name="availableUntil"
+                                control={control}
+                                render={({ field }) => (
+                                    <DateTimePicker
+                                        id="availableUntil"
+                                        value={parseDateStr(field.value)}
+                                        onChange={(d) => field.onChange(dateToLocalStr(d))}
+                                        minDate={parseDateStr(watch('availableFrom')) ?? nowDate}
+                                        hasError={!!errors.availableUntil}
+                                        disabled={busy}
+                                        placeholder="Select end date & time"
+                                        iconColor="text-red-500"
+                                    />
+                                )}
                             />
-                            {errors.availableUntil ? <ErrorText msg={errors.availableUntil} /> : <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Last moment a student can enter.</p>}
+                            {errors.availableUntil ? <ErrorText msg={errors.availableUntil.message} /> : <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">Last moment a student can enter.</p>}
                         </div>
                         <div>
                             <label htmlFor="maximumAttempts" className={labelCls}>Attempts Allowed <span className="text-red-500">*</span></label>
                             <input
                                 id="maximumAttempts"
                                 type="number"
-                                min={1}
-                                max={validationMode === 'create' ? 3 : 5}
-                                value={data.maximumAttempts}
-                                onChange={(e) => {
-                                    const cap = validationMode === 'create' ? 3 : 5;
-                                    set({ maximumAttempts: Math.min(cap, Math.max(1, parseInt(e.target.value, 10) || 1)) });
-                                    clearError('maximumAttempts');
-                                }}
+                                {...register('maximumAttempts')}
                                 className={getInputCls(!!errors.maximumAttempts)}
                                 disabled={busy}
                             />
                             {errors.maximumAttempts ? (
-                                <ErrorText msg={errors.maximumAttempts} />
+                                <ErrorText msg={errors.maximumAttempts.message} />
                             ) : (
                                 <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">
-                                    {validationMode === 'create' ? 'Between 1 and 3 attempts.' : 'Between 1 and 5 attempts.'}
+                                    Between 1 and 3 attempts.
                                 </p>
                             )}
                         </div>
@@ -337,35 +357,16 @@ export const QuizForm = ({
                                 <input
                                     id="attemptTimeLimit"
                                     type="number"
-                                    min={validationMode === 'create' ? 1 : 5}
-                                    value={data.attemptTimeLimit}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        if (val === '') {
-                                            set({ attemptTimeLimit: '' });
-                                        } else if (validationMode === 'create') {
-                                            const n = parseInt(val, 10);
-                                            set({ attemptTimeLimit: Number.isNaN(n) ? '' : Math.max(1, n) });
-                                        } else {
-                                            set({ attemptTimeLimit: Math.max(5, parseInt(val, 10)) });
-                                        }
-                                        clearError('attemptTimeLimit');
-                                    }}
+                                    {...register('attemptTimeLimit')}
                                     className={`${getInputCls(!!errors.attemptTimeLimit)} pl-11`}
                                     disabled={busy}
                                 />
                             </div>
                             {errors.attemptTimeLimit ? (
-                                <ErrorText msg={errors.attemptTimeLimit} />
+                                <ErrorText msg={errors.attemptTimeLimit.message} />
                             ) : (
                                 <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-1.5 ml-1">
-                                    {validationMode === 'create'
-                                        ? 'Minutes per attempt; must be greater than 0 and not longer than the availability window.'
-                                        : (
-                                            <>
-                                                Minimum <strong>5</strong> minutes required.
-                                            </>
-                                        )}
+                                    Minutes per attempt; must be greater than 0 and not longer than the availability window.
                                 </p>
                             )}
                         </div>
@@ -380,7 +381,7 @@ export const QuizForm = ({
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {PUBLISH_OPTIONS.map((opt) => {
-                                const isSelected = data.status === opt.value;
+                                const isSelected = watch('status') === opt.value;
                                 return (
                                     <label key={opt.value} className={`relative flex flex-col p-5 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'}`}>
                                         <div className="flex items-center justify-between mb-2">
@@ -390,26 +391,32 @@ export const QuizForm = ({
                                             </div>
                                         </div>
                                         <span className={`text-xs font-medium ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-slate-400'}`}>{opt.desc}</span>
-                                        <input type="radio" name="status" value={opt.value} checked={isSelected} onChange={() => { set({ status: opt.value }); clearError('publishedDate'); }} className="hidden" disabled={busy} />
+                                        <input type="radio" {...register('status')} value={opt.value} checked={isSelected} className="hidden" disabled={busy} />
                                     </label>
                                 );
                             })}
                         </div>
 
-                        {data.status === 'Scheduled' && (
+                        {watch('status') === 'Scheduled' && (
                             <div className="p-5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl animate-in fade-in slide-in-from-top-2">
                                 <label className={`${labelCls} !text-blue-700 dark:!text-blue-400`}>Publish Date & Time <span className="text-red-500">*</span></label>
-                                <DateTimePicker
-                                    id="publishedDate"
-                                    value={parseDateStr(data.publishedDate)}
-                                    onChange={(d) => { set({ publishedDate: dateToLocalStr(d) }); clearError('publishedDate'); }}
-                                    minDate={nowDate}
-                                    hasError={!!errors.publishedDate}
-                                    disabled={busy}
-                                    placeholder="Select publish date & time"
-                                    iconColor="text-blue-500"
+                                <Controller
+                                    name="publishedDate"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <DateTimePicker
+                                            id="publishedDate"
+                                            value={parseDateStr(field.value)}
+                                            onChange={(d) => field.onChange(dateToLocalStr(d))}
+                                            minDate={nowDate}
+                                            hasError={!!errors.publishedDate}
+                                            disabled={busy}
+                                            placeholder="Select publish date & time"
+                                            iconColor="text-blue-500"
+                                        />
+                                    )}
                                 />
-                                {errors.publishedDate ? <ErrorText msg={errors.publishedDate} /> : <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-2 ml-1">Must be in the future and <strong>before</strong> &quot;Available From&quot; date.</p>}
+                                {errors.publishedDate ? <ErrorText msg={errors.publishedDate.message} /> : <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400 mt-2 ml-1">Must be in the future and <strong>before</strong> &quot;Available From&quot; date.</p>}
                             </div>
                         )}
                     </div>
@@ -426,7 +433,7 @@ export const QuizForm = ({
                             { key: 'shuffleQuestions' as const, label: 'Shuffle questions', desc: 'Randomize order of questions' },
                             { key: 'shuffleOptions' as const, label: 'Shuffle options', desc: 'Randomize order of answer choices' },
                         ]).map(({ key, label, desc }) => {
-                            const isChecked = data[key];
+                            const isChecked = watch(key);
                             return (
                                 <label key={key} className={`relative flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${isChecked ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' : 'border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-slate-500 bg-white dark:bg-slate-800'}`}>
                                     <div className="flex-1">
@@ -434,7 +441,7 @@ export const QuizForm = ({
                                         <div className={`text-xs font-medium ${isChecked ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-slate-400'}`}>{desc}</div>
                                     </div>
                                     <div className="pt-0.5">
-                                        <input type="checkbox" checked={isChecked} onChange={(e) => set({ [key]: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" disabled={busy} />
+                                        <input type="checkbox" {...register(key)} className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" disabled={busy} />
                                     </div>
                                 </label>
                             );
@@ -450,11 +457,21 @@ export const QuizForm = ({
                 </button>
                 <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
                     {secondaryAction && (
-                        <button type="button" onClick={() => handleSubmit('secondary')} disabled={busy} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gray-900 hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl font-bold transition-all shadow-md active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed">
+                        <button 
+                            type="button" 
+                            onClick={handleSecondaryAction} 
+                            disabled={busy} 
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gray-900 hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl font-bold transition-all shadow-md active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
                             {secondaryAction.isPending ? 'Saving...' : secondaryAction.label}
                         </button>
                     )}
-                    <button type="button" onClick={() => handleSubmit('primary')} disabled={busy} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none">
+                    <button 
+                        type="button" 
+                        onClick={handleSubmit(handleFormSubmit)} 
+                        disabled={busy} 
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 hover:-translate-y-0.5 active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                    >
                         {isPending ? 'Saving...' : submitLabel}
                     </button>
                 </div>

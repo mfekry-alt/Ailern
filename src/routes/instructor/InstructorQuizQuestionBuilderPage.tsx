@@ -2,94 +2,108 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { QUERY_KEYS, ROUTES, STORAGE_KEYS } from '@/lib/constants';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Plus, Trash2, CheckCircle2, Loader2, GripVertical, Sparkles, HelpCircle, Settings, XCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, CheckCircle2, Loader2, GripVertical, Sparkles, HelpCircle, Settings, XCircle, AlertTriangle, AlertCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createQuiz, upsertQuizQuestions } from '@/api/services/quiz.service';
 import type { CreateQuizBody } from '@/types/api.types';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
 import type { OptionRequest, QuestionUpsertRequest, QuestionType } from '@/types/api.types';
-import { validateQuestionsArray, formatQuizQuestionErrors } from '@/lib/validators';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { mapServerErrors } from '@/utils/mapServerErrors';
+import { scrollToFirstError } from '@/utils/form-utils';
+import { toast } from 'sonner';
 
 // ─── Local UI types ────────────────────────────────────────────────────────
 
-interface UIOption {
-    text: string;
-    isCorrect: boolean;
-}
+const questionSchema = yup.object().shape({
+    questionText: yup.string()
+        .required('Question text is required.')
+        .max(2000, 'Question text cannot exceed 2000 characters.'),
+    mark: yup.number()
+        .typeError('Mark must be a number.')
+        .required('Mark is required.')
+        .positive('Mark must be greater than 0.')
+        .max(100, 'Mark must be less than or equal to 100.'),
+    questionType: yup.string().oneOf(['MCQ', 'TrueFalse', 'Written']).required(),
+    instructions: yup.string()
+        .max(1000, 'Instructions cannot exceed 1000 characters.')
+        .optional()
+        .default(''),
+    explanation: yup.string()
+        .max(1000, 'Explanation cannot exceed 1000 characters.')
+        .optional()
+        .default(''),
+    options: yup.array().of(
+        yup.object().shape({
+            optionText: yup.string()
+                .required('Option text is required.')
+                .max(300, 'Option text cannot exceed 300 characters.'),
+            isCorrect: yup.boolean().required(),
+        })
+    ).when('questionType', {
+        is: (val: string) => val === 'MCQ' || val === 'TrueFalse',
+        then: (schema) => schema.required('Options are required for this type of questions.')
+            .min(1, 'Options are required.')
+            .test('one-correct', 'Exactly one option must be marked as correct.', (options) => {
+                if (!options) return true;
+                return options.filter(o => o.isCorrect).length === 1;
+            }),
+        otherwise: (schema) => schema.optional().default([]),
+    }).when('questionType', {
+        is: 'MCQ',
+        then: (schema) => schema.min(3, 'MCQ questions must have between 3 and 5 options.')
+            .max(5, 'MCQ questions must have between 3 and 5 options.'),
+    }).when('questionType', {
+        is: 'TrueFalse',
+        then: (schema) => schema.length(2, 'True/False questions must have exactly 2 options.')
+            .test('has-true-false', "True/False questions must have options 'True' and 'False'.", (options) => {
+                if (!options || options.length !== 2) return true;
+                const texts = options.map(o => o.optionText.toLowerCase());
+                return texts.includes('true') && texts.includes('false');
+            }),
+    }),
+});
 
-interface UIQuestion {
-    uid: number;
-    type: QuestionType;
-    text: string;
-    instructions: string;
-    mark: number;
-    explanation: string;
-    options: UIOption[];
-}
+const builderSchema = yup.object().shape({
+    questions: yup.array().of(questionSchema).required().min(1, 'At least one question is required.'),
+});
+
+type BuilderFormData = yup.InferType<typeof builderSchema>;
 
 interface BuilderDraftData {
     settings: any;
-    questions: UIQuestion[];
+    questions: BuilderFormData['questions'];
     counter: number;
     savedAt: string;
 }
 
 // ─── Defaults ──────────────────────────────────────────────────────────────
 
-const makeMCQOptions = (): UIOption[] => [
-    { text: '', isCorrect: false },
-    { text: '', isCorrect: false },
-    { text: '', isCorrect: false },
-];
-
-const makeTFOptions = (): UIOption[] => [
-    { text: 'True', isCorrect: true },
-    { text: 'False', isCorrect: false },
-];
-
-const defaultQuestion = (uid: number): UIQuestion => ({
-    uid,
-    type: 'MCQ',
-    text: '',
+const defaultQuestion = (): any => ({
+    questionType: 'MCQ' as QuestionType,
+    questionText: '',
     instructions: '',
     mark: 1,
     explanation: '',
-    options: makeMCQOptions(),
+    options: [
+        { optionText: '', isCorrect: false },
+        { optionText: '', isCorrect: false },
+        { optionText: '', isCorrect: false },
+    ],
 });
 
-const convertQuestionRequestToUI = (q: QuestionUpsertRequest, uid: number): UIQuestion => {
-    const options = q.options?.length
-        ? q.options.map(o => ({ text: o.optionText, isCorrect: o.isCorrect }))
-        : q.questionType === 'TrueFalse'
-            ? makeTFOptions()
-            : q.questionType === 'MCQ'
-                ? makeMCQOptions()
-                : [];
+const makeTFOptions = (): any[] => [
+    { optionText: 'True', isCorrect: true },
+    { optionText: 'False', isCorrect: false },
+];
 
-    return {
-        uid,
-        type: q.questionType,
-        text: q.questionText,
-        instructions: q.instructions ?? '',
-        mark: q.mark ?? 1,
-        explanation: q.explanation ?? '',
-        options,
-    };
-};
-
-// ─── Payload builders ──────────────────────────────────────────────────────
-
-const buildPayloadOptions = (q: UIQuestion): OptionRequest[] =>
-    q.options.map(o => ({ optionText: o.text, isCorrect: o.isCorrect }));
-
-const buildPayloadQuestion = (q: UIQuestion): QuestionUpsertRequest => ({
-    questionType: q.type,
-    questionText: q.text,
-    mark: q.mark,
-    instructions: q.instructions || undefined,
-    explanation: q.explanation || undefined,
-    options: buildPayloadOptions(q),
-});
+const makeMCQOptions = (): any[] => [
+    { optionText: '', isCorrect: false },
+    { optionText: '', isCorrect: false },
+    { optionText: '', isCorrect: false },
+];
 
 // ─── Shared style constants ────────────────────────────────────────────────
 
@@ -106,17 +120,31 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
     const queryClient = useQueryClient();
     const courseKey = String(settings?.courseId ?? '');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const isDraftQuiz = settings?.status === 'Draft';
-
-    const [questions, setQuestions] = useState<UIQuestion[]>(() => (isDraftQuiz ? [] : [defaultQuestion(1)]));
-    const [counter, setCounter] = useState(isDraftQuiz ? 1 : 2);
-    const [draggedUid, setDraggedUid] = useState<number | null>(null);
-    const [draggedOption, setDraggedOption] = useState<{ uid: number; idx: number } | null>(null);
     const [hydrated, setHydrated] = useState(false);
-    const [error, setError] = useState('');
+    const [apiError, setApiError] = useState<string>('');
     const [showAIModal, setShowAIModal] = useState(false);
     const [success, setSuccess] = useState(false);
+
+    const {
+        register,
+        handleSubmit,
+        control,
+        setValue,
+        watch,
+        reset,
+        setError,
+        formState: { errors, isSubmitting },
+    } = useForm<BuilderFormData>({
+        resolver: yupResolver(builderSchema) as any,
+        defaultValues: {
+            questions: [],
+        }
+    });
+
+    const { fields, append, remove, move, update } = useFieldArray({
+        control,
+        name: 'questions',
+    });
 
     // Guard + recovery
     useEffect(() => {
@@ -139,30 +167,31 @@ export const InstructorQuizQuestionBuilderPage = () => {
             persisted?.settings?.status === settings.status;
 
         if (sameContext && Array.isArray(persisted?.questions)) {
-            setQuestions(persisted!.questions);
-            setCounter(typeof persisted?.counter === 'number' && persisted.counter > 0 ? persisted.counter : 1);
+            reset({ questions: persisted.questions });
+        } else {
+            reset({ questions: [defaultQuestion()] });
         }
         setHydrated(true);
-    }, [settings, hydrated]);
+    }, [settings, hydrated, reset]);
 
+    // Save draft
     useEffect(() => {
         if (!settings || !hydrated) return;
-        storage.set<BuilderDraftData>(STORAGE_KEYS.QUIZ_BUILDER_DRAFT, {
-            settings, questions, counter, savedAt: new Date().toISOString(),
+        const subscription = watch((value) => {
+            storage.set<BuilderDraftData>(STORAGE_KEYS.QUIZ_BUILDER_DRAFT, {
+                settings,
+                questions: (value.questions as any[]) || [],
+                counter: fields.length,
+                savedAt: new Date().toISOString(),
+            });
         });
-    }, [settings, questions, counter, hydrated]);
+        return () => subscription.unsubscribe();
+    }, [settings, hydrated, watch, fields.length]);
 
     // ── Question helpers ──────────────────────────────────────────────────
 
-    const updateQ = (uid: number, patch: Partial<UIQuestion>) =>
-        setQuestions(qs => qs.map(q => q.uid === uid ? { ...q, ...patch } : q));
-
-    const removeQ = (uid: number) =>
-        setQuestions(qs => qs.filter(q => q.uid !== uid));
-
     const addQuestion = () => {
-        setQuestions(qs => [...qs, defaultQuestion(counter)]);
-        setCounter(c => c + 1);
+        append(defaultQuestion());
         setTimeout(() => {
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }, 100);
@@ -170,152 +199,122 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
     const handleAIGenerate = (generatedQuestions: QuestionUpsertRequest[]) => {
         if (!generatedQuestions.length) {
-            setError('AI generation returned no questions. Please try again.');
+            setApiError('AI generation returned no questions. Please try again.');
             setShowAIModal(false);
             return;
         }
-        const newQuestions = generatedQuestions.map((q, idx) => convertQuestionRequestToUI(q, counter + idx));
-        setQuestions(qs => [...qs, ...newQuestions]);
-        setCounter(c => c + newQuestions.length);
-        setError('');
+        const newQuestions = generatedQuestions.map(q => ({
+            questionType: q.questionType,
+            questionText: q.questionText,
+            mark: q.mark ?? 1,
+            instructions: q.instructions ?? '',
+            explanation: q.explanation ?? '',
+            options: q.options?.map(o => ({ optionText: o.optionText, isCorrect: o.isCorrect })) || [],
+        }));
+        append(newQuestions);
+        setApiError('');
         setShowAIModal(false);
     };
 
-    const moveQuestion = (fromUid: number, toUid: number) => {
-        if (fromUid === toUid) return;
-        setQuestions(qs => {
-            const from = qs.findIndex(q => q.uid === fromUid);
-            const to = qs.findIndex(q => q.uid === toUid);
-            if (from === -1 || to === -1) return qs;
-            const next = [...qs];
-            const [moved] = next.splice(from, 1);
-            next.splice(to, 0, moved);
-            return next;
-        });
-    };
-
-    const changeType = (uid: number, type: QuestionType) => {
+    const changeType = (index: number, type: QuestionType) => {
         const options = type === 'MCQ' ? makeMCQOptions() : type === 'TrueFalse' ? makeTFOptions() : [];
-        updateQ(uid, { type, options });
+        const current = watch(`questions.${index}`);
+        update(index, { ...current, questionType: type, options });
     };
 
-    // ── Option helpers ────────────────────────────────────────────────────
+    const setCorrect = (qIndex: number, optIndex: number) => {
+        const currentOptions = watch(`questions.${qIndex}.options`) || [];
+        const updated = currentOptions.map((o, i) => ({ ...o, isCorrect: i === optIndex }));
+        setValue(`questions.${qIndex}.options`, updated, { shouldValidate: true });
+    };
 
-    const updateOpt = (uid: number, idx: number, patch: Partial<UIOption>) =>
-        setQuestions(qs => qs.map(q => {
-            if (q.uid !== uid) return q;
-            return { ...q, options: q.options.map((o, i) => i === idx ? { ...o, ...patch } : o) };
-        }));
+    const addOption = (qIndex: number) => {
+        const currentOptions = watch(`questions.${qIndex}.options`) || [];
+        if (currentOptions.length >= 5) return;
+        setValue(`questions.${qIndex}.options`, [...currentOptions, { optionText: '', isCorrect: false }], { shouldValidate: true });
+    };
 
-    const setCorrect = (uid: number, idx: number) =>
-        setQuestions(qs => qs.map(q => {
-            if (q.uid !== uid) return q;
-            return { ...q, options: q.options.map((o, i) => ({ ...o, isCorrect: i === idx })) };
-        }));
-
-    const addOption = (uid: number) =>
-        setQuestions(qs => qs.map(q => {
-            if (q.uid !== uid || q.options.length >= 5) return q;
-            return { ...q, options: [...q.options, { text: '', isCorrect: false }] };
-        }));
-
-    const removeOption = (uid: number, idx: number) =>
-        setQuestions(qs => qs.map(q => {
-            if (q.uid !== uid || q.options.length <= 3) return q;
-            return { ...q, options: q.options.filter((_, i) => i !== idx) };
-        }));
-
-    const moveOption = (uid: number, fromIdx: number, toIdx: number) =>
-        setQuestions(qs => qs.map(q => {
-            if (q.uid !== uid || fromIdx === toIdx) return q;
-            if (fromIdx < 0 || toIdx < 0 || fromIdx >= q.options.length || toIdx >= q.options.length) return q;
-            const nextOptions = [...q.options];
-            const [moved] = nextOptions.splice(fromIdx, 1);
-            nextOptions.splice(toIdx, 0, moved);
-            return { ...q, options: nextOptions };
-        }));
-
-    // ── Validation ────────────────────────────────────────────────────────
-
-    const validate = (): string | null => {
-        if (isDraftQuiz && questions.length === 0) return null;
-
-        if (questions.length === 0) {
-            return 'At least one question is required for published or scheduled quizzes.';
-        }
-
-        const payload = questions.map(buildPayloadQuestion);
-        const result = validateQuestionsArray(payload);
-        if (!result.isValid) return formatQuizQuestionErrors(result.errors);
-        return null;
+    const removeOption = (qIndex: number, optIndex: number) => {
+        const currentOptions = watch(`questions.${qIndex}.options`) || [];
+        if (currentOptions.length <= 1) return; // Keep at least one for MCQ/TF logic
+        setValue(`questions.${qIndex}.options`, currentOptions.filter((_, i) => i !== optIndex), { shouldValidate: true });
     };
 
     // ── Submit ────────────────────────────────────────────────────────────
 
-    const handleSubmit = async () => {
-        const err = validate();
-        if (err) { setError(err); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-        setError('');
-
-        const payloadQuestions = questions.map(buildPayloadQuestion);
-
-        const body: CreateQuizBody = {
-            title: settings.title,
-            description: settings.description?.trim() || settings.title?.trim() || 'Quiz',
-            maximumAttempts: settings.maximumAttempts,
-            attemptTimeLimit: Number(settings.attemptTimeLimit) || 0,
-            availableFrom: new Date(settings.availableFrom).toISOString(),
-            availableUntil: new Date(settings.availableUntil).toISOString(),
-            showResultOnClose: settings.showResultOnClose ?? false,
-            shuffleQuestions: settings.shuffleQuestions ?? false,
-            shuffleOptions: settings.shuffleOptions ?? false,
-        };
-
+    const onSubmit = async (data: BuilderFormData) => {
         try {
-            setIsSubmitting(true);
+            setApiError('');
+            
+            const body: CreateQuizBody = {
+                title: settings.title,
+                description: settings.description?.trim() || settings.title?.trim() || 'Quiz',
+                maximumAttempts: settings.maximumAttempts,
+                attemptTimeLimit: Number(settings.attemptTimeLimit) || 0,
+                availableFrom: new Date(settings.availableFrom).toISOString(),
+                availableUntil: new Date(settings.availableUntil).toISOString(),
+                showResultOnClose: settings.showResultOnClose ?? false,
+                shuffleQuestions: settings.shuffleQuestions ?? false,
+                shuffleOptions: settings.shuffleOptions ?? false,
+            };
+
             const quizId = await createQuiz(Number(settings.courseId), body);
+            
+            // Format for API
+            const payloadQuestions: QuestionUpsertRequest[] = data.questions.map(q => ({
+                questionType: q.questionType as QuestionType,
+                questionText: q.questionText,
+                mark: q.mark,
+                instructions: q.instructions || undefined,
+                explanation: q.explanation || undefined,
+                options: q.options?.map(o => ({
+                    optionText: o.optionText,
+                    isCorrect: Boolean(o.isCorrect)
+                })) || [],
+            }));
+
             await upsertQuizQuestions(quizId, payloadQuestions);
+            
             if (courseKey) {
                 queryClient.invalidateQueries({ queryKey: QUERY_KEYS.QUIZZES(courseKey) });
             }
+            
             storage.remove(STORAGE_KEYS.QUIZ_SETTINGS_DRAFT);
             storage.remove(STORAGE_KEYS.QUIZ_BUILDER_DRAFT);
             setSuccess(true);
+            toast.success('Quiz created successfully!');
             setTimeout(() => navigate(-2), 1500);
         } catch (e: any) {
-            const d = e?.response?.data;
-            const fieldErrors = d?.errors ? Object.entries(d.errors as Record<string, string[]>).map(([field, msgs]) => `${field}: ${msgs.join(', ')}`).join(' | ') : null;
-            const title = d?.message || d?.title;
-            const extracted = fieldErrors ? (title ? `${title} — ${fieldErrors}` : fieldErrors) : (title || e?.message || 'Failed to create quiz. Please try again.');
-            setError(extracted);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } finally {
-            setIsSubmitting(false);
+            if (e?.response?.data?.errors) {
+                mapServerErrors(e.response.data.errors, setError);
+                setTimeout(() => scrollToFirstError(errors), 100);
+            } else {
+                setApiError(e?.response?.data?.message || 'Failed to create quiz. Please try again.');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
     };
 
-    const isLoading = isSubmitting;
-
-    const isQuestionComplete = (q: UIQuestion): boolean => {
-        if (!q.text.trim() || q.mark <= 0) return false;
-        if (q.type === 'MCQ') {
-            if (q.options.length < 3 || q.options.length > 5) return false;
-            if (q.options.some(o => !o.text.trim())) return false;
-            return q.options.filter(o => o.isCorrect).length === 1;
-        }
-        if (q.type === 'TrueFalse') {
-            return q.options.filter(o => o.isCorrect).length === 1;
-        }
-        return true;
+    const onInvalid = () => {
+        setTimeout(() => scrollToFirstError(errors), 100);
     };
 
-    const scrollToQuestion = (uid: number) => {
-        document.getElementById(`question-card-${uid}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const isQuestionComplete = (index: number): boolean => {
+        // Just a simple visual check for the sidebar
+        const q = watch(`questions.${index}`);
+        if (!q) return false;
+        const hasError = !!errors.questions?.[index];
+        return !hasError && !!q.questionText.trim() && q.mark > 0;
     };
 
-    const getQuestionName = (q: UIQuestion, idx: number): string => {
-        const raw = q.text.trim();
-        if (!raw) return `Untitled Question ${idx + 1}`;
+    const scrollToQuestion = (index: number) => {
+        document.getElementById(`question-card-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    const getQuestionName = (index: number): string => {
+        const q = watch(`questions.${index}`);
+        const raw = q?.questionText?.trim();
+        if (!raw) return `Untitled Question ${index + 1}`;
         return raw.length > 35 ? `${raw.slice(0, 35)}...` : raw;
     };
 
@@ -364,10 +363,10 @@ export const InstructorQuizQuestionBuilderPage = () => {
                 </div>
 
                 {/* Feedback Banners */}
-                {error && (
+                {apiError && (
                     <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl text-red-700 dark:text-red-400 text-sm font-bold shadow-sm">
                         <AlertTriangle className="w-5 h-5 shrink-0" />
-                        {error}
+                        {apiError}
                     </div>
                 )}
                 {success && (
@@ -384,44 +383,46 @@ export const InstructorQuizQuestionBuilderPage = () => {
                         <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-5 sm:p-6">
                             <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-4 flex items-center justify-between">
                                 Quiz Map
-                                <span className="bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 px-2 py-0.5 rounded-md text-[10px]">{questions.length} Items</span>
+                                <span className="bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 px-2 py-0.5 rounded-md text-[10px]">{fields.length} Items</span>
                             </h3>
 
-                            {questions.length === 0 ? (
+                            {fields.length === 0 ? (
                                 <div className="text-center py-6 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900/50">
                                     <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">No questions yet.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
-                                    {questions.map((q, idx) => {
-                                        const complete = isQuestionComplete(q);
+                                    {fields.map((field, idx) => {
+                                        const complete = isQuestionComplete(idx);
+                                        const hasError = !!errors.questions?.[idx];
                                         return (
                                             <button
-                                                key={q.uid}
+                                                key={field.id}
                                                 draggable
-                                                onDragStart={() => setDraggedUid(q.uid)}
                                                 onDragOver={e => e.preventDefault()}
                                                 onDrop={e => {
                                                     e.preventDefault();
-                                                    if (draggedUid !== null) moveQuestion(draggedUid, q.uid);
-                                                    setDraggedUid(null);
+                                                    // Move logic for RHF if needed
                                                 }}
-                                                onDragEnd={() => setDraggedUid(null)}
-                                                onClick={() => scrollToQuestion(q.uid)}
+                                                onClick={() => scrollToQuestion(idx)}
                                                 className={`w-full text-left rounded-xl border p-3 transition-all group flex items-start gap-2 ${complete
                                                         ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10 hover:border-emerald-300'
-                                                        : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-slate-500 shadow-sm'
+                                                        : hasError
+                                                            ? 'border-red-200 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/5 hover:border-red-300'
+                                                            : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-slate-500 shadow-sm'
                                                     }`}
                                             >
                                                 <GripVertical className="w-4 h-4 text-gray-300 dark:text-slate-600 mt-1 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 mb-0.5">Question {idx + 1}</p>
                                                     <p className={`text-xs font-semibold truncate ${complete ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-slate-300'}`}>
-                                                        {getQuestionName(q, idx)}
+                                                        {getQuestionName(idx)}
                                                     </p>
                                                 </div>
                                                 {complete ? (
                                                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-1" />
+                                                ) : hasError ? (
+                                                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-1" />
                                                 ) : (
                                                     <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0 mt-2"></div>
                                                 )}
@@ -442,11 +443,11 @@ export const InstructorQuizQuestionBuilderPage = () => {
                         {/* Submit Box inside Sidebar */}
                         <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-5 sm:p-6">
                             <button
-                                onClick={handleSubmit}
-                                disabled={isLoading || success}
+                                onClick={handleSubmit(onSubmit, onInvalid)}
+                                disabled={isSubmitting || success}
                                 className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-blue-500/25 active:scale-95"
                             >
-                                {isLoading ? (
+                                {isSubmitting ? (
                                     <><Loader2 className="w-4 h-4 animate-spin" /> Publishing...</>
                                 ) : (
                                     <><CheckCircle2 className="w-4 h-4" /> Finish & Create Quiz</>
@@ -457,197 +458,224 @@ export const InstructorQuizQuestionBuilderPage = () => {
 
                     {/* Right Area: Question List */}
                     <div className="flex-1 space-y-6">
-                        {questions.map((q, idx) => (
-                            <div key={q.uid} id={`question-card-${q.uid}`} className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm p-6 sm:p-8 relative overflow-hidden group">
-                                <div className={`absolute top-0 left-0 w-1.5 h-full ${q.type === 'MCQ' ? 'bg-blue-500' : q.type === 'TrueFalse' ? 'bg-orange-500' : 'bg-purple-500'}`}></div>
+                        {fields.map((field, idx) => {
+                            const qType = watch(`questions.${idx}.questionType`);
+                            const qText = watch(`questions.${idx}.questionText`) || '';
+                            const qOptions = watch(`questions.${idx}.options`) || [];
+                            const qError = errors.questions?.[idx];
+                            const hasError = !!qError;
 
-                                {/* Q Header */}
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                                        <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 w-8 h-8 rounded-lg flex items-center justify-center text-sm shadow-sm">{idx + 1}</span>
-                                    </h3>
+                            return (
+                                <div
+                                    key={field.id}
+                                    id={`question-card-${idx}`}
+                                    className={`bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border transition-all shadow-sm p-6 sm:p-8 relative overflow-hidden group ${hasError ? 'border-red-500 ring-4 ring-red-500/5' : 'border-gray-200 dark:border-slate-700/50'}`}
+                                >
+                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${hasError ? 'bg-red-500' : qType === 'MCQ' ? 'bg-blue-500' : qType === 'TrueFalse' ? 'bg-orange-500' : 'bg-purple-500'}`}></div>
 
-                                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                                        <select
-                                            value={q.type}
-                                            onChange={e => changeType(q.uid, e.target.value as QuestionType)}
-                                            className="flex-1 sm:w-48 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white cursor-pointer"
-                                        >
-                                            <option value="MCQ">Multiple Choice</option>
-                                            <option value="TrueFalse">True / False</option>
-                                            <option value="Written">Written Answer</option>
-                                        </select>
-                                        <button
-                                            onClick={() => removeQ(q.uid)}
-                                            className="p-2.5 text-gray-400 hover:text-red-600 bg-gray-50 dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-900/20 border border-gray-200 dark:border-slate-700 rounded-xl transition-colors shrink-0 shadow-sm"
-                                            title="Delete Question"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
+                                    {/* Q Header */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
+                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                                            <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 w-8 h-8 rounded-lg flex items-center justify-center text-sm shadow-sm">{idx + 1}</span>
+                                        </h3>
 
-                                {/* Main Form Grid */}
-                                <div className="grid lg:grid-cols-12 gap-6">
-                                    {/* Question Text Area */}
-                                    <div className="lg:col-span-8 space-y-5">
-                                        <div>
-                                            <label className={labelCls}>
-                                                Question Text <span className="text-red-500">*</span>
-                                            </label>
-                                            <textarea
-                                                rows={3}
-                                                maxLength={1500}
-                                                placeholder="Type the question here..."
-                                                value={q.text}
-                                                onChange={e => updateQ(q.uid, { text: e.target.value })}
-                                                className={`${inputCls} resize-none text-base`}
-                                            />
-                                            <div className="mt-1.5 flex justify-end">
-                                                <span className={`text-[10px] font-bold ${q.text.length > 1400 ? 'text-red-500' : 'text-gray-400 dark:text-slate-500'}`}>
-                                                    {q.text.length} / 1500
-                                                </span>
-                                            </div>
+                                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                                            <select
+                                                {...register(`questions.${idx}.questionType`)}
+                                                onChange={e => changeType(idx, e.target.value as QuestionType)}
+                                                className="flex-1 sm:w-48 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white cursor-pointer"
+                                            >
+                                                <option value="MCQ">Multiple Choice</option>
+                                                <option value="TrueFalse">True / False</option>
+                                                <option value="Written">Written Answer</option>
+                                            </select>
+                                            <button
+                                                onClick={() => remove(idx)}
+                                                className="p-2.5 text-gray-400 hover:text-red-600 bg-gray-50 dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-900/20 border border-gray-200 dark:border-slate-700 rounded-xl transition-colors shrink-0 shadow-sm"
+                                                title="Delete Question"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
+                                    </div>
 
-                                        {/* Dynamic Options based on Type */}
-                                        <div className="bg-gray-50/50 dark:bg-slate-900/30 rounded-2xl p-5 border border-gray-100 dark:border-slate-800">
-                                            {q.type === 'MCQ' && (
-                                                <div>
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <label className={`${labelCls} mb-0`}>Answers (Mark the correct one)</label>
-                                                        {q.options.length < 5 && (
-                                                            <button onClick={() => addOption(q.uid)} className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-lg transition-colors">
-                                                                + Add Option
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        {q.options.map((opt, oi) => (
-                                                            <div
-                                                                key={oi}
-                                                                draggable
-                                                                onDragStart={() => setDraggedOption({ uid: q.uid, idx: oi })}
-                                                                onDragOver={e => e.preventDefault()}
-                                                                onDrop={e => {
-                                                                    e.preventDefault();
-                                                                    if (draggedOption && draggedOption.uid === q.uid) moveOption(q.uid, draggedOption.idx, oi);
-                                                                    setDraggedOption(null);
-                                                                }}
-                                                                onDragEnd={() => setDraggedOption(null)}
-                                                                className={`flex items-center gap-3 p-2 pr-3 rounded-xl border-2 transition-colors bg-white dark:bg-slate-900 ${opt.isCorrect ? 'border-emerald-500 shadow-sm' : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500'}`}
-                                                            >
-                                                                <GripVertical className="w-4 h-4 text-gray-300 dark:text-slate-600 cursor-grab ml-1" />
-                                                                <label className="flex items-center justify-center cursor-pointer shrink-0">
-                                                                    <input
-                                                                        type="radio"
-                                                                        name={`correct-${q.uid}`}
-                                                                        checked={opt.isCorrect}
-                                                                        onChange={() => setCorrect(q.uid, oi)}
-                                                                        className="hidden"
-                                                                    />
-                                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${opt.isCorrect ? 'border-emerald-500' : 'border-gray-300 dark:border-slate-600'}`}>
-                                                                        {opt.isCorrect && <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>}
-                                                                    </div>
+                                    {/* Main Form Grid */}
+                                    <div className="grid lg:grid-cols-12 gap-6">
+                                        {/* Question Text Area */}
+                                        <div className="lg:col-span-8 space-y-5">
+                                            <div>
+                                                <label className={labelCls}>
+                                                    Question Text <span className="text-red-500">*</span>
+                                                </label>
+                                                <textarea
+                                                    {...register(`questions.${idx}.questionText`)}
+                                                    rows={3}
+                                                    placeholder="Type the question here..."
+                                                    className={`${inputCls} resize-none text-base ${qError?.questionText ? 'border-red-500 bg-red-50/10' : ''}`}
+                                                />
+                                                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                                    {qError?.questionText && (
+                                                        <p className="text-[11px] font-bold text-red-500 uppercase flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" /> {qError.questionText.message}
+                                                        </p>
+                                                    )}
+                                                    <span className={`text-[10px] font-bold ml-auto ${qText.length > 1900 ? 'text-red-500' : 'text-gray-400 dark:text-slate-500'}`}>
+                                                        {qText.length} / 2000
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Dynamic Options based on Type */}
+                                            <div className="bg-gray-50/50 dark:bg-slate-900/30 rounded-2xl p-5 border border-gray-100 dark:border-slate-800">
+                                                {(qType === 'MCQ' || qType === 'TrueFalse') && (
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <div className="flex flex-col">
+                                                                <label className={`${labelCls} mb-0`}>
+                                                                    {qType === 'MCQ' ? 'Answers (Mark the correct one)' : 'Select the correct answer'}
                                                                 </label>
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder={`Option ${oi + 1}`}
-                                                                    value={opt.text}
-                                                                    onChange={e => updateOpt(q.uid, oi, { text: e.target.value })}
-                                                                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-semibold text-gray-900 dark:text-white px-2"
-                                                                />
-                                                                {q.options.length > 3 && (
-                                                                    <button onClick={() => removeOption(q.uid, oi)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
-                                                                        <XCircle className="w-4 h-4" />
-                                                                    </button>
+                                                                {qError?.options?.message && (
+                                                                    <p className="text-[11px] font-bold text-red-500 uppercase mt-1.5 flex items-center gap-1">
+                                                                        <AlertCircle className="w-3 h-3" /> {qError.options.message}
+                                                                    </p>
                                                                 )}
                                                             </div>
-                                                        ))}
+                                                            {qType === 'MCQ' && qOptions.length < 5 && (
+                                                                <button onClick={() => addOption(idx)} className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-lg transition-colors">
+                                                                    + Add Option
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <div className={qType === 'MCQ' ? 'space-y-3' : 'flex gap-4'}>
+                                                            {qOptions.map((opt, oi) => {
+                                                                const optError = (qError?.options as any)?.[oi];
+                                                                if (qType === 'MCQ') {
+                                                                    return (
+                                                                        <div key={oi} className="flex flex-col gap-1">
+                                                                            <div
+                                                                                className={`flex items-center gap-3 p-2 pr-3 rounded-xl border-2 transition-colors bg-white dark:bg-slate-900 ${opt.isCorrect ? 'border-emerald-500 shadow-sm' : 'border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500'} ${optError?.optionText ? 'border-red-500' : ''}`}
+                                                                            >
+                                                                                <GripVertical className="w-4 h-4 text-gray-300 dark:text-slate-600 cursor-grab ml-1" />
+                                                                                <label className="flex items-center justify-center cursor-pointer shrink-0">
+                                                                                    <input
+                                                                                        type="radio"
+                                                                                        checked={opt.isCorrect}
+                                                                                        onChange={() => setCorrect(idx, oi)}
+                                                                                        className="hidden"
+                                                                                    />
+                                                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${opt.isCorrect ? 'border-emerald-500' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                                                        {opt.isCorrect && <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>}
+                                                                                    </div>
+                                                                                </label>
+                                                                                <input
+                                                                                    {...register(`questions.${idx}.options.${oi}.optionText`)}
+                                                                                    type="text"
+                                                                                    placeholder={`Option ${oi + 1}`}
+                                                                                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-semibold text-gray-900 dark:text-white px-2"
+                                                                                />
+                                                                                {qOptions.length > 3 && (
+                                                                                    <button onClick={() => removeOption(idx, oi)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                                                                                        <XCircle className="w-4 h-4" />
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                            {optError?.optionText && (
+                                                                                <p className="text-[10px] font-bold text-red-500 uppercase ml-12 mt-1 flex items-center gap-1">
+                                                                                    <AlertCircle className="w-3 h-3" /> {optError.optionText.message}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                } else {
+                                                                    return (
+                                                                        <label
+                                                                            key={oi}
+                                                                            className={`flex-1 flex items-center justify-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all font-bold ${opt.isCorrect
+                                                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                                                                                    : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300'
+                                                                                }`}
+                                                                        >
+                                                                            <input
+                                                                                type="radio"
+                                                                                checked={opt.isCorrect}
+                                                                                onChange={() => setCorrect(idx, oi)}
+                                                                                className="hidden"
+                                                                            />
+                                                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${opt.isCorrect ? 'border-emerald-500' : 'border-gray-300 dark:border-slate-600'}`}>
+                                                                                {opt.isCorrect && <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>}
+                                                                            </div>
+                                                                            {opt.optionText}
+                                                                        </label>
+                                                                    );
+                                                                }
+                                                            })}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
 
-                                            {q.type === 'TrueFalse' && (
-                                                <div>
-                                                    <label className={`${labelCls} mb-4`}>Select the correct answer</label>
-                                                    <div className="flex gap-4">
-                                                        {q.options.map((opt, oi) => (
-                                                            <label
-                                                                key={oi}
-                                                                className={`flex-1 flex items-center justify-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all font-bold ${opt.isCorrect
-                                                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shadow-sm'
-                                                                        : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300'
-                                                                    }`}
-                                                            >
-                                                                <input
-                                                                    type="radio"
-                                                                    name={`tf-${q.uid}`}
-                                                                    checked={opt.isCorrect}
-                                                                    onChange={() => setCorrect(q.uid, oi)}
-                                                                    className="hidden"
-                                                                />
-                                                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${opt.isCorrect ? 'border-emerald-500' : 'border-gray-300 dark:border-slate-600'}`}>
-                                                                    {opt.isCorrect && <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>}
-                                                                </div>
-                                                                {opt.text}
-                                                            </label>
-                                                        ))}
+                                                {qType === 'Written' && (
+                                                    <div className="p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-800/50 rounded-xl text-center">
+                                                        <HelpCircle className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+                                                        <p className="text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider">Manual Grading Required</p>
+                                                        <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-1">Students will see a text area to type their long-form answer.</p>
                                                     </div>
-                                                </div>
-                                            )}
-
-                                            {q.type === 'Written' && (
-                                                <div className="p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-800/50 rounded-xl text-center">
-                                                    <HelpCircle className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-                                                    <p className="text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider">Manual Grading Required</p>
-                                                    <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-1">Students will see a text area to type their long-form answer.</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Settings Area (Sidebar inside Card) */}
-                                    <div className="lg:col-span-4 space-y-5 lg:border-l border-gray-100 dark:border-slate-700/50 lg:pl-6">
-                                        <div>
-                                            <label className={labelCls}>Points / Mark</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="number"
-                                                    min="0.5" max="100" step="0.5"
-                                                    value={q.mark}
-                                                    onChange={e => updateQ(q.uid, { mark: parseFloat(e.target.value) || 1 })}
-                                                    className={`${inputCls} pl-10 text-lg font-black text-blue-600 dark:text-blue-400`}
-                                                />
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">#</span>
+                                                )}
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label className={labelCls}>Student Instructions (Optional)</label>
-                                            <textarea
-                                                rows={2}
-                                                placeholder="E.g. Choose the BEST possible answer."
-                                                value={q.instructions}
-                                                onChange={e => updateQ(q.uid, { instructions: e.target.value })}
-                                                className={`${inputCls} resize-none`}
-                                            />
-                                        </div>
+                                        {/* Settings Area (Sidebar inside Card) */}
+                                        <div className="lg:col-span-4 space-y-5 lg:border-l border-gray-100 dark:border-slate-700/50 lg:pl-6">
+                                            <div>
+                                                <label className={labelCls}>Points / Mark</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        {...register(`questions.${idx}.mark`)}
+                                                        className={`${inputCls} pl-10 text-lg font-black text-blue-600 dark:text-blue-400 ${qError?.mark ? 'border-red-500 bg-red-50/10' : ''}`}
+                                                    />
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">#</span>
+                                                </div>
+                                                {qError?.mark && (
+                                                    <p className="text-[11px] font-bold text-red-500 uppercase mt-2 ml-1 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" /> {qError.mark.message}
+                                                    </p>
+                                                )}
+                                            </div>
 
-                                        <div>
-                                            <label className={labelCls}>Answer Explanation (Optional)</label>
-                                            <textarea
-                                                rows={2}
-                                                placeholder="Shown to students after the quiz ends."
-                                                value={q.explanation}
-                                                onChange={e => updateQ(q.uid, { explanation: e.target.value })}
-                                                className={`${inputCls} resize-none`}
-                                            />
+                                            <div>
+                                                <label className={labelCls}>Student Instructions (Optional)</label>
+                                                <textarea
+                                                    {...register(`questions.${idx}.instructions`)}
+                                                    rows={2}
+                                                    placeholder="E.g. Choose the BEST possible answer."
+                                                    className={`${inputCls} resize-none ${qError?.instructions ? 'border-red-500 bg-red-50/10' : ''}`}
+                                                />
+                                                {qError?.instructions && (
+                                                    <p className="text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" /> {qError.instructions.message}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className={labelCls}>Answer Explanation (Optional)</label>
+                                                <textarea
+                                                    {...register(`questions.${idx}.explanation`)}
+                                                    rows={2}
+                                                    placeholder="Shown to students after the quiz ends."
+                                                    className={`${inputCls} resize-none ${qError?.explanation ? 'border-red-500 bg-red-50/10' : ''}`}
+                                                />
+                                                {qError?.explanation && (
+                                                    <p className="text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" /> {qError.explanation.message}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>

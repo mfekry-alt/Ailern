@@ -13,6 +13,7 @@ import {
     Presentation, HelpCircle, Users, Calendar, BookOpen, CheckCircle,
     AlertCircle, Mail, Download, UserCheck, XCircle, Settings, ChevronRight, LayoutGrid, Loader2
 } from 'lucide-react';
+import { PDFThumbnail } from '@/components/PDFThumbnail';
 
 const initialLectures = [
     {
@@ -133,7 +134,11 @@ export const InstructorCourseEditContentPage = () => {
 
     const tabs = ['Overview', 'Lectures & Materials', 'Assignments', 'Quizzes', 'Announcements', 'Students & Progress', 'Enrollments Requests'];
 
-    const getTypeIcon = (type: string) => {
+    const getTypeIcon = (type: string, url?: string) => {
+        if (type === 'PDF' && url) {
+            return <PDFThumbnail url={url} className="w-full h-full" />;
+        }
+
         switch (type) {
             case 'Video': return <Video className="w-4 h-4 text-red-500" />;
             case 'PDF': return <FileText className="w-4 h-4 text-red-500" />;
@@ -392,8 +397,8 @@ export const InstructorCourseEditContentPage = () => {
                                     {lecture.resources.map((res) => (
                                         <div key={res.id} className="flex items-center justify-between bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 rounded-xl p-3 hover:border-blue-200 dark:hover:border-slate-600 transition-colors">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm">
-                                                    {getTypeIcon(res.type)}
+                                                <div className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm overflow-hidden">
+                                                    {getTypeIcon(res.type, (res as any).url)}
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-gray-900 dark:text-white">{res.name}</p>
@@ -468,8 +473,8 @@ export const InstructorCourseEditContentPage = () => {
                             {generalMaterials.map((mat) => (
                                 <div key={mat.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 flex flex-col group hover:border-indigo-300 dark:hover:border-slate-500 transition-colors shadow-sm">
                                     <div className="flex items-start gap-3 mb-3">
-                                        <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-slate-900 flex items-center justify-center shrink-0 border border-gray-100 dark:border-slate-800">
-                                            {getTypeIcon(mat.type)}
+                                        <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-slate-900 flex items-center justify-center shrink-0 border border-gray-100 dark:border-slate-800 overflow-hidden">
+                                            {getTypeIcon(mat.type, (mat as any).url)}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-bold text-gray-900 dark:text-white truncate">{mat.name}</p>

@@ -1,17 +1,50 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { ROUTES } from '@/lib/constants';
 import {
     ArrowLeft, Save, Loader2, CheckCircle2, AlertTriangle,
-    Settings, AlignLeft, Camera, Image as ImageIcon, X, Trash2
+    Settings, AlignLeft, Camera, ImageIcon, X, Trash2
 } from 'lucide-react';
 import { useCreateCourse, useUpdateCourse, useCourse } from '@/features/courses/api';
 import { handleApiError } from '@/api/client';
+import { useForm } from 'react-hook-form';
+import type { SubmitHandler } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { mapServerErrors } from '@/utils/mapServerErrors';
 
 const inputCls =
     'w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white transition-all text-sm font-semibold';
+const errorInputCls = '!border-red-500 focus:!ring-red-500/50';
 const labelCls = 'block text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 ml-1';
+
+// Validation Schema
+const courseSchema = yup.object().shape({
+    title: yup.string()
+        .min(3, 'Course name must be at least 3 characters.')
+        .required('Course name is required.'),
+    courseId: yup.string()
+        .min(5, 'Course code must be between 5 and 7 characters.')
+        .max(7, 'Course code must be between 5 and 7 characters.')
+        .required('Course code is required.'),
+    description: yup.string().default(''),
+    thumbnail: yup.mixed<File>().optional()
+        .test('fileType', 'Only JPEG and PNG images are allowed.', (value) => {
+            if (!value) return true;
+            return ['image/jpeg', 'image/png'].includes(value.type);
+        })
+        .test('fileSize', 'Image size must not exceed 2MB.', (value) => {
+            if (!value) return true;
+            return value.size <= 2 * 1024 * 1024;
+        })
+        .test('fileName', 'File name is required.', (value) => {
+            if (!value) return true;
+            return !!value.name && value.name.trim() !== '';
+        })
+});
+
+type CourseFormData = yup.InferType<typeof courseSchema>;
 
 export const InstructorCourseEditPage = () => {
     const { id } = useParams();
@@ -20,88 +53,82 @@ export const InstructorCourseEditPage = () => {
     const courseId = id ? parseInt(id) : 0;
 
     const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // API hooks
     const createCourseMutation = useCreateCourse();
     const updateCourseMutation = useUpdateCourse();
     const { data: existingCourse, isLoading } = useCourse(courseId);
 
-    const [formData, setFormData] = useState({
-        title: '',
-        courseId: '',
-        description: '',
-        thumbnail: null as File | null,
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        setError,
+        formState: { errors, isSubmitting },
+    } = useForm<CourseFormData>({
+        resolver: yupResolver(courseSchema) as any,
+        context: { hasExistingImage: !isNew && !!existingCourse?.imageUrl },
+        defaultValues: {
+            title: '',
+            courseId: '',
+            description: '',
+            thumbnail: undefined,
+        },
+        mode: 'onChange',
     });
+
+    const thumbnail = watch('thumbnail');
 
     // Populate form when editing an existing course
     useEffect(() => {
         if (existingCourse && !isNew) {
-            setFormData((prev) => ({
-                ...prev,
-                title: existingCourse.name || '',
-                courseId: existingCourse.code || '',
-                description: existingCourse.description || '',
-            }));
+            setValue('title', existingCourse.name || '');
+            setValue('courseId', existingCourse.code || '');
+            setValue('description', existingCourse.description || '');
         }
-    }, [existingCourse, isNew]);
+    }, [existingCourse, isNew, setValue]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setFormData(prev => ({ ...prev, thumbnail: file }));
+            setValue('thumbnail', file, { shouldValidate: true });
         }
     };
 
     const removeImage = () => {
-        setFormData(prev => ({ ...prev, thumbnail: null }));
+        setValue('thumbnail', undefined as any, { shouldValidate: true });
     };
 
-    const generateCourseId = (title: string) => {
-        const cleaned = title
-            .trim()
-            .toUpperCase()
-            .replace(/[^A-Z0-9\s]/g, ' ')
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 3)
-            .map((w) => w.slice(0, 3))
-            .join('');
-        if (cleaned.length >= 4) return cleaned;
-        const suffix = String(Date.now()).slice(-4);
-        return `${cleaned || 'COURSE'}${suffix}`;
-    };
+    // Smooth scroll to first error
+    const scrollToFirstError = useCallback((errorObj: any) => {
+        const firstErrorKey = Object.keys(errorObj)[0];
+        if (firstErrorKey) {
+            const errorElement = document.querySelector(`[name="${firstErrorKey}"]`) || 
+                               document.querySelector(`input[name="${firstErrorKey}"]`) ||
+                               document.getElementById(firstErrorKey);
+            if (errorElement) {
+                errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                (errorElement as HTMLElement).focus();
+            }
+        }
+    }, []);
 
-    const handleSubmit = async () => {
+    const onSubmit: SubmitHandler<CourseFormData> = async (data) => {
         setStatusMessage(null);
-        if (!formData.title.trim()) {
-            setStatusMessage({ type: 'error', text: 'Course title is required.' });
-            return;
-        }
-
-        if (!formData.courseId.trim()) {
-            setStatusMessage({ type: 'error', text: 'Course code is required.' });
-            return;
-        }
-
-        setIsSubmitting(true);
-
         try {
-            // Prepare image metadata if exists - Use PascalCase for backend compatibility
-            const imageMetadata = formData.thumbnail ? {
-                FileName: formData.thumbnail.name,
-                FileSize: formData.thumbnail.size,
-                ContentType: formData.thumbnail.type
+            const imageMetadata = data.thumbnail ? {
+                FileName: data.thumbnail.name,
+                FileSize: data.thumbnail.size,
+                ContentType: data.thumbnail.type
             } : undefined;
 
             const command = {
-                code: formData.courseId.trim(),
-                name: formData.title.trim(),
-                description: formData.description,
+                code: data.courseId.trim(),
+                name: data.title.trim(),
+                description: data.description || '',
                 Image: imageMetadata
             };
-
-            console.log('📦 Sending Course Command:', JSON.stringify(command, null, 2));
 
             let response: any;
             if (isNew) {
@@ -110,16 +137,12 @@ export const InstructorCourseEditPage = () => {
                 response = await updateCourseMutation.mutateAsync({ id: courseId, command });
             }
 
-            // Handle binary upload if uploadImageUrl returned
-            // Create returns { data: { uploadImageUrl } }, Update returns { data: string }
             const uploadImageUrl = response?.data?.uploadImageUrl || (typeof response?.data === 'string' ? response.data : null);
             
-            if (uploadImageUrl && formData.thumbnail) {
-                console.log('🚀 Uploading course image to Wasabi...', uploadImageUrl);
-                await axios.put(uploadImageUrl, formData.thumbnail, {
-                    headers: { 'Content-Type': formData.thumbnail.type }
+            if (uploadImageUrl && data.thumbnail) {
+                await axios.put(uploadImageUrl, data.thumbnail, {
+                    headers: { 'Content-Type': data.thumbnail.type }
                 });
-                console.log('✅ Image upload complete!');
             }
 
             setStatusMessage({ 
@@ -128,11 +151,25 @@ export const InstructorCourseEditPage = () => {
             });
 
             setTimeout(() => navigate(ROUTES.INSTRUCTOR_COURSES), 1500);
-        } catch (error) {
+        } catch (error: any) {
             const apiError = handleApiError(error);
-            setStatusMessage({ type: 'error', text: apiError.message || 'Failed to save course. Please try again.' });
-        } finally {
-            setIsSubmitting(false);
+            
+            // Check for server-side validation errors
+            if (error.response?.data?.errors) {
+                mapServerErrors(error.response.data.errors, setError, {
+                    "Name": "title",
+                    "Code": "courseId"
+                });
+                
+                // UX: Scroll to the first server-side error
+                setTimeout(() => scrollToFirstError(error.response.data.errors), 100);
+            }
+            
+            // Display general error message
+            setStatusMessage({ 
+                type: 'error', 
+                text: error.response?.data?.message || apiError.message || 'Failed to save course. Please try again.' 
+            });
         }
     };
 
@@ -174,8 +211,9 @@ export const InstructorCourseEditPage = () => {
                 <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
                     <div className="p-6 sm:p-8 space-y-8">
 
+                        {/* General Error / Success Box */}
                         {statusMessage && (
-                            <div className={`flex items-center gap-3 p-4 rounded-xl border animate-in slide-in-from-top-2 ${statusMessage.type === 'success'
+                            <div id="general-error" className={`flex items-center gap-3 p-4 rounded-xl border animate-in slide-in-from-top-2 ${statusMessage.type === 'success'
                                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400'
                                 : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400'
                                 }`}>
@@ -193,10 +231,10 @@ export const InstructorCourseEditPage = () => {
                             {/* Image Upload Section */}
                             <div className="flex flex-col sm:flex-row gap-6 items-start pb-4">
                                 <div className="relative group">
-                                    <div className="w-40 h-40 rounded-3xl overflow-hidden bg-gray-50 dark:bg-slate-900 border-2 border-dashed border-gray-200 dark:border-slate-700 flex items-center justify-center transition-all group-hover:border-blue-400">
-                                        {formData.thumbnail ? (
+                                    <div className={`w-40 h-40 rounded-3xl overflow-hidden bg-gray-50 dark:bg-slate-900 border-2 border-dashed ${errors.thumbnail ? 'border-red-500' : 'border-gray-200 dark:border-slate-700'} flex items-center justify-center transition-all group-hover:border-blue-400`}>
+                                        {thumbnail instanceof Blob ? (
                                             <img
-                                                src={URL.createObjectURL(formData.thumbnail)}
+                                                src={URL.createObjectURL(thumbnail)}
                                                 className="w-full h-full object-cover"
                                                 alt="Course Preview"
                                             />
@@ -208,13 +246,14 @@ export const InstructorCourseEditPage = () => {
                                             />
                                         ) : (
                                             <div className="text-center p-4">
-                                                <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase">No Image</p>
+                                                <ImageIcon className={`w-8 h-8 mx-auto mb-2 ${errors.thumbnail ? 'text-red-400' : 'text-gray-300'}`} />
+                                                <p className={`text-[10px] font-bold uppercase ${errors.thumbnail ? 'text-red-500' : 'text-gray-400'}`}>No Image</p>
                                             </div>
                                         )}
                                     </div>
-                                    {(formData.thumbnail || existingCourse?.imageUrl) && (
+                                    {(thumbnail || existingCourse?.imageUrl) && (
                                         <button
+                                            type="button"
                                             onClick={removeImage}
                                             className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
                                         >
@@ -230,11 +269,12 @@ export const InstructorCourseEditPage = () => {
                                     <div className="flex gap-2">
                                         <label className="cursor-pointer px-4 py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors flex items-center gap-2">
                                             <Camera className="w-3.5 h-3.5" />
-                                            {formData.thumbnail ? 'Change Image' : 'Select Image'}
-                                            <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                                            {thumbnail ? 'Change Image' : 'Select Image'}
+                                            <input name="thumbnail" type="file" className="hidden" accept="image/jpeg, image/png" onChange={handleImageChange} />
                                         </label>
-                                        {formData.thumbnail && (
+                                        {thumbnail && (
                                             <button
+                                                type="button"
                                                 onClick={removeImage}
                                                 className="px-4 py-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors flex items-center gap-2"
                                             >
@@ -243,6 +283,12 @@ export const InstructorCourseEditPage = () => {
                                             </button>
                                         )}
                                     </div>
+                                    {/* Image Error Messages */}
+                                    {errors.thumbnail && (
+                                        <p className="text-red-500 text-xs font-semibold mt-2">
+                                            {errors.thumbnail.message}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -252,21 +298,25 @@ export const InstructorCourseEditPage = () => {
                                     <input
                                         type="text"
                                         placeholder="e.g. Introduction to Artificial Intelligence"
-                                        value={formData.title}
-                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        className={inputCls}
+                                        {...register('title')}
+                                        className={`${inputCls} ${errors.title ? errorInputCls : ''}`}
                                     />
+                                    {errors.title && (
+                                        <p className="text-red-500 text-xs font-semibold mt-1.5 ml-1">{errors.title.message}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className={labelCls}>Course Code <span className="text-red-500">*</span></label>
                                     <input
                                         type="text"
                                         placeholder="e.g. CS101"
-                                        value={formData.courseId}
-                                        onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
+                                        {...register('courseId')}
                                         disabled={!isNew}
-                                        className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed ${errors.courseId ? errorInputCls : ''}`}
                                     />
+                                    {errors.courseId && (
+                                        <p className="text-red-500 text-xs font-semibold mt-1.5 ml-1">{errors.courseId.message}</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -278,10 +328,12 @@ export const InstructorCourseEditPage = () => {
                                     <textarea
                                         rows={6}
                                         placeholder="Provide a detailed overview of the course content..."
-                                        value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        className={`${inputCls} resize-none`}
+                                        {...register('description')}
+                                        className={`${inputCls} resize-none ${errors.description ? errorInputCls : ''}`}
                                     />
+                                    {errors.description && (
+                                        <p className="text-red-500 text-xs font-semibold mt-1.5 ml-1">{errors.description.message}</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -300,7 +352,7 @@ export const InstructorCourseEditPage = () => {
 
                         <button
                             type="button"
-                            onClick={handleSubmit}
+                            onClick={handleSubmit(onSubmit, (err) => scrollToFirstError(err))}
                             disabled={isSubmitting}
                             className="w-full sm:w-auto flex items-center justify-center gap-2 px-12 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-blue-500/25 active:scale-95 text-sm disabled:opacity-50"
                         >

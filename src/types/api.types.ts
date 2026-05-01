@@ -60,8 +60,8 @@ export interface ChangeEmailCommand {
 
 export interface ConfirmChangeUserEmailCommand {
     token: string;
-    newEmail: string;
     userId: string;
+    newEmail: string;
 }
 
 export interface ChangeUserPhotoCommand {

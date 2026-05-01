@@ -1,16 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
 import {
     ArrowLeft, Save, Upload, X, FileText, Loader2,
     CalendarClock, ShieldCheck, CheckCircle2, AlertTriangle, Settings,
-    Clock, Sparkles, Trash2
+    Clock, Sparkles, Trash2, AlertCircle
 } from 'lucide-react';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { useCreateAssignment } from '@/features/assignments/api';
 import { useCourse } from '@/features/courses/api';
 import { handleApiError } from '@/api/client';
 import { uploadFileToPresignedUrlWithProgress } from '@/api/services/assignment.service';
+import { useForm, type SubmitHandler } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { mapServerErrors } from '@/utils/mapServerErrors';
+import { scrollToFirstError } from '@/utils/form-utils';
+
+const ALLOWED_CONTENT_TYPES = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+    'image/jpeg',
+    'image/png',
+    'application/zip',
+    'video/mp4',
+    'video/webm',
+    'video/ogg',
+    'video/x-msvideo',
+    'video/quicktime',
+    'video/x-matroska'
+];
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+
+const assignmentSchema = yup.object().shape({
+    title: yup.string()
+        .required('Title is required.')
+        .max(200, 'Title is required and must be 200 characters or less.'),
+    instructions: yup.string().optional(),
+    dueDate: yup.date()
+        .typeError('Due date must be a valid date.')
+        .required('Due date is required.')
+        .min(new Date(), 'DueDate must be in the future.'),
+    allowLateSubmission: yup.boolean().default(false),
+    files: yup.array().of(
+        yup.mixed<File>().test('fileValidation', 'Invalid file', (file) => {
+            if (!file) return true;
+            
+            // Extension check
+            if (!file.name.includes('.')) return false;
+            
+            // Content Type check
+            if (!ALLOWED_CONTENT_TYPES.includes(file.type)) return false;
+            
+            // Size check
+            const isVideo = file.type.startsWith('video/');
+            const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
+            if (file.size > maxSize) return false;
+            
+            return true;
+        })
+    ).max(10, 'You can upload a maximum of 10 files.').optional().default([])
+});
+
+type AssignmentFormData = yup.InferType<typeof assignmentSchema>;
 
 const inputCls =
     'w-full px-5 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all text-sm font-semibold';
@@ -22,74 +78,47 @@ export const InstructorAssignmentCreatePage = () => {
     const courseIdNum = Number.parseInt(courseId || '0');
     
     const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
-    const [attachments, setAttachments] = useState<File[]>([]);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isFileSizeDropdownOpen, setIsFileSizeDropdownOpen] = useState(false);
     const [uploadStatuses, setUploadStatuses] = useState<Record<number, { progress: number; status: 'pending' | 'uploading' | 'success' | 'error' }>>({});
 
-    const fileSizeOptions = [
-        { label: 'No limit', value: '' },
-        { label: '10 MB', value: '10' },
-        { label: '50 MB', value: '50' },
-        { label: '100 MB', value: '100' },
-    ];
-
-    // API hooks
     const createAssignmentMutation = useCreateAssignment();
     const { data: courseData } = useCourse(courseIdNum);
 
-    const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        dueDate: null as Date | null,
-        allowedFileTypes: [] as string[],
-        maxFileSize: '',
-        maxFileCount: '5',
-        allowLateSubmission: false,
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        setError,
+        formState: { errors, isSubmitting },
+    } = useForm<AssignmentFormData>({
+        resolver: yupResolver(assignmentSchema) as any,
+        defaultValues: {
+            title: '',
+            instructions: '',
+            allowLateSubmission: false,
+            files: [],
+        }
     });
 
-    const fileTypeOptions = ['PDF', 'DOC', 'DOCX', 'ZIP', 'TXT', 'PPT', 'PPTX'];
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        setAttachments([...attachments, ...files]);
-        setStatusMessage(null);
-    };
-
-    const removeAttachment = (index: number) => {
-        setAttachments(attachments.filter((_, i) => i !== index));
-    };
-
-    const toggleFileType = (type: string) => {
-        setFormData({
-            ...formData,
-            allowedFileTypes: formData.allowedFileTypes.includes(type)
-                ? formData.allowedFileTypes.filter((t) => t !== type)
-                : [...formData.allowedFileTypes, type],
-        });
-    };
+    const attachments = (watch('files') || []).filter((f): f is File => !!f);
 
     const handleSave = async (isDraft: boolean) => {
-        if (!formData.title.trim()) {
-            setStatusMessage({ type: 'error', text: 'Assignment title is required.' });
-            return;
-        }
-        if (!isDraft && !formData.dueDate) {
-            setStatusMessage({ type: 'error', text: 'Due date is required for publishing.' });
-            return;
-        }
+        // Trigger validation manually to handle the draft/publish logic if needed
+        // but since both use the same schema, we can just use handleSubmit
+    };
 
-        setIsSubmitting(true);
+    const onSubmit = async (data: AssignmentFormData, isDraft: boolean) => {
         setStatusMessage(null);
         setUploadStatuses({});
 
         try {
             const command = {
-                title: formData.title,
-                instructions: formData.description,
-                dueDate: formData.dueDate ? formData.dueDate.toISOString() : new Date().toISOString(),
-                allowLateSubmission: formData.allowLateSubmission,
+                title: data.title,
+                instructions: data.instructions || '',
+                dueDate: data.dueDate.toISOString(),
+                allowLateSubmission: data.allowLateSubmission,
                 isPublished: !isDraft,
+                courseId: courseIdNum,
                 uploadedFileMetaData: attachments.map((file) => ({
                     fileName: file.name,
                     fileSize: file.size,
@@ -104,15 +133,12 @@ export const InstructorAssignmentCreatePage = () => {
                     throw new Error("Mismatch between uploaded files and secured storage paths.");
                 }
 
-                // Initialize statuses
                 const initialStatuses: Record<number, any> = {};
-                attachments.forEach((_,
-i) => {
+                attachments.forEach((_, i) => {
                     initialStatuses[i] = { progress: 0, status: 'pending' };
                 });
                 setUploadStatuses(initialStatuses);
 
-                // Upload each file simultaneously
                 const uploadPromises = attachments.map(async (file, index) => {
                     setUploadStatuses(prev => ({ ...prev, [index]: { progress: 0, status: 'uploading' } }));
                     try {
@@ -134,17 +160,29 @@ i) => {
             }
 
             setStatusMessage({ type: 'success', text: isDraft ? 'Draft saved and files uploaded!' : 'Assignment published and files successfully uploaded!' });
-            const redirectPath = `/instructor/courses/${courseIdNum}/manage/assignments`;
-            setTimeout(() => navigate(redirectPath), 1500);
-        } catch (error) {
+            setTimeout(() => navigate(`/instructor/courses/${courseIdNum}/manage/assignments`), 1500);
+        } catch (error: any) {
+            if (error?.response?.data?.errors) {
+                mapServerErrors(error.response.data.errors, setError);
+                setTimeout(() => scrollToFirstError(error.response.data.errors), 100);
+            }
             const apiError = handleApiError(error);
-            setStatusMessage({ type: 'error', text: apiError.message || 'Failed to complete assignment creation. Check file uploads.' });
-        } finally {
-            setIsSubmitting(false);
+            setStatusMessage({ type: 'error', text: apiError.message || 'Failed to complete assignment creation.' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
 
-    const isPublishDisabled = !formData.title.trim() || !formData.dueDate || isSubmitting;
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newFiles = Array.from(e.target.files || []);
+        const currentFiles = watch('files') || [];
+        setValue('files', [...currentFiles, ...newFiles], { shouldValidate: true });
+        setStatusMessage(null);
+    };
+
+    const removeAttachment = (index: number) => {
+        const currentFiles = watch('files') || [];
+        setValue('files', currentFiles.filter((_, i) => i !== index), { shouldValidate: true });
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans pb-20">
@@ -203,10 +241,14 @@ i) => {
                                 <input
                                     type="text"
                                     placeholder="e.g. Phase 1: Market Research Analysis"
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className={inputCls}
+                                    {...register('title')}
+                                    className={`${inputCls} ${errors.title ? 'border-red-500 focus:ring-red-500/20' : ''}`}
                                 />
+                                {errors.title && (
+                                    <p className="mt-1.5 text-xs font-bold text-red-500 flex items-center gap-1.5 ml-1 animate-in slide-in-from-left-2">
+                                        <AlertCircle className="w-3.5 h-3.5" /> {errors.title.message}
+                                    </p>
+                                )}
                             </div>
 
                             <div>
@@ -214,10 +256,14 @@ i) => {
                                 <textarea
                                     rows={5}
                                     placeholder="Add detailed instructions for students..."
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className={`${inputCls} resize-none`}
+                                    {...register('instructions')}
+                                    className={`${inputCls} resize-none ${errors.instructions ? 'border-red-500 focus:ring-red-500/20' : ''}`}
                                 />
+                                {errors.instructions && (
+                                    <p className="mt-1.5 text-xs font-bold text-red-500 flex items-center gap-1.5 ml-1 animate-in slide-in-from-left-2">
+                                        <AlertCircle className="w-3.5 h-3.5" /> {errors.instructions.message}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -234,13 +280,20 @@ i) => {
                                     <label className={labelCls}>Due Date &amp; Time <span className="text-red-500">*</span></label>
                                     <div className="flex-1 flex flex-col justify-start">
                                         <DateTimePicker
-                                            value={formData.dueDate}
-                                            onChange={(d) => setFormData({ ...formData, dueDate: d })}
+                                            value={watch('dueDate')}
+                                            onChange={(d) => setValue('dueDate', d || new Date(), { shouldValidate: true })}
                                             minDate={new Date()}
                                             placeholder="Select submission deadline"
-                                            iconColor="text-amber-500"
+                                            iconColor={errors.dueDate ? "text-red-500" : "text-amber-500"}
+                                            hasError={!!errors.dueDate}
                                         />
-                                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-2 ml-1">The date after which submissions are marked late.</p>
+                                        {errors.dueDate ? (
+                                            <p className="mt-1.5 text-xs font-bold text-red-500 flex items-center gap-1.5 ml-1 animate-in slide-in-from-left-2">
+                                                <AlertCircle className="w-3.5 h-3.5" /> {errors.dueDate.message}
+                                            </p>
+                                        ) : (
+                                            <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-2 ml-1">The date after which submissions are marked late.</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -248,30 +301,29 @@ i) => {
                                     <label className={labelCls}>Timing Preferences</label>
                                     <div className="flex-1 flex flex-col justify-start">
                                         <div 
-                                            onClick={() => setFormData({ ...formData, allowLateSubmission: !formData.allowLateSubmission })}
+                                            onClick={() => setValue('allowLateSubmission', !watch('allowLateSubmission'))}
                                             className={`${inputCls} cursor-pointer flex items-center justify-between hover:border-[#21A9FF]/50 transition-colors w-full ${
-                                                formData.allowLateSubmission ? 'border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10' : ''
+                                                watch('allowLateSubmission') ? 'border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10' : ''
                                             }`}
                                         >
                                             <div className="flex items-center gap-3 truncate">
-                                                <div className={`flex items-center justify-center transition-colors ${formData.allowLateSubmission ? 'text-amber-500' : 'text-gray-400 dark:text-slate-500'}`}>
+                                                <div className={`flex items-center justify-center transition-colors ${watch('allowLateSubmission') ? 'text-amber-500' : 'text-gray-400 dark:text-slate-500'}`}>
                                                     <Clock className="w-[18px] h-[18px]" />
                                                 </div>
-                                                <span className={`font-semibold text-sm truncate ${formData.allowLateSubmission ? 'text-amber-900 dark:text-amber-100' : 'text-gray-700 dark:text-slate-200'}`}>
+                                                <span className={`font-semibold text-sm truncate ${watch('allowLateSubmission') ? 'text-amber-900 dark:text-amber-100' : 'text-gray-700 dark:text-slate-200'}`}>
                                                     Allow Late Submissions
                                                 </span>
                                             </div>
-                                            {/* Switch Toggle */}
                                             <div className={`w-10 h-5 shrink-0 rounded-full relative transition-colors duration-300 ml-4 ${
-                                                formData.allowLateSubmission ? 'bg-amber-500' : 'bg-gray-300 dark:bg-slate-600'
+                                                watch('allowLateSubmission') ? 'bg-amber-500' : 'bg-gray-300 dark:bg-slate-600'
                                             }`}>
                                                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ease-spring ${
-                                                    formData.allowLateSubmission ? 'left-[22px] scale-105' : 'left-0.5'
+                                                    watch('allowLateSubmission') ? 'left-[22px] scale-105' : 'left-0.5'
                                                 }`} />
                                             </div>
                                         </div>
                                         <p className="text-[11px] font-medium text-gray-500 dark:text-slate-400 mt-2 ml-1">
-                                            {formData.allowLateSubmission 
+                                            {watch('allowLateSubmission') 
                                                 ? 'Late submissions will be accepted but marked as late.'
                                                 : 'Submissions after deadline will be rejected.'}
                                         </p>
@@ -290,14 +342,15 @@ i) => {
                                 <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">Reference Materials</h3>
                             </div>
 
-                            <label className="relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-[2rem] cursor-pointer hover:border-[#21A9FF] group transition-all duration-500 bg-gradient-to-b from-gray-50/50 to-white dark:from-slate-800/20 dark:to-slate-900/40 hover:shadow-lg hover:shadow-[#21A9FF]/5 outline-none">
+                            <label className={`relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed rounded-[2rem] cursor-pointer group transition-all duration-500 bg-gradient-to-b from-gray-50/50 to-white dark:from-slate-800/20 dark:to-slate-900/40 hover:shadow-lg hover:shadow-[#21A9FF]/5 outline-none ${errors.files ? 'border-red-400 bg-red-50/30 dark:bg-red-500/5' : 'border-gray-300 dark:border-slate-600 hover:border-[#21A9FF]'}`}>
                                 <div className="absolute inset-0 bg-[#21A9FF]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 group-hover:-translate-y-1 group-active:scale-95 transition-all duration-500 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-slate-700 relative z-10">
                                     <div className="absolute inset-0 bg-[#21A9FF] opacity-20 blur-xl rounded-full group-hover:opacity-40 transition-opacity duration-500" />
-                                    <Upload className="w-8 h-8 text-[#21A9FF] relative z-10" />
+                                    <Upload className={`w-8 h-8 relative z-10 ${errors.files ? 'text-red-500' : 'text-[#21A9FF]'}`} />
                                 </div>
                                 <div className="text-center relative z-10">
-                                    <span className="text-lg font-extrabold text-gray-900 dark:text-white group-hover:text-[#21A9FF] transition-colors">Click to upload reference files</span>
+                                    <span className={`text-lg font-extrabold transition-colors ${errors.files ? 'text-red-600' : 'text-gray-900 dark:text-white group-hover:text-[#21A9FF]'}`}>Click to upload reference files</span>
+                                    {errors.files && <p className="mt-2 text-sm font-bold text-red-500">{errors.files.message}</p>}
                                 </div>
                                 <input type="file" multiple onChange={handleFileUpload} className="hidden" />
                             </label>
@@ -366,17 +419,17 @@ i) => {
                         <div className="flex gap-3 w-full sm:w-auto">
                             <button
                                 type="button"
-                                onClick={() => handleSave(true)}
+                                onClick={handleSubmit((data) => onSubmit(data, true))}
                                 disabled={isSubmitting}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-800 dark:bg-slate-700 hover:bg-black dark:hover:bg-slate-600 text-white rounded-xl font-bold transition-all text-sm disabled:opacity-50"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-800 dark:bg-slate-700 hover:bg-black dark:hover:bg-slate-600 text-white rounded-xl font-bold transition-all text-sm disabled:opacity-50 active:scale-95 shadow-sm"
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                 Save Draft
                             </button>
                             <button
                                 type="button"
-                                onClick={() => handleSave(false)}
-                                disabled={isPublishDisabled}
+                                onClick={handleSubmit((data) => onSubmit(data, false))}
+                                disabled={isSubmitting}
                                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white rounded-xl font-bold transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 text-sm disabled:opacity-50"
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}

@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
-import { Loader2, FileText, AlertCircle } from 'lucide-react';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+import { FileText, Loader2, AlertCircle } from 'lucide-react';
 
-// Initialize the worker using the locally bundled file
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+// Set up the worker correctly for Vite
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 interface PDFThumbnailProps {
     url: string;
     className?: string;
 }
 
-export const PDFThumbnail = ({ url, className = "" }: PDFThumbnailProps) => {
+export const PDFThumbnail = memo(function PDFThumbnail({ url, className = "" }: PDFThumbnailProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -25,36 +25,63 @@ export const PDFThumbnail = ({ url, className = "" }: PDFThumbnailProps) => {
             setError(false);
 
             try {
-                const loadingTask = pdfjsLib.getDocument(url);
+                // 1. Fetch the PDF data manually (often better for CORS handling)
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const arrayBuffer = await response.arrayBuffer();
+
+                if (!isMounted) return;
+
+                // 2. Load the PDF from the ArrayBuffer
+                const loadingTask = pdfjsLib.getDocument({
+                    data: arrayBuffer,
+                    isEvalSupported: false,
+                    disableRange: true,
+                    disableStream: true
+                });
+                
                 const pdf = await loadingTask.promise;
 
                 if (!isMounted) return;
 
+                // 3. Load first page
                 const page = await pdf.getPage(1);
-                const pixelRatio = window.devicePixelRatio || 1;
-                const viewport = page.getViewport({ scale: 3.0 * pixelRatio }); // Maximum quality scale
+                
+                if (!isMounted) return;
 
+                // Ultimate high-quality rendering (4x super-sampling)
+                const scale = 4.0; 
+                const viewport = page.getViewport({ scale });
+                
                 const canvas = canvasRef.current;
                 if (!canvas) return;
 
-                const context = canvas.getContext('2d');
+                const context = canvas.getContext('2d', { 
+                    alpha: false,
+                    willReadFrequently: false 
+                });
                 if (!context) return;
 
-                // Set canvas size based on high-quality viewport for maximum resolution
-                canvas.height = viewport.height;
+                // Disable smoothing for razor-sharp edges
+                context.imageSmoothingEnabled = false;
+
+                // Set internal resolution to the ultra-high scale
                 canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                // Keep display size responsive
+                canvas.style.width = "100%";
+                canvas.style.height = "100%";
 
                 const renderContext = {
                     canvasContext: context,
-                    viewport,
-                    canvas,
+                    viewport: viewport,
+                    canvas: canvas,
+                    intent: 'print', // Use highest fidelity rendering path
                 };
 
                 await page.render(renderContext).promise;
-
-                if (isMounted) {
-                    setLoading(false);
-                }
+                if (isMounted) setLoading(false);
             } catch (err) {
                 console.error('Error rendering PDF thumbnail:', err);
                 if (isMounted) {
@@ -73,30 +100,20 @@ export const PDFThumbnail = ({ url, className = "" }: PDFThumbnailProps) => {
 
     if (error) {
         return (
-            <div className={`flex flex-col items-center justify-center bg-rose-50 dark:bg-rose-500/5 ${className}`}>
-                <AlertCircle className="w-8 h-8 text-rose-400 mb-2" />
-                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Preview Failed</span>
+            <div className={`flex items-center justify-center bg-gray-100 dark:bg-slate-800 rounded-lg ${className}`}>
+                <FileText className="w-8 h-8 text-gray-400" />
             </div>
         );
     }
 
     return (
-        <div className={`relative flex items-center justify-center overflow-hidden ${className}`}>
+        <div className={`relative flex items-center justify-center bg-gray-50 dark:bg-slate-900 rounded-lg overflow-hidden border border-gray-100 dark:border-slate-800 ${className}`}>
             {loading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/50 z-10 animate-pulse">
-                    <Loader2 className="w-6 h-6 text-indigo-400 animate-spin mb-2" />
-                    <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Generating...</span>
+                <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[1px] z-10">
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
                 </div>
             )}
-
-            <canvas
-                ref={canvasRef}
-                className={`w-full h-full object-cover transition-opacity duration-500 ${loading ? 'opacity-0' : 'opacity-100'}`}
-            />
-
-            {!loading && !error && (
-                <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent dark:from-slate-900/20 pointer-events-none" />
-            )}
+            <canvas ref={canvasRef} className="w-full h-full object-cover" />
         </div>
     );
-};
+});
