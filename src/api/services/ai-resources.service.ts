@@ -3,6 +3,30 @@ import { api } from '../client';
 import { ENDPOINTS } from '../endpoints';
 import type { ApiResponse } from '@/types/api.types';
 
+/** Mirrors backend `UploadStatus` enum (serialized as string names by default). */
+export type AiResourceUploadStatus = 'Completed' | 'Pending' | 'Failed';
+
+/**
+ * Parses API upload status from JSON (string names or numeric enum values).
+ * Backend order: Completed = 0, Pending = 1, Failed = 2.
+ */
+export function parseAiResourceUploadStatus(raw: unknown): AiResourceUploadStatus | undefined {
+    if (raw == null) return undefined;
+    if (typeof raw === 'number') {
+        if (raw === 0) return 'Completed';
+        if (raw === 1) return 'Pending';
+        if (raw === 2) return 'Failed';
+        return undefined;
+    }
+    const s = String(raw).trim();
+    if (['Completed', 'Pending', 'Failed'].includes(s)) return s as AiResourceUploadStatus;
+    const lower = s.toLowerCase();
+    if (lower === 'completed') return 'Completed';
+    if (lower === 'pending') return 'Pending';
+    if (lower === 'failed') return 'Failed';
+    return undefined;
+}
+
 export interface AIResourceGenerateUrlsRequest {
     Files: {
         FileName: string;

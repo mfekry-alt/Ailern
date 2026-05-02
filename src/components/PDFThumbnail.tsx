@@ -35,9 +35,8 @@ export const PDFThumbnail = memo(function PDFThumbnail({ url, className = "" }: 
                 // 2. Load the PDF from the ArrayBuffer
                 const loadingTask = pdfjsLib.getDocument({
                     data: arrayBuffer,
-                    isEvalSupported: false,
                     disableRange: true,
-                    disableStream: true
+                    disableStream: true,
                 });
                 
                 const pdf = await loadingTask.promise;
@@ -100,8 +99,10 @@ export const PDFThumbnail = memo(function PDFThumbnail({ url, className = "" }: 
 
     if (error) {
         return (
-            <div className={`flex items-center justify-center bg-gray-100 dark:bg-slate-800 rounded-lg ${className}`}>
-                <FileText className="w-8 h-8 text-gray-400" />
+            <div
+                className={`flex items-center justify-center rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-600 dark:bg-slate-800 ${className}`}
+            >
+                <FileText className="h-8 w-8 text-slate-400 dark:text-slate-500" aria-hidden />
             </div>
         );
     }
