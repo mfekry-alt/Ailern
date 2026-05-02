@@ -109,6 +109,24 @@ export default {
         'medium': '0 4px 12px rgba(0, 0, 0, 0.1)',
         'large': '0 8px 24px rgba(0, 0, 0, 0.12)',
       },
+      keyframes: {
+        'ai-progress-slide': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(280%)' },
+        },
+        'ai-processing-ring': {
+          '0%, 100%': {
+            boxShadow: 'inset 0 0 0 1px rgb(167 139 250 / 0.35)',
+          },
+          '50%': {
+            boxShadow: 'inset 0 0 0 2px rgb(167 139 250 / 0.55)',
+          },
+        },
+      },
+      animation: {
+        'ai-progress-slide': 'ai-progress-slide 1.35s ease-in-out infinite',
+        'ai-processing-ring': 'ai-processing-ring 2s ease-in-out infinite',
+      },
     },
   },
   plugins: [
