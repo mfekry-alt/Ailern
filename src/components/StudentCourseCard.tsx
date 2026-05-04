@@ -8,9 +8,15 @@ const THUMBNAILS = [
 
 interface StudentCourseCardProps {
     course: any;
+    resumeData?: {
+        lastLearningItemId?: string | null;
+        type?: number | string;
+        lastWatchedTime?: number | null;
+        lastPageNumber?: number | null;
+    };
 }
 
-export const StudentCourseCard = ({ course }: StudentCourseCardProps) => {
+export const StudentCourseCard = ({ course, resumeData }: StudentCourseCardProps) => {
     const navigate = useNavigate();
     const thumbIndex = typeof course.id === 'string' 
         ? course.id.length % THUMBNAILS.length 
@@ -19,6 +25,37 @@ export const StudentCourseCard = ({ course }: StudentCourseCardProps) => {
     // Allow overriding the thumbnail via course.image for dashboard
     const FALLBACK_IMAGE = "/course-default.png";
     const imageSrc = course.imageUrl || course.image || course.thumbnail || FALLBACK_IMAGE;
+
+    // Handle resume course navigation with state
+    const handleResumeCourse = () => {
+        // If no resume data, go to course sections page
+        if (!resumeData?.lastLearningItemId) {
+            navigate(`/courses/${course.id}/sections`);
+            return;
+        }
+
+        // Build navigation state with resume data
+        // LearningType: 0=None, 1=File, 2=Video
+        // Handle both number (2) and string ('2' or 'Video') type formats from API
+        const rawType = resumeData.type;
+        const isVideo = rawType === 2 || rawType === '2' || rawType === 'Video';
+        const navigationState: Record<string, any> = {
+            itemId: resumeData.lastLearningItemId,
+            type: isVideo ? 'Video' : 'File',
+        };
+
+        // Add video time or page number based on type
+        if (isVideo && resumeData.lastWatchedTime != null) {
+            navigationState.lastWatchedTime = resumeData.lastWatchedTime;
+        } else if (!isVideo && resumeData.lastPageNumber != null) {
+            navigationState.lastPageNumber = resumeData.lastPageNumber;
+        }
+
+        // Navigate to content viewer with file ID in URL and resume data in state
+        navigate(`/courses/${course.id}/content?file=${resumeData.lastLearningItemId}`, {
+            state: navigationState,
+        });
+    };
 
     return (
         <ParallaxTiltCard
@@ -105,13 +142,23 @@ export const StudentCourseCard = ({ course }: StudentCourseCardProps) => {
                         <LayoutGrid className="w-4 h-4" />
                     </button>
 
-                    <button 
-                        onClick={() => navigate(`/courses/${course.id}/sections`)}
-                        className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[10px] uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95 group/btn"
-                    >
-                        Resume Course
-                        <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
-                    </button>
+                    {resumeData?.lastLearningItemId ? (
+                        <button 
+                            onClick={handleResumeCourse}
+                            className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[10px] uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95 group/btn"
+                        >
+                            Resume Course
+                            <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => navigate(`/courses/${course.id}/sections`)}
+                            className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20 active:scale-95 group/btn"
+                        >
+                            Start Course
+                            <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                        </button>
+                    )}
                 </div>
             </div>
         </ParallaxTiltCard>

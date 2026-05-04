@@ -117,6 +117,8 @@ export const QUERY_KEYS = {
     COURSE_ASSIGNMENTS: (courseId: string) => ['course-assignments', courseId],
     COURSE_QUIZZES: (courseId: string) => ['course-quizzes', courseId],
     ASSIGNMENT_SUBMISSION: (assignmentId: number) => ['assignment-submission', assignmentId],
+    /** Student — GET /Courses/my-learning (courses with saved progress) */
+    MY_LEARNING: ['my-learning'],
 } as const;
 
 export const STORAGE_KEYS = {

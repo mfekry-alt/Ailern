@@ -190,11 +190,25 @@ export const DashboardPage = () => {
                                         </button>
                                     </div>
                                 ) : (
-                                    courses.map((course) => (
-                                        <div key={course.id} className="h-full">
-                                            <StudentCourseCard course={course} />
-                                        </div>
-                                    ))
+                                    courses.map((course) => {
+                                        // Find resume data for this course
+                                        const resumeData = continueLearningRows.find(
+                                            (row) => row.courseId === course.id
+                                        );
+                                        return (
+                                            <div key={course.id} className="h-full">
+                                                <StudentCourseCard 
+                                                    course={course} 
+                                                    resumeData={resumeData ? {
+                                                        lastLearningItemId: resumeData.lastLearningItemId,
+                                                        type: resumeData.type,
+                                                        lastWatchedTime: resumeData.lastWatchedTime,
+                                                        lastPageNumber: resumeData.lastPageNumber,
+                                                    } : undefined}
+                                                />
+                                            </div>
+                                        );
+                                    })
                                 )}
                             </div>
                         </div>
