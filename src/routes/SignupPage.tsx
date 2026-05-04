@@ -127,8 +127,8 @@ export const SignupPage = () => {
     if (completedSignup) {
         const { email } = completedSignup;
         return (
-            <div className="w-full max-w-[450px] mx-auto">
-                <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl shadow-black/5 dark:shadow-black/30 border border-white/60 dark:border-zinc-700/50 text-center">
+            <div className="w-full max-w-[450px] mx-auto animate-fade-in">
+                <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl shadow-black/5 dark:shadow-black/30 border border-white/60 dark:border-zinc-700/50 text-center animate-scale-up">
                     <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-5">
                         <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
                     </div>
@@ -195,7 +195,7 @@ export const SignupPage = () => {
     const errorClass = 'text-xs text-red-500 mt-1 font-medium';
 
     return (
-        <div className="w-full max-w-[450px] mx-auto">
+        <div className="w-full max-w-[450px] mx-auto animate-fade-in">
             {/* Back to Home */}
             <Link
                 to={ROUTES.HOME}
@@ -244,8 +244,11 @@ export const SignupPage = () => {
 
                 {/* Error */}
                 {error && (
-                    <div className="mb-5 p-3.5 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                    <div className="mb-5 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 animate-[shake_0.4s_ease-in-out] flex items-center justify-center gap-2.5">
+                        <svg className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                        </svg>
+                        <p className="text-sm font-semibold text-red-700 dark:text-red-300">{error}</p>
                     </div>
                 )}
 

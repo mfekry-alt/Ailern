@@ -814,6 +814,7 @@ export interface StudentProfileAssignmentDto {
 }
 
 export interface QuizAttemptDto {
+    attemptId: string;
     attemptNumber: number;
     score: number;
     submittedAt: string;

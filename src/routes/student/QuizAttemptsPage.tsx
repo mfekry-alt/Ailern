@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     ArrowLeft,
     ChevronRight,
@@ -12,14 +12,16 @@ import {
     Eye,
     Play,
     RotateCcw,
-    AlertCircle
+    AlertCircle,
+    Sparkles
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { getMyAttemptsForQuiz } from '@/api/services/attempts.service';
 import { quizService } from '@/api/services';
 import type { AttemptMetaData, GetAttemptsByQuizIdDto, AttemptStatus } from '@/types/api.types';
 
-const getStatusInfo = (status: AttemptStatus) => {
+const getStatusInfo = (status: AttemptStatus | 'Processing') => {
     switch (status) {
         case 'Reviewed':
             return { label: 'Reviewed', color: 'emerald', icon: CheckCircle2 };
@@ -27,6 +29,8 @@ const getStatusInfo = (status: AttemptStatus) => {
             return { label: 'Submitted', color: 'blue', icon: CheckCircle2 };
         case 'InProgress':
             return { label: 'In Progress', color: 'orange', icon: Clock };
+        case 'Processing':
+            return { label: 'Processing with AI...', color: 'violet', icon: Loader2 };
         default:
             return { label: status, color: 'gray', icon: Clock };
     }
@@ -39,6 +43,43 @@ export const QuizAttemptsPage = () => {
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'instant' });
     }, []);
+
+    const [activeAIGradingId, setActiveAIGradingId] = useState<string | null>(() => {
+        return localStorage.getItem(`ai-grading-${id}`) || null;
+    });
+
+    const [aiGradedIds, setAiGradedIds] = useState<string[]>(() => {
+        try {
+            return JSON.parse(localStorage.getItem(`ai-graded-${id}`) || '[]');
+        } catch {
+            return [];
+        }
+    });
+
+    useEffect(() => {
+        if (activeAIGradingId) {
+            localStorage.setItem(`ai-grading-${id}`, activeAIGradingId);
+            const timer = setTimeout(() => {
+                setActiveAIGradingId(null);
+                setAiGradedIds(prev => {
+                    const next = Array.from(new Set([...prev, activeAIGradingId]));
+                    localStorage.setItem(`ai-graded-${id}`, JSON.stringify(next));
+                    return next;
+                });
+                toast.success("AI has successfully evaluated this attempt 🎉");
+                navigate(`/quizzes/${id}/attempt/${activeAIGradingId}/ai-result`);
+            }, 3500); // 3.5 seconds simulate processing
+            return () => clearTimeout(timer);
+        } else {
+            localStorage.removeItem(`ai-grading-${id}`);
+        }
+    }, [activeAIGradingId, id, navigate]);
+
+    useEffect(() => {
+        localStorage.setItem(`ai-graded-${id}`, JSON.stringify(aiGradedIds));
+    }, [aiGradedIds, id]);
+
+    const hasAIGradedAttempt = aiGradedIds.length > 0;
 
     const { data: attemptsDto, isLoading } = useQuery<GetAttemptsByQuizIdDto | null>({
         queryKey: ['quiz-attempts', id],
@@ -95,7 +136,7 @@ export const QuizAttemptsPage = () => {
         const reviewedCount = attempts.filter(a => a.status === 'Reviewed').length;
         const submittedCount = attempts.filter(a => a.status === 'Submitted').length;
         const inProgressCount = attempts.filter(a => a.status === 'InProgress').length;
-        const highestScore = attempts.length > 0 
+        const highestScore = attempts.length > 0
             ? Math.max(0, ...attempts.map(a => getScorePercentage(a)))
             : 0;
 
@@ -120,11 +161,11 @@ export const QuizAttemptsPage = () => {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 font-sans pb-20">
             <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                
+
                 {/* Header */}
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => quizData?.courseId 
+                        onClick={() => quizData?.courseId
                             ? navigate(`/courses/${quizData.courseId}/quizzes`)
                             : navigate(-1)
                         }
@@ -140,6 +181,14 @@ export const QuizAttemptsPage = () => {
                     </div>
                 </div>
 
+                {/* AI Grading Hint */}
+                {activeAIGradingId && (
+                    <div className="bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20 rounded-xl p-3 flex items-center justify-center gap-2 text-violet-700 dark:text-violet-400 text-sm font-semibold animate-in fade-in slide-in-from-top-2">
+                        <Sparkles className="w-4 h-4" />
+                        AI grading may take a few moments. You’ll be notified once it’s ready.
+                    </div>
+                )}
+
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {stats.map((stat, idx) => (
@@ -149,11 +198,10 @@ export const QuizAttemptsPage = () => {
                                 <p className="text-gray-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">{stat.label}</p>
                                 <h3 className="text-3xl font-black text-gray-900 dark:text-white">{stat.value}</h3>
                             </div>
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                                stat.color === 'blue' ? 'bg-[#21A9FF]/10 text-[#21A9FF]' :
-                                stat.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600' :
-                                'bg-orange-50 dark:bg-orange-500/10 text-orange-600'
-                            }`}>
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${stat.color === 'blue' ? 'bg-[#21A9FF]/10 text-[#21A9FF]' :
+                                    stat.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600' :
+                                        'bg-orange-50 dark:bg-orange-500/10 text-orange-600'
+                                }`}>
                                 <stat.icon className="w-6 h-6" />
                             </div>
                         </div>
@@ -205,43 +253,56 @@ export const QuizAttemptsPage = () => {
                 ) : (
                     <div className="space-y-3">
                         {attempts.map((attempt) => {
+                            const isAIGraded = aiGradedIds.includes(attempt.id);
+                            const effectiveStatus = activeAIGradingId === attempt.id ? 'Processing' :
+                                isAIGraded ? 'Reviewed' :
+                                    attempt.status;
+
                             const score = getScorePercentage(attempt);
-                            const revealScore = canRevealScore(attempt);
-                            const info = getStatusInfo(attempt.status);
-                            const isInProgress = attempt.status === 'InProgress';
+                            const revealScore = canRevealScore({ ...attempt, status: effectiveStatus as AttemptStatus });
+                            const info = getStatusInfo(effectiveStatus as any);
+                            const isInProgress = effectiveStatus === 'InProgress';
+                            const isProcessing = effectiveStatus === 'Processing';
 
                             return (
                                 <div
                                     key={attempt.id}
-                                    className={`bg-white dark:bg-slate-800/60 border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                                        attempt.status === 'Reviewed'
+                                    className={`bg-white dark:bg-slate-800/60 border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${effectiveStatus === 'Reviewed'
                                             ? 'border-emerald-200/60 dark:border-emerald-700/30'
-                                            : attempt.status === 'Submitted'
-                                                ? 'border-blue-200/60 dark:border-blue-700/30'
-                                                : 'border-gray-200 dark:border-slate-700/50'
-                                    }`}
+                                            : effectiveStatus === 'Processing'
+                                                ? 'border-violet-300 dark:border-violet-500/50 shadow-violet-100 dark:shadow-violet-900/20'
+                                                : effectiveStatus === 'Submitted'
+                                                    ? 'border-blue-200/60 dark:border-blue-700/30'
+                                                    : 'border-gray-200 dark:border-slate-700/50'
+                                        }`}
                                 >
                                     {/* Left: Attempt Info */}
                                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${
-                                            attempt.status === 'Reviewed'
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${effectiveStatus === 'Reviewed'
                                                 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
-                                                : attempt.status === 'Submitted'
-                                                    ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400'
-                                                    : 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400'
-                                        }`}>
+                                                : effectiveStatus === 'Processing'
+                                                    ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.5)]'
+                                                    : effectiveStatus === 'Submitted'
+                                                        ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400'
+                                                        : 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400'
+                                            }`}>
                                             {attempt.attemptNumber}
                                         </div>
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <h4 className="font-bold text-gray-900 dark:text-white text-base">Attempt #{attempt.attemptNumber}</h4>
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${
-                                                    attempt.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' :
-                                                    attempt.status === 'Submitted' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' :
-                                                    'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400'
-                                                }`}>
-                                                    <info.icon className="w-3 h-3" /> {info.label}
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${effectiveStatus === 'Reviewed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' :
+                                                        effectiveStatus === 'Submitted' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' :
+                                                            effectiveStatus === 'Processing' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400' :
+                                                                'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400'
+                                                    }`}>
+                                                    <info.icon className={`w-3 h-3 ${isProcessing ? 'animate-spin' : ''}`} /> {info.label}
                                                 </span>
+                                                {isAIGraded && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-violet-100 to-fuchsia-100 text-fuchsia-700 dark:from-violet-500/20 dark:to-fuchsia-500/20 dark:text-fuchsia-400 border border-fuchsia-200 dark:border-fuchsia-500/30">
+                                                        <Sparkles className="w-2.5 h-2.5" /> AI Graded
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
                                                 <Clock className="w-3 h-3" /> Started: {formatDate(attempt.startAt)}
@@ -257,29 +318,82 @@ export const QuizAttemptsPage = () => {
                                     </div>
 
                                     {/* Right: Actions */}
-                                    <div className="flex items-center gap-2 border-t md:border-t-0 md:border-l border-gray-100 dark:border-slate-700/50 pt-3 md:pt-0 md:pl-5 shrink-0">
+                                    <div className="flex flex-wrap items-center gap-2 border-t md:border-t-0 md:border-l border-gray-100 dark:border-slate-700/50 pt-3 md:pt-0 md:pl-5 shrink-0">
                                         {isInProgress ? (
                                             <button
                                                 onClick={() => navigate(`/quizzes/${id}/attempt`, { state: { resume: true } })}
-                                                className="px-4 py-2.5 font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white"
+                                                disabled={!!activeAIGradingId}
+                                                className={`px-4 py-2.5 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-2 ${activeAIGradingId
+                                                        ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
+                                                        : 'bg-orange-500 hover:bg-orange-600 text-white active:scale-95'
+                                                    }`}
                                             >
                                                 <Play className="w-3.5 h-3.5" />
                                                 Resume
                                                 <ChevronRight className="w-3.5 h-3.5" />
                                             </button>
                                         ) : (
-                                            <button
-                                                onClick={() => navigate(`/quizzes/${id}/attempt/${attempt.id}`)}
-                                                className={`px-4 py-2.5 font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2 ${
-                                                    attempt.status === 'Reviewed'
-                                                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                                        : 'bg-[#21A9FF] hover:bg-[#0094F2] text-white'
-                                                }`}
-                                            >
-                                                <Eye className="w-3.5 h-3.5" />
-                                                {attempt.status === 'Reviewed' ? 'View Result' : 'View Details'}
-                                                <ChevronRight className="w-3.5 h-3.5" />
-                                            </button>
+                                            <>
+                                                {effectiveStatus === 'Submitted' && (
+                                                    <div className="group relative">
+                                                        <button
+                                                            onClick={() => setActiveAIGradingId(attempt.id)}
+                                                            disabled={!!activeAIGradingId || hasAIGradedAttempt}
+                                                            className={`px-4 py-2.5 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-2 ${(activeAIGradingId || hasAIGradedAttempt)
+                                                                    ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
+                                                                    : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white active:scale-95'
+                                                                }`}
+                                                        >
+                                                            <Sparkles className="w-3.5 h-3.5" />
+                                                            Grade with AI
+                                                        </button>
+                                                        {(!hasAIGradedAttempt && !!activeAIGradingId && activeAIGradingId !== attempt.id) && (
+                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] text-center px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                                                                You can only grade one attempt using AI
+                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-white" />
+                                                            </div>
+                                                        )}
+                                                        {hasAIGradedAttempt && (
+                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] text-center px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                                                                An attempt has already been graded for this quiz
+                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {isProcessing && (
+                                                    <button
+                                                        disabled
+                                                        className="px-4 py-2.5 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-2 bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 cursor-not-allowed"
+                                                    >
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        AI is grading...
+                                                    </button>
+                                                )}
+                                                {isAIGraded && !isProcessing && (
+                                                    <button
+                                                        onClick={() => navigate(`/quizzes/${id}/attempt/${attempt.id}/ai-result`)}
+                                                        className="px-4 py-2.5 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-2 bg-gradient-to-r from-violet-100 to-fuchsia-100 hover:from-violet-200 hover:to-fuchsia-200 text-fuchsia-700 dark:from-violet-500/20 dark:to-fuchsia-500/20 dark:hover:from-violet-500/30 dark:hover:to-fuchsia-500/30 dark:text-fuchsia-400 active:scale-95"
+                                                    >
+                                                        <Sparkles className="w-3.5 h-3.5" />
+                                                        AI Result
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => navigate(`/quizzes/${id}/attempt/${attempt.id}`)}
+                                                    disabled={isProcessing || !!activeAIGradingId}
+                                                    className={`px-4 py-2.5 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-2 ${isProcessing || !!activeAIGradingId
+                                                            ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
+                                                            : effectiveStatus === 'Reviewed'
+                                                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95'
+                                                                : 'bg-[#21A9FF] hover:bg-[#0094F2] text-white active:scale-95'
+                                                        }`}
+                                                >
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                    {effectiveStatus === 'Reviewed' ? 'View Result' : 'View Details'}
+                                                    <ChevronRight className="w-3.5 h-3.5" />
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 </div>

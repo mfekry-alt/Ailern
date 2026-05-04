@@ -15,6 +15,7 @@ import {
     LayoutDashboard,
     Menu,
 } from 'lucide-react';
+import { CourseSidebarHeader } from '@/components/ui/CourseSidebarHeader';
 
 const NAV_ITEMS = [
     { to: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -65,26 +66,6 @@ function UserAvatarBadge({
     );
 }
 
-function SidebarUserChip({ collapsed }: { collapsed: boolean }) {
-    const { user } = useAuth();
-
-    const displayName =
-        `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || user?.email?.split('@')[0] || 'Student';
-
-    return (
-        <div className="px-4 py-3 border-t border-gray-100 dark:border-slate-800/50">
-            <div className={`flex items-center gap-3 min-w-0 ${collapsed ? 'justify-center' : ''}`}>
-                <UserAvatarBadge size="md" title={displayName} />
-                {!collapsed && (
-                    <div className="min-w-0 flex-1">
-                        <p className="text-xs font-black text-gray-900 dark:text-white truncate">{displayName}</p>
-                        <p className="text-[10px] font-semibold text-slate-400 truncate">Learning</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
 
 export const CourseDetailsLayout = () => {
     const { courseId } = useParams<{ courseId: string }>();
@@ -144,55 +125,17 @@ export const CourseDetailsLayout = () => {
                     ${collapsed ? 'w-[72px]' : 'w-64'}
                 `}
             >
-                <div className="flex flex-col border-b border-gray-100 dark:border-slate-800/50">
-                    <div
-                        className={`px-6 pb-6 pt-8 flex gap-3 ${
-                            collapsed ? 'flex-col items-center' : 'items-center justify-between'
-                        }`}
-                    >
-                        {!collapsed ? (
-                            <div className="flex items-start gap-3 min-w-0 flex-1">
-                                <img
-                                    src={courseImageSrc}
-                                    alt=""
-                                    className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
-                                    loading="lazy"
-                                    onError={() => setCourseThumbFailed(true)}
-                                />
-                                <div className="min-w-0 flex-1">
-                                    <h2 className="text-sm font-extrabold text-gray-900 dark:text-white truncate">
-                                        {isLoading ? 'Loading...' : courseTitle}
-                                    </h2>
-                                    <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 truncate mt-0.5">
-                                        {courseCode}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <img
-                                src={courseImageSrc}
-                                alt=""
-                                className="w-11 h-11 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
-                                loading="lazy"
-                                onError={() => setCourseThumbFailed(true)}
-                            />
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setCollapsed(!collapsed);
-                                setMobileOpen(false);
-                            }}
-                            className="hidden lg:flex w-8 h-8 items-center justify-center rounded-xl text-slate-400 hover:text-[#21A9FF] dark:hover:text-white hover:bg-[#21A9FF]/10 transition-all active:scale-90 shrink-0"
-                        >
-                            {collapsed ? (
-                                <ChevronRight className="w-5 h-5" />
-                            ) : (
-                                <ChevronLeft className="w-5 h-5 rotate-0 group-hover:-translate-x-1" />
-                            )}
-                        </button>
-                    </div>
-                </div>
+                <CourseSidebarHeader 
+                    courseName={courseTitle}
+                    courseCode={courseCode}
+                    imageUrl={courseImageSrc}
+                    isLoading={isLoading}
+                    collapsed={collapsed}
+                    onToggle={() => {
+                        setCollapsed(!collapsed);
+                        setMobileOpen(false);
+                    }}
+                />
 
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar min-h-0">
                     {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
@@ -242,8 +185,6 @@ export const CourseDetailsLayout = () => {
                         );
                     })}
                 </nav>
-
-                <SidebarUserChip collapsed={collapsed} />
 
                 <div className="p-4 border-t border-gray-100 dark:border-slate-800/50">
                     <button

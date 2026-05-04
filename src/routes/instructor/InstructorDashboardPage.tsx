@@ -11,6 +11,7 @@ import { useAuthStore } from '@/features/auth/store';
 import { useInstructorStats, useUpcomingEvents, useInstructorMyCourses } from '@/features/instructor/api';
 import { useInstructorAssignments } from '@/features/assignments/api';
 import type { GetAllCoursesDto, UpcomingEventDto } from '@/types/api.types';
+import { CourseProgressOverview } from '@/components/CourseProgressOverview';
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -338,7 +339,7 @@ export const InstructorDashboardPage = () => {
                 <div className="grid lg:grid-cols-3 gap-8">
 
                     {/* ── Left Column (2 cols) ─────────────────────── */}
-                    <div className="lg:col-span-2 space-y-8">
+                    <div className="lg:col-span-2 flex flex-col gap-8">
 
                         {/* ── My Courses ───────────────────────────── */}
                         <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 shadow-sm">
@@ -405,16 +406,21 @@ export const InstructorDashboardPage = () => {
 
                             </div>
                         </div>
+
+                        {/* ── Course Progress Overview ────────────────── */}
+                        <div className="flex-1 flex flex-col min-h-0">
+                            <CourseProgressOverview hasCourses={courses.length > 0} />
+                        </div>
                     </div>
 
                     {/* ── Right Column (1 col) ─────────────────────── */}
-                    <div className="lg:col-span-1 space-y-8">
+                    <div className="lg:col-span-1 flex flex-col gap-8">
                     
                         {/* ── Calendar ─────────────────────────────── */}
                         <MiniCalendar events={sortedEvents} />
 
                         {/* ── Upcoming Events ──────────────────────── */}
-                        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm">
+                        <div className="flex-1 bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2rem] p-6 shadow-sm flex flex-col">
                             <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-slate-700/50 pb-4">
                                 <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-rose-500" /> Upcoming Events

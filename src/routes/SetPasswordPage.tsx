@@ -85,8 +85,11 @@ export const SetPasswordPage = () => {
 
                 {/* Error */}
                 {error && (
-                    <div className="mb-5 p-3.5 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                    <div className="mb-5 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 animate-[shake_0.4s_ease-in-out] flex items-center justify-center gap-2.5">
+                        <svg className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                        </svg>
+                        <p className="text-sm font-semibold text-red-700 dark:text-red-300">{error}</p>
                     </div>
                 )}
 

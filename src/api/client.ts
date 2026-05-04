@@ -168,8 +168,12 @@ api.interceptors.response.use(
             storage.remove(STORAGE_KEYS.USER);
             storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
 
+            // Dispatch a custom event so a React component can handle
+            // the redirect via React Router (no full-page reload).
             if (globalThis.window !== undefined) {
-                globalThis.window.location.href = '/login';
+                globalThis.window.dispatchEvent(
+                    new CustomEvent('auth:session_expired')
+                );
             }
 
             // Return a specific error indicating session expiry, rather than the raw 401/500

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { QUERY_KEYS } from '@/lib/constants';
 import {
     ChevronLeft, ChevronRight, Clock, Flag, Grid3x3,
     Loader2, Send, CheckCircle2, ShieldAlert
@@ -27,6 +29,7 @@ interface LocalAnswer {
 export const QuizPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const location = useLocation();
     const state = (location.state as { resume?: boolean; courseId?: string } | null) ?? null;
     const shouldResume = Boolean(state?.resume);
@@ -81,6 +84,11 @@ export const QuizPage = () => {
                     const attempt = await startQuizAttempt(id);
                     currentAttemptId = attempt.id;
                     endDateStr = attempt.attemptEndDate;
+                    
+                    // Invalidate course quizzes to show "Resume" immediately if user leaves
+                    if (state?.courseId) {
+                        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.COURSE_QUIZZES(state.courseId) });
+                    }
                 }
 
                 setAttemptId(currentAttemptId);
@@ -123,29 +131,32 @@ export const QuizPage = () => {
     // ── Auto-submit on timer expiry ────────────────────────────────────────
 
     const doSubmit = useCallback(async (mode: 'manual' | 'auto' = 'manual') => {
-        if (mode === 'auto') {
-            toast.info('Time is up. Your attempt was auto-submitted.');
-            navigate(returnPath, { replace: true });
+        const aid = attemptIdRef.current;
+        if (!aid) {
+            if (mode === 'auto') window.location.href = returnPath;
             return;
         }
-
-        const aid = attemptIdRef.current;
-        if (!aid) return;
 
         setIsSubmitting(true);
         try {
             const entries = buildSaveAnswerEntries(questionsRef.current, answersRef.current);
             if (entries.length > 0) await saveAttemptProgress(aid, entries);
             await submitQuizAttempt(aid);
-            toast.success('Quiz submitted successfully.');
-            navigate(returnPath, { replace: true });
+            
+            sessionStorage.setItem('quiz_submit_toast', mode === 'auto' ? 'auto_submit' : 'manual_submit');
+            window.location.href = returnPath;
         } catch {
-            toast.error('Failed to submit quiz. Please try again.');
+            if (mode === 'auto') {
+                sessionStorage.setItem('quiz_submit_toast', 'auto_fail');
+                window.location.href = returnPath;
+            } else {
+                toast.error('Failed to submit quiz. Please try again.');
+            }
         }
         finally {
             setIsSubmitting(false);
         }
-    }, [navigate, returnPath]);
+    }, [returnPath]);
 
     // Timer countdown
     useEffect(() => {

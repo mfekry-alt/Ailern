@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useCourseQuizzes } from '../api';
 import { EmptyState } from '../components/EmptyState';
@@ -23,6 +23,22 @@ export const QuizzesTab = () => {
 
     const { data: quizzes, isLoading, error, refetch } = useCourseQuizzes(numericCourseId ?? 0);
     const [startingQuizId, setStartingQuizId] = useState<string | null>(null);
+
+    // Force a refetch when returning to this tab to ensure fresh attempt statuses
+    useEffect(() => {
+        const toastType = sessionStorage.getItem('quiz_submit_toast');
+        if (toastType) {
+            sessionStorage.removeItem('quiz_submit_toast');
+            if (toastType === 'auto_submit') {
+                import('sonner').then(({ toast }) => toast.info('Time is up. Your attempt was auto-submitted.'));
+            } else if (toastType === 'manual_submit') {
+                import('sonner').then(({ toast }) => toast.success('Quiz submitted successfully.'));
+            } else if (toastType === 'auto_fail') {
+                import('sonner').then(({ toast }) => toast.error('Time is up. Attempt closed.'));
+            }
+        }
+        refetch();
+    }, [refetch]);
     const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'close'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);

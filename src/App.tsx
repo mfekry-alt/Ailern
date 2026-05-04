@@ -5,6 +5,7 @@ import { ErrorBoundary } from './app/ErrorBoundary';
 import { GlobalErrorOverlay } from './app/GlobalErrorOverlay';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { AuthProvider } from './features/auth';
+import { SessionExpiredHandler } from './components/SessionExpiredHandler';
 
 /**
  * AppContent handles the initial loading state for the application.
@@ -30,7 +31,12 @@ function AppContent() {
   return (
     <>
       {showSpinner && <LoadingSpinner fading={ready} />}
-      {ready && <AppRouter />}
+      {ready && (
+        <>
+          <SessionExpiredHandler />
+          <AppRouter />
+        </>
+      )}
     </>
   );
 }
