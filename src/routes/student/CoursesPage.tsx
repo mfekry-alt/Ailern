@@ -6,11 +6,12 @@ import {
     BookMarked, Sparkles, SortAsc, Clock, Users,
     ArrowRight, User, LayoutGrid, Filter, Calendar
 } from 'lucide-react';
-import { studentService } from '@/api/services';
+import { studentService, courseService } from '@/api/services';
 import { handleApiError } from '@/api/client';
 import { ParallaxTiltCard } from '@/components/ui';
 import { StudentCourseCard } from '@/components/StudentCourseCard';
 import { QUERY_KEYS } from '@/lib/constants';
+import type { GetMyLearningDto } from '@/types/api.types';
 
 
 
@@ -41,6 +42,24 @@ export const CoursesPage = () => {
         queryKey: QUERY_KEYS.STUDENT_MY_COURSES,
         queryFn: () => studentService.getMyStudentCourses(),
     });
+
+    // Fetch my-learning data for resume functionality
+    const { data: myLearningData } = useQuery({
+        queryKey: QUERY_KEYS.MY_LEARNING,
+        queryFn: () => courseService.getMyLearning({ pageNo: 1, pageSize: 100 }),
+        enabled: !!enrolledCoursesData && enrolledCoursesData.length > 0,
+    });
+
+    // Create a map of courseId to learning data for quick lookup
+    const learningDataMap = useMemo(() => {
+        const map = new Map<number, GetMyLearningDto>();
+        if (myLearningData?.items) {
+            myLearningData.items.forEach((item) => {
+                map.set(item.courseId, item);
+            });
+        }
+        return map;
+    }, [myLearningData]);
 
     // Safely extract courses
     const enrolledCourses = useMemo(() => {
@@ -300,11 +319,24 @@ export const CoursesPage = () => {
                 {/* Courses Grid */}
                 {sortedCourses.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                        {sortedCourses.map((course, idx) => (
-                            <div key={course.id} className="animate-in fade-in slide-in-from-bottom-4 flex" style={{ animationDelay: `${idx * 100}ms` }}>
-                                <StudentCourseCard course={course} />
-                            </div>
-                        ))}
+                        {sortedCourses.map((course, idx) => {
+                            const learningData = learningDataMap.get(course.id);
+                            const resumeData = learningData ? {
+                                lastLearningItemId: learningData.lastLearningItemId,
+                                type: learningData.type,
+                                lastWatchedTime: learningData.lastWatchedTime,
+                                lastPageNumber: learningData.lastPageNumber,
+                            } : undefined;
+                            
+                            return (
+                                <div key={course.id} className="animate-in fade-in slide-in-from-bottom-4 flex" style={{ animationDelay: `${idx * 100}ms` }}>
+                                    <StudentCourseCard 
+                                        course={course} 
+                                        resumeData={resumeData}
+                                    />
+                                </div>
+                            );
+                        })}
                     </div>
                 ) : (
                     /* Empty State */

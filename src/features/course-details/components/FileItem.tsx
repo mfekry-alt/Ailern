@@ -55,55 +55,30 @@ const getFileIcon = (contentType: string) => {
 
 
 export const FileItem = memo(({ file, courseId, disabled }: FileItemProps) => {
-
     const navigate = useNavigate();
-
-    const isVideo = file.contentType.includes('video');
-
     const Icon = getFileIcon(file.contentType);
 
 
 
     const handleView = () => {
-
         if (disabled) return;
 
-        if (isVideo) {
-
-            navigate(
-
-                `/courses/${courseId}/video/${file.id}?url=${encodeURIComponent(file.fileUrl)}`
-
-            );
-
-        } else {
-
-            window.open(file.fileUrl, '_blank', 'noopener,noreferrer');
-
-        }
-
+        // Navigate to new unified content viewer for all file types
+        navigate(`/courses/${courseId}/content?file=${file.id}`);
     };
 
 
 
     const handleDownload = () => {
-
-        if (disabled || isVideo) return;
+        if (disabled) return;
 
         const link = document.createElement('a');
-
         link.href = file.fileUrl;
-
         link.download = file.fileName;
-
         link.target = '_blank';
-
         document.body.appendChild(link);
-
         link.click();
-
         document.body.removeChild(link);
-
     };
 
 
@@ -160,25 +135,14 @@ export const FileItem = memo(({ file, courseId, disabled }: FileItemProps) => {
 
 
 
-                {!isVideo && (
-
-                    <button
-
-                        onClick={handleDownload}
-
-                        disabled={disabled}
-
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-
-                    >
-
-                        <Download className="w-3.5 h-3.5" />
-
-                        Download
-
-                    </button>
-
-                )}
+                <button
+                    onClick={handleDownload}
+                    disabled={disabled}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <Download className="w-3.5 h-3.5" />
+                    Download
+                </button>
 
             </div>
 

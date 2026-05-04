@@ -12,6 +12,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ['react-pdf', 'pdfjs-dist'],
+  },
+  build: {
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
+  },
   server: {
     proxy: {
       // ⚡ This rule tells Vite: "If a request starts with /api, send it to the real backend"

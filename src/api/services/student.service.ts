@@ -122,6 +122,8 @@ export interface StudentDashboardData {
         instructorName: string;
         code: string;
         progress?: number;
+        lastWatchedTime?: number | null;
+        lastPageNumber?: number | null;
     }[];
     upcomingAssignments: GetAssignmentDto[];
     pendingQuizzes: GetAllQuizDto[];
@@ -177,6 +179,8 @@ export const getStudentDashboardData = async (): Promise<StudentDashboardData> =
                 instructorName: meta?.instructorName ?? '',
                 code: meta?.code ?? '',
                 progress: meta?.progress,
+                lastWatchedTime: row.lastWatchedTime,
+                lastPageNumber: row.lastPageNumber,
             };
         });
 

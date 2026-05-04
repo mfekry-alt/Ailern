@@ -40,6 +40,7 @@ import { AssignmentsTab } from '@/features/course-details/pages/AssignmentsTab';
 import { AssignmentDetailsPage } from '@/features/course-details/pages/AssignmentDetailsPage';
 import { QuizzesTab } from '@/features/course-details/pages/QuizzesTab';
 import { VideoViewerPage } from '@/features/course-details/pages/VideoViewerPage';
+import { CourseContentViewerPage } from '@/features/course-content/pages/CourseContentViewerPage';
 
 // Instructor pages
 import { InstructorDashboardPage } from '@/routes/instructor/InstructorDashboardPage';
@@ -129,6 +130,7 @@ export const AppRouter = () => {
                     <Route path="quizzes" element={<QuizzesTab />} />
                 </Route>
                 <Route path="/courses/:courseId/video/:fileId" element={<VideoViewerPage />} />
+                <Route path="/courses/:courseId/content" element={<CourseContentViewerPage />} />
                 <Route path={ROUTES.LEARN} element={<LessonPlayerPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
