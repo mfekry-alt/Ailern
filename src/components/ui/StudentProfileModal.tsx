@@ -55,13 +55,9 @@ const AssignmentAccordion = ({ assignment }: { assignment: StudentProfileAssignm
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSubmitted ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
                         <FileText className="w-5 h-5" />
                     </div>
-                    <Link 
-                        to={ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':id', assignment.assignmentId.toString())}
-                        className="font-bold text-gray-900 dark:text-white hover:text-[#21A9FF] transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                    <span className="font-bold text-gray-900 dark:text-white">
                         {assignment.assignmentName}
-                    </Link>
+                    </span>
                 </div>
                 <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -140,22 +136,26 @@ const QuizAccordion = ({ quiz }: { quiz: StudentProfileQuizDto }) => {
                 <div className="p-5 pt-0 border-t border-gray-50 dark:border-slate-700/30 space-y-3 mt-4">
                     {hasAttempts ? (
                         quiz.attempts.map((attempt, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800">
+                            <Link 
+                                key={idx} 
+                                to={ROUTES.INSTRUCTOR_QUIZ_SUBMISSION_REVIEW
+                                    .replace(':quizId', quiz.quizId)
+                                    .replace(':attemptId', attempt.attemptId)
+                                }
+                                className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-800 hover:border-[#21A9FF]/50 hover:bg-white dark:hover:bg-slate-800 transition-all group/attempt"
+                            >
                                 <div className="flex items-center gap-4">
-                                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-bold text-xs">
+                                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 flex items-center justify-center font-bold text-xs group-hover/attempt:bg-[#21A9FF] group-hover/attempt:text-white transition-all">
                                         #{attempt.attemptNumber}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-gray-900 dark:text-slate-100">Attempt {attempt.attemptNumber}</p>
+                                        <p className="text-sm font-black text-gray-900 dark:text-slate-100 group-hover/attempt:text-[#21A9FF] transition-colors">Attempt {attempt.attemptNumber}</p>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
                                             {new Date(attempt.submittedAt).toLocaleDateString()} at {new Date(attempt.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">{attempt.score}%</p>
-                                </div>
-                            </div>
+                            </Link>
                         ))
                     ) : (
                         <div className="flex items-center gap-2 text-gray-400 italic text-sm py-2">

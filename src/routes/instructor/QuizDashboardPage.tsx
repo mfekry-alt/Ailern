@@ -15,41 +15,30 @@ import type { DashboardMode } from '@/types/quiz-dashboard.types';
 import { ROUTES } from '@/lib/constants';
 
 // ── Color palette ─────────────────────────────────────────────────────────
-// Primary: #21A9FF (app main color)
-// Using cohesive blue-based palette with accessible variations
 const COLORS = {
-    // Status colors (standard semantic colors)
-    pass:    '#10b981', // emerald-500 - success/pass (accessible green)
-    fail:    '#f43f5e', // rose-500 - fail/danger (softer red, better for dark mode)
-
-    // Primary blues (main app color #21A9FF and variations)
-    primary:      '#21A9FF', // main app blue
-    primaryDark:  '#0094F2', // hover/active state
-    primaryLight: '#7DD3FC', // lighter variant
-    secondary:    '#0EA5E9', // sky-500 - complementary
-    tertiary:     '#38BDF8', // sky-400 - lighter complement
-
-    // Gradient palette for multi-segment charts (attempts distribution)
-    // Blues that work together and maintain accessibility
+    // Professional SaaS palette (Stripe / Linear style)
+    pass:    '#10B981', // emerald-500 (Success)
+    fail:    '#F43F5E', // rose-500 (Danger)
+    
+    // Indigo-based primary palette
     attempt: [
-        '#21A9FF', // primary blue
-        '#0EA5E9', // sky-500
-        '#38BDF8', // sky-400
-        '#7DD3FC', // sky-300
-        '#BAE6FD', // sky-200 (lighter for variety)
+        '#6366F1', // indigo-500
+        '#818CF8', // indigo-400
+        '#A5B4FC', // indigo-300
+        '#C7D2FE', // indigo-200
+        '#E0E7FF', // indigo-100
     ],
 
-    // For question bars - alternating subtle variations
-    bar:  '#21A9FF', // primary
-    bar2: '#0EA5E9', // slightly different for contrast
+    bar:  '#6366F1', // indigo-500
+    bar2: '#A5B4FC', // indigo-300
 
-    // Neutral/Submission time
-    neutral: '#64748B', // slate-500 - subtle, professional
+    neutral: '#94A3B8', // slate-400
+    gridLine: 'rgba(148, 163, 184, 0.15)', // subtle slate
 };
 
 // ── Re-usable skeleton block ──────────────────────────────────────────────
 const Skeleton = ({ className = '' }: { className?: string }) => (
-    <div className={`animate-pulse rounded-xl bg-gray-200 dark:bg-slate-700/60 ${className}`} />
+    <div className={`animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800 ${className}`} />
 );
 
 // ── Custom pie label ──────────────────────────────────────────────────────
@@ -58,35 +47,43 @@ const renderCustomPieLabel = ({
 }: any) => {
     if (percent < 0.05) return null;
     const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     return (
-        <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central"
-            fontSize={12} fontWeight={700}>
+        <text x={x} y={y} fill="#ffffff" textAnchor="middle" dominantBaseline="central"
+            fontSize={12} fontWeight={600} className="drop-shadow-sm">
             {`${(percent * 100).toFixed(0)}%`}
         </text>
     );
 };
 
-// ── Mode selector button ──────────────────────────────────────────────────
-interface ModeBtnProps {
-    label: DashboardMode;
-    active: boolean;
-    onClick: () => void;
-}
-const ModeBtn = ({ label, active, onClick }: ModeBtnProps) => (
-    <button
-        onClick={onClick}
-        className={`px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400/50
-            ${active
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 scale-105'
-                : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400'
-            }`}
-    >
-        {label}
-    </button>
-);
+// ── Custom Tooltip for Charts ─────────────────────────────────────────────
+const CustomTooltip = ({ active, payload, label, formatter }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl p-3 min-w-[160px] animate-in fade-in zoom-in duration-200">
+                {label && <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2.5 uppercase tracking-wider">{label}</p>}
+                <div className="space-y-2">
+                    {payload.map((entry: any, index: number) => {
+                        const value = formatter ? formatter(entry.value, entry.name, entry)[0] : entry.value;
+                        const name = formatter ? formatter(entry.value, entry.name, entry)[1] : entry.name;
+                        return (
+                            <div key={index} className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: entry.color }} />
+                                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{name}</span>
+                                </div>
+                                <span className="text-sm font-bold text-slate-800 dark:text-white">{value}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
 
 // ── KPI Card ─────────────────────────────────────────────────────────────
 interface KpiCardProps {
@@ -98,36 +95,27 @@ interface KpiCardProps {
     extra?: React.ReactNode;
 }
 
-const colorMap: Record<KpiCardProps['color'], string> = {
-    indigo:  'from-indigo-500 to-purple-600',
-    emerald: 'from-emerald-500 to-teal-600',
-    red:     'from-red-500 to-rose-600',
-    blue:    'from-blue-500 to-indigo-600',
-    amber:   'from-amber-500 to-orange-500',
-};
 const iconBgMap: Record<KpiCardProps['color'], string> = {
-    indigo:  'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400',
-    emerald: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400',
-    red:     'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400',
-    blue:    'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400',
-    amber:   'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400',
+    indigo:  'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 dark:text-indigo-400',
+    emerald: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 dark:text-emerald-400',
+    red:     'bg-rose-50 dark:bg-rose-500/10 text-rose-500 dark:text-rose-400',
+    blue:    'bg-blue-50 dark:bg-blue-500/10 text-blue-500 dark:text-blue-400',
+    amber:   'bg-amber-50 dark:bg-amber-500/10 text-amber-500 dark:text-amber-400',
 };
 
 const KpiCard = ({ title, value, subtitle, icon: Icon, color, extra }: KpiCardProps) => (
-    <div className="relative bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group">
-        {/* accent top-bar */}
-        <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${colorMap[color]}`} />
-        <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500 mb-1 truncate">{title}</p>
-                <p className="text-3xl font-black text-gray-900 dark:text-white leading-none">{value}</p>
-                {subtitle && <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 font-medium">{subtitle}</p>}
-                {extra && <div className="mt-3">{extra}</div>}
-            </div>
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ml-4 group-hover:scale-110 transition-transform duration-300 ${iconBgMap[color]}`}>
-                <Icon className="w-6 h-6" />
+    <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group">
+        <div className="flex items-start justify-between mb-4">
+            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</h3>
+            <div className={`p-2.5 rounded-xl ${iconBgMap[color]} group-hover:scale-105 transition-transform duration-300`}>
+                <Icon className="w-5 h-5" />
             </div>
         </div>
+        <div>
+            <p className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">{value}</p>
+            {subtitle && <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{subtitle}</p>}
+        </div>
+        {extra && <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">{extra}</div>}
     </div>
 );
 
@@ -135,12 +123,18 @@ const KpiCard = ({ title, value, subtitle, icon: Icon, color, extra }: KpiCardPr
 const ChartCard = ({ title, icon: Icon, children, className = '' }: {
     title: string; icon: React.ElementType; children: React.ReactNode; className?: string;
 }) => (
-    <div className={`bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 ${className}`}>
-        <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-5">
-            <Icon className="w-5 h-5 text-indigo-500" />
-            {title}
-        </h3>
-        {children}
+    <div className={`bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col ${className}`}>
+        <div className="flex items-center gap-2.5 mb-6">
+            <div className="p-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <Icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-800 dark:text-white">
+                {title}
+            </h3>
+        </div>
+        <div className="flex-1">
+            {children}
+        </div>
     </div>
 );
 
@@ -158,25 +152,22 @@ export const QuizDashboardPage = () => {
     // ── Loading skeleton ──────────────────────────────────────────────────
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-8">
                 <div className="max-w-7xl mx-auto space-y-6">
                     <div className="flex items-center gap-4">
                         <Skeleton className="w-10 h-10" />
                         <Skeleton className="h-8 w-64" />
                     </div>
-                    {/* mode pills */}
-                    <Skeleton className="h-12 w-64 rounded-2xl" />
-                    {/* KPI row */}
+                    <Skeleton className="h-12 w-64" />
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}
+                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-44" />)}
                     </div>
-                    {/* charts */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-72 rounded-2xl" />)}
+                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80" />)}
                     </div>
                     <div className="flex flex-col items-center justify-center pt-10 gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                        <p className="text-sm font-semibold text-gray-500 dark:text-slate-400">Loading analytics…</p>
+                        <p className="text-sm font-semibold text-slate-500">Loading analytics…</p>
                     </div>
                 </div>
             </div>
@@ -186,23 +177,25 @@ export const QuizDashboardPage = () => {
     // ── Error state ───────────────────────────────────────────────────────
     if (isError || !data) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-6">
-                <div className="bg-white dark:bg-slate-800/60 border border-red-200 dark:border-red-500/30 rounded-3xl p-10 text-center max-w-md shadow-xl">
-                    <AlertCircle className="w-14 h-14 text-red-400 mx-auto mb-4" />
-                    <h2 className="text-xl font-extrabold text-gray-900 dark:text-white mb-2">Failed to load analytics</h2>
-                    <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
+                <div className="bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/50 rounded-2xl p-10 text-center max-w-md shadow-xl">
+                    <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <AlertCircle className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Failed to load analytics</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
                         Could not fetch quiz dashboard data. Make sure the quiz ID is correct and try again.
                     </p>
                     <div className="flex gap-3 justify-center">
                         <button
                             onClick={() => navigate(-1)}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" /> Go back
                         </button>
                         <button
                             onClick={() => refetch()}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
                         >
                             <RefreshCw className="w-4 h-4" /> Retry
                         </button>
@@ -226,7 +219,7 @@ export const QuizDashboardPage = () => {
         { name: 'Fails',  value: passFailData.fails  },
     ];
 
-    const atRatio = data.numberOfStudents / (data.studentsInCourse || 1); // 0–1
+    const atRatio = data.numberOfStudents / (data.studentsInCourse || 1);
     const ratioPercent = Math.round(atRatio * 100);
 
     const attemptsData = data.attemptsDistributions.map((a) => ({
@@ -248,92 +241,91 @@ export const QuizDashboardPage = () => {
 
     // ── Empty-state helper ─────────────────────────────────────────────────
     const EmptyChart = ({ msg }: { msg: string }) => (
-        <div className="flex flex-col items-center justify-center h-48 gap-3">
-            <HelpCircle className="w-10 h-10 text-gray-300 dark:text-slate-600" />
-            <p className="text-sm text-gray-400 dark:text-slate-500 font-medium">{msg}</p>
+        <div className="flex flex-col items-center justify-center h-full min-h-[200px] gap-3">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-full">
+                <HelpCircle className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{msg}</p>
         </div>
     );
 
-    // ── Tooltip styles ─────────────────────────────────────────────────────
-    // Using blue-based theme colors for consistency
-    const tooltipStyle = {
-        contentStyle: {
-            background: 'rgba(15, 23, 42, 0.95)',
-            border: '1px solid rgba(33, 169, 255, 0.3)',
-            borderRadius: '12px',
-            padding: '10px 14px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-        },
-        labelStyle:  { color: '#f8fafc', fontWeight: 700, fontSize: 12 },
-        itemStyle:   { color: '#7DD3FC', fontWeight: 600, fontSize: 12 },
-    };
-
     // ── Render ─────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 transition-colors duration-300">
             <div className="max-w-7xl mx-auto space-y-8">
 
                 {/* ── Header ── */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                    <div className="flex items-center gap-4">
                         <button
                             onClick={() => navigate(-1)}
-                            className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 transition-all shadow-sm"
+                            className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-sm"
                             title="Go back"
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div>
-                            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
                                 <BarChart2 className="w-6 h-6 text-indigo-500" />
-                                Quiz Analytics Dashboard
+                                Analytics Dashboard
                             </h1>
-                            <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5 font-medium">
-                                Quiz : <span className="text-gray-700 dark:text-slate-200 font-semibold">{quizMeta?.title ?? quizId}</span>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                                Quiz: <span className="text-slate-700 dark:text-slate-200 font-semibold">{quizMeta?.title ?? quizId}</span>
                             </p>
                         </div>
                     </div>
 
-                    {/* Mode Selector */}
-                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-sm self-start sm:self-auto">
+                    {/* Actions & Mode Selector */}
+                    <div className="flex items-center gap-3 self-start sm:self-auto">
                         <button
                             type="button"
                             onClick={() => {
                                 if (!quizId) return;
                                 navigate(ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS.replace(':quizId', quizId));
                             }}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-200 transition-all shadow-sm"
                         >
                             <ClipboardCheck className="w-4 h-4" />
                             Submissions
                         </button>
-                        <span className="pl-2 pr-1 text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 whitespace-nowrap">View:</span>
-                        {(['Min', 'Avg', 'Max'] as DashboardMode[]).map((m) => (
-                            <ModeBtn key={m} label={m} active={mode === m} onClick={() => setMode(m)} />
-                        ))}
+
+                        <div className="flex items-center p-1 bg-slate-200/50 dark:bg-slate-800 rounded-xl">
+                            {(['Min', 'Avg', 'Max'] as DashboardMode[]).map((m) => (
+                                <button
+                                    key={m}
+                                    onClick={() => setMode(m)}
+                                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                                        mode === m
+                                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    {m}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
                 {/* ── KPI Cards ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-
                     {/* Students ratio card */}
                     <KpiCard
-                        title="Students Submitted / Enrolled"
+                        title="Participation Rate"
                         value={`${data.numberOfStudents} / ${data.studentsInCourse}`}
-                        subtitle={`${ratioPercent}% participation rate`}
+                        subtitle={`${ratioPercent}% students submitted`}
                         icon={Users}
                         color="blue"
                         extra={
-                            <div className="space-y-1">
-                                <div className="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="space-y-2">
+                                <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700"
+                                        className="h-full bg-blue-500 dark:bg-blue-500 rounded-full transition-all duration-700"
                                         style={{ width: `${Math.min(ratioPercent, 100)}%` }}
                                     />
                                 </div>
-                                <p className="text-[11px] text-gray-400 dark:text-slate-500 font-medium">
-                                    {data.studentsInCourse - data.numberOfStudents} haven't submitted
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                                    {data.studentsInCourse - data.numberOfStudents} haven't submitted yet
                                 </p>
                             </div>
                         }
@@ -343,15 +335,15 @@ export const QuizDashboardPage = () => {
                     <KpiCard
                         title={`Average Score (${mode})`}
                         value={avgScoreValue.toFixed(1)}
-                        subtitle="Points — based on selected mode"
+                        subtitle="Points based on selected mode"
                         icon={Target}
                         color="indigo"
                         extra={
-                            <div className="flex gap-3 text-xs font-semibold">
+                            <div className="flex gap-2 text-xs font-semibold">
                                 {(['Min','Avg','Max'] as DashboardMode[]).map((m) => {
                                     const k = modeKeyMap[m];
                                     return (
-                                        <span key={m} className={`px-2 py-0.5 rounded-lg border ${m === mode ? 'bg-indigo-50 dark:bg-indigo-500/20 border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-400' : 'border-gray-200 dark:border-slate-700 text-gray-400 dark:text-slate-500'}`}>
+                                        <span key={m} className={`px-2 py-1 rounded-md border transition-colors ${m === mode ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400'}`}>
                                             {m}: {data.averageScore[k].toFixed(1)}
                                         </span>
                                     );
@@ -362,19 +354,19 @@ export const QuizDashboardPage = () => {
 
                     {/* Pass/Fail summary card */}
                     <KpiCard
-                        title={`Pass / Fail Overview (${mode})`}
+                        title={`Evaluation Overview (${mode})`}
                         value={passFailData.passes + passFailData.fails}
                         subtitle="Total evaluated students"
                         icon={TrendingUp}
                         color="emerald"
                         extra={
                             <div className="flex gap-4 text-xs font-bold">
-                                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle2 className="w-4 h-4" />
                                     Pass: {passFailData.passes}
                                 </span>
-                                <span className="flex items-center gap-1 text-red-500 dark:text-red-400">
-                                    <XCircle className="w-3.5 h-3.5" />
+                                <span className="flex items-center gap-1.5 text-rose-500 dark:text-rose-400">
+                                    <XCircle className="w-4 h-4" />
                                     Fail: {passFailData.fails}
                                 </span>
                             </div>
@@ -395,30 +387,23 @@ export const QuizDashboardPage = () => {
                                     <Pie
                                         data={piePassFail}
                                         cx="50%" cy="50%"
+                                        innerRadius={60}
                                         outerRadius={100}
+                                        paddingAngle={2}
                                         dataKey="value"
                                         labelLine={false}
                                         label={renderCustomPieLabel}
+                                        stroke="none"
                                     >
                                         <Cell key="pass" fill={COLORS.pass} />
                                         <Cell key="fail" fill={COLORS.fail} />
                                     </Pie>
-                                    <Tooltip
-                                        contentStyle={tooltipStyle.contentStyle}
-                                        labelStyle={tooltipStyle.labelStyle}
-                                        itemStyle={tooltipStyle.itemStyle}
-                                    />
+                                    <Tooltip content={<CustomTooltip />} />
                                     <Legend
                                         iconType="circle"
-                                        iconSize={9}
+                                        iconSize={8}
                                         formatter={(value) => (
-                                            <span
-                                                style={{
-                                                    color: value === 'Passes' ? COLORS.pass : COLORS.fail,
-                                                    fontWeight: 700,
-                                                    fontSize: 13
-                                                }}
-                                            >
+                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                                                 {value}
                                             </span>
                                         )}
@@ -438,26 +423,24 @@ export const QuizDashboardPage = () => {
                                     <Pie
                                         data={attemptsData}
                                         cx="50%" cy="50%"
+                                        innerRadius={60}
                                         outerRadius={100}
+                                        paddingAngle={2}
                                         dataKey="value"
                                         labelLine={false}
                                         label={renderCustomPieLabel}
+                                        stroke="none"
                                     >
                                         {attemptsData.map((_, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS.attempt[index % COLORS.attempt.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip
-                                        contentStyle={tooltipStyle.contentStyle}
-                                        labelStyle={tooltipStyle.labelStyle}
-                                        itemStyle={tooltipStyle.itemStyle}
-                                        formatter={(value, name) => [value, name]}
-                                    />
+                                    <Tooltip content={<CustomTooltip formatter={(value: any, name: any) => [value, name]} />} />
                                     <Legend
                                         iconType="circle"
-                                        iconSize={9}
-                                        formatter={(value, entry: any) => (
-                                            <span style={{ color: entry.color, fontWeight: 700, fontSize: 13 }}>
+                                        iconSize={8}
+                                        formatter={(value) => (
+                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                                                 {value}
                                             </span>
                                         )}
@@ -469,41 +452,41 @@ export const QuizDashboardPage = () => {
 
                     {/* 3 — Question Statistics (Bar) */}
                     <ChartCard
-                        title="Question Correct Answers"
+                        title="Correct Answers per Question"
                         icon={BarChart2}
                         className="lg:col-span-2"
                     >
                         {questionBarData.length === 0 ? (
                             <EmptyChart msg="No question statistics available" />
                         ) : (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={questionBarData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(33, 169, 255, 0.15)" vertical={false} />
+                            <ResponsiveContainer width="100%" height={320}>
+                                <BarChart data={questionBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barSize={32}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLine} vertical={false} />
                                     <XAxis
                                         dataKey="name"
-                                        tick={{ fontSize: 11, fill: '#a3aebfff', fontWeight: 600 }}
+                                        tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }}
+                                        tickLine={false}
+                                        axisLine={{ stroke: COLORS.gridLine }}
                                         interval={0}
                                         angle={-30}
                                         textAnchor="end"
                                         height={70}
+                                        dy={10}
                                     />
                                     <YAxis
-                                        tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }}
+                                        tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }}
+                                        tickLine={false}
+                                        axisLine={false}
                                         allowDecimals={false}
                                     />
                                     <Tooltip
-                                        cursor={false}
-                                        contentStyle={tooltipStyle.contentStyle}
-                                        labelStyle={tooltipStyle.labelStyle}
-                                        itemStyle={tooltipStyle.itemStyle}
-                                        formatter={(value, _name, props) => [value, props.payload.fullText || props.payload.name]}
-                                        labelFormatter={(_label, payload) => payload?.[0]?.payload?.fullText || _label}
+                                        cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }}
+                                        content={<CustomTooltip formatter={(value: any, _name: any, props: any) => [value, props.payload.fullText || props.payload.name]} />}
                                     />
                                     <Bar
                                         dataKey="count"
                                         name="Correct Answers"
-                                        radius={[6, 6, 0, 0]}
-                                        maxBarSize={56}
+                                        radius={[4, 4, 0, 0]}
                                     >
                                         {questionBarData.map((_, index) => (
                                             <Cell
@@ -526,29 +509,31 @@ export const QuizDashboardPage = () => {
                         {submissionTimeData.length === 0 ? (
                             <EmptyChart msg="No submission time data available" />
                         ) : (
-                            <ResponsiveContainer width="100%" height={280}>
-                                <BarChart data={submissionTimeData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(33, 169, 255, 0.15)" vertical={false} />
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={submissionTimeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} barSize={40}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke={COLORS.gridLine} vertical={false} />
                                     <XAxis
                                         dataKey="name"
-                                        tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 600 }}
+                                        tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }}
+                                        tickLine={false}
+                                        axisLine={{ stroke: COLORS.gridLine }}
+                                        dy={10}
                                     />
                                     <YAxis
-                                        tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 600 }}
+                                        tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }}
+                                        tickLine={false}
+                                        axisLine={false}
                                         allowDecimals={false}
                                     />
                                     <Tooltip
-                                        cursor={false}
-                                        contentStyle={tooltipStyle.contentStyle}
-                                        labelStyle={tooltipStyle.labelStyle}
-                                        itemStyle={tooltipStyle.itemStyle}
+                                        cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }}
+                                        content={<CustomTooltip />}
                                     />
                                     <Bar
                                         dataKey="value"
                                         name="Submissions"
                                         fill={COLORS.neutral}
-                                        radius={[6, 6, 0, 0]}
-                                        maxBarSize={72}
+                                        radius={[4, 4, 0, 0]}
                                     />
                                 </BarChart>
                             </ResponsiveContainer>

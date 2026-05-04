@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCourse } from '@/features/courses/api';
 import { QUERY_KEYS } from '@/lib/constants';
 import { ChevronLeft, ChevronRight, Layers, FileText, HelpCircle, Users, Menu, X, Sparkles } from 'lucide-react';
+import { CourseSidebarHeader } from '@/components/ui/CourseSidebarHeader';
 
 const NAV_ITEMS = [
     { to: 'sections', label: 'Sections', icon: Layers },
@@ -25,6 +26,9 @@ export const CourseManageLayout = () => {
     const { data: course, isLoading } = useCourse(numericId ?? 0);
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+
+    const rawCourseImage = course?.imageUrl?.trim();
+    const courseImageSrc = rawCourseImage || '/course-default.png';
 
     const linkBase = `/instructor/courses/${courseId}/manage`;
 
@@ -55,28 +59,18 @@ export const CourseManageLayout = () => {
                     ${collapsed ? 'w-[72px]' : 'w-64'}
                 `}
             >
-                {/* Header */}
-                <div className={`p-4 border-b border-gray-100 dark:border-slate-700/50 flex items-center ${collapsed ? 'justify-center' : 'justify-between'} gap-2`}>
-                    {!collapsed && (
-                        <div className="min-w-0 flex-1">
-                            <h2 className="text-sm font-extrabold text-gray-900 dark:text-white truncate">
-                                {isLoading ? 'Loading...' : (course?.name || 'Course')}
-                            </h2>
-                            <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 truncate mt-0.5">
-                                {course?.code || `#${courseId}`}
-                            </p>
-                        </div>
-                    )}
-                    <button
-                        onClick={() => { setCollapsed(!collapsed); setMobileOpen(false); }}
-                        className="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-400 hover:text-[#21A9FF] dark:hover:text-white hover:bg-[#21A9FF]/10 transition-colors shrink-0"
-                    >
-                        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                    </button>
-                    <button onClick={() => setMobileOpen(false)} className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-white">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
+                <CourseSidebarHeader 
+                    courseName={course?.name || 'Course'}
+                    courseCode={course?.code || `#${courseId}`}
+                    imageUrl={courseImageSrc}
+                    isLoading={isLoading}
+                    collapsed={collapsed}
+                    onToggle={() => {
+                        setCollapsed(!collapsed);
+                        setMobileOpen(false);
+                    }}
+                    onMobileClose={() => setMobileOpen(false)}
+                />
 
                 {/* Navigation */}
                 <nav className="flex-1 p-3 space-y-1 overflow-y-auto no-scrollbar">

@@ -90,9 +90,6 @@ const defaultQuestion = (type: QuestionType = 'MCQ') => ({
 
 // ─── Shared style constants ────────────────────────────────────────────────
 
-
-// ─── Shared style constants ────────────────────────────────────────────────
-
 const inputCls = 'w-full px-5 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm text-gray-900 dark:text-white transition-all outline-none';
 const labelCls = 'block text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1';
 
@@ -113,6 +110,11 @@ export const InstructorQuizQuestionsEditPage = () => {
     const [success, setSuccess] = useState(false);
     const [showAIModal, setShowAIModal] = useState(false);
     const [loaded, setLoaded] = useState(false);
+    
+    // Drag & Drop States
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
+    const [draggedQuestionIndex, setDraggedQuestionIndex] = useState<number | null>(null);
+    const [draggedOptionInfo, setDraggedOptionInfo] = useState<{ qIndex: number; optIndex: number } | null>(null);
 
     const {
         register,
@@ -121,6 +123,7 @@ export const InstructorQuizQuestionsEditPage = () => {
         watch,
         setValue,
         setError,
+        getValues,
         formState: { errors, isSubmitting }
     } = useForm<BuilderFormData>({
         resolver: yupResolver(builderSchema) as any,
@@ -202,6 +205,42 @@ export const InstructorQuizQuestionsEditPage = () => {
         const currentOptions = watch(`questions.${qIndex}.options`) || [];
         if (currentOptions.length <= 1) return;
         setValue(`questions.${qIndex}.options`, currentOptions.filter((_, i) => i !== optIndex), { shouldValidate: true });
+    };
+
+    // Auto-save logic for reordering
+    const handleAutoSave = () => {
+        // Run on next tick to ensure react-hook-form's getValues() has the updated array order
+        setTimeout(async () => {
+            const data = getValues();
+            setIsAutoSaving(true);
+            const toastId = toast.loading('Saving order...');
+            
+            try {
+                const payloadQuestions: QuestionUpsertRequest[] = data.questions.map(q => ({
+                    id: q.id ?? null,
+                    questionType: q.questionType as QuestionType,
+                    questionText: q.questionText,
+                    mark: q.mark,
+                    instructions: q.instructions || undefined,
+                    explanation: q.explanation || undefined,
+                    options: q.options?.map(o => ({
+                        optionId: o.optionId ?? null,
+                        optionText: o.optionText,
+                        isCorrect: Boolean(o.isCorrect)
+                    })) || [],
+                }));
+
+                await upsertQuestionsMutation.mutateAsync(payloadQuestions);
+                toast.success('Reordered successfully', { id: toastId });
+                queryClient.invalidateQueries({ queryKey: ['quiz', quizId] });
+            } catch (e: any) {
+                console.error('[AutoSave] error:', e);
+                toast.error('Failed to reorder. Ensure all fields are valid.', { id: toastId });
+                queryClient.invalidateQueries({ queryKey: ['quiz', quizId] });
+            } finally {
+                setIsAutoSaving(false);
+            }
+        }, 0);
     };
 
     const onSubmit = async (data: BuilderFormData) => {
@@ -331,6 +370,12 @@ export const InstructorQuizQuestionsEditPage = () => {
                                     <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md border shadow-sm ${statusBadgeClass}`}>
                                         {currentStatus}
                                     </span>
+                                    {isAutoSaving && (
+                                        <>
+                                            <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                            <span className="text-[10px] text-blue-500 font-bold flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin"/> Saving</span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -381,17 +426,31 @@ export const InstructorQuizQuestionsEditPage = () => {
                                     {fields.map((field, idx) => {
                                         const complete = isQuestionComplete(idx);
                                         const hasError = !!errors.questions?.[idx];
+                                        const isDragged = draggedQuestionIndex === idx;
+                                        
                                         return (
                                             <button
                                                 key={field.id}
                                                 draggable
-                                                onDragOver={e => e.preventDefault()}
+                                                onDragStart={(e) => {
+                                                    setDraggedQuestionIndex(idx);
+                                                    e.dataTransfer.effectAllowed = "move";
+                                                }}
+                                                onDragOver={e => {
+                                                    e.preventDefault();
+                                                    e.dataTransfer.dropEffect = "move";
+                                                }}
                                                 onDrop={e => {
                                                     e.preventDefault();
-                                                    // Add reorder logic if needed
+                                                    if (draggedQuestionIndex !== null && draggedQuestionIndex !== idx) {
+                                                        move(draggedQuestionIndex, idx);
+                                                        handleAutoSave();
+                                                    }
+                                                    setDraggedQuestionIndex(null);
                                                 }}
+                                                onDragEnd={() => setDraggedQuestionIndex(null)}
                                                 onClick={() => scrollToQuestion(idx)}
-                                                className={`w-full text-left rounded-2xl border p-4 transition-all duration-300 flex items-start gap-3 group relative overflow-hidden ${hasError
+                                                className={`w-full text-left rounded-2xl border p-4 transition-all duration-300 flex items-start gap-3 group relative overflow-hidden ${isDragged ? 'opacity-50 scale-95 shadow-inner' : ''} ${hasError
                                                     ? 'border-red-500 bg-red-50/10'
                                                     : complete
                                                         ? 'border-emerald-200 bg-emerald-50/30 hover:bg-emerald-50 dark:border-emerald-500/10 dark:bg-emerald-500/5 dark:hover:bg-emerald-500/10'
@@ -538,10 +597,39 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                     <div className="space-y-3">
                                                         {qOptions.map((opt, i) => {
                                                             const optError = (qError?.options as any)?.[i];
+                                                            const isDraggedOpt = draggedOptionInfo?.qIndex === idx && draggedOptionInfo?.optIndex === i;
                                                             return (
-                                                                <div key={i} className="flex flex-col gap-1">
+                                                                <div 
+                                                                    key={i} 
+                                                                    draggable
+                                                                    onDragStart={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setDraggedOptionInfo({ qIndex: idx, optIndex: i });
+                                                                        e.dataTransfer.effectAllowed = "move";
+                                                                    }}
+                                                                    onDragOver={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        e.dataTransfer.dropEffect = "move";
+                                                                    }}
+                                                                    onDrop={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        if (draggedOptionInfo && draggedOptionInfo.qIndex === idx && draggedOptionInfo.optIndex !== i) {
+                                                                            const currentOptions = getValues(`questions.${idx}.options`) || [];
+                                                                            const newOptions = [...currentOptions];
+                                                                            const [movedOption] = newOptions.splice(draggedOptionInfo.optIndex, 1);
+                                                                            newOptions.splice(i, 0, movedOption);
+                                                                            setValue(`questions.${idx}.options`, newOptions, { shouldValidate: true });
+                                                                            handleAutoSave();
+                                                                        }
+                                                                        setDraggedOptionInfo(null);
+                                                                    }}
+                                                                    onDragEnd={() => setDraggedOptionInfo(null)}
+                                                                    className={`flex flex-col gap-1 transition-all ${isDraggedOpt ? 'opacity-40 scale-[0.98]' : ''}`}
+                                                                >
                                                                     <div className={`flex items-center gap-3 p-2 pr-4 rounded-xl border-2 transition-all ${opt.isCorrect ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'} ${optError?.optionText ? 'border-red-500' : ''}`}>
-                                                                        <div className="cursor-grab p-2 text-gray-400">
+                                                                        <div className="cursor-grab p-2 text-gray-400 active:cursor-grabbing hover:text-[#21A9FF]">
                                                                             <GripVertical className="w-4 h-4" />
                                                                         </div>
                                                                         <span className="text-sm font-black text-gray-400 w-6">{String.fromCharCode(65 + i)}.</span>
@@ -688,4 +776,4 @@ export const InstructorQuizQuestionsEditPage = () => {
             </div>
         </>
     );
-};
+};

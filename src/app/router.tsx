@@ -31,6 +31,7 @@ import { ProfilePage } from '@/routes/ProfilePage';
 import { QuizAttemptsPage } from '@/routes/student/QuizAttemptsPage';
 import { QuizAttemptViewer } from '@/routes/student/QuizAttemptViewer';
 import { QuizResultViewer } from '@/components/QuizResultViewer';
+import { AIGradingResultPage } from '@/routes/student/AIGradingResultPage';
 
 // Course Details (new course-centric feature)
 import { CourseDetailsLayout } from '@/features/course-details/pages/CourseDetailsLayout';
@@ -139,6 +140,7 @@ export const AppRouter = () => {
                 <Route path="/quizzes/:id/attempts" element={<QuizAttemptsPage />} />
                 <Route path="/quizzes/:id/attempt" element={<QuizAttemptViewer />} />
                 <Route path="/quizzes/:id/attempt/:attemptId" element={<QuizResultViewer />} />
+                <Route path="/quizzes/:id/attempt/:attemptId/ai-result" element={<AIGradingResultPage />} />
             </Route>
 
             {/* Protected instructor routes */}

@@ -6,7 +6,7 @@ import { useLogin } from '@/features/auth/api';
 import { authService } from '@/api/services';
 import { normalizeRole, ROLES, ROUTES, APP_NAME } from '@/lib/constants';
 import { useState, useCallback } from 'react';
-import { Eye, EyeOff, ArrowLeft, MailCheck } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, MailCheck, CheckCircle2 } from 'lucide-react';
 
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
@@ -39,6 +39,7 @@ export const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const login = useLogin();
+    const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState('');
     const [unverifiedEmail, setUnverifiedEmail] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -68,30 +69,34 @@ export const LoginPage = () => {
     const watchedEmail = watch('email');
     const watchedPassword = watch('password');
 
-    // Clear error when user modifies input (not on submit)
+    // Clear error when user modifies input
     const clearErrorOnInputChange = useCallback(() => {
         if (error) setError('');
         if (unverifiedEmail) setUnverifiedEmail('');
     }, [error, unverifiedEmail]);
 
-    // Effect to clear errors when user modifies input fields
-    useState(() => {
-        clearErrorOnInputChange();
-    });
-
     const onSubmit = async (data: LoginFormData, event?: React.BaseSyntheticEvent) => {
-        // Prevent any default form submission behavior
+        // 1. Prevent default immediately
         event?.preventDefault();
 
         // Only clear resend-related states on submit, NOT the main error
         setResendSuccess(false);
         setResendError('');
+        setError('');
 
         try {
             const loginResponse = await login.mutateAsync(data);
+            
+            // 2. Set success state for optimistic feedback
+            setIsSuccess(true);
+
+            // 3. Small delay for smooth UX
             const role = loginResponse.meData?.role ?? loginResponse.loginData.role;
             const redirectPath = from || getRedirectPath(role);
-            navigate(redirectPath, { replace: true });
+            
+            setTimeout(() => {
+                navigate(redirectPath, { replace: true });
+            }, 800);
         } catch (err: any) {
             if (isEmailNotVerifiedError(err)) {
                 setUnverifiedEmail(data.email);
@@ -99,7 +104,7 @@ export const LoginPage = () => {
                 return;
             }
             // Keep error visible until user changes input
-            setError(err.response?.data?.message || 'Login failed. Please try again.');
+            setError(err.response?.data?.message || 'Invalid email or password.');
         }
     };
 
@@ -109,7 +114,7 @@ export const LoginPage = () => {
     const errorClass = 'text-xs text-red-500 mt-1 font-medium';
 
     return (
-        <div className="w-full max-w-[450px] mx-auto">
+        <div className="w-full max-w-[450px] mx-auto animate-fade-in">
             {/* Back to Home */}
             <Link
                 to={ROUTES.HOME}
@@ -119,29 +124,41 @@ export const LoginPage = () => {
                 Back to Home
             </Link>
 
-            <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl px-8 pt-8 pb-10 shadow-xl shadow-black/5 dark:shadow-black/30 border border-white/60 dark:border-zinc-700/50">
-
-                {/* Logo + Heading */}
-                <div className="text-center">
-                    <Link to={ROUTES.HOME} className="inline-flex items-center justify-center gap-3 mb-5 group">
-                        <img
-                            src="/logo-removebg.png"
-                            alt={`${APP_NAME} logo`}
-                            className="w-40 h-40 object-contain group-hover:scale-105 transition-transform duration-300"
-                        />
-                    </Link>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                        Welcome Back
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
-                        Sign in to your account to continue
-                    </p>
-                </div>
+            <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl px-8 pt-8 pb-10 shadow-xl shadow-black/5 dark:shadow-black/30 border border-white/60 dark:border-zinc-700/50 min-h-[400px] flex flex-col justify-center">
+                {isSuccess ? (
+                    <div className="text-center animate-scale-up py-10">
+                        <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Welcome Back!</h2>
+                        <p className="text-slate-500 dark:text-zinc-400">Signing you in...</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* Logo + Heading */}
+                        <div className="text-center">
+                            <Link to={ROUTES.HOME} className="inline-flex items-center justify-center gap-3 mb-5 group">
+                                <img
+                                    src="/logo-removebg.png"
+                                    alt={`${APP_NAME} logo`}
+                                    className="w-40 h-40 object-contain group-hover:scale-105 transition-transform duration-300"
+                                />
+                            </Link>
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                Welcome Back
+                            </h1>
+                            <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
+                                Sign in to your account to continue
+                            </p>
+                        </div>
 
                 {/* Error */}
                 {error && (
-                    <div className="mb-5 p-3.5 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                    <div className="mb-5 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 animate-[shake_0.4s_ease-in-out] flex items-center justify-center gap-2.5">
+                        <svg className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                        </svg>
+                        <p className="text-sm font-semibold text-red-700 dark:text-red-300">{error}</p>
                     </div>
                 )}
 
@@ -275,16 +292,18 @@ export const LoginPage = () => {
                     </div>
                 )}
 
-                {/* Footer */}
-                <p className="text-center text-sm text-slate-500 dark:text-zinc-400 mt-6">
-                    Don&apos;t have an account?{' '}
-                    <Link
-                        to={ROUTES.SIGNUP}
-                        className="font-semibold text-[#0F5A9C] hover:text-[#0a4a7a] dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
-                    >
-                        Sign Up
-                    </Link>
-                </p>
+                    {/* Footer */}
+                    <p className="text-center text-sm text-slate-500 dark:text-zinc-400 mt-6">
+                        Don&apos;t have an account?{' '}
+                        <Link
+                            to={ROUTES.SIGNUP}
+                            className="font-semibold text-[#0F5A9C] hover:text-[#0a4a7a] dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
+                        >
+                            Sign Up
+                        </Link>
+                    </p>
+                </>
+            )}
             </div>
         </div>
     );

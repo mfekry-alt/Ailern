@@ -24,44 +24,15 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
     // Use the provided parser or fallback to default
     const parser = parseServerDate || defaultParseDate;
 
-    const [isAvailable, setIsAvailable] = useState(false);
-
-    // دالة لفحص الحالة الحالية
-    const checkAvailability = useCallback(() => {
-        const now = new Date();
-        const from = quiz.availableFrom ? parser(quiz.availableFrom) : null;
-        const until = quiz.availableUntil ? parser(quiz.availableUntil) : null;
-
-        // متاح لو مفيش تواريخ، أو لو الوقت الحالي بين البداية والنهاية
-        if (!from && !until) {
-            setIsAvailable(true);
-        } else if (from && until) {
-            setIsAvailable(now >= from && now <= until);
-        } else if (from) {
-            setIsAvailable(now >= from);
-        } else if (until) {
-            setIsAvailable(now <= until);
-        }
-    }, [quiz.availableFrom, quiz.availableUntil, parser]);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
-        checkAvailability(); // فحص أول ما الكارت يظهر
-
-        // عمل Timer يشتغل كل ثانية لو الكويز لسه "Upcoming"
-        const timer = setInterval(() => {
-            const now = new Date();
-            const from = quiz.availableFrom ? parser(quiz.availableFrom) : null;
-
-            if (from && now >= from) {
-                checkAvailability();
-                clearInterval(timer); // وقف التايمر أول ما يفتح
-            }
-        }, 1000);
-
+        // Update current time every second to make all date-based logic reactive
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
-    }, [quiz.availableFrom, checkAvailability, parser]);
+    }, []);
 
-    const now = new Date();
+    const now = currentTime;
     const availableFrom = quiz.availableFrom ? parser(quiz.availableFrom) : null;
     const availableUntil = quiz.availableUntil ? parser(quiz.availableUntil) : null;
 
@@ -162,8 +133,7 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
     const hasActiveAttempt = Boolean(quiz.hasActiveAttempt);
 
     // Determine if button should be disabled
-    // نعتمد على isAvailable اللي بتتحكم في التايمر عشان الزرار يفتح لوحده
-    const isDisabled = !isAvailable || isNotPublished || isExhausted || isLoading;
+    const isDisabled = isNotStarted || isExpired || isNotPublished || (isExhausted && !hasActiveAttempt) || isLoading;
 
     // Get disable reason for tooltip
     const getDisableReason = () => {
@@ -171,7 +141,7 @@ export const QuizCard = ({ quiz, onStartQuiz, onViewAttempts, isLoading = false,
         if (isNoAvailableFrom) return 'Quiz availability date not set';
         if (isNotStarted) return `Available from ${availableFrom?.toLocaleDateString()}`;
         if (isExpired) return `Expired on ${availableUntil?.toLocaleDateString()}`;
-        if (isExhausted) return `No attempts remaining (Max: ${quiz.maximumAttempts})`;
+        if (isExhausted && !hasActiveAttempt) return `No attempts remaining (Max: ${quiz.maximumAttempts})`;
         return null;
     };
 
