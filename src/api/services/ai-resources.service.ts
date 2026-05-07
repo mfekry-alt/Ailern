@@ -72,13 +72,15 @@ export const uploadToS3 = async (
     presignedUrl: string,
     file: File,
     contentType: string,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
+    signal?: AbortSignal
 ) => {
     // Use a clean axios instance to avoid sending our API headers to S3
     await axios.put(presignedUrl, file, {
         headers: {
             'Content-Type': contentType,
         },
+        signal,
         onUploadProgress: (progressEvent) => {
             if (onProgress && progressEvent.total) {
                 const percentCompleted = Math.round(

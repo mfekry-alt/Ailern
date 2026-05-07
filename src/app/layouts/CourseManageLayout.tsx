@@ -11,7 +11,7 @@ const NAV_ITEMS = [
     { to: 'assignments', label: 'Assignments', icon: FileText },
     { to: 'quizzes', label: 'Quizzes', icon: HelpCircle },
     { to: 'students', label: 'Students', icon: Users },
-    { to: 'ai-assistant', label: 'Files', icon: Sparkles },
+    { to: 'ai-assistant', label: 'Knowledge Base', icon: Sparkles },
 ] as const;
 
 export const CourseManageLayout = () => {

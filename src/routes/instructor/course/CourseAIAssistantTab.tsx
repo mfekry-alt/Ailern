@@ -19,6 +19,7 @@ import {
     BrainCircuit,
     RotateCcw,
     AlertTriangle,
+    Info,
 } from 'lucide-react';
 import { PDFThumbnail } from '@/components/PDFThumbnail';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -47,6 +48,8 @@ interface UploadingFile {
     progress: number;
     status: 'uploading' | 'completed' | 'error';
     error?: string;
+    abortController?: AbortController;
+    fileId?: string;
 }
 
 interface UploadedFile {
@@ -60,7 +63,20 @@ interface UploadedFile {
     uploadStatus: AiResourceUploadStatus;
     /** From API `AIStatus` and/or SignalR hub `StatusUpdated` */
     aiProcessingStatus?: AiResourceLiveStatus;
+    error?: string;
 }
+
+// --- Constants ---
+
+/** Backend-allowed MIME types – must match `AllowedContentTypes` in the API validator. */
+const ALLOWED_CONTENT_TYPES = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+] as const;
+
+/** Must match `MaxFileSizeInBytes` on the backend. */
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 // --- Helpers ---
 
@@ -96,7 +112,7 @@ const STATUS_PRESENTATION: Record<AiResourceLiveStatus, LiveStatusPresentation> 
             'border border-violet-200 bg-violet-100 text-violet-950 dark:border-violet-800/60 dark:bg-violet-950/50 dark:text-violet-100',
     },
     Completed: {
-        badge: 'Ready',
+        badge: 'AI Ready',
         message: 'Ready to use',
         badgeClass:
             'border border-emerald-200 bg-emerald-100 text-emerald-950 dark:border-emerald-800/55 dark:bg-emerald-950/40 dark:text-emerald-100',
@@ -205,7 +221,6 @@ function MaterialsOverviewStats({ files }: { files: UploadedFile[] }) {
     );
 }
 
-/** Compact upload + AI chips for file cards (no second full-height status list) */
 function FileIngestStatusChips({
     file,
     onRetryFailed,
@@ -213,52 +228,53 @@ function FileIngestStatusChips({
     file: UploadedFile;
     onRetryFailed: (file: UploadedFile) => void | Promise<void>;
 }) {
-    const upload = file.uploadStatus;
-    const uploadPres = UPLOAD_STATUS_PRESENTATION[upload];
-    const aiStatus = file.aiProcessingStatus;
-    const aiPres: LiveStatusPresentation =
-        aiStatus != null ? STATUS_PRESENTATION[aiStatus] : UNKNOWN_STATUS_PRESENTATION;
+    const isUploadFailed = file.uploadStatus !== 'Completed';
+    const isAiFailed = file.aiProcessingStatus === 'Failed';
+    const isFailed = isUploadFailed || isAiFailed;
+    
+    const isReady = file.uploadStatus === 'Completed' && file.aiProcessingStatus === 'Completed';
+    const isProcessing = file.uploadStatus === 'Completed' && (file.aiProcessingStatus === 'Processing' || file.aiProcessingStatus === 'Pending');
 
-    const uploadComplete = upload === 'Completed';
-    const uploadFailed = upload === 'Failed';
-    const uploadPending = upload === 'Pending';
-    const aiProcessing = uploadComplete && aiStatus === 'Processing';
-    const needsRetry = uploadFailed || (uploadComplete && aiStatus === 'Failed');
-
+    let badge = null;
     let hint = '';
-    if (uploadPending || uploadFailed) hint = uploadPres.message;
-    else if (uploadComplete) hint = aiPres.message;
+
+    if (isFailed) {
+        badge = (
+            <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-semibold tracking-tight border border-red-200 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
+                ✖ Failed
+            </span>
+        );
+        hint = isAiFailed && file.error ? file.error : 'Processing failed — please close this or retry.';
+    } else if (isReady) {
+        badge = (
+            <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-semibold tracking-tight border border-emerald-200 bg-emerald-100 text-emerald-950 dark:border-emerald-800/55 dark:bg-emerald-950/40 dark:text-emerald-100">
+                ✔ AI Ready
+            </span>
+        );
+        hint = 'Ready to use';
+    } else if (isProcessing) {
+        badge = (
+            <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-semibold tracking-tight border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100">
+                <Loader2 className="mr-1 h-3 w-3 shrink-0 animate-spin text-amber-600 dark:text-amber-400" aria-hidden />
+                Processing
+            </span>
+        );
+        hint = 'Analyzing content…';
+    } else {
+        badge = (
+            <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-semibold tracking-tight border border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                <Loader2 className="mr-1 h-3 w-3 shrink-0 animate-spin text-slate-500 dark:text-slate-400" aria-hidden />
+                Pending
+            </span>
+        );
+        hint = 'Waiting for upload to finish...';
+    }
 
     return (
         <div className="mt-2 space-y-1.5">
             <div className="flex flex-wrap items-center gap-1">
-                {aiProcessing && (
-                    <Loader2
-                        className="h-3.5 w-3.5 shrink-0 animate-spin text-violet-600 dark:text-violet-400"
-                        aria-hidden
-                    />
-                )}
-                <span
-                    className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-tight ${uploadPres.badgeClass}`}
-                >
-                    {uploadComplete && <CheckCircle2 className="mr-0.5 h-3 w-3 shrink-0 opacity-90" aria-hidden />}
-                    {uploadPending && (
-                        <Loader2
-                            className="mr-0.5 h-3 w-3 shrink-0 animate-spin text-amber-700 dark:text-amber-300"
-                            aria-hidden
-                        />
-                    )}
-                    {uploadFailed && <AlertCircle className="mr-0.5 h-3 w-3 shrink-0" aria-hidden />}
-                    {uploadPres.badge}
-                </span>
-                {uploadComplete && (
-                    <span
-                        className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${aiPres.badgeClass}`}
-                    >
-                        {aiPres.badge}
-                    </span>
-                )}
-                {needsRetry && (
+                {badge}
+                {isFailed && (
                     <button
                         type="button"
                         onClick={() => void onRetryFailed(file)}
@@ -270,15 +286,10 @@ function FileIngestStatusChips({
                 )}
             </div>
             {hint ? (
-                <p className="line-clamp-2 text-[10px] leading-snug text-slate-500 dark:text-slate-400" title={hint}>
+                <div className={`text-[10px] leading-snug rounded-md ${isFailed ? 'bg-red-50 p-2 border border-red-100 text-red-800 dark:bg-red-950/30 dark:border-red-900/50 dark:text-red-200 mt-2 font-medium break-words' : 'text-slate-500 dark:text-slate-400 mt-1 line-clamp-2'}`} title={hint}>
                     {hint}
-                </p>
-            ) : null}
-            {aiProcessing && (
-                <div className="relative h-0.5 overflow-hidden rounded-full bg-violet-100 dark:bg-violet-950/80">
-                    <div className="absolute inset-y-0 left-0 w-[38%] rounded-full bg-violet-600 dark:bg-violet-400 motion-safe:animate-ai-progress-slide" />
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }
@@ -292,9 +303,9 @@ export const CourseAIAssistantTab = () => {
     const [isDragging, setIsDragging] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [failedUploads, setFailedUploads] = useState<string[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const cachedFilesRef = useRef<Map<string, File>>(new Map());
 
     const fetchFiles = useCallback(async () => {
         if (!courseId) return;
@@ -348,10 +359,10 @@ export const CourseAIAssistantTab = () => {
     const hubEnabled = uploadedFiles.length > 0;
 
     useAiResourcesHub(
-        useCallback((fileId, status) => {
+        useCallback((fileId, status, error) => {
             setUploadedFiles((prev) => {
                 const next = prev.map((f) =>
-                    f.id === fileId ? { ...f, aiProcessingStatus: status } : f
+                    f.id === fileId ? { ...f, aiProcessingStatus: status, error } : f
                 );
                 if (status === 'Completed' && prev.some((f) => f.id === fileId)) {
                     toast.success('AI processing finished', {
@@ -360,7 +371,7 @@ export const CourseAIAssistantTab = () => {
                 }
                 if (status === 'Failed' && prev.some((f) => f.id === fileId)) {
                     toast.error('AI processing failed', {
-                        description: 'Check the file format or try uploading again.',
+                        description: error || 'Check the file format or try uploading again.',
                     });
                 }
                 return next;
@@ -376,16 +387,41 @@ export const CourseAIAssistantTab = () => {
 
     // --- Handlers ---
 
-    const validateFile = (file: File) => {
-        const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint', 'text/plain'];
-        const maxSize = 10 * 1024 * 1024; // 10MB
+    /**
+     * Client-side validation that mirrors the backend FluentValidation rules
+     * for `FileUploadRequestValidator`.  Rejecting early avoids a wasted
+     * round-trip to POST /ai-resources/.
+     */
+    const validateFile = (file: File): string | null => {
+        // --- FileName ---
+        if (!file.name || file.name.trim().length === 0) {
+            return 'File name is required.';
+        }
+        if (file.name.length > 255) {
+            return 'File name must not exceed 255 characters.';
+        }
+        const ext = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')) : '';
+        if (!ext) {
+            return 'File name must have a valid extension.';
+        }
 
-        if (!allowedTypes.includes(file.type) && !file.name.endsWith('.pdf') && !file.name.endsWith('.docx') && !file.name.endsWith('.ppt') && !file.name.endsWith('.pptx')) {
-            return 'Unsupported file type. Please upload PDF, DOCX, or PPT.';
+        // --- ContentType ---
+        const contentType = file.type || '';
+        if (!contentType) {
+            return 'Content type is required. Only PDF, DOCX, and TXT files are allowed.';
         }
-        if (file.size > maxSize) {
-            return 'File too large. Maximum size is 10MB.';
+        if (!(ALLOWED_CONTENT_TYPES as readonly string[]).includes(contentType)) {
+            return 'Only PDF, DOCX, and TXT files are allowed.';
         }
+
+        // --- FileSize ---
+        if (file.size <= 0) {
+            return 'File size must be greater than 0.';
+        }
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            return `File size must not exceed ${MAX_FILE_SIZE_BYTES / (1024 * 1024)} MB.`;
+        }
+
         return null;
     };
 
@@ -403,11 +439,13 @@ export const CourseAIAssistantTab = () => {
             validFiles.push(file);
 
             const uploadId = Math.random().toString(36).substring(7);
+            const abortController = new AbortController();
             newUploadingEntries.push({
                 id: uploadId,
                 file,
                 progress: 0,
-                status: 'uploading'
+                status: 'uploading',
+                abortController
             });
         });
 
@@ -421,7 +459,7 @@ export const CourseAIAssistantTab = () => {
                 Files: validFiles.map(f => ({
                     FileName: f.name,
                     FileSize: f.size,
-                    ContentType: f.type || 'application/octet-stream'
+                    ContentType: f.type,
                 }))
             });
 
@@ -441,23 +479,36 @@ export const CourseAIAssistantTab = () => {
                 const contentType = file.type || 'application/octet-stream';
 
                 allFileIds.push(fileId);
+                cachedFilesRef.current.set(fileId, file);
+
+                setUploadingFiles(prev => prev.map(f =>
+                    f.id === entry.id ? { ...f, fileId } : f
+                ));
 
                 try {
                     await aiResourcesService.uploadToS3(presignedUrl, file, contentType, (progress) => {
                         setUploadingFiles(prev => prev.map(f =>
                             f.id === entry.id ? { ...f, progress } : f
                         ));
-                    });
+                    }, entry.abortController?.signal);
 
                     setUploadingFiles(prev => prev.map(f =>
                         f.id === entry.id ? { ...f, status: 'completed', id: fileId } : f
                     ));
                     successFileIds.push(fileId);
-                } catch (error) {
-                    setUploadingFiles(prev => prev.map(f =>
-                        f.id === entry.id ? { ...f, status: 'error', error: 'Upload failed' } : f
-                    ));
-                    failedFileNames.push(file.name);
+                } catch (error: any) {
+                    if (error.name === 'CanceledError') {
+                        try {
+                            await aiResourcesService.deleteResource(courseId, fileId);
+                        } catch (e) {
+                            console.error('Failed to delete cancelled resource:', e);
+                        }
+                    } else {
+                        setUploadingFiles(prev => prev.map(f =>
+                            f.id === entry.id ? { ...f, status: 'error', error: 'Upload failed' } : f
+                        ));
+                        failedFileNames.push(file.name);
+                    }
                 }
             });
 
@@ -494,11 +545,6 @@ export const CourseAIAssistantTab = () => {
                 }
             }
 
-            // 4. Show failed files
-            if (failedFileNames.length > 0) {
-                setFailedUploads(failedFileNames);
-            }
-
         } catch (error) {
             const apiError = handleApiError(error);
             toast.error('Upload Process Failed', { description: apiError.message });
@@ -514,6 +560,10 @@ export const CourseAIAssistantTab = () => {
     };
 
     const cancelUpload = (id: string) => {
+        const fileToCancel = uploadingFiles.find(f => f.id === id);
+        if (fileToCancel?.abortController) {
+            fileToCancel.abortController.abort();
+        }
         setUploadingFiles(prev => prev.filter(f => f.id !== id));
         toast.info('Upload cancelled');
     };
@@ -533,18 +583,28 @@ export const CourseAIAssistantTab = () => {
     const retryFailedAiResource = useCallback(
         async (file: UploadedFile) => {
             try {
-                await aiResourcesService.deleteResource(courseId, file.id);
+                // Delete from backend just in case it wasn't fully removed automatically
+                await aiResourcesService.deleteResource(courseId, file.id).catch(() => {});
                 setUploadedFiles((prev) => prev.filter((f) => f.id !== file.id));
-                toast.message('Removed failed material', {
-                    description: 'Upload the same file again from the upload area.',
-                });
-                fileInputRef.current?.click();
+                
+                const cachedFile = cachedFilesRef.current.get(file.id);
+                if (cachedFile) {
+                    toast.info('Retrying upload automatically...', {
+                        description: 'Re-uploading the original file.',
+                    });
+                    void handleFiles([cachedFile]);
+                } else {
+                    toast.message('Removed failed material', {
+                        description: 'Please select the file again from the upload area.',
+                    });
+                    fileInputRef.current?.click();
+                }
             } catch (error) {
                 const apiError = handleApiError(error);
                 toast.error('Could not remove file', { description: apiError.message });
             }
         },
-        [courseId]
+        [courseId, handleFiles]
     );
 
     // --- Drag and Drop Logic ---
@@ -581,16 +641,48 @@ export const CourseAIAssistantTab = () => {
                     AI Powered
                 </div>
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                    <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white xl:text-3xl">
-                        AI Exam{' '}
+                    <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white xl:text-3xl flex items-center gap-2">
+                        AI Knowledge{' '}
                         <span className="bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-                            Assistant
+                            Base
                         </span>
+                        <div className="group relative flex items-center justify-center">
+                            <button
+                                type="button"
+                                className="flex items-center justify-center rounded-full p-1 text-slate-400 transition-colors hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-400"
+                                aria-label="More information about AI Knowledge Base"
+                            >
+                                <Info className="h-6 w-6 sm:h-7 sm:w-7" />
+                            </button>
+                            
+                            {/* Tooltip Content */}
+                            <div className="pointer-events-none absolute left-1/2 top-full z-50 mt-3 w-72 -translate-x-1/2 opacity-0 transition-all duration-200 ease-out group-hover:translate-y-1 group-hover:opacity-100 sm:w-80">
+                                {/* Tooltip Card */}
+                                <div className="relative rounded-2xl bg-white p-4 shadow-2xl shadow-indigo-500/10 ring-1 ring-slate-900/5 dark:bg-slate-800 dark:shadow-slate-900/50 dark:ring-white/10">
+                                    {/* Arrow */}
+                                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 border-8 border-transparent border-b-white dark:border-b-slate-800" />
+                                    
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+                                            <BrainCircuit className="h-5 w-5" />
+                                        </div>
+                                        <div className="space-y-1.5 font-sans">
+                                            <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
+                                                How it works
+                                            </p>
+                                            <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                                This AI uses your uploaded materials as its <strong className="font-semibold text-indigo-600 dark:text-indigo-400">knowledge source</strong> to accurately generate questions and evaluate student answers.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </h1>
                 </div>
                 <p className="max-w-3xl text-sm leading-snug text-slate-500 dark:text-slate-400">
-                    Manage course materials here—uploads stay compact on the side while your library stays front and center.
-                    SignalR updates each card live.
+                    Upload course materials to train the AI.
+                    The AI will generate questions, grade answers, and assist students based on this content.
                 </p>
             </header>
 
@@ -633,7 +725,7 @@ export const CourseAIAssistantTab = () => {
                             <Database className="mb-3 h-12 w-12 text-slate-300 dark:text-slate-600" />
                             <h3 className="text-lg font-black text-slate-900 dark:text-white">No materials yet</h3>
                             <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-                                Upload PDFs, Word docs, or slides using Add files or the panel on the right.
+                                Upload PDFs, Word docs, or text files using Add files or the panel on the right.
                             </p>
                             <Button
                                 type="button"
@@ -641,7 +733,7 @@ export const CourseAIAssistantTab = () => {
                                 className="mt-6 rounded-xl bg-indigo-600 px-6 py-3 font-black text-white hover:bg-indigo-700"
                             >
                                 <Upload className="mr-2 inline h-4 w-4" />
-                                Upload materials
+                                Add Knowledge to AI
                             </Button>
                         </div>
                     ) : filteredFiles.length === 0 ? (
@@ -689,27 +781,43 @@ export const CourseAIAssistantTab = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="absolute right-2 top-2 z-10 flex gap-1">
-                                                <button
-                                                    type="button"
-                                                    title="Preview"
-                                                    aria-label="Preview file"
-                                                    disabled={!file.url}
-                                                    onClick={() => file.url && window.open(file.url, '_blank')}
-                                                    className="rounded-lg border border-slate-200 bg-white/95 p-2 text-slate-600 shadow-sm hover:bg-white hover:text-indigo-600 disabled:pointer-events-none disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800/95 dark:text-slate-300 dark:hover:text-indigo-400"
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    title="Delete"
-                                                    aria-label="Delete material"
-                                                    onClick={() => deleteFile(file.id, file.name)}
-                                                    className="rounded-lg border border-slate-200 bg-white/95 p-2 text-slate-600 shadow-sm hover:bg-red-50 hover:text-red-600 dark:border-slate-600 dark:bg-slate-800/95 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
+                                            {(file.aiProcessingStatus === 'Completed' || file.uploadStatus !== 'Completed' || file.aiProcessingStatus === 'Failed') && (
+                                                <div className="absolute right-2 top-2 z-10 flex gap-1">
+                                                    {file.aiProcessingStatus === 'Completed' && (
+                                                        <button
+                                                            type="button"
+                                                            title="Preview"
+                                                            aria-label="Preview file"
+                                                            disabled={!file.url}
+                                                            onClick={() => file.url && window.open(file.url, '_blank')}
+                                                            className="rounded-lg border border-slate-200 bg-white/95 p-2 text-slate-600 shadow-sm hover:bg-white hover:text-indigo-600 disabled:pointer-events-none disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800/95 dark:text-slate-300 dark:hover:text-indigo-400"
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                    {file.aiProcessingStatus === 'Failed' ? (
+                                                        <button
+                                                            type="button"
+                                                            title="Dismiss"
+                                                            aria-label="Dismiss failed material"
+                                                            onClick={() => setUploadedFiles(prev => prev.filter(f => f.id !== file.id))}
+                                                            className="rounded-lg border border-slate-200 bg-white/95 p-2 text-slate-600 shadow-sm hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:bg-slate-800/95 dark:hover:bg-slate-700 dark:hover:text-white"
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            title="Delete"
+                                                            aria-label="Delete material"
+                                                            onClick={() => deleteFile(file.id, file.name)}
+                                                            className="rounded-lg border border-slate-200 bg-white/95 p-2 text-slate-600 shadow-sm hover:bg-red-50 hover:text-red-600 dark:border-slate-600 dark:bg-slate-800/95 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                         <h3
                                             className="line-clamp-2 text-sm font-bold leading-tight text-slate-900 dark:text-white"
@@ -763,22 +871,30 @@ export const CourseAIAssistantTab = () => {
                                 </div>
                                 <div className="max-w-[17rem] space-y-2">
                                     <p className="text-lg font-black tracking-tight text-slate-900 dark:text-white sm:text-xl">
-                                        Upload materials
+                                        Add Knowledge to AI
                                     </p>
                                     <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                                        Drag and drop files here, or click to browse.
+                                        Drop files to train your AI assistant, or click to browse.
                                     </p>
-                                    <div className="flex flex-wrap justify-center gap-2 pt-1">
-                                        {['PDF', 'DOCX', 'PPT'].map((type) => (
+                                    <div className="text-left text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 mt-3 space-y-1 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                                        <p className="font-medium text-slate-700 dark:text-slate-300">Upload lectures, notes, or text files to help the AI understand your course. This content will be used for:</p>
+                                        <ul className="list-disc pl-4 space-y-0.5 mt-1">
+                                            <li>Generating exam questions</li>
+                                            <li>Grading student answers</li>
+                                            <li>Assisting students</li>
+                                        </ul>
+                                    </div>
+                                    <div className="flex flex-wrap justify-center gap-2 pt-2">
+                                        {['PDF', 'DOCX', 'TXT'].map((type) => (
                                             <span
                                                 key={type}
-                                                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-400"
                                             >
                                                 {type}
                                             </span>
                                         ))}
                                     </div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 pt-1">
                                         Max 10MB per file
                                     </p>
                                 </div>
@@ -788,7 +904,7 @@ export const CourseAIAssistantTab = () => {
                                     className="hidden"
                                     multiple
                                     onChange={(e) => e.target.files && handleFiles(e.target.files)}
-                                    accept=".pdf,.doc,.docx,.ppt,.pptx"
+                                    accept=".pdf,.docx,.txt"
                                 />
                             </div>
                         </CardContent>
@@ -911,38 +1027,6 @@ export const CourseAIAssistantTab = () => {
                 </div>
             </div>
 
-            {/* Failed Uploads Modal */}
-            {failedUploads.length > 0 && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 bg-rose-50 dark:bg-rose-500/10 border-b border-rose-100 dark:border-rose-500/20 flex flex-col items-center text-center space-y-3">
-                            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-500/20 rounded-full flex items-center justify-center">
-                                <AlertTriangle className="w-8 h-8 text-rose-500" />
-                            </div>
-                            <h3 className="text-xl font-black text-rose-600 dark:text-rose-400">Upload Failed</h3>
-                            <p className="text-sm font-medium text-rose-500 dark:text-rose-400/80">
-                                {failedUploads.length} file{failedUploads.length > 1 ? 's' : ''} could not be uploaded.
-                            </p>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <ul className="max-h-48 overflow-y-auto space-y-2 pr-2">
-                                {failedUploads.map((name, i) => (
-                                    <li key={i} className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-                                        <X className="w-4 h-4 text-rose-500 flex-shrink-0" />
-                                        <span className="truncate" title={name}>{name}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                            <Button
-                                onClick={() => setFailedUploads([])}
-                                className="w-full py-6 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-white rounded-xl font-black transition-all"
-                            >
-                                OK, I understand
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

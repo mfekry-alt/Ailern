@@ -5,9 +5,9 @@ import { storage } from '@/lib/storage';
 import {
     ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
     GripVertical, Sparkles, ListChecks, HelpCircle, AlertTriangle, Save,
-    ChevronDown, ChevronUp, Check, Filter, FileText, LayoutGrid
+    ChevronDown, ChevronUp, Check, Filter, FileText, LayoutGrid, BrainCircuit, XCircle
 } from 'lucide-react';
-import { useQuiz, useUpsertQuizQuestions } from '@/features/quizzes/api';
+import { useQuiz, useUpsertQuizQuestions, useAiGeneratedQuestions, useAcceptAiGeneratedQuestion, useRejectAiGeneratedQuestion } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
 import { toast } from 'sonner';
 import type { OptionRequest, QuestionUpsertRequest, QuestionType, QuestionDto, OptionDto } from '@/types/api.types';
@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { mapServerErrors } from '@/utils/mapServerErrors';
 import { scrollToFirstError } from '@/utils/form-utils';
 import { AlertCircle } from 'lucide-react';
+import { clsx } from 'clsx';
 
 // ─── Validation Schema ──────────────────────────────────────────────────────
 
@@ -61,7 +62,7 @@ const questionSchema = yup.object().shape({
 });
 
 const builderSchema = yup.object().shape({
-    questions: yup.array().of(questionSchema).required().min(1, 'At least one question is required.'),
+    questions: yup.array().of(questionSchema).required(),
 });
 
 type BuilderFormData = yup.InferType<typeof builderSchema>;
@@ -104,15 +105,18 @@ export const InstructorQuizQuestionsEditPage = () => {
 
     const { data: quiz, isLoading: quizLoading } = useQuiz(quizId ?? '');
     const upsertQuestionsMutation = useUpsertQuizQuestions(quizId ?? '');
+    const aiGeneratedQuery = useAiGeneratedQuestions(quizId ?? '');
+    const acceptAiQuestion = useAcceptAiGeneratedQuestion(quizId ?? '');
+    const rejectAiQuestion = useRejectAiGeneratedQuestion(quizId ?? '');
     const isDraftQuiz = settings?.status === 'Draft' || quiz?.status === 'Draft';
 
     const [apiError, setApiError] = useState('');
     const [success, setSuccess] = useState(false);
     const [showAIModal, setShowAIModal] = useState(false);
     const [loaded, setLoaded] = useState(false);
+    const [activeTab, setActiveTab] = useState<'questions' | 'ai-generated'>('questions');
     
     // Drag & Drop States
-    const [isAutoSaving, setIsAutoSaving] = useState(false);
     const [draggedQuestionIndex, setDraggedQuestionIndex] = useState<number | null>(null);
     const [draggedOptionInfo, setDraggedOptionInfo] = useState<{ qIndex: number; optIndex: number } | null>(null);
 
@@ -171,17 +175,41 @@ export const InstructorQuizQuestionsEditPage = () => {
             questionType: q.questionType,
             questionText: q.questionText,
             mark: q.mark,
-            instructions: q.instructions || '',
-            explanation: q.explanation || '',
-            options: (q.options || []).map(o => ({
+            instructions: q.instructions ?? '',
+            explanation: q.explanation ?? '',
+            options: q.options?.map(o => ({
                 optionId: null,
                 optionText: o.optionText,
                 isCorrect: o.isCorrect
-            }))
+            })) || []
         }));
         append(newQs);
         setShowAIModal(false);
     };
+
+    // Sync newly accepted AI questions from server into the form
+    useEffect(() => {
+        if (!quiz?.questions) return;
+        const currentQs = getValues('questions') || [];
+        const formIds = new Set(currentQs.map(q => q.id).filter(Boolean));
+        const newServerQuestions = quiz.questions.filter(q => q.id && !formIds.has(q.id));
+        if (newServerQuestions.length > 0) {
+            const qsToAppend = newServerQuestions.map(q => ({
+                id: q.id ?? null,
+                questionType: q.questionType as QuestionType,
+                questionText: q.questionText,
+                mark: q.mark,
+                instructions: q.instructions ?? '',
+                explanation: q.explanation ?? '',
+                options: q.options?.map(o => ({
+                    optionId: o.optionId ?? null,
+                    optionText: o.optionText,
+                    isCorrect: o.isCorrect
+                })) || []
+            }));
+            append(qsToAppend);
+        }
+    }, [quiz?.questions, getValues, append]);
 
     const changeType = (index: number, type: QuestionType) => {
         const options = type === 'MCQ' ? makeMCQOptions() : type === 'TrueFalse' ? makeTFOptions() : [];
@@ -207,43 +235,14 @@ export const InstructorQuizQuestionsEditPage = () => {
         setValue(`questions.${qIndex}.options`, currentOptions.filter((_, i) => i !== optIndex), { shouldValidate: true });
     };
 
-    // Auto-save logic for reordering
-    const handleAutoSave = () => {
-        // Run on next tick to ensure react-hook-form's getValues() has the updated array order
-        setTimeout(async () => {
-            const data = getValues();
-            setIsAutoSaving(true);
-            const toastId = toast.loading('Saving order...');
-            
-            try {
-                const payloadQuestions: QuestionUpsertRequest[] = data.questions.map(q => ({
-                    id: q.id ?? null,
-                    questionType: q.questionType as QuestionType,
-                    questionText: q.questionText,
-                    mark: q.mark,
-                    instructions: q.instructions || undefined,
-                    explanation: q.explanation || undefined,
-                    options: q.options?.map(o => ({
-                        optionId: o.optionId ?? null,
-                        optionText: o.optionText,
-                        isCorrect: Boolean(o.isCorrect)
-                    })) || [],
-                }));
 
-                await upsertQuestionsMutation.mutateAsync(payloadQuestions);
-                toast.success('Reordered successfully', { id: toastId });
-                queryClient.invalidateQueries({ queryKey: ['quiz', quizId] });
-            } catch (e: any) {
-                console.error('[AutoSave] error:', e);
-                toast.error('Failed to reorder. Ensure all fields are valid.', { id: toastId });
-                queryClient.invalidateQueries({ queryKey: ['quiz', quizId] });
-            } finally {
-                setIsAutoSaving(false);
-            }
-        }, 0);
-    };
 
     const onSubmit = async (data: BuilderFormData) => {
+        if (!isDraftQuiz && data.questions.length === 0) {
+            toast.error('Published quizzes must have at least one question.');
+            return;
+        }
+
         try {
             setApiError('');
             setSuccess(false);
@@ -343,6 +342,7 @@ export const InstructorQuizQuestionsEditPage = () => {
                     quizId={quizId ?? undefined}
                     onClose={() => setShowAIModal(false)}
                     onGenerate={handleAIGenerate}
+                    onComplete={() => queryClient.invalidateQueries({ queryKey: ['quiz', quizId] })}
                 />
             )}
 
@@ -370,12 +370,6 @@ export const InstructorQuizQuestionsEditPage = () => {
                                     <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md border shadow-sm ${statusBadgeClass}`}>
                                         {currentStatus}
                                     </span>
-                                    {isAutoSaving && (
-                                        <>
-                                            <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                                            <span className="text-[10px] text-blue-500 font-bold flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin"/> Saving</span>
-                                        </>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -404,7 +398,38 @@ export const InstructorQuizQuestionsEditPage = () => {
                             Questions saved successfully! Redirecting...
                         </div>
                     )}
-                    <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] gap-8 items-start">
+                    {/* Tabs */}
+                <div className="flex items-center gap-2 mb-6">
+                    <button
+                        onClick={() => setActiveTab('questions')}
+                        className={clsx(
+                            "px-6 py-3 rounded-2xl text-sm font-black transition-all",
+                            activeTab === 'questions'
+                                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg"
+                                : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                        )}
+                    >
+                        <span className="flex items-center gap-2">
+                            <ListChecks className="w-4 h-4" /> Questions ({fields.length})
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('ai-generated')}
+                        className={clsx(
+                            "px-6 py-3 rounded-2xl text-sm font-black transition-all",
+                            activeTab === 'ai-generated'
+                                ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
+                                : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                        )}
+                    >
+                        <span className="flex items-center gap-2">
+                            <BrainCircuit className="w-4 h-4" /> AI Generated
+                        </span>
+                    </button>
+                </div>
+
+                {activeTab === 'questions' && (
+                <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] gap-8 items-start">
 
                         {/* --- Sidebar: Quiz Map --- */}
                         <aside className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[2.5rem] p-8 shadow-sm xl:sticky xl:top-28 hidden md:block">
@@ -444,7 +469,6 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                     e.preventDefault();
                                                     if (draggedQuestionIndex !== null && draggedQuestionIndex !== idx) {
                                                         move(draggedQuestionIndex, idx);
-                                                        handleAutoSave();
                                                     }
                                                     setDraggedQuestionIndex(null);
                                                 }}
@@ -621,7 +645,6 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                                             const [movedOption] = newOptions.splice(draggedOptionInfo.optIndex, 1);
                                                                             newOptions.splice(i, 0, movedOption);
                                                                             setValue(`questions.${idx}.options`, newOptions, { shouldValidate: true });
-                                                                            handleAutoSave();
                                                                         }
                                                                         setDraggedOptionInfo(null);
                                                                     }}
@@ -749,6 +772,98 @@ export const InstructorQuizQuestionsEditPage = () => {
                             </button>
                         </div>
                     </div>
+                )}
+
+                {activeTab === 'ai-generated' && (
+                <div className="max-w-4xl mx-auto space-y-8">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                                <BrainCircuit className="w-5 h-5 text-purple-500" />
+                                AI Generated Questions
+                            </h3>
+                            <p className="text-sm font-medium text-gray-500 dark:text-slate-400 mt-1">
+                                Review and accept questions generated by the AI.
+                            </p>
+                        </div>
+                    </div>
+
+                    {aiGeneratedQuery.isLoading ? (
+                        <div className="space-y-4">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="h-32 bg-gray-100 dark:bg-slate-800 rounded-[2rem] animate-pulse" />
+                            ))}
+                        </div>
+                    ) : aiGeneratedQuery.isError ? (
+                        <div className="text-center py-12 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-[2rem]">
+                            <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-3" />
+                            <p className="text-sm font-bold text-red-600 dark:text-red-400">Failed to load AI-generated questions.</p>
+                        </div>
+                    ) : !aiGeneratedQuery.data || aiGeneratedQuery.data.length === 0 ? (
+                        <div className="text-center py-20 bg-gray-50 dark:bg-slate-800/30 rounded-[2.5rem] border-2 border-dashed border-gray-200 dark:border-slate-800">
+                            <BrainCircuit className="w-16 h-16 text-gray-300 dark:text-slate-700 mx-auto mb-4" />
+                            <h4 className="text-xl font-black text-gray-900 dark:text-white mb-2">No Pending AI Questions</h4>
+                            <p className="text-sm text-gray-500 dark:text-slate-400">Generate questions using the AI Generator to see them here.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {aiGeneratedQuery.data.map((q, idx) => (
+                                <div key={q.id} className="bg-white dark:bg-slate-800/50 rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
+                                    <div className="px-8 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/30">
+                                        <div className="flex items-center gap-4">
+                                            <span className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs font-black">{idx + 1}</span>
+                                            <span className={clsx("px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest",
+                                                q.questionType === 'MCQ' ? "bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" :
+                                                q.questionType === 'TrueFalse' ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+                                                "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400")}>{q.questionType}</span>
+                                            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">{q.mark} pts</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => acceptAiQuestion.mutate(q.id, { onSuccess: () => { toast.success('Question accepted'); } })}
+                                                disabled={acceptAiQuestion.isPending}
+                                                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50">
+                                                {acceptAiQuestion.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Accept
+                                            </button>
+                                            <button onClick={() => rejectAiQuestion.mutate(q.id, { onSuccess: () => toast.success('Question rejected') })}
+                                                disabled={rejectAiQuestion.isPending}
+                                                className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50">
+                                                {rejectAiQuestion.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />} Reject
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="p-8 space-y-6">
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white leading-relaxed">{q.questionText}</p>
+                                        {q.options && q.options.length > 0 && (
+                                            <div className="space-y-2">
+                                                {q.options.map((opt, oi) => (
+                                                    <div key={oi} className={clsx("flex items-center gap-3 p-3 rounded-xl border text-sm font-semibold transition-all",
+                                                        opt.isCorrect ? "border-emerald-300 bg-emerald-50/50 dark:border-emerald-500/20 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 text-gray-700 dark:text-slate-300")}>
+                                                        <span className={clsx("w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0",
+                                                            opt.isCorrect ? "bg-emerald-200 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : "bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400")}>{String.fromCharCode(65 + oi)}</span>
+                                                        <span>{opt.optionText}</span>
+                                                        {opt.isCorrect && <Check className="w-4 h-4 text-emerald-500 ml-auto shrink-0" />}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {q.questionType === 'Written' && (
+                                            <div className="p-4 bg-blue-50 dark:bg-blue-500/5 border border-blue-200 dark:border-blue-500/10 rounded-xl text-center">
+                                                <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Written Answer Question</p>
+                                            </div>
+                                        )}
+                                        {q.explanation && (
+                                            <div className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700">
+                                                <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">Explanation</p>
+                                                <p className="text-xs text-gray-600 dark:text-slate-400">{q.explanation}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                )}
                 </div>
 
                 {/* --- Sticky Footer Actions --- */}
@@ -776,4 +891,4 @@ export const InstructorQuizQuestionsEditPage = () => {
             </div>
         </>
     );
-};
+};

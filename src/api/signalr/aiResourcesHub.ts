@@ -4,7 +4,12 @@ import { getAccessToken } from '@/api/client';
 /** Must match server SendAsync("StatusUpdated", ...) */
 export const AI_RESOURCES_HUB_METHOD = 'StatusUpdated';
 
+/** Must match server SendAsync("QuestionsGenerated", ...) */
+export const QUESTIONS_GENERATED_METHOD = 'QuestionsGenerated';
+
 export type AiResourceLiveStatus = 'Pending' | 'Processing' | 'Completed' | 'Failed';
+
+export type QuestionsGeneratedHandler = (questionsCount: number, completed: boolean) => void;
 
 export function getAiResourcesHubUrl(): string {
     const api = import.meta.env.VITE_API_URL ?? 'https://localhost:7080/api/';
@@ -25,12 +30,15 @@ export function parseAiResourceStatus(raw: unknown): AiResourceLiveStatus | unde
     return undefined;
 }
 
-export type StatusUpdatedHandler = (fileId: string, status: AiResourceLiveStatus) => void;
+export type StatusUpdatedHandler = (fileId: string, status: AiResourceLiveStatus, error?: string) => void;
 
 /**
  * Build and start the AI resources hub. Caller must `.stop()` on unmount / tab close.
  */
-export function createAiResourcesHubConnection(onStatusUpdated: StatusUpdatedHandler): signalR.HubConnection {
+export function createAiResourcesHubConnection(
+    onStatusUpdated: StatusUpdatedHandler,
+    onQuestionsGenerated?: QuestionsGeneratedHandler
+): signalR.HubConnection {
     const hubUrl = getAiResourcesHubUrl();
 
     const connection = new signalR.HubConnectionBuilder()
@@ -41,14 +49,24 @@ export function createAiResourcesHubConnection(onStatusUpdated: StatusUpdatedHan
         .withAutomaticReconnect([0, 2000, 10000, 30000])
         .build();
 
-    connection.on(AI_RESOURCES_HUB_METHOD, (fileId: unknown, status: unknown) => {
-        console.log('(( ===StatusUpdated 📌📌 received from hub === )) =====> ', fileId, status);
+    connection.on(AI_RESOURCES_HUB_METHOD, (fileId: unknown, status: unknown, error: unknown) => {
+        console.log('(( ===StatusUpdated 📌📌 received from hub === )) =====> ', fileId, status, error);
         const id = fileId != null ? String(fileId) : '';
         const parsed = parseAiResourceStatus(status);
+        const errorMsg = error ? String(error) : undefined;
         if (!id || !parsed) return;
-        console.log('StatusUpdated parsed', id, parsed);
-        onStatusUpdated(id, parsed);
+        console.log('StatusUpdated parsed', id, parsed, errorMsg);
+        onStatusUpdated(id, parsed, errorMsg);
     });
+
+    if (onQuestionsGenerated) {
+        connection.on(QUESTIONS_GENERATED_METHOD, (questionsCount: unknown, completed: unknown) => {
+            console.log('(( ===QuestionsGenerated 🤖 received from hub === )) =====> ', questionsCount, completed);
+            const count = Number(questionsCount) || 0;
+            const isCompleted = Boolean(completed);
+            onQuestionsGenerated(count, isCompleted);
+        });
+    }
 
     return connection;
 }

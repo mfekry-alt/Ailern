@@ -10,8 +10,10 @@ import type {
     GetAllQuizDto,
     GetQuizDto,
     GetSubmissionsByQuizIdDto,
+    OptionDto,
     PaginationResult,
     QuestionDto,
+    QuestionType,
     QuestionUpsertRequest,
     UpdateQuizBody,
 } from '@/types/api.types';
@@ -25,7 +27,6 @@ export interface QuizGenerationFile {
 
 export interface GenerateQuizByAIPayload {
     fileIds?: string[];
-    newUploadedFiles?: File[];
     questionsCount: number;
     questionTypeCounts: {
         MCQ: number;
@@ -57,36 +58,6 @@ const unwrapApiResponse = <T>(payload: ApiResponse<T> | ApiEnvelope<T> | T): T =
     const inner = unwrapEnvelope<T>(payload as ApiEnvelope<T>);
     if (inner !== undefined) return inner as T;
     return payload as T;
-};
-
-const buildGenerateFormData = (payload: GenerateQuizByAIPayload): FormData => {
-    const formData = new FormData();
-
-    payload.fileIds?.forEach(id => formData.append('FileIds', id));
-    payload.newUploadedFiles?.forEach(file => formData.append('NewUploadedFiles', file));
-
-    formData.append('QuestionsCount', String(payload.questionsCount));
-    formData.append('QuestionTypeCounts.MCQ', String(payload.questionTypeCounts.MCQ));
-    formData.append('QuestionTypeCounts.TrueFalse', String(payload.questionTypeCounts.TrueFalse));
-    formData.append('QuestionTypeCounts.Written', String(payload.questionTypeCounts.Written));
-
-    formData.append('QuestionDifficultyPercents.Easy', String(payload.questionDifficultyPercents.Easy));
-    formData.append('QuestionDifficultyPercents.Medium', String(payload.questionDifficultyPercents.Medium));
-    formData.append('QuestionDifficultyPercents.Hard', String(payload.questionDifficultyPercents.Hard));
-
-    if (payload.query?.trim()) {
-        formData.append('Query', payload.query.trim());
-    }
-
-    if (payload.options) {
-        formData.append('Options.UseSelectedOnly', String(payload.options.useSelectedOnly));
-        formData.append('Options.Style', payload.options.style);
-        if (payload.options.bloomLevel) {
-            formData.append('Options.BloomLevel', payload.options.bloomLevel);
-        }
-    }
-
-    return formData;
 };
 
 // --- Quiz CRUD ---
@@ -196,11 +167,9 @@ export const deleteQuiz = async (id: string): Promise<void> => {
 // --- AI (optional / backend-specific) ---
 
 export const generateQuizQuestionsByAI = async (quizId: string, payload: GenerateQuizByAIPayload): Promise<unknown> => {
-    const formData = buildGenerateFormData(payload);
     const response = await api.post<ApiResponse<unknown>>(
         ENDPOINTS.QUIZZES.GENERATE_BY_AI(quizId),
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        payload
     );
     return unwrapApiResponse(response.data);
 };
@@ -224,6 +193,36 @@ export const getQuizGenerationJob = async (jobId: string): Promise<unknown> => {
 export const getQuizGenerationFiles = async (quizId: string): Promise<unknown> => {
     const response = await api.get<ApiResponse<unknown>>(ENDPOINTS.QUIZZES.GENERATE_FILES(quizId));
     return unwrapApiResponse(response.data);
+};
+
+// --- AI Generated Questions ---
+
+export interface AiGeneratedQuestionDto {
+    id: string;
+    questionText: string;
+    questionType: QuestionType;
+    mark: number;
+    instructions?: string | null;
+    explanation?: string | null;
+    options?: OptionDto[] | null;
+}
+
+export const getAiGeneratedQuestions = async (quizId: string): Promise<AiGeneratedQuestionDto[]> => {
+    const response = await api.get<ApiResponse<AiGeneratedQuestionDto[]>>(ENDPOINTS.QUIZZES.AI_GENERATED_QUESTIONS(quizId));
+    const data = unwrapEnvelope<AiGeneratedQuestionDto[]>(response.data as ApiEnvelope<AiGeneratedQuestionDto[]>);
+    return data ?? [];
+};
+
+export const acceptAiGeneratedQuestion = async (quizId: string, questionId: string): Promise<void> => {
+    await api.put<ApiResponse<null>>(ENDPOINTS.QUIZZES.ACCEPT_AI_QUESTION(quizId, questionId));
+};
+
+export const rejectAiGeneratedQuestion = async (quizId: string, questionId: string): Promise<void> => {
+    await api.delete(ENDPOINTS.QUIZZES.REJECT_AI_QUESTION(quizId, questionId));
+};
+
+export const acceptAllAiGeneratedQuestions = async (quizId: string): Promise<void> => {
+    await api.put<ApiResponse<null>>(ENDPOINTS.QUIZZES.ACCEPT_ALL_AI_QUESTIONS(quizId));
 };
 
 // --- Questions ---

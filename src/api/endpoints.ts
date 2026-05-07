@@ -101,6 +101,10 @@ export const ENDPOINTS = {
         GENERATE_FILES: (quizId: string) => `/Quizzes/${quizId}/generate-questions-files`,
         JOB_STATUS: (jobId: string) => `/Quizzes/job/${jobId}`,
         GET_SUBMISSIONS: (quizId: string) => `/Quizzes/${quizId}/submissions`,
+        AI_GENERATED_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/ai-generated-questions`,
+        ACCEPT_AI_QUESTION: (quizId: string, questionId: string) => `/Quizzes/${quizId}/ai-generated-questions/${questionId}/accept`,
+        REJECT_AI_QUESTION: (quizId: string, questionId: string) => `/Quizzes/${quizId}/ai-generated-questions/${questionId}/reject`,
+        ACCEPT_ALL_AI_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/ai-generated-questions/accept-all`,
     },
 
     // Sections endpoints

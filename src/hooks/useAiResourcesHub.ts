@@ -3,6 +3,7 @@ import * as signalR from '@microsoft/signalr';
 import {
     createAiResourcesHubConnection,
     type StatusUpdatedHandler,
+    type QuestionsGeneratedHandler,
 } from '@/api/signalr/aiResourcesHub';
 
 /**
@@ -10,9 +11,16 @@ import {
  * When `enabled` is false, any active connection is stopped.
  * Stops on unmount and on `pagehide` (tab close / navigation away).
  */
-export function useAiResourcesHub(onStatusUpdated: StatusUpdatedHandler, enabled: boolean) {
+export function useAiResourcesHub(
+    onStatusUpdated: StatusUpdatedHandler,
+    enabled: boolean,
+    onQuestionsGenerated?: QuestionsGeneratedHandler
+) {
     const handlerRef = useRef(onStatusUpdated);
     handlerRef.current = onStatusUpdated;
+
+    const questionsHandlerRef = useRef(onQuestionsGenerated);
+    questionsHandlerRef.current = onQuestionsGenerated;
 
     const connectionRef = useRef<signalR.HubConnection | null>(null);
 
@@ -34,7 +42,10 @@ export function useAiResourcesHub(onStatusUpdated: StatusUpdatedHandler, enabled
             return;
         }
 
-        const conn = createAiResourcesHubConnection((fileId, status) => handlerRef.current(fileId, status));
+        const conn = createAiResourcesHubConnection(
+            (fileId, status, error) => handlerRef.current(fileId, status, error),
+            (count, completed) => questionsHandlerRef.current?.(count, completed)
+        );
         connectionRef.current = conn;
 
         let cancelled = false;

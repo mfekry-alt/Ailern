@@ -82,10 +82,11 @@ export const updateCourse = async (id: number, command: UpdateCourseDetailsComma
 
 /**
  * Get courses for the current instructor.
- * Uses numeric instructor endpoint when available, otherwise falls back to /Courses/mine.
+ * Always uses /api/Users/instructor/my-courses — the backend infers the
+ * instructor from the auth token, so no ID is needed.
  */
 export const getInstructorCourses = async (
-    instructorId?: string | number,
+    _instructorId?: string | number,
     params?: PaginationParams
 ): Promise<GetAllCoursesDtoPaginationResult> => {
     const defaultParams: PaginationParams = {
@@ -94,16 +95,9 @@ export const getInstructorCourses = async (
         ...params,
     };
 
-    const numericInstructorId =
-        typeof instructorId === 'number' ? instructorId : Number(instructorId);
-
-    const endpoint = Number.isFinite(numericInstructorId) && numericInstructorId > 0
-        ? ENDPOINTS.COURSES.INSTRUCTOR_COURSES(numericInstructorId)
-        : ENDPOINTS.COURSES.MY_COURSES;
-
     try {
         const response = await api.get<ApiResponse<GetAllCoursesDtoPaginationResult>>(
-            endpoint,
+            ENDPOINTS.COURSES.MY_COURSES,
             {
                 params: {
                     pageNumber: defaultParams.PageNumber || 1,

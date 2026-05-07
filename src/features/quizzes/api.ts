@@ -129,3 +129,54 @@ export const useGradeSubmission = (quizId: string) => {
         },
     });
 };
+
+/**
+ * Fetch AI-generated questions pending acceptance
+ */
+export const useAiGeneratedQuestions = (quizId: string) =>
+    useQuery({
+        queryKey: ['ai-generated-questions', quizId],
+        queryFn: () => quizService.getAiGeneratedQuestions(quizId),
+        enabled: !!quizId,
+    });
+
+/**
+ * Accept a single AI-generated question (adds it to the quiz)
+ */
+export const useAcceptAiGeneratedQuestion = (quizId: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (questionId: string) => quizService.acceptAiGeneratedQuestion(quizId, questionId),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['ai-generated-questions', quizId] });
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZ(quizId) });
+        },
+    });
+};
+
+/**
+ * Reject (delete) a single AI-generated question
+ */
+export const useRejectAiGeneratedQuestion = (quizId: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (questionId: string) => quizService.rejectAiGeneratedQuestion(quizId, questionId),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['ai-generated-questions', quizId] });
+        },
+    });
+};
+
+/**
+ * Accept all pending AI-generated questions
+ */
+export const useAcceptAllAiGeneratedQuestions = (quizId: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => quizService.acceptAllAiGeneratedQuestions(quizId),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['ai-generated-questions', quizId] });
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZ(quizId) });
+        },
+    });
+};
