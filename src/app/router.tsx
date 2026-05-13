@@ -42,6 +42,8 @@ import { AssignmentDetailsPage } from '@/features/course-details/pages/Assignmen
 import { QuizzesTab } from '@/features/course-details/pages/QuizzesTab';
 import { VideoViewerPage } from '@/features/course-details/pages/VideoViewerPage';
 import { CourseContentViewerPage } from '@/features/course-content/pages/CourseContentViewerPage';
+import { QnABoardTab } from '@/features/course-details/pages/QnABoardTab';
+import { StudentQnADetailTab } from '@/features/course-details/pages/StudentQnADetailTab';
 
 // Instructor pages
 import { InstructorDashboardPage } from '@/routes/instructor/InstructorDashboardPage';
@@ -54,6 +56,8 @@ import { CourseAssignmentsTab } from '@/routes/instructor/course/CourseAssignmen
 import { CourseQuizzesTab } from '@/routes/instructor/course/CourseQuizzesTab';
 import { CourseStudentsTab } from '@/routes/instructor/course/CourseStudentsTab';
 import { CourseAIAssistantTab } from '@/routes/instructor/course/CourseAIAssistantTab';
+import { CourseQnABoardTab } from '@/routes/instructor/course/CourseQnABoardTab';
+import { CourseQnADetailTab } from '@/routes/instructor/course/CourseQnADetailTab';
 import { InstructorGradebookPage } from '@/routes/instructor/InstructorGradebookPage';
 import { InstructorAssignmentsPage } from '@/routes/instructor/InstructorAssignmentsPage';
 import { InstructorQuizCreatePage } from '@/routes/instructor/InstructorQuizCreatePage';
@@ -67,6 +71,11 @@ import { InstructorUpcomingEventsPage } from '@/routes/instructor/InstructorUpco
 import { QuizDashboardPage } from '@/routes/instructor/QuizDashboardPage';
 import { InstructorQuizSubmissionsPage } from '@/routes/instructor/InstructorQuizSubmissionsPage';
 import { InstructorQuizSubmissionReviewPage } from '@/routes/instructor/InstructorQuizSubmissionReviewPage';
+import { AIGradingDetailsPage } from '@/features/ai-grading/pages/AIGradingDetailsPage';
+import { AIEvaluationPage } from '@/features/ai-grading/pages/AIEvaluationPage';
+import { AIEvaluationSetupTab } from '@/features/ai-grading/components/AIEvaluationSetupTab';
+import { AIEvaluationResultsTab } from '@/features/ai-grading/components/AIEvaluationResultsTab';
+import { AIEvaluationConfigPage } from '@/features/ai-grading/pages/AIEvaluationConfigPage';
 
 // Admin pages
 import { AdminDashboardPage } from '@/routes/admin/AdminDashboardPage';
@@ -129,6 +138,8 @@ export const AppRouter = () => {
                     <Route path="assignments" element={<AssignmentsTab />} />
                     <Route path="assignments/:assignmentId" element={<AssignmentDetailsPage />} />
                     <Route path="quizzes" element={<QuizzesTab />} />
+                    <Route path="qna" element={<QnABoardTab />} />
+                    <Route path="qna/:questionId" element={<StudentQnADetailTab />} />
                 </Route>
                 <Route path="/courses/:courseId/video/:fileId" element={<VideoViewerPage />} />
                 <Route path="/courses/:courseId/content" element={<CourseContentViewerPage />} />
@@ -152,7 +163,8 @@ export const AppRouter = () => {
                 }
             >
                 <Route path={ROUTES.INSTRUCTOR} element={<InstructorDashboardPage />} />
-                <Route path={ROUTES.INSTRUCTOR_COURSES} element={<InstructorCoursesPage />} />                <Route path={ROUTES.INSTRUCTOR_MANAGE_COURSE} element={<InstructorManageCoursePage />} />                <Route path={ROUTES.INSTRUCTOR_COURSE_NEW} element={<InstructorCourseEditPage />} />
+                <Route path={ROUTES.INSTRUCTOR_COURSES} element={<InstructorCoursesPage />} />
+                <Route path={ROUTES.INSTRUCTOR_COURSE_NEW} element={<InstructorCourseEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_COURSE_EDIT} element={<InstructorCourseEditPage />} />
                 <Route path="/instructor/courses/:id/manage" element={<CourseManageLayout />}>
                     <Route index element={<Navigate to="ai-assistant" replace />} />
@@ -161,7 +173,16 @@ export const AppRouter = () => {
                     <Route path="quizzes" element={<CourseQuizzesTab />} />
                     <Route path="students" element={<CourseStudentsTab />} />
                     <Route path="ai-assistant" element={<CourseAIAssistantTab />} />
+                    <Route path="qna" element={<CourseQnABoardTab />} />
+                    <Route path="qna/:questionId" element={<CourseQnADetailTab />} />
                 </Route>
+                <Route path="/instructor/courses/:id/manage/quizzes/:quizId/ai-evaluation" element={<AIEvaluationPage />}>
+                    <Route index element={<Navigate to="results" replace />} />
+                    <Route path="setup" element={<AIEvaluationSetupTab />} />
+                    <Route path="results" element={<AIEvaluationResultsTab />} />
+                    <Route path="configure" element={<AIEvaluationConfigPage />} />
+                </Route>
+                <Route path="/instructor/courses/:id/manage/quizzes/:quizId/ai-evaluation/:submissionId" element={<AIGradingDetailsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_GRADEBOOK} element={<InstructorGradebookPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENTS} element={<InstructorAssignmentsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<Navigate to={ROUTES.INSTRUCTOR_ASSIGNMENTS} replace />} />

@@ -1,9 +1,10 @@
 import { useState, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useLogout, useChangePhoto, useDeletePhoto } from '@/features/auth/api';
 import { ROUTES } from '@/lib/constants';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent, ConfirmDialog } from '@/components/ui';
 import {
     Edit, Save, X, LogOut, Lock, User as UserIcon, GraduationCap, Mail,
     Phone, MapPin, BadgeInfo, Bell, Briefcase, ShieldCheck,
@@ -24,7 +25,7 @@ export const ProfilePage = () => {
     const [isEditingPersonal, setIsEditingPersonal] = useState(false);
     const [isEditingRoleInfo, setIsEditingRoleInfo] = useState(false);
     const [emailNotifications, setEmailNotifications] = useState(true);
-    const [statusMessage, setStatusMessage] = useState<string>('');
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     // --- Form States ---
     const [personalForm, setPersonalForm] = useState({
@@ -46,14 +47,15 @@ export const ProfilePage = () => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            const toastId = toast.loading('Uploading profile photo...');
             changePhotoMutation.mutate(file, {
                 onSuccess: () => {
                     setIsAvatarDropdownOpen(false);
-                    showStatus('Photo updated successfully! 📸');
+                    toast.success('Photo updated successfully! 📸', { id: toastId });
                 },
                 onError: (error: any) => {
                     console.error('Failed to change photo:', error);
-                    showStatus('Failed to update photo. Please try again. ❌');
+                    toast.error('Failed to update photo. Please try again. ❌', { id: toastId });
                 }
             });
         }
@@ -62,14 +64,16 @@ export const ProfilePage = () => {
     };
 
     const handleDeletePhoto = () => {
+        const toastId = toast.loading('Removing profile photo...');
         deletePhotoMutation.mutate(undefined, {
             onSuccess: () => {
                 setIsAvatarDropdownOpen(false);
-                showStatus('Photo removed! 🗑️');
+                setIsDeleteDialogOpen(false);
+                toast.success('Photo removed! 🗑️', { id: toastId });
             },
             onError: (error: any) => {
                 console.error('Failed to delete photo:', error);
-                showStatus('Failed to remove photo. ❌');
+                toast.error('Failed to remove photo. ❌', { id: toastId });
             }
         });
     };
@@ -95,11 +99,6 @@ export const ProfilePage = () => {
         } catch (error) { console.error(error); }
     };
 
-    const showStatus = (msg: string) => {
-        setStatusMessage(msg);
-        setTimeout(() => setStatusMessage(''), 4000);
-    };
-
     // --- Role UI Config ---
     const roleConfig = useMemo(() => {
         switch (userRole) {
@@ -121,71 +120,69 @@ export const ProfilePage = () => {
 
             <div className="max-w-6xl mx-auto space-y-10 relative z-10 animate-in fade-in duration-700">
 
-                {/* Status Toast */}
-                {statusMessage && (
-                    <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-8">
-                        <div className="rounded-2xl border border-emerald-500/30 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl px-8 py-4 text-sm font-bold text-emerald-600 dark:text-emerald-400 shadow-2xl flex items-center gap-3">
-                            <CheckCircle2 className="w-5 h-5" /> {statusMessage}
-                        </div>
-                    </div>
-                )}
-
                 {/* Profile Hero Header */}
-                <div className="relative z-50 rounded-[3rem] bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 shadow-xl backdrop-blur-md">
-                    <div className="h-40 sm:h-60 w-full bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 relative rounded-t-[3rem] overflow-hidden">
+                <div className="relative z-50 rounded-[2.5rem] sm:rounded-[3rem] bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 shadow-xl backdrop-blur-md overflow-hidden">
+                    <div className="h-32 sm:h-60 w-full bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 relative overflow-hidden">
                         <div className="absolute inset-0 bg-black/10 opacity-40"></div>
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_70%)] from-white/10"></div>
                     </div>
 
-                    <div className="px-8 sm:px-12 pb-10 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-8">
-                        <div className="flex flex-col sm:flex-row items-center sm:items-end gap-8 -mt-20 sm:-mt-24 relative z-[60] text-center sm:text-left">
+                    <div className="px-6 sm:px-12 pb-8 sm:pb-10 flex flex-col md:flex-row items-center md:items-end justify-between gap-6 sm:gap-8">
+                        <div className="flex flex-col md:flex-row items-center md:items-end gap-5 sm:gap-8 -mt-16 sm:-mt-24 relative z-[60] text-center md:text-left w-full md:w-auto">
                             {/* Avatar */}
-                            <div className="relative group" ref={dropdownRef}>
+                            <div className="relative group shrink-0" ref={dropdownRef}>
                                 <div 
-                                    className="w-40 h-40 sm:w-48 sm:h-48 rounded-[3rem] bg-white dark:bg-slate-800 p-2.5 shadow-2xl ring-4 ring-black/5 dark:ring-white/5 transform transition-hover hover:scale-105 duration-500 cursor-pointer overflow-hidden"
+                                    className="w-32 h-32 sm:w-48 sm:h-48 rounded-[2.5rem] sm:rounded-[3rem] bg-white dark:bg-slate-800 p-2 sm:p-2.5 shadow-2xl ring-4 ring-black/5 dark:ring-white/5 transform transition-hover hover:scale-105 duration-500 cursor-pointer overflow-hidden"
                                     onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)}
                                 >
-                                    <div className="w-full h-full rounded-[2.5rem] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-blue-600 dark:text-blue-400 overflow-hidden border border-gray-100 dark:border-slate-600">
+                                    <div className="w-full h-full rounded-[2.2rem] sm:rounded-[2.5rem] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-blue-600 dark:text-blue-400 overflow-hidden border border-gray-100 dark:border-slate-600">
                                         {user?.avatar ? (
                                             <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
                                         ) : (
-                                            <UserIcon className="w-16 h-16 opacity-50" />
+                                            <UserIcon className="w-12 h-12 sm:w-16 sm:h-16 opacity-50" />
                                         )}
                                     </div>
                                     
                                     {/* Edit Overlay */}
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem]">
-                                        <Camera className="w-8 h-8 text-white" />
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem] sm:rounded-[3rem]">
+                                        <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                                     </div>
                                 </div>
 
                                 {/* Avatar Management Dropdown */}
                                 {isAvatarDropdownOpen && (
-                                    <div className="absolute left-0 top-[calc(100%+12px)] w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-[2rem] overflow-hidden z-[60] animate-in fade-in slide-in-from-top-4">
+                                    <div className="absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-[calc(100%+12px)] w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-[2rem] overflow-hidden z-[60] animate-in fade-in slide-in-from-top-4">
                                         <div className="p-3 space-y-1">
                                             {user?.avatar && (
                                                 <button 
                                                     onClick={() => { setViewingImage(true); setIsAvatarDropdownOpen(false); }}
-                                                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black text-gray-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-left"
+                                                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black text-gray-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all text-left group"
                                                 >
-                                                    <ImageIcon className="w-5 h-5 text-blue-500" /> DISPLAY PHOTO
+                                                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                                                        <ImageIcon className="w-5 h-5" />
+                                                    </div>
+                                                    DISPLAY PHOTO
                                                 </button>
                                             )}
                                             <button 
                                                 onClick={() => fileInputRef.current?.click()}
                                                 disabled={changePhotoMutation.isPending}
-                                                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black text-gray-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all text-left disabled:opacity-50"
+                                                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black text-gray-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all text-left disabled:opacity-50 group"
                                             >
-                                                <Camera className={`w-5 h-5 text-emerald-500 ${changePhotoMutation.isPending ? 'animate-pulse' : ''}`} /> 
+                                                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                                                    <Camera className={`w-5 h-5 ${changePhotoMutation.isPending ? 'animate-pulse' : ''}`} /> 
+                                                </div>
                                                 {changePhotoMutation.isPending ? 'UPLOADING...' : (user?.avatar ? 'CHANGE PHOTO' : 'ADD PHOTO')}
                                             </button>
                                             {user?.avatar && (
                                                 <button 
-                                                    onClick={handleDeletePhoto}
+                                                    onClick={() => setIsDeleteDialogOpen(true)}
                                                     disabled={deletePhotoMutation.isPending}
-                                                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-left disabled:opacity-50"
+                                                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-black text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all text-left disabled:opacity-50 group"
                                                 >
-                                                    <Trash2 className={`w-5 h-5 text-red-500 ${deletePhotoMutation.isPending ? 'animate-pulse' : ''}`} /> 
+                                                    <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
+                                                        <Trash2 className={`w-5 h-5 ${deletePhotoMutation.isPending ? 'animate-pulse' : ''}`} /> 
+                                                    </div>
                                                     {deletePhotoMutation.isPending ? 'DELETING...' : 'DELETE PHOTO'}
                                                 </button>
                                             )}
@@ -204,24 +201,24 @@ export const ProfilePage = () => {
 
 
                             {/* User Main Info */}
-                            <div className="space-y-3 mb-2">
-                                <div className="flex items-center justify-center sm:justify-start gap-3">
-                                    <h1 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+                            <div className="space-y-2 sm:space-y-3 mb-2 flex-1">
+                                <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-2 sm:gap-4">
+                                    <h1 className="text-2xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
                                         {personalForm.firstName} {personalForm.lastName}
                                     </h1>
-                                    <div className={`px-4 py-1.5 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${roleConfig.bg} ${roleConfig.color} ${roleConfig.border}`}>
-                                        <roleConfig.icon className="w-3.5 h-3.5" />
+                                    <div className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-xl border-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${roleConfig.bg} ${roleConfig.color} ${roleConfig.border}`}>
+                                        <roleConfig.icon className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                                         {roleConfig.label}
                                     </div>
                                 </div>
-                                <p className="text-gray-500 dark:text-slate-400 font-bold text-lg flex items-center justify-center sm:justify-start gap-2">
-                                    <Globe className="w-5 h-5 text-blue-500" />
+                                <p className="text-gray-500 dark:text-slate-400 font-bold text-base sm:text-lg flex items-center justify-center md:justify-start gap-2">
+                                    <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                                     {userRole === 'instructor' ? roleForm.title : (userRole === 'admin' ? roleForm.department : 'Undergraduate Student')}
                                 </p>
                             </div>
                         </div>
 
-                        <button onClick={handleSignOut} className="flex items-center gap-3 px-8 py-4 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-2xl font-black text-sm transition-all hover:shadow-lg active:scale-95">
+                        <button onClick={handleSignOut} className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-2xl font-black text-sm transition-all hover:shadow-lg active:scale-95">
                             <LogOut className="w-5 h-5" /> SIGN OUT
                         </button>
                     </div>
@@ -234,23 +231,23 @@ export const ProfilePage = () => {
 
                         {/* Personal Details */}
                         <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-gray-200 dark:border-slate-700/50 shadow-sm rounded-[2.5rem] overflow-hidden">
-                            <CardContent className="p-8 sm:p-10">
-                                <div className="flex items-center justify-between mb-10">
+                            <CardContent className="p-6 sm:p-10">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8 sm:mb-10">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 shadow-inner">
+                                        <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 shadow-inner shrink-0">
                                             <UserIcon className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-black text-gray-900 dark:text-white">Personal Information</h2>
-                                            <p className="text-sm font-semibold text-gray-500">Contact and identity settings</p>
+                                            <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">Personal Information</h2>
+                                            <p className="text-xs sm:text-sm font-semibold text-gray-500">Contact and identity settings</p>
                                         </div>
                                     </div>
-                                    <button onClick={() => setIsEditingPersonal(!isEditingPersonal)} className="p-3 bg-gray-50 dark:bg-slate-700 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors text-blue-600">
+                                    <button onClick={() => setIsEditingPersonal(!isEditingPersonal)} className="p-3 bg-gray-50 dark:bg-slate-700 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors text-blue-600 sm:self-start">
                                         {isEditingPersonal ? <X className="w-5 h-5" /> : <Edit className="w-5 h-5" />}
                                     </button>
                                 </div>
  
-                                <div className="grid md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                                     {[
                                         { id: 'firstName', label: 'First Name', icon: UserIcon },
                                         { id: 'lastName', label: 'Last Name', icon: UserIcon },
@@ -276,7 +273,13 @@ export const ProfilePage = () => {
 
                                 {isEditingPersonal && (
                                     <div className="mt-10 flex justify-end">
-                                        <button onClick={() => { setIsEditingPersonal(false); showStatus('Profile updated successfully! ✨'); }} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm hover:shadow-xl hover:shadow-blue-500/30 transition-all active:scale-95">
+                                        <button 
+                                            onClick={() => { 
+                                                setIsEditingPersonal(false); 
+                                                toast.success('Profile updated successfully! ✨'); 
+                                            }} 
+                                            className="w-full sm:w-auto px-10 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm hover:shadow-xl hover:shadow-blue-500/30 transition-all active:scale-95"
+                                        >
                                             SAVE CHANGES
                                         </button>
                                     </div>
@@ -286,23 +289,23 @@ export const ProfilePage = () => {
 
                         {/* --- DYNAMIC SECTION BASED ON ROLE --- */}
                         <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border-gray-200 dark:border-slate-700/50 shadow-sm rounded-[2.5rem] overflow-hidden">
-                            <CardContent className="p-8 sm:p-10">
-                                <div className="flex items-center justify-between mb-10">
+                            <CardContent className="p-6 sm:p-10">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8 sm:mb-10">
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-2xl ${roleConfig.bg} flex items-center justify-center ${roleConfig.color} shadow-inner`}>
+                                        <div className={`w-12 h-12 rounded-2xl ${roleConfig.bg} flex items-center justify-center ${roleConfig.color} shadow-inner shrink-0`}>
                                             <roleConfig.icon className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-black text-gray-900 dark:text-white">{userRole === 'student' ? 'Academic Records' : 'Professional Profile'}</h2>
-                                            <p className="text-sm font-semibold text-gray-500">Official {userRole} credentials</p>
+                                            <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">{userRole === 'student' ? 'Academic Records' : 'Professional Profile'}</h2>
+                                            <p className="text-xs sm:text-sm font-semibold text-gray-500">Official {userRole} credentials</p>
                                         </div>
                                     </div>
-                                    <button onClick={() => setIsEditingRoleInfo(!isEditingRoleInfo)} className={`p-3 rounded-2xl hover:opacity-80 transition-all ${roleConfig.bg} ${roleConfig.color}`}>
+                                    <button onClick={() => setIsEditingRoleInfo(!isEditingRoleInfo)} className={`p-3 rounded-2xl hover:opacity-80 transition-all ${roleConfig.bg} ${roleConfig.color} sm:self-start`}>
                                         {isEditingRoleInfo ? <X className="w-5 h-5" /> : <Edit className="w-5 h-5" />}
                                     </button>
                                 </div>
 
-                                <div className="grid md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                                     {userRole === 'student' && (
                                         <>
                                             <div className="space-y-3">
@@ -338,7 +341,7 @@ export const ProfilePage = () => {
                                                     <input disabled={!isEditingRoleInfo} value={roleForm.experience} className={inputCls} />
                                                 </div>
                                             </div>
-                                            <div className="md:col-span-2 space-y-3">
+                                            <div className="sm:col-span-2 space-y-3">
                                                 <label className={labelCls}>Primary Specialization</label>
                                                 <div className="relative group">
                                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center"><CheckCircle2 className="w-5 h-5 text-gray-400" /></div>
@@ -375,22 +378,22 @@ export const ProfilePage = () => {
                     <div className="space-y-10">
                         {/* Security Quick Link */}
                         <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 shadow-sm rounded-[2.5rem] overflow-hidden">
-                            <CardContent className="p-8">
+                            <CardContent className="p-6 sm:p-8">
                                 <div className="flex items-center gap-4 mb-8">
-                                    <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 shadow-inner">
+                                    <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 shadow-inner shrink-0">
                                         <Lock className="w-6 h-6" />
                                     </div>
                                     <h2 className="text-xl font-black text-gray-900 dark:text-white">Security</h2>
                                 </div>
                                 <div className="space-y-4">
-                                    <Link to={ROUTES.CHANGE_PASSWORD} className="group flex items-center justify-between p-6 rounded-3xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 hover:border-blue-400/50 transition-all">
+                                    <Link to={ROUTES.CHANGE_PASSWORD} className="group flex items-center justify-between p-5 sm:p-6 rounded-3xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 hover:border-blue-400/50 transition-all">
                                         <div className="space-y-1">
                                             <h3 className="text-sm font-black text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">Change Password</h3>
                                             <p className="text-xs font-semibold text-gray-500">Secure your account</p>
                                         </div>
                                         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
                                     </Link>
-                                    <Link to={ROUTES.CHANGE_EMAIL} className="group flex items-center justify-between p-6 rounded-3xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 hover:border-blue-400/50 transition-all">
+                                    <Link to={ROUTES.CHANGE_EMAIL} className="group flex items-center justify-between p-5 sm:p-6 rounded-3xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50 hover:border-blue-400/50 transition-all">
                                         <div className="space-y-1">
                                             <h3 className="text-sm font-black text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">Change Email</h3>
                                             <p className="text-xs font-semibold text-gray-500">Update primary email</p>
@@ -403,21 +406,21 @@ export const ProfilePage = () => {
 
                         {/* Preferences Toggle */}
                         <Card className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 shadow-sm rounded-[2.5rem] overflow-hidden">
-                            <CardContent className="p-8 text-center sm:text-left">
+                            <CardContent className="p-6 sm:p-8">
                                 <div className="flex items-center gap-4 mb-8">
-                                    <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 shadow-inner">
+                                    <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 shadow-inner shrink-0">
                                         <Bell className="w-6 h-6" />
                                     </div>
                                     <h2 className="text-xl font-black text-gray-900 dark:text-white">Preferences</h2>
                                 </div>
-                                <div className="flex items-center justify-between p-6 rounded-3xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50">
+                                <div className="flex items-center justify-between p-5 sm:p-6 rounded-3xl bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/50">
                                     <div className="space-y-1">
                                         <h3 className="text-sm font-black text-gray-900 dark:text-white">Emails</h3>
                                         <p className="text-xs font-semibold text-gray-500">Activity alerts</p>
                                     </div>
                                     <button
                                         onClick={() => setEmailNotifications(!emailNotifications)}
-                                        className={`w-14 h-8 rounded-full transition-all relative ${emailNotifications ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-700'}`}
+                                        className={`w-14 h-8 rounded-full transition-all relative shrink-0 ${emailNotifications ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-700'}`}
                                     >
                                         <div className={`absolute top-1 w-6 h-6 rounded-full bg-white transition-all shadow-md ${emailNotifications ? 'left-7' : 'left-1'}`}></div>
                                     </button>
@@ -457,6 +460,20 @@ export const ProfilePage = () => {
                 </div>
             </div>
         )}
+
+        {/* Confirmation Dialog for Photo Deletion */}
+        <ConfirmDialog 
+            open={isDeleteDialogOpen}
+            onClose={() => setIsDeleteDialogOpen(false)}
+            onConfirm={handleDeletePhoto}
+            isPending={deletePhotoMutation.isPending}
+            title="Delete profile photo?"
+            description="Are you sure you want to remove your profile photo? This action cannot be undone."
+            confirmText="Remove Photo"
+            cancelText="Keep Photo"
+            variant="danger"
+            icon={Trash2}
+        />
     </>
     );
 };

@@ -100,24 +100,24 @@ export const DashboardPage = () => {
                 <div className="px-4 sm:px-8 lg:px-12 py-8 space-y-10 max-w-7xl mx-auto">
 
                     {/* Hero Banner Redesigned */}
-                    <section className="relative overflow-hidden rounded-[2rem] p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between min-h-[350px] border border-gray-200 dark:border-white/5 bg-gradient-to-br from-blue-100/80 via-white to-purple-100/80 dark:from-blue-900/40 dark:via-slate-800/80 dark:to-purple-900/20 backdrop-blur-xl shadow-2xl">
+                    <section className="relative overflow-hidden rounded-[2rem] p-6 sm:p-10 lg:p-12 flex flex-col md:flex-row items-center justify-between min-h-[300px] sm:min-h-[350px] border border-gray-200 dark:border-white/5 bg-gradient-to-br from-blue-100/80 via-white to-purple-100/80 dark:from-blue-900/40 dark:via-slate-800/80 dark:to-purple-900/20 backdrop-blur-xl shadow-2xl">
                         {/* Decorative background blurs */}
                         <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-400/30 dark:bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
                         <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-purple-400/30 dark:bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-                        <div className="max-w-xl space-y-6 z-10 flex-1 w-full relative">
-                            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-gray-900 dark:text-white tracking-tight">
+                        <div className="max-w-xl space-y-6 z-10 flex-1 w-full relative text-center md:text-left flex flex-col items-center md:items-start">
+                            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-tight text-gray-900 dark:text-white tracking-tight">
                                 Welcome back,<br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
                                     {user?.firstName || 'Learner'}!
                                 </span>
                             </h2>
-                            <p className="text-lg text-gray-600 dark:text-slate-300 leading-relaxed max-w-md">
+                            <p className="text-sm sm:text-lg text-gray-600 dark:text-slate-300 leading-relaxed max-w-md font-medium">
                                 You have <strong className="text-gray-900 dark:text-white">{pendingTasks} tasks</strong> to catch up on. Ready to dive back into your learning journey?
                             </p>
                             <button
                                 onClick={() => navigate('/courses')}
-                                className="mt-4 bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-bold text-base transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] flex items-center space-x-3 w-fit hover:-translate-y-1"
+                                className="mt-2 sm:mt-4 bg-blue-600 hover:bg-blue-500 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl font-bold text-sm sm:text-base transition-all duration-300 shadow-[0_10px_25px_rgba(59,130,246,0.3)] hover:shadow-[0_10px_35px_rgba(59,130,246,0.5)] flex items-center space-x-3 w-fit hover:-translate-y-1 active:scale-95"
                             >
                                 <MaterialIcon name="play_circle" className="text-xl" />
                                 <span>Resume Learning</span>
@@ -125,33 +125,33 @@ export const DashboardPage = () => {
                         </div>
 
                         {/* Abstract AI Graphic replacing the static text box */}
-                        <div className="hidden md:flex w-[300px] h-[300px] relative items-center justify-center">
+                        <div className="hidden md:flex w-[240px] lg:w-[300px] h-[240px] lg:h-[300px] relative items-center justify-center ml-8">
                             <div className="absolute inset-0 bg-blue-400/20 dark:bg-blue-500/10 rounded-full blur-2xl animate-pulse"></div>
-                            <div className="relative z-10 w-48 h-48 rounded-full border border-gray-300 dark:border-white/10 flex items-center justify-center bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm shadow-xl">
-                                <div className="w-32 h-32 rounded-full border border-blue-500/30 dark:border-blue-400/30 flex items-center justify-center animate-[spin_10s_linear_infinite]">
+                            <div className="relative z-10 w-40 lg:w-48 h-40 lg:h-48 rounded-full border border-gray-300 dark:border-white/10 flex items-center justify-center bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm shadow-xl">
+                                <div className="w-28 lg:w-32 h-28 lg:h-32 rounded-full border border-blue-500/30 dark:border-blue-400/30 flex items-center justify-center animate-[spin_10s_linear_infinite]">
                                     <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full absolute top-0 shadow-[0_0_10px_#60a5fa]"></div>
                                     <div className="w-2 h-2 bg-purple-500 dark:bg-purple-400 rounded-full absolute bottom-0 shadow-[0_0_10px_#c084fc]"></div>
                                 </div>
-                                <MaterialIcon name="school" className="absolute text-5xl text-blue-600 dark:text-blue-300 drop-shadow-lg" />
+                                <MaterialIcon name="school" className="absolute text-4xl lg:text-5xl text-blue-600 dark:text-blue-300 drop-shadow-lg" />
                             </div>
                         </div>
                     </section>
 
                     {/* KPI Cards Redesigned */}
-                    <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
                             { title: 'Active Courses', value: totalCourses, icon: 'menu_book', color: 'indigo' },
                             { title: 'Pending Tasks', value: pendingTasks, icon: 'content_paste_go', color: 'blue' },
                             { title: 'Completed Quizzes', value: completedQuizzes, icon: 'task_alt', color: 'emerald' }
                         ].map((stat, idx) => (
-                            <div key={idx} className={`bg-white dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/50 p-6 rounded-3xl flex items-center justify-between hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]`}>
+                            <div key={idx} className={`bg-white dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/50 p-5 sm:p-6 rounded-3xl flex items-center justify-between hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]`}>
                                 <div className={`absolute top-0 left-0 w-1 h-full bg-${stat.color}-500 opacity-70 group-hover:opacity-100 transition-opacity`}></div>
                                 <div className="space-y-1 z-10 pl-2">
                                     <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">{stat.title}</p>
-                                    <h3 className={`text-4xl font-black text-${stat.color}-600 dark:text-${stat.color}-400`}>{stat.value}</h3>
+                                    <h3 className={`text-3xl sm:text-4xl font-black text-${stat.color}-600 dark:text-${stat.color}-400`}>{stat.value}</h3>
                                 </div>
-                                <div className={`w-16 h-16 bg-${stat.color}-50 dark:bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center border border-${stat.color}-100 dark:border-${stat.color}-500/20 group-hover:bg-${stat.color}-100 transition-colors z-10`}>
-                                    <MaterialIcon name={stat.icon} className={`text-3xl text-${stat.color}-600 dark:text-${stat.color}-400`} />
+                                <div className={`w-14 h-14 sm:w-16 sm:h-16 bg-${stat.color}-50 dark:bg-${stat.color}-500/10 rounded-2xl flex items-center justify-center border border-${stat.color}-100 dark:border-${stat.color}-500/20 group-hover:bg-${stat.color}-100 transition-colors z-10`}>
+                                    <MaterialIcon name={stat.icon} className={`text-2xl sm:text-3xl text-${stat.color}-600 dark:text-${stat.color}-400`} />
                                 </div>
                             </div>
                         ))}
@@ -233,23 +233,23 @@ export const DashboardPage = () => {
                                         upcomingDeadlines.map((deadline) => (
                                             <div
                                                 key={deadline.id}
-                                                className="group flex space-x-4 p-4 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 hover:bg-indigo-50/50 dark:hover:bg-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                                                className="group flex space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 hover:bg-indigo-50/50 dark:hover:bg-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all cursor-pointer shadow-sm hover:shadow-md"
                                                 onClick={() => navigate(`/assignments/${deadline.id}`)}
                                             >
                                                 {/* Calendar Tear-off Design */}
-                                                <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-                                                    <div className="bg-indigo-500 dark:bg-indigo-600/80 text-white text-[10px] font-black text-center py-0.5 uppercase tracking-widest">
+                                                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white dark:bg-slate-800 rounded-xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                                    <div className="bg-indigo-500 dark:bg-indigo-600/80 text-white text-[9px] sm:text-[10px] font-black text-center py-0.5 sm:py-1 uppercase tracking-widest">
                                                         {deadline.dueDate.month}
                                                     </div>
-                                                    <div className="flex-1 flex items-center justify-center text-xl font-black text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800">
+                                                    <div className="flex-1 flex items-center justify-center text-lg sm:text-xl font-black text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800">
                                                         {deadline.dueDate.day}
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-1 flex-1 flex flex-col justify-center">
-                                                    <h4 className="font-bold text-sm leading-tight text-slate-900 dark:text-white line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{deadline.title}</h4>
+                                                <div className="space-y-1 flex-1 flex flex-col justify-center min-w-0">
+                                                    <h4 className="font-bold text-xs sm:text-sm leading-tight text-slate-900 dark:text-white line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{deadline.title}</h4>
                                                     <div className="flex items-center justify-between mt-1">
-                                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${deadline.daysLeft <= 2 ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700'
+                                                        <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${deadline.daysLeft <= 2 ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700'
                                                             }`}>
                                                             {deadline.daysLeft > 0 ? `${deadline.daysLeft} days left` : 'Due Today'}
                                                         </span>

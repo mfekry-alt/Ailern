@@ -72,6 +72,8 @@ export const ROUTES = {
     INSTRUCTOR_QUIZ_DASHBOARD: '/quiz-dashboard/:quizId',
     INSTRUCTOR_QUIZ_SUBMISSIONS: '/instructor/quizzes/:quizId/submissions',
     INSTRUCTOR_QUIZ_SUBMISSION_REVIEW: '/instructor/quizzes/:quizId/submissions/:attemptId',
+    INSTRUCTOR_AI_GRADING_DASHBOARD: '/instructor/courses/:courseId/manage/quizzes/:quizId/ai-evaluation',
+    INSTRUCTOR_AI_GRADING_DETAILS: '/instructor/courses/:courseId/manage/quizzes/:quizId/ai-evaluation/:submissionId',
     INSTRUCTOR_AI_ASSISTANT: '/instructor/courses/:id/manage/ai-assistant',
 
     // Admin routes
@@ -119,6 +121,8 @@ export const QUERY_KEYS = {
     ASSIGNMENT_SUBMISSION: (assignmentId: number) => ['assignment-submission', assignmentId],
     /** Student — GET /Courses/my-learning (courses with saved progress) */
     MY_LEARNING: ['my-learning'],
+    DISCUSSIONS: (courseId: string | number) => ['discussions', courseId],
+    DISCUSSION: (discussionId: string | number) => ['discussion', discussionId],
 } as const;
 
 export const STORAGE_KEYS = {

@@ -61,6 +61,19 @@ export const SubmitAssignmentModal = ({
         onClose();
     }, [onClose]);
 
+    // Implement scroll locking when the modal is open
+    useEffect(() => {
+        if (open) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [open]);
+
     const handleSubmit = useCallback(async () => {
         if (selectedFiles.length === 0) {
             setError('Please attach at least one file.');

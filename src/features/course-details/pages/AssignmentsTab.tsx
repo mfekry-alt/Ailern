@@ -156,42 +156,47 @@ export const AssignmentsTab = () => {
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                    <FileText className="w-6 h-6 text-[#21A9FF]" />
-                    <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-                        Assignments
-                    </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-3">
+                    <div className="w-12 h-12 bg-[#21A9FF]/10 rounded-2xl flex items-center justify-center text-[#21A9FF] shrink-0">
+                        <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">
+                            Assignments
+                        </h2>
+                        <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Manage and submit tasks</p>
+                    </div>
                 </div>
             </div>
 
             {/* Filter Bar */}
-            <div className="relative z-30 bg-white dark:bg-slate-800/40 p-3 rounded-2xl border border-gray-200 dark:border-slate-700/50 flex flex-col sm:flex-row gap-3 items-center shadow-sm">
-                <div className="flex-1 w-full relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="relative z-30 bg-white/60 dark:bg-slate-800/40 backdrop-blur-md p-3 rounded-2xl border border-gray-200/60 dark:border-slate-700/50 flex flex-col sm:flex-row gap-3 items-center shadow-sm">
+                <div className="flex-1 w-full relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#21A9FF] transition-colors" />
                     <input 
                         value={searchQuery} 
                         onChange={(e) => setSearchQuery(e.target.value)} 
                         placeholder="Search assignments..." 
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white font-semibold transition-all" 
+                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700/50 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-[#21A9FF]/10 focus:border-[#21A9FF]/50 text-gray-900 dark:text-white font-semibold transition-all placeholder:text-slate-400 shadow-sm" 
                     />
                 </div>
 
-                <div className="relative shrink-0">
-                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <div className="relative shrink-0 w-full sm:w-auto">
+                    <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     <div
                         onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                        className="pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 shadow-sm hover:border-blue-300 dark:hover:border-slate-500 transition-colors min-w-[160px]"
+                        className="pl-11 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700/50 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-3 shadow-sm hover:border-[#21A9FF]/50 dark:hover:border-slate-500 transition-all min-w-[160px]"
                     >
                         <span className="flex-1 text-gray-800 dark:text-white">
                             {filterStatus === 'all' ? 'All Status' : filterStatus === 'not_submitted' ? 'Not Submitted' : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
                         </span>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-300 ${isStatusDropdownOpen ? 'rotate-180 text-[#21A9FF]' : ''}`} />
                     </div>
                     {isStatusDropdownOpen && (
                         <>
                             <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
-                            <div className="absolute top-full right-0 mt-1.5 w-48 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-xl z-20 overflow-hidden ring-1 ring-black/5">
+                            <div className="absolute top-full right-0 mt-2 w-full sm:w-48 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700/50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-20 overflow-hidden backdrop-blur-xl">
                                 {[
                                     { value: 'all' as const, label: 'All Status' },
                                     { value: 'submitted' as const, label: 'Submitted' },
@@ -202,9 +207,9 @@ export const AssignmentsTab = () => {
                                     <button
                                         key={opt.value}
                                         onClick={() => { setFilterStatus(opt.value); setIsStatusDropdownOpen(false); }}
-                                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-all flex items-center justify-between ${filterStatus === opt.value
-                                                ? 'bg-blue-50 dark:bg-[#21A9FF]/10 text-[#21A9FF]'
-                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                                        className={`w-full text-left px-5 py-3 text-sm font-bold transition-all flex items-center justify-between ${filterStatus === opt.value
+                                                ? 'bg-blue-50/80 dark:bg-[#21A9FF]/10 text-[#21A9FF]'
+                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/50'
                                             }`}
                                     >
                                         {opt.label}

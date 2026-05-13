@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Settings, CalendarClock, Eye, Timer, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Settings, CalendarClock, Eye, Timer, AlertCircle, BrainCircuit } from 'lucide-react';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import type { QuizFormStatus } from '@/types/api.types';
 import { useForm, Controller } from 'react-hook-form';
@@ -448,6 +448,7 @@ export const QuizForm = ({
                         })}
                     </div>
                 </div>
+
             </div>
 
             {/* Footer Actions */}
