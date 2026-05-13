@@ -5,7 +5,7 @@ import {
     Edit2, Trash2, Plus, Users, Calendar, BookOpen,
     Loader2, BookMarked, ArrowRight, AlertCircle, LayoutGrid,
     Search, SlidersHorizontal, Sparkles, GraduationCap, ChevronDown,
-    Layers, Clock, SortAsc, X
+    Layers, Clock, SortAsc, X, Filter
 } from 'lucide-react';
 import { ParallaxTiltCard } from '@/components/ui';
 import { useInstructorCourses, useDeleteCourse } from '@/features/courses/api';
@@ -13,6 +13,7 @@ import { useAuthStore } from '@/features/auth/store';
 import type { GetAllCoursesDto } from '@/types/api.types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 // --- Interfaces ---
 interface Course {
@@ -162,6 +163,7 @@ export const InstructorCoursesPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'latest' | 'name' | 'students'>('name');
     const [isSortOpen, setIsSortOpen] = useState(false);
+    const [courseToDelete, setCourseToDelete] = useState<{ id: string, title: string } | null>(null);
     const sortRef = useRef<HTMLDivElement>(null);
 
     const instructorId = useMemo(() => {
@@ -214,8 +216,9 @@ export const InstructorCoursesPage = () => {
     }, [coursesData, searchQuery, sortBy]);
 
     const handleDeleteCourse = (id: string) => {
-        if (window.confirm('Are you sure you want to permanently delete this course? This action cannot be undone.')) {
-            deleteCourseMutation.mutate(parseInt(id));
+        const course = courses.find(c => c.id === id);
+        if (course) {
+            setCourseToDelete({ id: course.id, title: course.title });
         }
     };
 
@@ -247,27 +250,27 @@ export const InstructorCoursesPage = () => {
 
     return (
         <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] p-4 sm:p-8 lg:p-12 transition-colors duration-500 font-sans selection:bg-blue-500/30 pb-32">
-            <div className="max-w-7xl mx-auto space-y-12">
+            <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
 
                 {/* Header Section */}
                 <div className="relative">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 animate-fade-in">
-                        <div className="flex items-start gap-6">
-                            <div className="w-16 h-16 bg-[#21A9FF] rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-[#21A9FF]/20 shrink-0 transform -rotate-3">
-                                <BookMarked className="w-8 h-8 text-white" />
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8 animate-fade-in">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#21A9FF] rounded-[1.25rem] sm:rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-[#21A9FF]/20 shrink-0 transform -rotate-2 sm:-rotate-3 transition-transform hover:rotate-0 duration-300">
+                                <BookMarked className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                             </div>
-                            <div>
-                                <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                            <div className="min-w-0">
+                                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
                                     My <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#21A9FF] to-indigo-600">Courses</span>
                                 </h1>
-                                <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg font-medium max-w-lg">
+                                <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm sm:text-base md:text-lg font-medium max-w-lg leading-relaxed">
                                     Craft your curriculum and inspire your students with premium content and interactive sections.
                                 </p>
                             </div>
                         </div>
 
-                        <Link to={ROUTES.INSTRUCTOR_COURSE_NEW} className="shrink-0">
-                            <button className="group relative flex items-center justify-center gap-3 bg-[#21A9FF] text-white font-black text-base px-8 py-4 rounded-2xl transition-all duration-300 shadow-2xl shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 hover:-translate-y-1 active:scale-95 overflow-hidden">
+                        <Link to={ROUTES.INSTRUCTOR_COURSE_NEW} className="w-full sm:w-auto shrink-0">
+                            <button className="group relative w-full sm:w-auto flex items-center justify-center gap-3 bg-[#21A9FF] text-white font-black text-sm sm:text-base px-6 py-3.5 sm:px-8 sm:py-4 rounded-2xl transition-all duration-300 shadow-2xl shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 hover:-translate-y-1 active:scale-95 overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-r from-[#21A9FF] to-[#0094F2] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                 <Plus className="w-5 h-5 relative z-10 group-hover:rotate-90 transition-transform duration-300" />
                                 <span className="relative z-10">Create New Course</span>
@@ -276,9 +279,9 @@ export const InstructorCoursesPage = () => {
                     </div>
 
                     {/* Search & Filters Bar */}
-                    <div className="mt-12 flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
-                        <div className="flex-1 w-full flex items-center gap-3 p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm focus-within:border-[#21A9FF] dark:focus-within:border-[#21A9FF] transition-all duration-300">
-                            <div className="pl-4 text-slate-400">
+                    <div className="mt-8 sm:mt-12 flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                        <div className="flex-1 w-full flex items-center gap-2.5 sm:gap-3 p-1 sm:p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm focus-within:border-[#21A9FF] dark:focus-within:border-[#21A9FF] transition-all duration-300">
+                            <div className="pl-3 sm:pl-4 text-slate-400">
                                 <Search className="w-4 h-4" />
                             </div>
                             <input
@@ -286,7 +289,7 @@ export const InstructorCoursesPage = () => {
                                 placeholder="Search courses..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 py-2.5 font-semibold text-sm transition-all shadow-none"
+                                className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 py-2 sm:py-2.5 font-semibold text-xs sm:text-sm transition-all shadow-none"
                             />
                             {searchQuery && (
                                 <button 
@@ -302,11 +305,11 @@ export const InstructorCoursesPage = () => {
                         <div className="relative w-full md:w-auto" ref={sortRef}>
                             <button
                                 onClick={() => setIsSortOpen(!isSortOpen)}
-                                className="flex items-center justify-between gap-4 min-w-[200px] p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 group"
+                                className="flex items-center justify-between gap-4 w-full md:min-w-[220px] p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <Clock className="w-4 h-4 text-slate-400 group-hover:text-[#21A9FF] transition-colors" />
-                                    <span className="text-sm font-black text-slate-800 dark:text-slate-100">{currentSort.label}</span>
+                                    <Filter className="w-4 h-4 text-slate-400 group-hover:text-[#21A9FF] transition-colors" />
+                                    <span className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-widest">{currentSort.label}</span>
                                 </div>
                                 <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-500 ${isSortOpen ? 'rotate-180' : ''}`} />
                             </button>
@@ -379,6 +382,27 @@ export const InstructorCoursesPage = () => {
                     </div>
                 )}
             </div>
+
+            <ConfirmDialog
+                open={courseToDelete !== null}
+                title="Delete this course?"
+                description={
+                    <>
+                        Are you sure you want to permanently delete <span className="font-bold text-gray-900 dark:text-white">&ldquo;{courseToDelete?.title}&rdquo;</span>?
+                        <br />This action cannot be undone and all associated data will be lost.
+                    </>
+                }
+                confirmText="Delete Course"
+                onClose={() => setCourseToDelete(null)}
+                onConfirm={() => {
+                    if (courseToDelete) {
+                        deleteCourseMutation.mutate(parseInt(courseToDelete.id), {
+                            onSuccess: () => setCourseToDelete(null)
+                        });
+                    }
+                }}
+                isPending={deleteCourseMutation.isPending}
+            />
         </div>
     );
-};
+};

@@ -270,31 +270,31 @@ export const InstructorDashboardPage = () => {
     // ════════════════════════════════════════════════════════════════════
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans selection:bg-blue-500/30 pb-20">
-            <div className="max-w-7xl mx-auto space-y-8">
+            <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
 
                 {/* ── Greeting Hero ─────────────────────────────────── */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 animate-fade-in">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-[10px] uppercase tracking-[0.2em] bg-blue-50 dark:bg-blue-500/10 w-fit px-3 py-1 rounded-full border border-blue-100 dark:border-blue-500/20">
-                            <Activity className="w-3.1 h-3.1" /> Academic Management Console
+                    <div className="space-y-2 sm:space-y-3 text-center lg:text-left items-center lg:items-start flex flex-col">
+                        <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.2em] bg-blue-50 dark:bg-blue-500/10 w-fit px-3 py-1 rounded-full border border-blue-100 dark:border-blue-500/20">
+                            <Activity className="w-3.5 h-3.5" /> Academic Management Console
                         </div>
-                        <h1 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
-                            Dashboard Overview, <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#21A9FF] to-indigo-500">{displayName}</span>
+                        <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
+                            Dashboard Overview, <br className="sm:hidden" /> <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#21A9FF] to-indigo-500">{displayName}</span>
                         </h1>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 pt-1">
-                            <p className="text-gray-500 dark:text-slate-400 text-sm md:text-base font-medium">
+                        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 pt-1">
+                            <p className="text-gray-500 dark:text-slate-400 text-xs sm:text-sm md:text-base font-medium">
                                 Monitoring live curriculum engagement and academic performance metrics.
                             </p>
                             <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-slate-700" />
-                            <div className="flex items-center gap-2 text-gray-400 dark:text-slate-500 text-sm font-semibold">
+                            <div className="flex items-center gap-2 text-gray-400 dark:text-slate-500 text-xs sm:text-sm font-semibold">
                                 <Calendar className="w-4 h-4" />
                                 {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             </div>
                         </div>
                     </div>
                     
-                    <Link to={ROUTES.INSTRUCTOR_COURSE_NEW}>
-                        <button className="w-full md:w-auto flex items-center justify-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md hover:shadow-[#21A9FF]/25 hover:-translate-y-0.5 active:scale-95">
+                    <Link to={ROUTES.INSTRUCTOR_COURSE_NEW} className="w-full sm:w-auto">
+                        <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-6 py-4 rounded-xl transition-all shadow-md hover:shadow-[#21A9FF]/25 hover:-translate-y-0.5 active:scale-95">
                             <Plus className="w-5 h-5" />
                             Create New Course
                         </button>
@@ -308,20 +308,20 @@ export const InstructorDashboardPage = () => {
                         : statCards.map((stat, idx) => {
                             const Icon = stat.icon;
                             return (
-                                <div key={idx} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.5rem] p-6 flex items-center justify-between shadow-sm relative overflow-hidden group hover:shadow-md hover:-translate-y-1 transition-all duration-300">
-                                    <div className={`absolute left-0 top-0 w-1.5 h-full
+                                <div key={idx} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-[1.25rem] sm:rounded-[1.5rem] p-4 sm:p-6 flex items-center justify-between shadow-sm relative overflow-hidden group hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                                    <div className={`absolute left-0 top-0 w-1 sm:w-1.5 h-full
                                         ${stat.color === 'blue' ? 'bg-[#21A9FF]' : ''}
                                         ${stat.color === 'emerald' ? 'bg-emerald-500' : ''}
                                         ${stat.color === 'purple' ? 'bg-purple-500' : ''}
                                         ${stat.color === 'amber' ? 'bg-amber-500' : ''}
                                     `} />
-                                    <div>
-                                        <p className="text-gray-500 dark:text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
-                                        <h3 className="text-3xl font-black text-gray-900 dark:text-white">
-                                            {statsError ? <AlertCircle className="w-6 h-6 text-red-400 inline" /> : stat.value}
+                                    <div className="min-w-0">
+                                        <p className="text-gray-500 dark:text-slate-400 text-[9px] sm:text-xs font-bold uppercase tracking-wider mb-0.5 sm:mb-1 truncate">{stat.label}</p>
+                                        <h3 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white">
+                                            {statsError ? <AlertCircle className="w-5 h-5 text-red-400 inline" /> : stat.value}
                                         </h3>
                                     </div>
-                                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0
+                                    <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0 ml-2
                                         ${stat.color === 'blue' ? 'bg-blue-50 dark:bg-blue-500/10 text-[#21A9FF] dark:text-[#21A9FF]' : ''}
                                         ${stat.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : ''}
                                         ${stat.color === 'purple' ? 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400' : ''}

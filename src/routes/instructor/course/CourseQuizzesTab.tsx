@@ -18,9 +18,13 @@ import {
     BarChart2, 
     Search, 
     ChevronDown,
-    Eye
+    Eye,
+    Brain,
+    Sparkles,
+    ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { clsx } from 'clsx';
 
 interface Ctx { courseId: string; numericCourseId: number | null }
 
@@ -63,33 +67,38 @@ export const CourseQuizzesTab = () => {
                 <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
                     <HelpCircle className="w-6 h-6 text-[#21A9FF]" /> Quizzes
                 </h2>
-                <button onClick={() => navigate(`/courses/${courseId}/quiz/create`)} className="flex items-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-[#21A9FF]/25 active:scale-95">
+                <button onClick={() => navigate(`/courses/${courseId}/quiz/create`)} className="flex items-center justify-center gap-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-black text-xs uppercase tracking-[0.15em] px-8 py-4 rounded-2xl sm:rounded-[2rem] transition-all shadow-xl shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 w-full sm:w-auto">
                     <Plus className="w-4 h-4" /> Create Quiz
                 </button>
             </div>
 
-            {/* Filters (Symmetric with Assignments) */}
-            <div className="relative z-30 bg-white dark:bg-slate-800/40 p-3 rounded-2xl border border-gray-200 dark:border-slate-700/50 flex flex-col sm:flex-row gap-3 items-center shadow-sm">
+            {/* Filters (Standardized & Responsive) */}
+            <div className="relative z-10 bg-white/60 dark:bg-slate-800/40 backdrop-blur-md p-3 sm:p-4 rounded-[2rem] border border-slate-200 dark:border-slate-700/50 flex flex-col sm:flex-row gap-3 items-center shadow-sm">
                 <div className="flex-1 w-full relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search quizzes..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white font-semibold transition-all" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input 
+                        value={search} 
+                        onChange={(e) => setSearch(e.target.value)} 
+                        placeholder="Search quizzes by title..." 
+                        className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/20 focus:border-[#21A9FF] text-slate-900 dark:text-white font-bold transition-all placeholder:text-slate-400 placeholder:font-medium" 
+                    />
                 </div>
 
-                <div className="relative shrink-0">
-                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <div className="relative w-full sm:w-auto shrink-0">
+                    <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     <div
                         onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                        className="pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 shadow-sm hover:border-blue-300 dark:hover:border-slate-500 transition-colors min-w-[160px]"
+                        className="pl-11 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-black cursor-pointer flex items-center justify-between shadow-sm hover:border-[#21A9FF] transition-all min-w-full sm:min-w-[180px]"
                     >
-                        <span className="flex-1 text-gray-800 dark:text-white">
+                        <span className="text-slate-700 dark:text-slate-200 uppercase tracking-widest text-[10px]">
                             {filterStatus === 'all' ? 'All Status' : filterStatus}
                         </span>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                     </div>
                     {isStatusDropdownOpen && (
                         <>
                             <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
-                            <div className="absolute top-full right-0 mt-1.5 w-48 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-xl z-20 overflow-hidden ring-1 ring-black/5">
+                            <div className="absolute top-full right-0 mt-2 w-full sm:w-52 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-40 overflow-hidden ring-1 ring-black/5 animate-in fade-in slide-in-from-top-1">
                                 {[
                                     { value: 'all' as const, label: 'All Status' },
                                     { value: 'Draft' as const, label: 'Draft' },
@@ -98,10 +107,10 @@ export const CourseQuizzesTab = () => {
                                     <button
                                         key={opt.value}
                                         onClick={() => { setFilterStatus(opt.value); setIsStatusDropdownOpen(false); }}
-                                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-all flex items-center justify-between ${
+                                        className={`w-full text-left px-5 py-3 text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-between ${
                                             filterStatus === opt.value
                                                 ? 'bg-blue-50 dark:bg-[#21A9FF]/10 text-[#21A9FF]'
-                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                                         }`}
                                     >
                                         {opt.label}
@@ -168,7 +177,7 @@ export const CourseQuizzesTab = () => {
                                     </div>
 
                                     {/* Enhanced Concise Dates */}
-                                    <div className="space-y-1.5">
+                                    <div className="space-y-1.5 mb-4">
                                         <div className="flex items-center gap-2 p-1.5 bg-emerald-50/30 dark:bg-emerald-500/5 rounded-xl border border-emerald-100/50 dark:border-emerald-500/10">
                                             <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                             <div className="min-w-0 flex items-center gap-2">
@@ -184,25 +193,80 @@ export const CourseQuizzesTab = () => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* AI Evaluation Spotlight Section */}
+                                    <div 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/instructor/courses/${courseId}/manage/quizzes/${quiz.id}/ai-evaluation`);
+                                        }}
+                                        className="group/ai relative mt-auto pt-4 pb-2"
+                                    >
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 to-blue-500/20 rounded-2xl blur opacity-0 group-hover/ai:opacity-100 transition duration-500" />
+                                        <div className="relative p-4 bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-500/20 rounded-2xl shadow-[0_2px_10px_rgba(99,102,241,0.05)] group-hover/ai:border-indigo-300 dark:group-hover/ai:border-indigo-500/50 transition-all cursor-pointer">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 group-hover/ai:scale-110 transition-transform duration-500">
+                                                        <Sparkles className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.15em] block leading-none mb-0.5">AI Studio</span>
+                                                        <h5 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">Evaluation Center</h5>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Dynamic AI Badge */}
+                                                <div className={clsx(
+                                                    "px-2 py-1 rounded-lg border text-[9px] font-black uppercase tracking-tighter flex items-center gap-1.5",
+                                                    questionsCount > 0 
+                                                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                                                        : "bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400"
+                                                )}>
+                                                    <div className={clsx(
+                                                        "w-1 h-1 rounded-full animate-pulse",
+                                                        questionsCount > 0 ? "bg-emerald-500" : "bg-indigo-500"
+                                                    )} />
+                                                    {questionsCount > 0 ? 'AI READY' : 'RECOMMENDED'}
+                                                </div>
+                                            </div>
+                                            
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold leading-relaxed mb-4">
+                                                Run intelligent AI grading with rubrics, model answers, and automated assessment insights.
+                                            </p>
+                                            
+                                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                                                <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest flex items-center gap-1.5 group-hover/ai:translate-x-1 transition-transform">
+                                                    Launch AI Studio <ChevronRight className="w-3.5 h-3.5" />
+                                                </span>
+                                                <div className="flex -space-x-1.5">
+                                                    {[1, 2].map(i => (
+                                                        <div key={i} className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                                            <Brain className="w-2.5 h-2.5 text-indigo-500" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Card footer / Actions (Symmetric with Assignments) */}
-                                <div className="border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-900/40 grid grid-cols-4 divide-x divide-gray-100 dark:divide-slate-700/50 mt-auto">
-                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all" title="Edit Quiz">
+                                 {/* Card footer / Actions (Responsive Grid) */}
+                                <div className="border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/40 grid grid-cols-4 divide-x divide-slate-100 dark:divide-slate-700/50 mt-auto">
+                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="py-3 sm:py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] hover:bg-[#21A9FF]/5 transition-all" title="Edit Quiz">
                                         <Edit className="w-4 h-4" />
-                                        <span className="text-[9px] font-bold leading-none tracking-wide uppercase">Edit</span>
+                                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Edit</span>
                                     </button>
-                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', quiz.id.toString()))} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all" title="Manage Questions">
+                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', quiz.id.toString()))} className="py-3 sm:py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-emerald-500/5 transition-all" title="Manage Questions">
                                         <ListChecks className="w-4 h-4" />
-                                        <span className="text-[9px] font-bold leading-none tracking-wide uppercase">Questions</span>
+                                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Items</span>
                                     </button>
-                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS.replace(':quizId', quiz.id.toString()))} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all" title="View Submissions">
+                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS.replace(':quizId', quiz.id.toString()))} className="py-3 sm:py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-500/5 transition-all" title="View Submissions">
                                         <Eye className="w-4 h-4" />
-                                        <span className="text-[9px] font-bold leading-none tracking-wide uppercase truncate w-full text-center px-1">Submissions</span>
+                                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Result</span>
                                     </button>
-                                    <button onClick={() => setQuizToDelete({ id: quiz.id, title: quiz.title })} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all" title="Delete Quiz">
+                                    <button onClick={() => setQuizToDelete({ id: quiz.id, title: quiz.title })} className="py-3 sm:py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-500/5 transition-all" title="Delete Quiz">
                                         <Trash2 className="w-4 h-4" />
-                                        <span className="text-[9px] font-bold leading-none tracking-wide uppercase">Delete</span>
+                                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider">Trash</span>
                                     </button>
                                 </div>
                             </div>

@@ -16,6 +16,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { mapServerErrors } from '@/utils/mapServerErrors';
 import { scrollToFirstError } from '@/utils/form-utils';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const ALLOWED_CONTENT_TYPES = [
     'application/pdf',
@@ -91,6 +92,7 @@ export const InstructorAssignmentEditPage = () => {
     const [existingFiles, setExistingFiles] = useState<any[]>([]);
     const [uploadStatuses, setUploadStatuses] = useState<Record<number, { progress: number; status: 'pending' | 'uploading' | 'success' | 'error' }>>({});
     const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+    const [fileToRemove, setFileToRemove] = useState<{ index: number, id: string, name: string } | null>(null);
 
     const { data: assignmentData, isLoading } = useAssignment(assignmentId);
     const updateAssignmentMutation = useUpdateAssignment();
@@ -144,33 +146,31 @@ export const InstructorAssignmentEditPage = () => {
         setValue('files', currentFiles.filter((_, i) => i !== index), { shouldValidate: true });
     };
 
-    const removeExistingFile = async (index: number) => {
+    const removeExistingFile = (index: number) => {
         const file = existingFiles[index];
         if (!file) return;
-
         const actualFileId = file.id || file.fileId;
-
-        // If file has an ID, it's already on the server, so we must delete it permanently
         if (actualFileId) {
-            if (!window.confirm('Are you sure you want to permanently delete this file from the server? This cannot be undone.')) {
-                return;
-            }
-
-            try {
-                setDeletingFileId(actualFileId);
-                await deleteFileMutation.mutateAsync({ assignmentId, fileId: actualFileId });
-                setExistingFiles(prev => prev.filter((_, i) => i !== index));
-                setStatusMessage({ type: 'success', text: 'File deleted successfully.' });
-            } catch (err) {
-                const apiError = handleApiError(err);
-                setStatusMessage({ type: 'error', text: apiError.message || 'Failed to delete file.' });
-            } finally {
-                setDeletingFileId(null);
-            }
+            setFileToRemove({ index, id: actualFileId, name: file.fileName });
         } else {
-            // If for some reason it doesn't have an ID, just remove from UI
-            console.warn('File removal from UI only: no ID found', file);
             setExistingFiles(prev => prev.filter((_, i) => i !== index));
+        }
+    };
+
+    const confirmRemoveExistingFile = async () => {
+        if (!fileToRemove) return;
+        
+        try {
+            setDeletingFileId(fileToRemove.id);
+            await deleteFileMutation.mutateAsync({ assignmentId, fileId: fileToRemove.id });
+            setExistingFiles(prev => prev.filter((_, i) => i !== fileToRemove.index));
+            setStatusMessage({ type: 'success', text: 'File deleted successfully.' });
+            setFileToRemove(null);
+        } catch (err) {
+            const apiError = handleApiError(err);
+            setStatusMessage({ type: 'error', text: apiError.message || 'Failed to delete file.' });
+        } finally {
+            setDeletingFileId(null);
         }
     };
 
@@ -560,6 +560,21 @@ export const InstructorAssignmentEditPage = () => {
                     </div>
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={fileToRemove !== null}
+                title="Remove this file?"
+                description={
+                    <>
+                        <span className="font-bold text-gray-900 dark:text-white">&ldquo;{fileToRemove?.name}&rdquo;</span>
+                        {' '}will be permanently deleted from the server.
+                    </>
+                }
+                confirmText="Delete File"
+                onClose={() => setFileToRemove(null)}
+                onConfirm={confirmRemoveExistingFile}
+                isPending={deleteFileMutation.isPending}
+            />
         </div>
     );
 };

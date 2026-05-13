@@ -5,8 +5,9 @@ import { storage } from '@/lib/storage';
 import {
     ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
     GripVertical, Sparkles, ListChecks, HelpCircle, AlertTriangle, Save,
-    ChevronDown, ChevronUp, Check, Filter, FileText, LayoutGrid, BrainCircuit, XCircle
+    ChevronDown, ChevronUp, Check, Filter, FileText, LayoutGrid, BrainCircuit, XCircle, Sparkles as SparklesIcon
 } from 'lucide-react';
+import { AIRubricBuilder } from '@/components/ui/AIRubricBuilder';
 import { useQuiz, useUpsertQuizQuestions, useAiGeneratedQuestions, useAcceptAiGeneratedQuestion, useRejectAiGeneratedQuestion } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
 import { toast } from 'sonner';
@@ -17,8 +18,13 @@ import * as yup from 'yup';
 import { useQueryClient } from '@tanstack/react-query';
 import { mapServerErrors } from '@/utils/mapServerErrors';
 import { scrollToFirstError } from '@/utils/form-utils';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Code2, Sigma, Palette } from 'lucide-react';
 import { clsx } from 'clsx';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { Drawer } from '@/components/ui/Drawer';
+import { WhiteboardDrawer } from '@/components/ui/WhiteboardDrawer';
+import { MathEditorModal } from '@/components/ui/MathEditorModal';
+import { CodeEditorDrawer } from '@/components/ui/CodeEditorDrawer';
 
 // ─── Validation Schema ──────────────────────────────────────────────────────
 
@@ -58,7 +64,26 @@ const questionSchema = yup.object().shape({
                 return options.filter(o => o.isCorrect).length === 1;
             }),
         otherwise: (schema) => schema.optional().nullable()
-    })
+    }),
+    aiConfig: yup.object().shape({
+        modelAnswer: yup.string().required('Model answer is required for AI grading.').default(''),
+        aiInstructions: yup.string().optional().default(''),
+        rubric: yup.array().of(
+            yup.object().shape({
+                name: yup.string().required('Name is required.'),
+                weight: yup.number().required('Score is required.').min(0, 'Score must be >= 0')
+            })
+        ).optional().default([])
+        .test('total-weight', 'Total rubric score must equal the question points', function(rubric) {
+            if (!rubric || rubric.length === 0) return true;
+            // 'this.from' contains the chain of parents. 
+            // from[0] is aiConfig, from[1] is the Question object
+            const question = this.from && this.from[1] ? this.from[1].value : {};
+            const mark = (question as any)?.mark || 0;
+            const total = rubric.reduce((sum, item) => sum + (item.weight || 0), 0);
+            return Math.abs(total - mark) < 0.01;
+        }),
+    }).optional().nullable().default(null),
 });
 
 const builderSchema = yup.object().shape({
@@ -81,13 +106,90 @@ const makeTFOptions = () => [
 ];
 
 const defaultQuestion = (type: QuestionType = 'MCQ') => ({
+    id: null,
     questionType: type,
     questionText: '',
     mark: 5,
     instructions: '',
     explanation: '',
+    aiConfig: {
+        modelAnswer: '',
+        aiInstructions: '',
+        rubric: []
+    },
     options: type === 'MCQ' ? makeMCQOptions() : type === 'TrueFalse' ? makeTFOptions() : [],
 });
+
+// ─── Constants & Helpers ───────────────────────────────────────────────────
+
+const QUESTION_TYPES = [
+    { id: 'MCQ', title: 'Multiple Choice (MCQ)', icon: ListChecks },
+    { id: 'TrueFalse', title: 'True / False', icon: LayoutGrid },
+    { id: 'Written', title: 'Answer (Essay)', icon: FileText },
+];
+
+const QuestionTypeSelector = ({ value, onChange, disabled }: { value: QuestionType, onChange: (val: QuestionType) => void, disabled?: boolean }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const selected = QUESTION_TYPES.find(t => t.id === value) || QUESTION_TYPES[0];
+
+    return (
+        <div className="relative">
+            <button
+                type="button"
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                disabled={disabled}
+                className={clsx(
+                    "w-full flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-slate-900 border rounded-xl transition-all duration-300",
+                    isOpen ? "border-blue-500 ring-2 ring-blue-500/20 shadow-md" : "border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600",
+                    disabled && "opacity-50 cursor-not-allowed"
+                )}
+            >
+                <div className="flex items-center gap-2.5">
+                    <div className={clsx("w-6 h-6 rounded-lg flex items-center justify-center transition-colors", isOpen ? "bg-blue-100 text-blue-600" : "bg-slate-200/50 dark:bg-slate-800 text-slate-400")}>
+                        <selected.icon className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{selected.title}</span>
+                </div>
+                <ChevronDown className={clsx("w-3.5 h-3.5 text-slate-400 transition-transform duration-500", isOpen && "rotate-180")} />
+            </button>
+
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 z-[100]" onClick={() => setIsOpen(false)} />
+                    <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl z-[101] p-1.5 animate-in fade-in zoom-in-95 duration-200 origin-top">
+                        {QUESTION_TYPES.map((type) => {
+                            const isSelected = type.id === value;
+                            return (
+                                <button
+                                    key={type.id}
+                                    type="button"
+                                    onClick={() => {
+                                        onChange(type.id as QuestionType);
+                                        setIsOpen(false);
+                                    }}
+                                    className={clsx(
+                                        "w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 mb-0.5 last:mb-0",
+                                        isSelected 
+                                            ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" 
+                                            : "hover:bg-slate-50 dark:hover:bg-slate-900/50 text-slate-600 dark:text-slate-400"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center transition-all", isSelected ? "bg-blue-100 dark:bg-blue-500/20 text-blue-600" : "bg-slate-100 dark:bg-slate-800 text-slate-400")}>
+                                            <type.icon className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-sm font-semibold">{type.title}</span>
+                                    </div>
+                                    {isSelected && <Check className="w-4 h-4 text-blue-500" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
 
 // ─── Shared style constants ────────────────────────────────────────────────
 
@@ -116,9 +218,14 @@ export const InstructorQuizQuestionsEditPage = () => {
     const [loaded, setLoaded] = useState(false);
     const [activeTab, setActiveTab] = useState<'questions' | 'ai-generated'>('questions');
     
+    
     // Drag & Drop States
     const [draggedQuestionIndex, setDraggedQuestionIndex] = useState<number | null>(null);
     const [draggedOptionInfo, setDraggedOptionInfo] = useState<{ qIndex: number; optIndex: number } | null>(null);
+
+    // Drawer States
+    const [activeDrawer, setActiveDrawer] = useState<'code' | 'math' | 'whiteboard' | null>(null);
+    const [activeQuestionIdx, setActiveQuestionIdx] = useState<number | null>(null);
 
     const {
         register,
@@ -153,6 +260,21 @@ export const InstructorQuizQuestionsEditPage = () => {
                 mark: q.mark,
                 instructions: q.instructions || '',
                 explanation: q.explanation || '',
+                aiConfig: q.aiConfig ? {
+                    modelAnswer: q.aiConfig.modelAnswer || (q as any).modelAnswer || '',
+                    aiInstructions: q.aiConfig.aiInstructions || (q as any).aiInstructions || '',
+                    rubric: (q.aiConfig.rubric || (q as any).rubric || []).map((r: any) => ({
+                        name: r.name || r.title || '',
+                        weight: r.weight || 0
+                    }))
+                } : {
+                    modelAnswer: (q as any).modelAnswer || '',
+                    aiInstructions: (q as any).aiInstructions || '',
+                    rubric: ((q as any).rubric || []).map((r: any) => ({
+                        name: r.name || r.title || '',
+                        weight: r.weight || 0
+                    }))
+                },
                 options: (q.options || []).map(o => ({
                     optionId: o.id ?? null,
                     optionText: o.optionText,
@@ -181,7 +303,12 @@ export const InstructorQuizQuestionsEditPage = () => {
                 optionId: null,
                 optionText: o.optionText,
                 isCorrect: o.isCorrect
-            })) || []
+            })) || [],
+            aiConfig: {
+                modelAnswer: '',
+                aiInstructions: '',
+                rubric: []
+            }
         }));
         append(newQs);
         setShowAIModal(false);
@@ -202,10 +329,19 @@ export const InstructorQuizQuestionsEditPage = () => {
                 instructions: q.instructions ?? '',
                 explanation: q.explanation ?? '',
                 options: q.options?.map(o => ({
-                    optionId: o.optionId ?? null,
+                    optionId: o.id ?? null,
                     optionText: o.optionText,
                     isCorrect: o.isCorrect
-                })) || []
+                })) || [],
+                aiConfig: q.aiConfig ? {
+                    modelAnswer: q.aiConfig.modelAnswer || (q as any).modelAnswer || '',
+                    aiInstructions: q.aiConfig.aiInstructions || (q as any).aiInstructions || '',
+                    rubric: q.aiConfig.rubric || (q as any).rubric || []
+                } : {
+                    modelAnswer: (q as any).modelAnswer || '',
+                    aiInstructions: (q as any).aiInstructions || '',
+                    rubric: (q as any).rubric || []
+                }
             }));
             append(qsToAppend);
         }
@@ -259,6 +395,11 @@ export const InstructorQuizQuestionsEditPage = () => {
                     optionText: o.optionText,
                     isCorrect: Boolean(o.isCorrect)
                 })) || [],
+                aiConfig: q.aiConfig ? {
+                    modelAnswer: q.aiConfig.modelAnswer,
+                    aiInstructions: q.aiConfig.aiInstructions,
+                    rubric: q.aiConfig.rubric
+                } : undefined
             }));
 
             await upsertQuestionsMutation.mutateAsync(payloadQuestions);
@@ -349,35 +490,35 @@ export const InstructorQuizQuestionsEditPage = () => {
             <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans pb-32">
 
                 {/* --- Sticky Header --- */}
-                <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800 py-4 px-4 sm:px-8">
+                <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800 py-3 sm:py-4 px-4 sm:px-8">
                     <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="flex items-center gap-5">
-                            <button onClick={() => navigate(-1)} className="w-11 h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex items-center justify-center text-slate-400 hover:text-[#21A9FF] hover:border-[#21A9FF]/30 transition-all shrink-0 shadow-sm active:scale-90">
+                        <div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto">
+                            <button onClick={() => navigate(-1)} className="w-10 h-10 sm:w-11 sm:h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl flex items-center justify-center text-slate-400 hover:text-[#21A9FF] hover:border-[#21A9FF]/30 transition-all shrink-0 shadow-sm active:scale-90">
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
-                            <div>
-                                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center text-[#21A9FF]">
-                                        <ListChecks className="w-5 h-5" />
+                            <div className="min-w-0">
+                                <h1 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2 sm:gap-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 dark:bg-blue-500/10 rounded-lg sm:rounded-xl flex items-center justify-center text-[#21A9FF] shrink-0">
+                                        <ListChecks className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </div>
-                                    Edit Questions
+                                    <span className="truncate">Edit Questions</span>
                                 </h1>
-                                <div className="flex items-center gap-3 mt-1.5 ml-0.5">
-                                    <span className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest max-w-[200px] sm:max-w-md truncate">
+                                <div className="flex items-center gap-2 sm:gap-3 mt-1 sm:mt-1.5 ml-0.5">
+                                    <span className="text-[9px] sm:text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest max-w-[120px] sm:max-w-md truncate">
                                         {settings?.title || quiz.title}
                                     </span>
                                     <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md border shadow-sm ${statusBadgeClass}`}>
+                                    <span className={`px-1.5 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-widest rounded-md border shadow-sm ${statusBadgeClass}`}>
                                         {currentStatus}
                                     </span>
                                 </div>
                             </div>
                         </div>
                         <div className="w-full sm:w-auto">
-                            <button onClick={() => setShowAIModal(true)} className="w-full sm:w-auto group relative flex items-center justify-center gap-3 px-8 py-4 bg-[#A855F7] text-white font-black rounded-[1.25rem] transition-all duration-300 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/40 hover:-translate-y-1 active:scale-95 overflow-hidden">
+                            <button onClick={() => setShowAIModal(true)} className="w-full sm:w-auto group relative flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-[#A855F7] text-white font-black rounded-xl sm:rounded-[1.25rem] transition-all duration-300 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/40 hover:-translate-y-1 active:scale-95 overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 opacity-100"></div>
-                                <Sparkles className="w-5 h-5 relative z-10 group-hover:rotate-12 transition-transform" />
-                                <span className="relative z-10 text-sm">AI Generator</span>
+                                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 relative z-10 group-hover:rotate-12 transition-transform" />
+                                <span className="relative z-10 text-[11px] sm:text-sm uppercase tracking-widest sm:tracking-normal">AI Generator</span>
                             </button>
                         </div>
                     </div>
@@ -399,31 +540,36 @@ export const InstructorQuizQuestionsEditPage = () => {
                         </div>
                     )}
                     {/* Tabs */}
-                <div className="flex items-center gap-2 mb-6">
+                <div className="grid grid-cols-2 lg:flex items-center gap-2 mb-6">
                     <button
                         onClick={() => setActiveTab('questions')}
                         className={clsx(
-                            "px-6 py-3 rounded-2xl text-sm font-black transition-all",
+                            "px-4 sm:px-6 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all",
                             activeTab === 'questions'
                                 ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg"
                                 : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                         )}
                     >
-                        <span className="flex items-center gap-2">
-                            <ListChecks className="w-4 h-4" /> Questions ({fields.length})
+                        <span className="flex items-center justify-center gap-2">
+                            <ListChecks className="w-4 h-4" /> 
+                            <span className="hidden xs:inline">Questions</span>
+                            <span className="xs:hidden">Qs</span>
+                            ({fields.length})
                         </span>
                     </button>
                     <button
                         onClick={() => setActiveTab('ai-generated')}
                         className={clsx(
-                            "px-6 py-3 rounded-2xl text-sm font-black transition-all",
+                            "px-4 sm:px-6 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all",
                             activeTab === 'ai-generated'
                                 ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
                                 : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                         )}
                     >
-                        <span className="flex items-center gap-2">
-                            <BrainCircuit className="w-4 h-4" /> AI Generated
+                        <span className="flex items-center justify-center gap-2">
+                            <BrainCircuit className="w-4 h-4" /> 
+                            <span className="hidden xs:inline">AI Generated</span>
+                            <span className="xs:hidden">AI Gen</span>
                         </span>
                     </button>
                 </div>
@@ -521,43 +667,43 @@ export const InstructorQuizQuestionsEditPage = () => {
                                     >
                                         <div className={`absolute top-0 left-0 w-2 h-full transition-colors duration-500 ${hasError ? 'bg-red-500' : isQuestionComplete(idx) ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
 
-                                        <div className="p-6 sm:p-10 space-y-8 ml-2">
+                                        <div className="p-5 sm:p-8 lg:p-10 space-y-6 sm:space-y-8 ml-2">
 
                                             {/* Question Header */}
-                                            <div className="flex flex-wrap items-center justify-between gap-6 border-b border-slate-50 dark:border-slate-800 pb-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg">
+                                            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-50 dark:border-slate-800 pb-5 sm:pb-6">
+                                                <div className="flex items-center gap-3 sm:gap-4">
+                                                    <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-lg">
                                                         Question {idx + 1}
                                                     </div>
                                                     {isQuestionComplete(idx) ? (
-                                                        <span className="text-[10px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-xl font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-500/20 flex items-center gap-2">
-                                                            <CheckCircle2 className="w-3.5 h-3.5" /> Ready
+                                                        <span className="text-[9px] sm:text-[10px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-500/20 flex items-center gap-1.5">
+                                                            <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Ready
                                                         </span>
                                                     ) : (
-                                                        <span className="text-[10px] bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1.5 rounded-xl font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/20 flex items-center gap-2">
-                                                            <AlertTriangle className="w-3.5 h-3.5" /> Incomplete
+                                                        <span className="text-[9px] sm:text-[10px] bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/20 flex items-center gap-1.5">
+                                                            <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Incomplete
                                                         </span>
                                                     )}
                                                 </div>
-                                                <button onClick={() => remove(idx)} className="p-3 bg-rose-50 dark:bg-rose-500/10 text-rose-500 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-2xl transition-all active:scale-90 border border-rose-100 dark:border-rose-500/20" title="Delete Question">
-                                                    <Trash2 className="w-4.5 h-4.5" />
+                                                <button onClick={() => remove(idx)} className="p-2.5 sm:p-3 bg-rose-50 dark:bg-rose-500/10 text-rose-500 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-xl sm:rounded-2xl transition-all active:scale-90 border border-rose-100 dark:border-rose-500/20" title="Delete Question">
+                                                    <Trash2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                                                 </button>
                                             </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                                             <div>
                                                 <label className={labelCls}>Question Type</label>
                                                 <div className="relative">
-                                                    <select
-                                                        {...register(`questions.${idx}.questionType`)}
-                                                        onChange={(e) => changeType(idx, e.target.value as QuestionType)}
-                                                        className={`${inputCls} appearance-none cursor-pointer`}
-                                                    >
-                                                        <option value="MCQ">Multiple Choice (MCQ)</option>
-                                                        <option value="TrueFalse">True / False</option>
-                                                        <option value="Written">Written Answer (Essay)</option>
-                                                    </select>
-                                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                                    <Controller
+                                                        name={`questions.${idx}.questionType`}
+                                                        control={control}
+                                                        render={({ field }) => (
+                                                            <QuestionTypeSelector
+                                                                value={field.value as QuestionType}
+                                                                onChange={(val) => changeType(idx, val)}
+                                                            />
+                                                        )}
+                                                    />
                                                 </div>
                                             </div>
                                             <div>
@@ -566,12 +712,13 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                     <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
                                                     <input
                                                         type="number"
+                                                        step="0.5"
                                                         {...register(`questions.${idx}.mark`)}
-                                                        className={`${inputCls} pl-11 ${qError?.mark ? 'border-red-500 bg-red-50/10' : ''}`}
+                                                        className={`${inputCls} pl-11 !py-2.5 sm:!py-3 ${qError?.mark ? 'border-red-500 bg-red-50/10' : ''}`}
                                                     />
                                                 </div>
                                                 {qError?.mark && (
-                                                    <p className="text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
+                                                    <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
                                                         <AlertCircle className="w-3 h-3" /> {qError.mark.message}
                                                     </p>
                                                 )}
@@ -579,46 +726,55 @@ export const InstructorQuizQuestionsEditPage = () => {
                                         </div>
 
                                         <div>
-                                            <label className="flex items-center justify-between mb-2">
-                                                <span className="text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1">Question Text <span className="text-red-500">*</span></span>
-                                                <span className={`text-[10px] font-bold ${qText.length > 1900 ? 'text-red-500' : 'text-gray-400'}`}>{qText.length} / 2000</span>
+                                            <label className="flex items-center justify-between mb-2 sm:mb-3">
+                                                <span className="text-[10px] sm:text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1">Question Content <span className="text-red-500">*</span></span>
+                                                <span className={`text-[9px] sm:text-[10px] font-bold ${qText.length > 1900 ? 'text-red-500' : 'text-gray-400'}`}>{qText.length} / 2000</span>
                                             </label>
-                                            <textarea
-                                                {...register(`questions.${idx}.questionText`)}
-                                                rows={3}
-                                                placeholder="Type your question here..."
-                                                className={`${inputCls} resize-none ${qError?.questionText ? 'border-red-500 bg-red-50/10' : ''}`}
+                                            
+                                            <Controller
+                                                name={`questions.${idx}.questionText`}
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <RichTextEditor
+                                                        content={field.value}
+                                                        onChange={field.onChange}
+                                                        placeholder="Describe your question in detail..."
+                                                        className={qError?.questionText ? 'border-red-500 ring-2 ring-red-500/10' : ''}
+                                                    />
+                                                )}
                                             />
+
+
                                             {qError?.questionText && (
-                                                <p className="text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
+                                                <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
                                                     <AlertCircle className="w-3 h-3" /> {qError.questionText.message}
                                                 </p>
                                             )}
                                         </div>
 
                                         {/* Options Area */}
-                                        <div className="bg-gray-50/50 dark:bg-slate-900/30 p-5 rounded-2xl border border-gray-100 dark:border-slate-800">
+                                        <div className="bg-gray-50/50 dark:bg-slate-900/30 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-slate-800">
 
                                             {qType === 'MCQ' && (
                                                 <div>
-                                                    <div className="flex items-center justify-between mb-4">
+                                                    <div className="flex items-center justify-between mb-3 sm:mb-4">
                                                         <div className="flex flex-col">
-                                                            <label className="text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1">
+                                                            <label className="text-[10px] sm:text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1">
                                                                 Answer Options <span className="text-red-500">*</span>
                                                             </label>
                                                             {qError?.options?.message && (
-                                                                <p className="text-[11px] font-bold text-red-500 uppercase mt-1 flex items-center gap-1">
+                                                                <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase mt-1 flex items-center gap-1">
                                                                     <AlertCircle className="w-3 h-3" /> {qError.options.message}
                                                                 </p>
                                                             )}
                                                         </div>
                                                         {qOptions.length < 5 && (
-                                                            <button type="button" onClick={() => addOption(idx)} className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-                                                                <Plus className="w-3.5 h-3.5" /> Add Option
+                                                            <button type="button" onClick={() => addOption(idx)} className="text-[10px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                                                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Add Option
                                                             </button>
                                                         )}
                                                     </div>
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-2.5 sm:space-y-3">
                                                         {qOptions.map((opt, i) => {
                                                             const optError = (qError?.options as any)?.[i];
                                                             const isDraggedOpt = draggedOptionInfo?.qIndex === idx && draggedOptionInfo?.optIndex === i;
@@ -651,34 +807,34 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                                     onDragEnd={() => setDraggedOptionInfo(null)}
                                                                     className={`flex flex-col gap-1 transition-all ${isDraggedOpt ? 'opacity-40 scale-[0.98]' : ''}`}
                                                                 >
-                                                                    <div className={`flex items-center gap-3 p-2 pr-4 rounded-xl border-2 transition-all ${opt.isCorrect ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'} ${optError?.optionText ? 'border-red-500' : ''}`}>
-                                                                        <div className="cursor-grab p-2 text-gray-400 active:cursor-grabbing hover:text-[#21A9FF]">
-                                                                            <GripVertical className="w-4 h-4" />
+                                                                    <div className={`flex items-center gap-2 sm:gap-3 p-2 pr-3 sm:pr-4 rounded-xl border-2 transition-all ${opt.isCorrect ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'} ${optError?.optionText ? 'border-red-500' : ''}`}>
+                                                                        <div className="cursor-grab p-1.5 sm:p-2 text-gray-400 active:cursor-grabbing hover:text-[#21A9FF]">
+                                                                            <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                                         </div>
-                                                                        <span className="text-sm font-black text-gray-400 w-6">{String.fromCharCode(65 + i)}.</span>
+                                                                        <span className="text-xs sm:text-sm font-black text-gray-400 w-5 sm:w-6">{String.fromCharCode(65 + i)}.</span>
                                                                         <input
                                                                             {...register(`questions.${idx}.options.${i}.optionText`)}
                                                                             type="text"
                                                                             placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                                                                            className="flex-1 bg-transparent outline-none text-sm font-semibold text-gray-900 dark:text-white py-2 placeholder-gray-400"
+                                                                            className="flex-1 bg-transparent outline-none text-xs sm:text-sm font-semibold text-gray-900 dark:text-white py-1.5 sm:py-2 placeholder-gray-400 min-w-0"
                                                                         />
-                                                                        <label className="flex items-center gap-2 cursor-pointer pl-3 border-l border-gray-200 dark:border-slate-700">
+                                                                        <label className="flex items-center gap-1 sm:gap-2 cursor-pointer pl-2 sm:pl-3 border-l border-gray-200 dark:border-slate-700 shrink-0">
                                                                             <input
                                                                                 type="radio"
                                                                                 checked={opt.isCorrect}
                                                                                 onChange={() => setCorrect(idx, i)}
-                                                                                className="w-4 h-4 text-emerald-500 focus:ring-emerald-500"
+                                                                                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 focus:ring-emerald-500"
                                                                             />
-                                                                            <span className={`text-xs font-bold uppercase tracking-wider ${opt.isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>Correct</span>
+                                                                            <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider ${opt.isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}><span className="hidden xs:inline">Correct</span><Check className={clsx("w-3.5 h-3.5 xs:hidden", opt.isCorrect ? "text-emerald-500" : "text-slate-300")} /></span>
                                                                         </label>
                                                                         {qOptions.length > 3 && (
-                                                                            <button type="button" onClick={() => removeOption(idx, i)} className="ml-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
-                                                                                <Trash2 className="w-4 h-4" />
+                                                                            <button type="button" onClick={() => removeOption(idx, i)} className="ml-1 sm:ml-2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+                                                                                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                                             </button>
                                                                         )}
                                                                     </div>
                                                                     {optError?.optionText && (
-                                                                        <p className="text-[10px] font-bold text-red-500 uppercase ml-12 mt-1 flex items-center gap-1">
+                                                                        <p className="text-[9px] sm:text-[10px] font-bold text-red-500 uppercase ml-10 sm:ml-12 mt-0.5 sm:mt-1 flex items-center gap-1">
                                                                             <AlertCircle className="w-3 h-3" /> {optError.optionText.message}
                                                                         </p>
                                                                     )}
@@ -692,25 +848,25 @@ export const InstructorQuizQuestionsEditPage = () => {
                                             {qType === 'TrueFalse' && (
                                                 <div>
                                                     <div className="flex flex-col">
-                                                        <label className="text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1 mb-4 block">
+                                                        <label className="text-[10px] sm:text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest ml-1 mb-3 sm:mb-4 block">
                                                             Select Correct Answer <span className="text-red-500">*</span>
                                                         </label>
                                                         {qError?.options?.message && (
-                                                            <p className="text-[11px] font-bold text-red-500 uppercase mt-1 mb-4 flex items-center gap-1">
+                                                            <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase mt-1 mb-3 sm:mb-4 flex items-center gap-1">
                                                                 <AlertCircle className="w-3 h-3" /> {qError.options.message}
                                                             </p>
                                                         )}
                                                     </div>
-                                                    <div className="flex gap-4">
+                                                    <div className="flex gap-3 sm:gap-4">
                                                         {qOptions.map((opt, i) => (
-                                                            <label key={i} className={`flex-1 flex items-center justify-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${opt.isCorrect ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
+                                                            <label key={i} className={`flex-1 flex items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-all ${opt.isCorrect ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'}`}>
                                                                 <input
                                                                     type="radio"
                                                                     checked={opt.isCorrect}
                                                                     onChange={() => setCorrect(idx, i)}
-                                                                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                                                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 focus:ring-blue-500"
                                                                 />
-                                                                <span className={`font-bold text-lg ${opt.isCorrect ? 'text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-slate-300'}`}>{opt.optionText}</span>
+                                                                <span className={`font-bold text-base sm:text-lg ${opt.isCorrect ? 'text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-slate-300'}`}>{opt.optionText}</span>
                                                             </label>
                                                         ))}
                                                     </div>
@@ -718,37 +874,55 @@ export const InstructorQuizQuestionsEditPage = () => {
                                             )}
 
                                             {qType === 'Written' && (
-                                                <div className="text-center p-6 text-sm font-bold text-gray-500 dark:text-slate-400 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
-                                                    Students will be provided with a text area to write their answer. No options needed.
+                                                <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-top-2">
+                                                    <div className="text-center p-6 sm:p-10 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-[2rem] sm:rounded-[2.5rem] bg-gray-50/30 dark:bg-slate-900/10 flex flex-col items-center gap-3 sm:gap-4 transition-all hover:bg-gray-50/50">
+                                                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-400">
+                                                            <BrainCircuit className="w-5 h-5 sm:w-6 sm:h-6" />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <p className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 px-2">AI grading for this question is managed in the AI Evaluation Center.</p>
+                                                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-400 font-black">Configure rubrics and model answers after the quiz ends.</p>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-gray-100 dark:border-slate-700/50">
-                                            <div>
-                                                <label className={labelCls}>Instructions <span className="normal-case font-medium text-gray-400">(Optional)</span></label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-5 sm:pt-6 border-t border-gray-100 dark:border-slate-700/50">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                                        <ListChecks className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                    </div>
+                                                    <label className="text-[10px] sm:text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Instructions <span className="normal-case font-medium opacity-60">(Opt)</span></label>
+                                                </div>
                                                 <textarea
                                                     {...register(`questions.${idx}.instructions`)}
                                                     rows={2}
-                                                    placeholder="E.g., Select all that apply..."
-                                                    className={`${inputCls} resize-none ${qError?.instructions ? 'border-red-500 bg-red-50/10' : ''}`}
+                                                    className={clsx(inputCls, "!py-2.5 sm:!py-3 resize-none min-h-[70px] sm:min-h-[80px]", qError?.instructions && "border-red-500 ring-2 ring-red-500/10")}
+                                                    placeholder="e.g. Select all that apply..."
                                                 />
                                                 {qError?.instructions && (
-                                                    <p className="text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
+                                                    <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
                                                         <AlertCircle className="w-3 h-3" /> {qError.instructions.message}
                                                     </p>
                                                 )}
                                             </div>
-                                            <div>
-                                                <label className={labelCls}>Explanation <span className="normal-case font-medium text-gray-400">(Optional)</span></label>
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                                        <HelpCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                    </div>
+                                                    <label className="text-[10px] sm:text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Explanation <span className="normal-case font-medium opacity-60">(Opt)</span></label>
+                                                </div>
                                                 <textarea
                                                     {...register(`questions.${idx}.explanation`)}
                                                     rows={2}
-                                                    placeholder="Shown to student after completion..."
-                                                    className={`${inputCls} resize-none ${qError?.explanation ? 'border-red-500 bg-red-50/10' : ''}`}
+                                                    className={clsx(inputCls, "!py-2.5 sm:!py-3 resize-none min-h-[70px] sm:min-h-[80px]", qError?.explanation && "border-red-500 ring-2 ring-red-500/10")}
+                                                    placeholder="Shown to students after they submit..."
                                                 />
                                                 {qError?.explanation && (
-                                                    <p className="text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
+                                                    <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
                                                         <AlertCircle className="w-3 h-3" /> {qError.explanation.message}
                                                     </p>
                                                 )}
@@ -761,13 +935,13 @@ export const InstructorQuizQuestionsEditPage = () => {
                         })}
 
                             {/* Add Large Button at Bottom */}
-                            <button onClick={addQuestion} className="w-full py-10 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[3rem] text-slate-400 dark:text-slate-500 hover:border-[#21A9FF] hover:text-[#21A9FF] hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-all duration-500 flex flex-col items-center justify-center gap-4 font-black group shadow-sm hover:shadow-xl hover:shadow-[#21A9FF]/5">
-                                <div className="w-16 h-16 rounded-[1.5rem] bg-slate-50 dark:bg-slate-800 group-hover:bg-[#21A9FF] group-hover:text-white flex items-center justify-center transition-all duration-500 shadow-inner group-hover:rotate-12">
-                                    <Plus className="w-8 h-8" />
+                            <button onClick={addQuestion} className="w-full py-8 sm:py-10 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] sm:rounded-[3rem] text-slate-400 dark:text-slate-500 hover:border-[#21A9FF] hover:text-[#21A9FF] hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-all duration-500 flex flex-col items-center justify-center gap-3 sm:gap-4 font-black group shadow-sm hover:shadow-xl hover:shadow-[#21A9FF]/5">
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-[1.5rem] bg-slate-50 dark:bg-slate-800 group-hover:bg-[#21A9FF] group-hover:text-white flex items-center justify-center transition-all duration-500 shadow-inner group-hover:rotate-12">
+                                    <Plus className="w-6 h-6 sm:w-8 sm:h-8" />
                                 </div>
-                                <div className="text-center">
-                                    <span className="block text-lg tracking-tight">Add New Question</span>
-                                    <span className="block text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mt-1">Manual Content Creation</span>
+                                <div className="text-center px-4">
+                                    <span className="block text-base sm:text-lg tracking-tight">Add New Question</span>
+                                    <span className="block text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mt-1">Manual Content Creation</span>
                                 </div>
                             </button>
                         </div>
@@ -775,14 +949,14 @@ export const InstructorQuizQuestionsEditPage = () => {
                 )}
 
                 {activeTab === 'ai-generated' && (
-                <div className="max-w-4xl mx-auto space-y-8">
-                    <div className="flex items-center justify-between">
+                <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+                    <div className="flex items-center justify-between px-2 sm:px-0">
                         <div>
-                            <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                                <BrainCircuit className="w-5 h-5 text-purple-500" />
+                            <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                                <BrainCircuit className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
                                 AI Generated Questions
                             </h3>
-                            <p className="text-sm font-medium text-gray-500 dark:text-slate-400 mt-1">
+                            <p className="text-xs sm:text-sm font-medium text-gray-500 dark:text-slate-400 mt-1">
                                 Review and accept questions generated by the AI.
                             </p>
                         </div>
@@ -791,70 +965,70 @@ export const InstructorQuizQuestionsEditPage = () => {
                     {aiGeneratedQuery.isLoading ? (
                         <div className="space-y-4">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className="h-32 bg-gray-100 dark:bg-slate-800 rounded-[2rem] animate-pulse" />
+                                <div key={i} className="h-32 bg-gray-100 dark:bg-slate-800 rounded-2xl sm:rounded-[2rem] animate-pulse" />
                             ))}
                         </div>
                     ) : aiGeneratedQuery.isError ? (
-                        <div className="text-center py-12 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-[2rem]">
-                            <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-3" />
-                            <p className="text-sm font-bold text-red-600 dark:text-red-400">Failed to load AI-generated questions.</p>
+                        <div className="text-center py-10 sm:py-12 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl sm:rounded-[2rem]">
+                            <AlertTriangle className="w-7 h-7 sm:w-8 sm:h-8 text-red-500 mx-auto mb-2 sm:mb-3" />
+                            <p className="text-xs sm:text-sm font-bold text-red-600 dark:text-red-400">Failed to load AI-generated questions.</p>
                         </div>
                     ) : !aiGeneratedQuery.data || aiGeneratedQuery.data.length === 0 ? (
-                        <div className="text-center py-20 bg-gray-50 dark:bg-slate-800/30 rounded-[2.5rem] border-2 border-dashed border-gray-200 dark:border-slate-800">
-                            <BrainCircuit className="w-16 h-16 text-gray-300 dark:text-slate-700 mx-auto mb-4" />
-                            <h4 className="text-xl font-black text-gray-900 dark:text-white mb-2">No Pending AI Questions</h4>
-                            <p className="text-sm text-gray-500 dark:text-slate-400">Generate questions using the AI Generator to see them here.</p>
+                        <div className="text-center py-16 sm:py-20 bg-gray-50 dark:bg-slate-800/30 rounded-[2rem] sm:rounded-[2.5rem] border-2 border-dashed border-gray-200 dark:border-slate-800 mx-2 sm:mx-0">
+                            <BrainCircuit className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 dark:text-slate-700 mx-auto mb-4" />
+                            <h4 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white mb-2">No Pending AI Questions</h4>
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 px-4">Generate questions using the AI Generator to see them here.</p>
                         </div>
                     ) : (
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
                             {aiGeneratedQuery.data.map((q, idx) => (
-                                <div key={q.id} className="bg-white dark:bg-slate-800/50 rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
-                                    <div className="px-8 py-5 border-b border-gray-100 dark:border-slate-700/50 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/30">
-                                        <div className="flex items-center gap-4">
-                                            <span className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs font-black">{idx + 1}</span>
-                                            <span className={clsx("px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest",
+                                <div key={q.id} className="bg-white dark:bg-slate-800/50 rounded-2xl sm:rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden mx-2 sm:mx-0">
+                                    <div className="px-5 sm:px-8 py-4 sm:py-5 border-b border-gray-100 dark:border-slate-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-gray-50/50 dark:bg-slate-800/30 gap-3">
+                                        <div className="flex items-center gap-3 sm:gap-4">
+                                            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-[10px] sm:text-xs font-black">{idx + 1}</span>
+                                            <span className={clsx("px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg text-[8px] sm:text-[10px] font-black uppercase tracking-widest",
                                                 q.questionType === 'MCQ' ? "bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" :
                                                 q.questionType === 'TrueFalse' ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
                                                 "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400")}>{q.questionType}</span>
-                                            <span className="text-xs font-bold text-gray-500 dark:text-slate-400">{q.mark} pts</span>
+                                            <span className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-slate-400">{q.mark} pts</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
                                             <button onClick={() => acceptAiQuestion.mutate(q.id, { onSuccess: () => { toast.success('Question accepted'); } })}
                                                 disabled={acceptAiQuestion.isPending}
-                                                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50">
+                                                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50">
                                                 {acceptAiQuestion.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Accept
                                             </button>
                                             <button onClick={() => rejectAiQuestion.mutate(q.id, { onSuccess: () => toast.success('Question rejected') })}
                                                 disabled={rejectAiQuestion.isPending}
-                                                className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50">
+                                                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-[10px] sm:text-xs font-black rounded-xl transition-all active:scale-95 disabled:opacity-50">
                                                 {rejectAiQuestion.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />} Reject
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="p-8 space-y-6">
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white leading-relaxed">{q.questionText}</p>
+                                    <div className="p-6 sm:p-8 space-y-4 sm:space-y-6">
+                                        <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white leading-relaxed">{q.questionText}</p>
                                         {q.options && q.options.length > 0 && (
                                             <div className="space-y-2">
                                                 {q.options.map((opt, oi) => (
-                                                    <div key={oi} className={clsx("flex items-center gap-3 p-3 rounded-xl border text-sm font-semibold transition-all",
+                                                    <div key={oi} className={clsx("flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl border text-[11px] sm:text-sm font-semibold transition-all",
                                                         opt.isCorrect ? "border-emerald-300 bg-emerald-50/50 dark:border-emerald-500/20 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 text-gray-700 dark:text-slate-300")}>
-                                                        <span className={clsx("w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0",
+                                                        <span className={clsx("w-5 h-5 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0",
                                                             opt.isCorrect ? "bg-emerald-200 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" : "bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400")}>{String.fromCharCode(65 + oi)}</span>
-                                                        <span>{opt.optionText}</span>
-                                                        {opt.isCorrect && <Check className="w-4 h-4 text-emerald-500 ml-auto shrink-0" />}
+                                                        <span className="truncate">{opt.optionText}</span>
+                                                        {opt.isCorrect && <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 ml-auto shrink-0" />}
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
                                         {q.questionType === 'Written' && (
-                                            <div className="p-4 bg-blue-50 dark:bg-blue-500/5 border border-blue-200 dark:border-blue-500/10 rounded-xl text-center">
-                                                <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Written Answer Question</p>
+                                            <div className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-500/5 border border-blue-200 dark:border-blue-500/10 rounded-xl text-center">
+                                                <p className="text-[10px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Written Answer Question</p>
                                             </div>
                                         )}
                                         {q.explanation && (
-                                            <div className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700">
-                                                <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">Explanation</p>
-                                                <p className="text-xs text-gray-600 dark:text-slate-400">{q.explanation}</p>
+                                            <div className="p-3 sm:p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700">
+                                                <p className="text-[9px] sm:text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">Explanation</p>
+                                                <p className="text-[11px] sm:text-xs text-gray-600 dark:text-slate-400">{q.explanation}</p>
                                             </div>
                                         )}
                                     </div>
@@ -867,26 +1041,72 @@ export const InstructorQuizQuestionsEditPage = () => {
                 </div>
 
                 {/* --- Sticky Footer Actions --- */}
-                <div className="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-gray-200 dark:border-slate-800 py-4 px-4 sm:px-8 z-40 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div className="text-sm font-bold text-gray-600 dark:text-slate-300 flex items-center gap-4">
-                            <span className="bg-gray-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">{fields.length} Questions</span>
-                            <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 px-3 py-1.5 rounded-lg">{(watch('questions') || []).reduce((sum, q) => sum + (Number(q.mark) || 0), 0)} Total Points</span>
+                <div className="fixed bottom-0 left-0 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-gray-200 dark:border-slate-800 py-3 sm:py-5 px-4 sm:px-8 z-40 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
+                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 sm:gap-6">
+                        <div className="flex items-center justify-center gap-3 sm:gap-6 w-full md:w-auto">
+                            <div className="flex flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto justify-center">
+                                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                    <ListChecks className="w-3.5 h-3.5 text-slate-400" />
+                                    <span className="text-[9px] sm:text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">{fields.length} Qs</span>
+                                </div>
+                                <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 sm:py-2 rounded-xl border border-purple-100 dark:border-purple-500/10">
+                                    <SparklesIcon className="w-3.5 h-3.5 text-purple-400" />
+                                    <span className="text-[9px] sm:text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">
+                                        {(watch('questions') || []).reduce((sum, q) => sum + (Number(q.mark) || 0), 0)} Pts
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex w-full sm:w-auto gap-3">
-                            <button onClick={() => navigate(-1)} disabled={isSubmitting} className="flex-1 sm:flex-none px-8 py-3.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-white rounded-xl font-bold transition-all text-sm hover:bg-gray-200 dark:hover:bg-slate-700 disabled:opacity-50">
+                        <div className="flex w-full md:w-auto gap-2 sm:gap-3 items-stretch">
+                            <button onClick={() => navigate(-1)} disabled={isSubmitting} className="px-4 sm:px-6 py-3 sm:py-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] transition-all hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 active:scale-95">
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSubmit(onSubmit, onInvalid)}
                                 disabled={isSubmitting || success}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-10 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="flex-1 md:w-56 flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] transition-all shadow-lg shadow-blue-500/25 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed group"
                             >
-                                {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : <><Save className="w-4 h-4" /> Save Quiz Questions</>}
+                                {isSubmitting ? (
+                                    <><Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> Saving...</>
+                                ) : (
+                                    <><Save className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" /> Save Changes</>
+                                )}
                             </button>
                         </div>
                     </div>
                 </div>
+
+            {/* Drawers for specialized content */}
+            <CodeEditorDrawer
+                isOpen={activeDrawer === 'code'}
+                onClose={() => setActiveDrawer(null)}
+                onApply={(code, lang) => {
+                    if (activeQuestionIdx === null) return;
+                    const current = getValues(`questions.${activeQuestionIdx}.questionText`) || '';
+                    const formatted = `${current}<pre><code class="language-${lang}">${code}</code></pre>`;
+                    setValue(`questions.${activeQuestionIdx}.questionText`, formatted);
+                }}
+            />
+            <MathEditorModal
+                isOpen={activeDrawer === 'math'}
+                onClose={() => setActiveDrawer(null)}
+                onApply={(latex) => {
+                    if (activeQuestionIdx === null) return;
+                    const current = getValues(`questions.${activeQuestionIdx}.questionText`) || '';
+                    const formatted = `${current}<p>${latex}</p>`;
+                    setValue(`questions.${activeQuestionIdx}.questionText`, formatted);
+                }}
+            />
+            <WhiteboardDrawer
+                isOpen={activeDrawer === 'whiteboard'}
+                onClose={() => setActiveDrawer(null)}
+                onApply={(img) => {
+                    if (activeQuestionIdx === null) return;
+                    const current = getValues(`questions.${activeQuestionIdx}.questionText`) || '';
+                    const formatted = `${current}<img src="${img}" alt="whiteboard sketch" />`;
+                    setValue(`questions.${activeQuestionIdx}.questionText`, formatted);
+                }}
+            />
 
             </div>
         </>

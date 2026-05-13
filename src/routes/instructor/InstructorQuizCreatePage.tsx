@@ -18,6 +18,8 @@ const buildCreateBody = (data: QuizFormData): CreateQuizBody => ({
     showResultOnClose: data.showResultOnClose,
     shuffleQuestions: data.shuffleQuestions,
     shuffleOptions: data.shuffleOptions,
+    enableAIGrading: data.enableAIGrading,
+    globalAIInstructions: data.globalAIInstructions,
 });
 
 export const InstructorQuizCreatePage = () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
     X, TrendingUp, FileText, HelpCircle, 
@@ -29,14 +29,14 @@ type TabType = 'Overview' | 'Assignments' | 'Quizzes';
 // --- Sub-components ---
 
 const StatCard = ({ icon: Icon, title, value, colorClass, children }: any) => (
-    <div className="bg-gray-50/50 dark:bg-slate-800/40 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-700/50 hover:border-[#21A9FF]/30 transition-all text-center flex flex-col items-center justify-center min-h-[220px]">
-        <div className={`w-14 h-14 rounded-2xl ${colorClass} flex items-center justify-center mb-5 shadow-sm`}>
-            <Icon className="w-7 h-7" />
+    <div className="bg-gray-50/50 dark:bg-slate-800/40 p-4 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] border border-gray-100 dark:border-slate-700/50 hover:border-[#21A9FF]/30 transition-all text-center flex flex-col items-center justify-center min-h-[140px] sm:min-h-[220px]">
+        <div className={`w-8 h-8 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${colorClass} flex items-center justify-center mb-2 sm:mb-5 shadow-sm`}>
+            <Icon className="w-4 h-4 sm:w-7 sm:h-7" />
         </div>
-        <p className="text-4xl font-black text-gray-900 dark:text-white leading-none tracking-tight">{value}</p>
-        <p className="text-[10px] font-bold text-gray-400 uppercase mt-3 tracking-[0.2em]">{title}</p>
-        <div className="w-full mt-4 h-6 flex items-center justify-center">
-            {children || <div className="h-1.5 w-24 bg-transparent" />}
+        <p className="text-xl sm:text-4xl font-black text-gray-900 dark:text-white leading-none tracking-tight">{value}</p>
+        <p className="text-[7px] sm:text-[10px] font-bold text-gray-400 uppercase mt-1.5 sm:mt-3 tracking-[0.2em]">{title}</p>
+        <div className="w-full mt-1.5 sm:mt-4 h-3 sm:h-6 flex items-center justify-center">
+            {children || <div className="h-1 w-12 sm:w-24 bg-transparent" />}
         </div>
     </div>
 );
@@ -180,6 +180,18 @@ export function StudentProfileModal({ isOpen, onClose, student, courseId }: Stud
         enabled: isOpen && !!student && !!courseId,
     });
 
+    // Scroll lock
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     if (isError) {
         toast.error('Failed to load student profile');
         onClose();
@@ -196,25 +208,25 @@ export function StudentProfileModal({ isOpen, onClose, student, courseId }: Stud
 
             <div className="relative bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[2.5rem] shadow-2xl border border-gray-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
                 
-                <header className="px-6 sm:px-10 py-8 bg-gradient-to-r from-[#21A9FF]/5 to-transparent dark:from-[#21A9FF]/10 shrink-0 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#21A9FF]/10 rounded-full blur-3xl -mr-32 -mt-32" />
+                <header className="px-6 sm:px-10 py-6 sm:py-8 bg-gradient-to-r from-[#21A9FF]/5 to-transparent dark:from-[#21A9FF]/10 shrink-0 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-[#21A9FF]/10 rounded-full blur-3xl -mr-24 -mt-24 sm:-mr-32 sm:-mt-32" />
                     
-                    <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
-                        <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-[#21A9FF] to-[#0094F2] flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-[#21A9FF]/20 shrink-0 border-4 border-white dark:border-slate-800 rotate-3">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 relative z-10">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-[#21A9FF] to-[#0094F2] flex items-center justify-center text-white text-2xl sm:text-3xl font-black shadow-xl shadow-[#21A9FF]/20 shrink-0 border-4 border-white dark:border-slate-800 rotate-3">
                             {student.fullName?.charAt(0) || 'S'}
                         </div>
                         
-                        <div className="flex-1 text-center sm:text-left">
-                            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                        <div className="flex-1 text-center sm:text-left min-w-0">
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight truncate">
                                 {student.fullName}
                             </h2>
-                            <div className="flex flex-wrap justify-center sm:justify-start gap-4 mt-3">
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-600 dark:text-slate-400">
-                                    <Mail className="w-4 h-4 text-[#21A9FF]" />
-                                    {student.email}
+                            <div className="flex flex-col sm:flex-row flex-wrap justify-center sm:justify-start gap-2 mt-3">
+                                <div className="flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 text-[11px] sm:text-sm font-bold text-gray-600 dark:text-slate-400 truncate max-w-full shadow-sm">
+                                    <Mail className="w-3.5 h-3.5 text-[#21A9FF] shrink-0" />
+                                    <span className="truncate">{student.email}</span>
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-600 dark:text-slate-400">
-                                    <GraduationCap className="w-4 h-4 text-[#21A9FF]" />
+                                <div className="flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 text-[11px] sm:text-sm font-bold text-gray-600 dark:text-slate-400 shadow-sm">
+                                    <GraduationCap className="w-3.5 h-3.5 text-[#21A9FF] shrink-0" />
                                     Active Student
                                 </div>
                             </div>
@@ -226,12 +238,12 @@ export function StudentProfileModal({ isOpen, onClose, student, courseId }: Stud
                     </div>
                 </header>
 
-                <nav className="px-8 flex gap-2 border-b border-gray-100 dark:border-slate-800 shrink-0 overflow-x-auto no-scrollbar">
+                <nav className="px-4 sm:px-8 flex gap-1 sm:gap-2 border-b border-gray-100 dark:border-slate-800 shrink-0 overflow-x-auto no-scrollbar">
                     {(['Overview', 'Assignments', 'Quizzes'] as TabType[]).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-6 py-4 text-sm font-black transition-all border-b-4 -mb-[1px] whitespace-nowrap ${
+                            className={`px-4 sm:px-6 py-3.5 sm:py-4 text-[11px] sm:text-sm font-black transition-all border-b-4 -mb-[1px] whitespace-nowrap ${
                                 activeTab === tab 
                                     ? 'border-[#21A9FF] text-[#21A9FF]' 
                                     : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-slate-200'
@@ -251,22 +263,22 @@ export function StudentProfileModal({ isOpen, onClose, student, courseId }: Stud
                     ) : (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-400">
                              {activeTab === 'Overview' && (
-                                <div className="max-w-3xl mx-auto">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                <div className="max-w-2xl mx-auto">
+                                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-8">
                                         <StatCard 
                                             icon={TrendingUp} 
-                                            title="Course Progress" 
+                                            title="Progress" 
                                             value="75%" 
                                             colorClass="bg-[#21A9FF]/10 text-[#21A9FF]"
                                         >
-                                            <div className="w-32 bg-gray-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                            <div className="w-16 sm:w-32 bg-gray-200 dark:bg-slate-700 h-1 sm:h-1.5 rounded-full overflow-hidden">
                                                 <div className="h-full bg-[#21A9FF] transition-all duration-1000 shadow-[0_0_8px_rgba(33,169,255,0.5)]" style={{ width: `75%` }} />
                                             </div>
                                         </StatCard>
 
                                         <StatCard 
                                             icon={Award} 
-                                            title="Average Score" 
+                                            title="Avg Score" 
                                             value={`${profile?.averageQuizzesScore || 0}%`} 
                                             colorClass="bg-emerald-500/10 text-emerald-600"
                                         />
@@ -307,9 +319,9 @@ export function StudentProfileModal({ isOpen, onClose, student, courseId }: Stud
                     )}
                 </main>
 
-                <footer className="px-8 py-6 bg-gray-50/50 dark:bg-slate-800/20 border-t border-gray-100 dark:border-slate-800 flex justify-between items-center shrink-0">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Student Profile v2.0</p>
-                    <button onClick={onClose} className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-sm font-black hover:scale-105 active:scale-95 transition-all">
+                <footer className="px-6 sm:px-8 py-5 sm:py-6 bg-gray-50/50 dark:bg-slate-800/20 border-t border-gray-100 dark:border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-center shrink-0">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] text-center sm:text-left">Student Profile v2.0</p>
+                    <button onClick={onClose} className="w-full sm:w-auto px-10 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-sm font-black hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-gray-900/10 dark:shadow-white/5">
                         Close Window
                     </button>
                 </footer>

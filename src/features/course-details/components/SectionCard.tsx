@@ -55,10 +55,10 @@ export const SectionCard = memo(({ section, sectionOrder, courseId, numericCours
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="flex-1 flex items-center justify-between p-4 sm:p-5 transition-colors text-left min-w-0"
                 >
-                    <div className="flex items-center gap-4 min-w-0">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                         <div
                             className={cn(
-                                'w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center text-sm font-extrabold tabular-nums transition-all duration-300',
+                                'w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center text-xs sm:text-sm font-extrabold tabular-nums transition-all duration-300',
                                 'ring-1 shadow-sm',
                                 isExpanded &&
                                     'bg-[#21A9FF] text-white ring-[#21A9FF]/35 shadow-[0_10px_26px_-10px_rgba(33,169,255,0.55)]',
@@ -77,7 +77,7 @@ export const SectionCard = memo(({ section, sectionOrder, courseId, numericCours
                         <div className="min-w-0">
                             <h3
                                 className={cn(
-                                    'font-semibold transition-colors',
+                                    'text-sm sm:text-base font-bold transition-colors truncate',
                                     isExpanded
                                         ? 'text-[#0094F2] dark:text-[#5ec5ff]'
                                         : 'text-gray-900 dark:text-white'
@@ -86,7 +86,7 @@ export const SectionCard = memo(({ section, sectionOrder, courseId, numericCours
                                 {section.title}
                             </h3>
 
-                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-400 mt-0.5 font-medium">
                                 {files.length} {files.length === 1 ? 'file' : 'files'}
                             </p>
                         </div>

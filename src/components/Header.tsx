@@ -249,7 +249,7 @@ export const Header = () => {
 
     return (
         // 1. ثبتنا ارتفاع الهيدر باستخدام h-[72px] وشلنا الـ py
-        <header className="sticky top-0 z-50 w-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 shadow-sm transition-all duration-300 py-9 px-8 h-[72px]">
+        <header className="sticky top-0 z-[60] w-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 shadow-sm transition-all duration-300 py-9 px-8 h-[72px]">
             {/* 2. خلينا الـ div الداخلي يأخد h-full */}
             <div className="relative flex items-center justify-between w-full h-full max-w-[1920px] mx-auto">
 
@@ -292,15 +292,6 @@ export const Header = () => {
 
                 {/* Right Side Actions (Search, Notifications, Profile) */}
                 <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-                    {!isGuest && (
-                        <button
-                            type="button"
-                            onClick={() => setIsMobileMenuOpen(prev => !prev)}
-                            className="lg:hidden p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-                        >
-                            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                        </button>
-                    )}
 
                     {isGuest ? (
                         <div className="flex items-center gap-3">
@@ -479,6 +470,16 @@ export const Header = () => {
                                 )}
                             </div>
 
+                            {/* Mobile Menu Button - Moved to end */}
+                            {!isGuest && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsMobileMenuOpen(prev => !prev)}
+                                    className="lg:hidden p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                                >
+                                    {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                                </button>
+                            )}
                         </>
                     )}
                 </div>

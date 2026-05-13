@@ -473,6 +473,8 @@ export interface CreateQuizBody {
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
     shuffleOptions: boolean;
+    enableAIGrading?: boolean;
+    globalAIInstructions?: string;
 }
 
 export interface UpdateQuizBody {
@@ -485,6 +487,8 @@ export interface UpdateQuizBody {
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
     shuffleOptions: boolean;
+    enableAIGrading?: boolean;
+    globalAIInstructions?: string;
 }
 
 // --- Request DTOs (questions upsert) ---
@@ -497,6 +501,26 @@ export interface OptionRequest {
 /** @deprecated Use OptionRequest instead */
 export type QuizOptionRequest = OptionRequest;
 
+export type ExpectedAnswerImportance = "must-have" | "nice-to-have";
+
+export interface ExpectedAnswerPoint {
+    id: string;
+    text: string;
+    importance: ExpectedAnswerImportance;
+}
+
+export interface QuestionAIRubric {
+    name: string;
+    weight: number;
+}
+
+export interface EssayQuestionAIConfig {
+    modelAnswer?: string | null;
+    expectedPoints?: ExpectedAnswerPoint[] | null;
+    rubric?: QuestionAIRubric[] | null;
+    aiInstructions?: string | null;
+}
+
 export interface QuestionUpsertRequest {
     id?: string | null;
     questionText: string;
@@ -504,6 +528,7 @@ export interface QuestionUpsertRequest {
     mark: number;
     instructions?: string | null;
     explanation?: string | null;
+    aiConfig?: EssayQuestionAIConfig | null;
     options: OptionRequest[];
 }
 
@@ -560,6 +585,7 @@ export interface QuestionDto {
     explanation?: string | null;
     order: number;
     options?: OptionDto[] | null;
+    aiConfig?: EssayQuestionAIConfig | null;
 }
 
 export interface GetQuizDto {
@@ -577,6 +603,8 @@ export interface GetQuizDto {
     shuffleQuestions?: boolean | null;
     shuffleOptions?: boolean | null;
     attemptTimeLimit?: number;
+    enableAIGrading?: boolean;
+    globalAIInstructions?: string;
     createdAt?: string | null;
     questions?: QuestionDto[] | null;
     /** Client / older payloads */
