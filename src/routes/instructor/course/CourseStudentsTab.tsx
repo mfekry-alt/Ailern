@@ -10,6 +10,42 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface Ctx { courseId: string; numericCourseId: number | null }
 
+const StudentStatsCells = ({ courseId, studentId }: { courseId: number | string, studentId: number }) => {
+    const { data: profile, isLoading } = useQuery({
+        queryKey: ['student-profile-mini', courseId, studentId],
+        queryFn: () => courseService.getStudentProfile(courseId, studentId),
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+
+    if (isLoading) return (
+        <>
+            <td className="px-8 py-5 text-center"><Loader2 className="w-4 h-4 animate-spin mx-auto text-slate-300" /></td>
+            <td className="px-8 py-5 text-center"><Loader2 className="w-4 h-4 animate-spin mx-auto text-slate-300" /></td>
+        </>
+    );
+
+    return (
+        <>
+            <td className="px-8 py-5 text-center">
+                <div className="flex flex-col items-center gap-1.5">
+                    <span className="text-sm font-black text-slate-700 dark:text-slate-200">{profile?.progress || 0}%</span>
+                    <div className="w-16 bg-slate-100 dark:bg-slate-800 h-1 rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-[#21A9FF] transition-all duration-500" 
+                            style={{ width: `${profile?.progress || 0}%` }} 
+                        />
+                    </div>
+                </div>
+            </td>
+            <td className="px-8 py-5 text-center">
+                <span className="px-3 py-1 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-black border border-purple-100 dark:border-purple-500/20">
+                    {profile?.averageQuizzesScore || 0}%
+                </span>
+            </td>
+        </>
+    );
+};
+
 export const CourseStudentsTab = () => {
     const { numericCourseId } = useOutletContext<Ctx>();
     const qc = useQueryClient();
@@ -169,6 +205,8 @@ export const CourseStudentsTab = () => {
                                     <tr>
                                         <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Student Info</th>
                                         <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Contact Details</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Course Progress</th>
+                                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Quiz Performance</th>
                                         <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -203,6 +241,12 @@ export const CourseStudentsTab = () => {
                                                     {s.email}
                                                 </span>
                                             </td>
+                                            
+                                            <StudentStatsCells 
+                                                courseId={numericCourseId || ''} 
+                                                studentId={s.studentId} 
+                                            />
+
                                             <td className="px-8 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-3">
                                                     <button 

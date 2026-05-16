@@ -69,9 +69,18 @@ export function CourseSidebarHeader({
             >
                 <div className={`flex items-center gap-3 min-w-0 ${collapsed ? 'justify-center' : 'flex-1 pr-8 sm:pr-0'}`}>
                     <div className="relative shrink-0 flex items-center justify-center w-10 h-10 rounded-[12px] overflow-hidden shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-700/50 bg-slate-50 dark:bg-slate-800">
-                        <div className={`w-full h-full flex items-center justify-center bg-gradient-to-tr ${gradient} text-white font-bold text-[13px] tracking-wider`}>
-                            {initials}
-                        </div>
+                        {hasImage ? (
+                            <img
+                                src={imageUrl}
+                                alt={title}
+                                className="w-full h-full object-cover"
+                                onError={() => setImgFailed(true)}
+                            />
+                        ) : (
+                            <div className={`w-full h-full flex items-center justify-center bg-gradient-to-tr ${gradient} text-white font-bold text-[13px] tracking-wider`}>
+                                {initials}
+                            </div>
+                        )}
                         {collapsed && (
                             <div className="absolute inset-0 hidden lg:flex items-center justify-center bg-slate-900/40 text-white opacity-0 group-hover:opacity-100 transition-all duration-150 backdrop-blur-[2px]">
                                 <ChevronRight className="w-5 h-5 ml-0.5" />

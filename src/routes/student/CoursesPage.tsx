@@ -86,6 +86,7 @@ export const CoursesPage = () => {
             instructor: c.instructorName || 'Unknown Instructor',
             courseCode: c.code || '',
             progress: typeof c.progress === 'number' ? Math.min(100, Math.max(0, c.progress)) : 0,
+            imageUrl: c.imageUrl,
         }));
     }, [enrolledCourses]);
 
