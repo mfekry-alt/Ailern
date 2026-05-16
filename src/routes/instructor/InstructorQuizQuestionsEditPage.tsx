@@ -5,7 +5,7 @@ import { storage } from '@/lib/storage';
 import {
     ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
     GripVertical, Sparkles, ListChecks, HelpCircle, AlertTriangle, Save,
-    ChevronDown, ChevronUp, Check, Filter, FileText, LayoutGrid, BrainCircuit, XCircle, Sparkles as SparklesIcon
+    ChevronDown, ChevronUp, Check, Filter, FileText, LayoutGrid, BrainCircuit, XCircle, Sparkles as SparklesIcon, Eye
 } from 'lucide-react';
 import { AIRubricBuilder } from '@/components/ui/AIRubricBuilder';
 import { useQuiz, useUpsertQuizQuestions, useAiGeneratedQuestions, useAcceptAiGeneratedQuestion, useRejectAiGeneratedQuestion } from '@/features/quizzes/api';
@@ -25,6 +25,7 @@ import { Drawer } from '@/components/ui/Drawer';
 import { WhiteboardDrawer } from '@/components/ui/WhiteboardDrawer';
 import { MathEditorModal } from '@/components/ui/MathEditorModal';
 import { CodeEditorDrawer } from '@/components/ui/CodeEditorDrawer';
+import { QnARenderer } from '@/features/qna/components/QnARenderer';
 
 // ─── Validation Schema ──────────────────────────────────────────────────────
 
@@ -66,7 +67,7 @@ const questionSchema = yup.object().shape({
         otherwise: (schema) => schema.optional().nullable()
     }),
     aiConfig: yup.object().shape({
-        modelAnswer: yup.string().required('Model answer is required for AI grading.').default(''),
+        modelAnswer: yup.string().optional().default(''),
         aiInstructions: yup.string().optional().default(''),
         rubric: yup.array().of(
             yup.object().shape({
@@ -76,8 +77,6 @@ const questionSchema = yup.object().shape({
         ).optional().default([])
         .test('total-weight', 'Total rubric score must equal the question points', function(rubric) {
             if (!rubric || rubric.length === 0) return true;
-            // 'this.from' contains the chain of parents. 
-            // from[0] is aiConfig, from[1] is the Question object
             const question = this.from && this.from[1] ? this.from[1].value : {};
             const mark = (question as any)?.mark || 0;
             const total = rubric.reduce((sum, item) => sum + (item.weight || 0), 0);
@@ -196,6 +195,18 @@ const QuestionTypeSelector = ({ value, onChange, disabled }: { value: QuestionTy
 const inputCls = 'w-full px-5 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm text-gray-900 dark:text-white transition-all outline-none';
 const labelCls = 'block text-[11px] font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1';
 
+const stripHtml = (html: string) => {
+    if (!html) return '';
+    return html
+        .replace(/<[^>]*>?/gm, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
 // ─── Component ─────────────────────────────────────────────────────────────
 
 export const InstructorQuizQuestionsEditPage = () => {
@@ -217,7 +228,6 @@ export const InstructorQuizQuestionsEditPage = () => {
     const [showAIModal, setShowAIModal] = useState(false);
     const [loaded, setLoaded] = useState(false);
     const [activeTab, setActiveTab] = useState<'questions' | 'ai-generated'>('questions');
-    
     
     // Drag & Drop States
     const [draggedQuestionIndex, setDraggedQuestionIndex] = useState<number | null>(null);
@@ -255,7 +265,7 @@ export const InstructorQuizQuestionsEditPage = () => {
         if (quiz.questions && quiz.questions.length > 0) {
             const initialQuestions = quiz.questions.map(q => ({
                 id: q.id ?? null,
-                questionType: q.questionType,
+                questionType: q.questionType as QuestionType,
                 questionText: q.questionText,
                 mark: q.mark,
                 instructions: q.instructions || '',
@@ -371,8 +381,6 @@ export const InstructorQuizQuestionsEditPage = () => {
         setValue(`questions.${qIndex}.options`, currentOptions.filter((_, i) => i !== optIndex), { shouldValidate: true });
     };
 
-
-
     const onSubmit = async (data: BuilderFormData) => {
         if (!isDraftQuiz && data.questions.length === 0) {
             toast.error('Published quizzes must have at least one question.');
@@ -442,7 +450,6 @@ export const InstructorQuizQuestionsEditPage = () => {
         </div>
     );
 
-    const isLoading = upsertQuestionsMutation.isPending;
     const currentStatus = settings?.status || quiz?.status;
     const statusBadgeClass =
         currentStatus === 'Published' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30' :
@@ -470,9 +477,9 @@ export const InstructorQuizQuestionsEditPage = () => {
 
     const getQuestionName = (idx: number): string => {
         const qText = watch(`questions.${idx}.questionText`) || '';
-        const raw = qText.trim();
-        if (!raw) return `New Question ${idx + 1}`;
-        return raw.length > 35 ? `${raw.slice(0, 35)}...` : raw;
+        const plainText = stripHtml(qText).trim();
+        if (!plainText) return `New Question ${idx + 1}`;
+        return plainText.length > 35 ? `${plainText.slice(0, 35)}...` : plainText;
     };
 
     return (
@@ -487,7 +494,7 @@ export const InstructorQuizQuestionsEditPage = () => {
                 />
             )}
 
-            <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans pb-32">
+            <div className="h-screen overflow-y-auto bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans pb-32">
 
                 {/* --- Sticky Header --- */}
                 <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800 py-3 sm:py-4 px-4 sm:px-8">
@@ -531,6 +538,26 @@ export const InstructorQuizQuestionsEditPage = () => {
                         <div className="mb-6 flex items-center gap-3 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl text-red-700 dark:text-red-400 text-sm font-bold shadow-sm">
                             <AlertTriangle className="w-5 h-5 shrink-0" />
                             {apiError}
+                        </div>
+                    )}
+                    {Object.keys(errors).length > 0 && (
+                        <div className="mb-6 flex flex-col gap-2 p-5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl text-amber-800 dark:text-amber-400 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
+                            <div className="flex items-center gap-2 mb-1">
+                                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+                                <span className="uppercase tracking-widest text-[11px]">Form Validation Error</span>
+                            </div>
+                            <p className="font-medium opacity-90">Please check your questions. Some required fields are missing or invalid.</p>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {fields.map((_, i) => errors.questions?.[i] && (
+                                    <button 
+                                        key={i}
+                                        onClick={() => scrollToQuestion(i)}
+                                        className="px-3 py-1 bg-amber-100 dark:bg-amber-500/20 rounded-lg text-[10px] uppercase tracking-tighter hover:bg-amber-200 transition-colors"
+                                    >
+                                        Fix Q{i+1}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     )}
                     {success && (
@@ -739,11 +766,14 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                         content={field.value}
                                                         onChange={field.onChange}
                                                         placeholder="Describe your question in detail..."
+                                                        onMathAction={() => {
+                                                            setActiveQuestionIdx(idx);
+                                                            setActiveDrawer('math');
+                                                        }}
                                                         className={qError?.questionText ? 'border-red-500 ring-2 ring-red-500/10' : ''}
                                                     />
                                                 )}
                                             />
-
 
                                             {qError?.questionText && (
                                                 <p className="text-[10px] sm:text-[11px] font-bold text-red-500 uppercase mt-1.5 ml-1 flex items-center gap-1">
@@ -751,6 +781,29 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                 </p>
                                             )}
                                         </div>
+
+                                            {/* Question Preview Area */}
+                                            <div className="mb-8 p-5 sm:p-6 bg-slate-50/50 dark:bg-slate-900/20 rounded-[2rem] border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-500">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(33,169,255,0.5)]" />
+                                                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Question Preview</span>
+                                                    </div>
+                                                    <div className="px-2.5 py-1 bg-white dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
+                                                        <Eye className="w-3 h-3 text-blue-500" />
+                                                    </div>
+                                                </div>
+                                                <div className="p-6 bg-white/80 dark:bg-slate-900/60 rounded-2xl border border-white dark:border-slate-800/50 shadow-inner backdrop-blur-sm min-h-[100px] flex flex-col">
+                                                    {!stripHtml(qText) ? (
+                                                        <div className="flex-1 flex flex-col items-center justify-center py-4 text-slate-400 gap-2">
+                                                            <HelpCircle className="w-5 h-5 opacity-20" />
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Preview will appear here</span>
+                                                        </div>
+                                                    ) : (
+                                                        <QnARenderer content={qText} />
+                                                    )}
+                                                </div>
+                                            </div>
 
                                         {/* Options Area */}
                                         <div className="bg-gray-50/50 dark:bg-slate-900/30 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-slate-800">
@@ -1077,33 +1130,13 @@ export const InstructorQuizQuestionsEditPage = () => {
                 </div>
 
             {/* Drawers for specialized content */}
-            <CodeEditorDrawer
-                isOpen={activeDrawer === 'code'}
-                onClose={() => setActiveDrawer(null)}
-                onApply={(code, lang) => {
-                    if (activeQuestionIdx === null) return;
-                    const current = getValues(`questions.${activeQuestionIdx}.questionText`) || '';
-                    const formatted = `${current}<pre><code class="language-${lang}">${code}</code></pre>`;
-                    setValue(`questions.${activeQuestionIdx}.questionText`, formatted);
-                }}
-            />
             <MathEditorModal
                 isOpen={activeDrawer === 'math'}
                 onClose={() => setActiveDrawer(null)}
                 onApply={(latex) => {
                     if (activeQuestionIdx === null) return;
                     const current = getValues(`questions.${activeQuestionIdx}.questionText`) || '';
-                    const formatted = `${current}<p>${latex}</p>`;
-                    setValue(`questions.${activeQuestionIdx}.questionText`, formatted);
-                }}
-            />
-            <WhiteboardDrawer
-                isOpen={activeDrawer === 'whiteboard'}
-                onClose={() => setActiveDrawer(null)}
-                onApply={(img) => {
-                    if (activeQuestionIdx === null) return;
-                    const current = getValues(`questions.${activeQuestionIdx}.questionText`) || '';
-                    const formatted = `${current}<img src="${img}" alt="whiteboard sketch" />`;
+                    const formatted = `${current} ${latex} `;
                     setValue(`questions.${activeQuestionIdx}.questionText`, formatted);
                 }}
             />

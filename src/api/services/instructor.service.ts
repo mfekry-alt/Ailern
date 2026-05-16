@@ -12,6 +12,7 @@ import type {
     InstructorStatsDto,
     UpcomingEventDto,
     GetAllCoursesDtoPaginationResult,
+    InstructorCourseProgressDto,
     PaginationParams,
     ApiResponse,
 } from '@/types/api.types';
@@ -69,4 +70,14 @@ export const getInstructorMyCourses = async (
         start: data?.start ?? 0,
         end: data?.end ?? 0,
     };
+};
+
+// ── Course Progress ──────────────────────────────────────────────────
+export const getInstructorCourseProgress = async (): Promise<InstructorCourseProgressDto[]> => {
+    const response = await api.get<ApiResponse<InstructorCourseProgressDto[]>>(
+        ENDPOINTS.INSTRUCTOR.MY_COURSES_PROGRESS,
+    );
+    const payload = response.data as any;
+    const data = payload.data ?? payload;
+    return Array.isArray(data) ? data : (data?.items ?? []);
 };

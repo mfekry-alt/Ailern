@@ -179,6 +179,7 @@ export interface GetAllCoursesDto {
     totalSections: number;
     description: string | null;
     imageUrl?: string | null;
+    courseProgress?: number;
 }
 
 export interface GetAllCoursesDtoPaginationResult {
@@ -797,6 +798,14 @@ export interface InstructorStatsDto {
     totalStudents: number;
     totalQuizzes: number;
     totalAssignments: number;
+}
+
+export interface InstructorCourseProgressDto {
+    courseId: number;
+    courseName: string;
+    studentsCount: number;
+    quizzesCount: number;
+    progressPercentage: number;
 }
 
 export interface UpcomingEventDto {

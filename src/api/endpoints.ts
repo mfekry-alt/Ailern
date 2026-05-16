@@ -141,6 +141,7 @@ export const ENDPOINTS = {
         STATS: '/Dashboard/instructor',
         UPCOMING_EVENTS: '/Dashboard/UpcomingEvents',
         MY_COURSES: '/Users/instructor/my-courses',
+        MY_COURSES_PROGRESS: '/Users/instructor/my-courses-progress',
     },
 
     // Dashboard endpoints

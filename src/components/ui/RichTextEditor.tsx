@@ -5,12 +5,13 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { common, createLowlight } from 'lowlight';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import {
     Bold, Italic, List, ListOrdered, Quote, Code,
-    Heading2, Strikethrough,
-    Undo, Redo
+    Heading2, Strikethrough, Underline as UnderlineIcon,
+    Undo, Redo, Sigma
 } from 'lucide-react';
+import Underline from '@tiptap/extension-underline';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
 import 'highlight.js/styles/github-dark.css';
@@ -22,6 +23,7 @@ interface RichTextEditorProps {
     onChange: (html: string) => void;
     placeholder?: string;
     className?: string;
+    onMathAction?: () => void;
 }
 
 const ToolBtn = ({
@@ -65,12 +67,30 @@ const ToolBtn = ({
     </motion.button>
 );
 
-export const RichTextEditor = ({ content, onChange, placeholder, className }: RichTextEditorProps) => {
+export const RichTextEditor = ({ 
+    content, 
+    onChange, 
+    placeholder, 
+    className,
+    onMathAction
+}: RichTextEditorProps) => {
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
+                heading: { levels: [2, 3] },
                 codeBlock: false,
+                code: {
+                    HTMLAttributes: {
+                        class: 'px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-[#E06C75] dark:text-[#E06C75] text-[13px] font-mono',
+                    },
+                },
+                blockquote: {
+                    HTMLAttributes: {
+                        class: 'border-l-4 border-[#21A9FF]/40 pl-4 italic text-slate-600 dark:text-slate-400 my-3',
+                    },
+                },
             }),
+            Underline,
             Placeholder.configure({
                 placeholder: placeholder || 'Start typing...',
             }),
@@ -99,7 +119,34 @@ export const RichTextEditor = ({ content, onChange, placeholder, className }: Ri
     });
 
     const [_, setUpdateCounter] = useState(0);
+    const lastContentRef = useRef(content);
 
+    // Update parent when editor content changes
+    useEffect(() => {
+        if (!editor) return;
+        
+        const handleUpdate = () => {
+            const html = editor.getHTML();
+            if (html !== lastContentRef.current) {
+                lastContentRef.current = html;
+                onChange(html);
+            }
+        };
+
+        editor.on('update', handleUpdate);
+        return () => {
+            editor.off('update', handleUpdate);
+        };
+    }, [editor, onChange]);
+
+    // Sync from props ONLY if different from what we last sent
+    // This prevents the infinite loop and cursor jumping
+    useEffect(() => {
+        if (editor && content !== editor.getHTML() && content !== lastContentRef.current) {
+            lastContentRef.current = content;
+            editor.commands.setContent(content);
+        }
+    }, [content, editor]);
 
     if (!editor) return null;
 
@@ -127,6 +174,12 @@ export const RichTextEditor = ({ content, onChange, placeholder, className }: Ri
                     label="Strike"
                     active={editor.isActive('strike')}
                     onClick={() => editor.chain().focus().toggleStrike().run()}
+                />
+                <ToolBtn
+                    icon={UnderlineIcon}
+                    label="Underline"
+                    active={editor.isActive('underline')}
+                    onClick={() => editor.chain().focus().toggleUnderline().run()}
                 />
 
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
@@ -165,6 +218,18 @@ export const RichTextEditor = ({ content, onChange, placeholder, className }: Ri
                     onClick={() => editor.chain().focus().toggleCodeBlock().run()}
                 />
 
+                {(onMathAction) && (
+                    <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
+                )}
+
+                {onMathAction && (
+                    <ToolBtn
+                        icon={Sigma}
+                        label="Math Equation Editor"
+                        onClick={onMathAction}
+                    />
+                )}
+
                 <div className="flex-1" />
 
                 <ToolBtn
@@ -200,6 +265,17 @@ export const RichTextEditor = ({ content, onChange, placeholder, className }: Ri
                     padding: 0 !important;
                     color: inherit !important;
                 }
+                .prose blockquote {
+                    border-left-width: 4px !important;
+                    border-left-color: rgba(33, 169, 255, 0.4) !important;
+                    padding-left: 1.5rem !important;
+                    font-style: italic !important;
+                    color: #64748b !important;
+                    margin: 1.5rem 0 !important;
+                }
+                .dark .prose blockquote {
+                    color: #94a3b8 !important;
+                }
                 .ProseMirror:focus {
                     outline: none;
                 }
@@ -211,7 +287,7 @@ export const RichTextEditor = ({ content, onChange, placeholder, className }: Ri
                     pointer-events: none;
                 }
             `}} />
-            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+            <div className="max-h-[400px] overflow-y-auto custom-scrollbar p-1">
                 <EditorContent editor={editor} />
             </div>
         </div>

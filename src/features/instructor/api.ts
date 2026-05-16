@@ -41,3 +41,15 @@ export const useInstructorMyCourses = (params?: PaginationParams) => {
         queryFn: () => instructorService.getInstructorMyCourses(params),
     });
 };
+
+/**
+ * Fetch instructor's courses progress overview
+ * GET /Users/instructor/my-courses-progress
+ */
+export const useInstructorCourseProgress = () => {
+    return useQuery({
+        queryKey: QUERY_KEYS.INSTRUCTOR_MY_COURSES_PROGRESS,
+        queryFn: () => instructorService.getInstructorCourseProgress(),
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+};

@@ -149,10 +149,19 @@ export const AppRouter = () => {
                 <Route path={ROUTES.CHANGE_EMAIL} element={<ChangeEmailPage />} />
                 <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
                 <Route path="/quizzes/:id/attempts" element={<QuizAttemptsPage />} />
-                <Route path="/quizzes/:id/attempt" element={<QuizAttemptViewer />} />
                 <Route path="/quizzes/:id/attempt/:attemptId" element={<QuizResultViewer />} />
                 <Route path="/quizzes/:id/attempt/:attemptId/ai-result" element={<AIGradingResultPage />} />
             </Route>
+
+            {/* Standalone Quiz Attempt (No DashboardLayout to avoid double header) */}
+            <Route
+                path="/quizzes/:id/attempt"
+                element={
+                    <ProtectedRoute>
+                        <QuizAttemptViewer />
+                    </ProtectedRoute>
+                }
+            />
 
             {/* Protected instructor routes */}
             <Route
@@ -192,7 +201,6 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_SUBMISSIONS} element={<InstructorSubmissionsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS} element={<InstructorQuizQuestionBuilderPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_EDIT} element={<InstructorQuizEditPage />} />
-                <Route path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT} element={<InstructorQuizQuestionsEditPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_DASHBOARD} element={<QuizDashboardPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS} element={<InstructorQuizSubmissionsPage />} />
@@ -201,6 +209,16 @@ export const AppRouter = () => {
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
                 <Route path={ROUTES.CHANGE_EMAIL} element={<ChangeEmailPage />} />
             </Route>
+
+            {/* Standalone Instructor Quiz Builder (No InstructorLayout to avoid double header) */}
+            <Route
+                path={ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT}
+                element={
+                    <RequireRole roles={[ROLES.INSTRUCTOR, ROLES.ADMIN]}>
+                        <InstructorQuizQuestionsEditPage />
+                    </RequireRole>
+                }
+            />
             {/* Protected admin routes */}
             <Route
                 element={

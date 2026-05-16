@@ -263,7 +263,7 @@ export const PlyrVideoPlayer = ({
     return (
         <div 
             ref={containerRef}
-            className="relative w-full bg-black rounded-2xl overflow-hidden group"
+            className="relative w-full h-full bg-black rounded-2xl overflow-hidden group"
             onMouseMove={showControlsHandler}
             onMouseLeave={() => isPlaying && setShowControls(false)}
             onMouseEnter={showControlsHandler}
@@ -272,7 +272,7 @@ export const PlyrVideoPlayer = ({
             <video
                 ref={videoRef}
                 src={src}
-                className="w-full aspect-video cursor-pointer"
+                className="w-full h-full object-contain cursor-pointer"
                 onClick={togglePlay}
                 playsInline
                 preload="metadata"

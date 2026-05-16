@@ -29,6 +29,7 @@ interface Course {
     thumbnail: string;
     imageUrl?: string;
     description: string;
+    progress: number;
 }
 
 const THUMBNAILS = [
@@ -52,6 +53,7 @@ const mapCourseToUI = (dto: GetAllCoursesDto): Course => {
         thumbnail: dto.imageUrl || THUMBNAILS[thumbIndex],
         imageUrl: dto.imageUrl || undefined,
         description: dto.description || 'No description provided.',
+        progress: dto.courseProgress || 0,
     };
 };
 
@@ -104,6 +106,24 @@ const Course3DCard = ({ course, onEdit, onDelete, onSecondaryAction }: Course3DC
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-3 opacity-80 italic">
                         {course.description}
                     </p>
+                </div>
+
+                {/* Progress Bar Section */}
+                <div className="mb-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                            Course Content Progress
+                        </span>
+                        <span className="text-[10px] font-black text-[#21A9FF]">
+                            {course.progress}%
+                        </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-gradient-to-r from-[#21A9FF] to-indigo-500 rounded-full transition-all duration-1000 ease-out"
+                            style={{ width: `${course.progress}%` }}
+                        />
+                    </div>
                 </div>
 
                 {/* Metadata Row */}

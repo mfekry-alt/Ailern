@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,6 +43,17 @@ export const ProfilePage = () => {
 
     const changePhotoMutation = useChangePhoto();
     const deletePhotoMutation = useDeletePhoto();
+
+    // Handle click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsAvatarDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -121,8 +132,8 @@ export const ProfilePage = () => {
             <div className="max-w-6xl mx-auto space-y-10 relative z-10 animate-in fade-in duration-700">
 
                 {/* Profile Hero Header */}
-                <div className="relative z-50 rounded-[2.5rem] sm:rounded-[3rem] bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 shadow-xl backdrop-blur-md overflow-hidden">
-                    <div className="h-32 sm:h-60 w-full bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 relative overflow-hidden">
+                <div className="relative z-50 rounded-[2.5rem] sm:rounded-[3rem] bg-white dark:bg-slate-800/40 border border-gray-200 dark:border-slate-700/50 shadow-xl backdrop-blur-md">
+                    <div className="h-32 sm:h-60 w-full bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 relative overflow-hidden rounded-t-[2.5rem] sm:rounded-t-[3rem]">
                         <div className="absolute inset-0 bg-black/10 opacity-40"></div>
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_70%)] from-white/10"></div>
                     </div>
@@ -144,14 +155,14 @@ export const ProfilePage = () => {
                                     </div>
                                     
                                     {/* Edit Overlay */}
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem] sm:rounded-[3rem]">
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem] sm:rounded-[3rem] pointer-events-none">
                                         <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                                     </div>
                                 </div>
 
                                 {/* Avatar Management Dropdown */}
                                 {isAvatarDropdownOpen && (
-                                    <div className="absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-[calc(100%+12px)] w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-[2rem] overflow-hidden z-[60] animate-in fade-in slide-in-from-top-4">
+                                    <div className="absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-[calc(100%+12px)] w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-[2rem] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-4">
                                         <div className="p-3 space-y-1">
                                             {user?.avatar && (
                                                 <button 
