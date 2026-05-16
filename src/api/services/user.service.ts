@@ -13,7 +13,18 @@ import type {
     DeleteUserRoleCommand,
     PaginationParams,
     ApiResponse,
+    GetUserCountsDto,
 } from '@/types/api.types';
+
+/** Parameters for fetching users with role filter - matches API pagination params */
+export interface GetUsersWithRoleParams {
+    pageNo?: number;
+    pageSize?: number;
+    SearchString?: string;
+    SortBy?: string;
+    Order?: 'asc' | 'desc';
+    role?: string | null;
+}
 
 /**
  * Current authenticated user response from /users/me
@@ -78,6 +89,32 @@ export const getUsersByRole = async (
 };
 
 /**
+ * Get users with optional role filter
+ * @param params - Pagination and role filter parameters
+ * @returns Paginated list of users
+ */
+export const getUsersWithRole = async (
+    params?: GetUsersWithRoleParams
+): Promise<GetUsersByRoleDtoPaginationResult> => {
+    const response = await api.get<ApiResponse<GetUsersByRoleDtoPaginationResult>>(
+        ENDPOINTS.USERS.ROLES,
+        { params }
+    );
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to fetch users');
+    }
+
+    const data = response.data.data;
+
+    if (!data) {
+        throw new Error('No data received from server');
+    }
+
+    return data;
+};
+
+/**
  * Add role to user
  * @param id - User ID
  * @param command - Role to add
@@ -109,4 +146,33 @@ export const getStudentCourses = async (paginationParams?: PaginationParams): Pr
     );
     const payload = (response.data as any)?.data ?? response.data;
     return payload;
+};
+
+/**
+ * Delete user by ID
+ * @param id - User ID
+ * @returns API Response
+ */
+export const deleteUser = async (id: number): Promise<ApiResponse> => {
+    const response = await api.delete<ApiResponse>(ENDPOINTS.USERS.DELETE_USER(id));
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to delete user');
+    }
+
+    return response.data;
+};
+
+/**
+ * Get user counts by role
+ * @returns Object with total counts for all roles
+ */
+export const getUserCounts = async (): Promise<GetUserCountsDto> => {
+    const response = await api.get<ApiResponse<GetUserCountsDto>>(ENDPOINTS.USERS.COUNT);
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to fetch user counts');
+    }
+
+    return response.data.data!;
 };

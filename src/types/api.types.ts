@@ -120,6 +120,7 @@ export interface GetUsersByRoleDto {
     phoneNumber: string;
     createdBy: string;
     role: string;
+    imageUrl?: string | null;
 }
 
 export interface GetUsersByRoleDtoPaginationResult {
@@ -136,6 +137,13 @@ export interface AddUserToRoleCommand {
 
 export interface DeleteUserRoleCommand {
     role: string;
+}
+
+export interface GetUserCountsDto {
+    totalUsers: number;
+    totalStudent: number;
+    totalInstructors: number;
+    totalAdmins: number;
 }
 
 // ============================================================================
@@ -172,13 +180,11 @@ export interface GetAllCoursesDto {
     id: number;
     code: string;
     name: string;
-    courseStatus: string;
     createdAt: string;
     instructorId: number;
-    totalStudents: number;
-    totalSections: number;
-    description: string | null;
-    imageUrl?: string | null;
+    instructorName: string;
+    imageUrl: string | null;
+    enrolledStudents: number;
 }
 
 export interface GetAllCoursesDtoPaginationResult {
@@ -187,6 +193,23 @@ export interface GetAllCoursesDtoPaginationResult {
     start: number;
     end: number;
     items: GetAllCoursesDto[];
+}
+
+export interface GetCourseDetailsDto {
+    id: number;
+    imagePath: string | null;
+    courseName: string;
+    courseCode: string;
+    courseDescription: string;
+    instructorId: number;
+    instructorName: string;
+    instructorEmail: string;
+    instructorImage: string | null;
+    totalEnrollments: number;
+    totalMaterialNumber: number;
+    totalMaterialSize: number;
+    totalAiResourcesNumber: number;
+    totalAiResourcesSize: number;
 }
 
 export interface GetAvailableCoursesDto {
