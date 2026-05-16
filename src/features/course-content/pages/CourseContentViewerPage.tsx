@@ -347,9 +347,9 @@ export const CourseContentViewerPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+        <div className="h-[calc(100vh-72px)] flex flex-col bg-gray-50 dark:bg-slate-950 overflow-hidden">
             {/* Top Navigation Bar */}
-            <header ref={headerRef} className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 sticky top-0 z-[100]">
+            <header ref={headerRef} className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 shrink-0">
                 <div className="flex items-center justify-between px-4 lg:px-6 h-14">
                     {/* Left: Back Button & Title */}
                     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -427,11 +427,11 @@ export const CourseContentViewerPage = () => {
             </header>
 
             {/* Main Content Area */}
-            <main className="flex flex-col lg:flex-row overflow-hidden" style={{ height: `calc(100vh - ${navbarHeight}px)` }}>
+            <main className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
                 {/* Left Side - File Viewer (70%) */}
                 <div className="flex-1 lg:w-[70%] bg-black flex flex-col min-h-0 relative">
                     {activeFile ? (
-                        <div className="flex-1 p-2 lg:p-4 overflow-hidden">
+                        <div className="flex-1 p-2 lg:p-4 min-h-0">
                             <div className="h-full rounded-2xl overflow-hidden shadow-2xl relative">
                                 <FileViewerSwitch
                                     key={activeFile.id} // Force remount when file changes to reset resume state

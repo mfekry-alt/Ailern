@@ -134,6 +134,10 @@ export const ENDPOINTS = {
         GET_RESULT: (attemptId: string) => `/Attempts/${attemptId}/result`,
         GET_STUDENT_ANSWERS: (attemptId: string) => `/Attempts/${attemptId}/student-answers`,
         GRADE: (attemptId: string) => `/Attempts/${attemptId}/grade`,
+        /** POST — Trigger AI grading for an attempt */
+        AI_GRADE: (attemptId: string) => `/Attempts/${attemptId}/ai-grade`,
+        /** GET — Fetch AI grading result for an attempt */
+        AI_RESULT: (attemptId: string) => `/Attempts/${attemptId}/ai-result`,
     },
 
     // Instructor Dashboard endpoints
@@ -141,11 +145,24 @@ export const ENDPOINTS = {
         STATS: '/Dashboard/instructor',
         UPCOMING_EVENTS: '/Dashboard/UpcomingEvents',
         MY_COURSES: '/Users/instructor/my-courses',
+        MY_COURSES_PROGRESS: '/Users/instructor/my-courses-progress',
     },
 
     // Dashboard endpoints
     DASHBOARD: {
         QUIZ: (quizId: string) => `/Dashboard/quiz/${quizId}`,
         ADMIN: '/Dashboard/admin',
+    },
+
+    DISCUSSIONS: {
+        LIST: (courseId: number | string) => `/Courses/course/${courseId}/discussions`,
+        CREATE: (courseId: number | string) => `/Courses/course/${courseId}/discussions`,
+        UP_VOTE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/up_vote`,
+        DOWN_VOTE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/down_vote`,
+        UPDATE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/update`,
+        DELETE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}`,
+        PIN: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/pin`,
+        UNPIN: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/un_pin`,
+        ANSWER: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/answer`,
     },
 } as const;

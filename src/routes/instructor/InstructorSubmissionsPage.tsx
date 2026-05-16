@@ -14,6 +14,7 @@ import {
     ChevronUp, ChevronDown, Loader2, FileText, MessageSquare,
     X, Send, AlertTriangle, Eye, Clock, Users, BookOpen,
 } from 'lucide-react';
+import { clsx } from 'clsx';
 import type { GetAssignmentSubmissionDto } from '@/types/api.types';
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
@@ -263,76 +264,83 @@ export const InstructorSubmissionsPage = () => {
                 )}
 
                 {/* Header */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-5">
                     <button
                         onClick={() => navigate(assignment?.courseId ? `/instructor/courses/${assignment.courseId}/manage/assignments` : ROUTES.INSTRUCTOR_ASSIGNMENTS)}
-                        className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm"
+                        className="w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[1rem] sm:rounded-[1.25rem] flex items-center justify-center text-slate-400 hover:text-[#21A9FF] hover:border-[#21A9FF]/30 transition-all shadow-sm active:scale-90"
                     >
-                        <ArrowLeft className="w-5 h-5" />
+                        <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Student Submissions</h1>
+                    <div className="min-w-0">
+                        <h1 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight truncate">Student Submissions</h1>
                         {assignment && (
-                            <p className="text-[#21A9FF] mt-0.5 text-base font-semibold">{assignment.title}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-[#21A9FF] text-xs sm:text-sm font-bold truncate max-w-[200px] sm:max-w-md">{assignment.title}</p>
+                                <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700 shrink-0" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stats.total} Total</span>
+                            </div>
                         )}
                     </div>
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
                     {[
                         { label: 'Total Submissions', value: stats.total, icon: Users, color: 'blue' },
                         { label: 'Reviewed', value: stats.reviewed, icon: CheckCircle2, color: 'emerald' },
                         { label: 'Pending Review', value: stats.pending, icon: Clock, color: 'orange' },
                     ].map((stat, idx) => (
-                        <div key={idx} className="bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/50 rounded-2xl p-5 flex items-center justify-between shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                            <div className={`absolute left-0 top-0 w-1 h-full ${stat.color === 'blue' ? 'bg-[#21A9FF]' : stat.color === 'emerald' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
-                            <div>
-                                <p className="text-gray-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">{stat.label}</p>
-                                <h3 className="text-3xl font-black text-gray-900 dark:text-white">{stat.value}</h3>
+                        <div key={idx} className={clsx(
+                            "bg-white dark:bg-slate-800/40 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 flex items-center justify-between shadow-sm relative overflow-hidden group hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-500",
+                            idx === 2 && "col-span-2 lg:col-span-1"
+                        )}>
+                            <div className={`absolute left-0 top-0 w-1 sm:w-1.5 h-full opacity-60 ${stat.color === 'blue' ? 'bg-[#21A9FF]' : stat.color === 'emerald' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                            <div className="min-w-0">
+                                <p className="text-slate-400 dark:text-slate-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest mb-1 truncate">{stat.label}</p>
+                                <h3 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white">{stat.value}</h3>
                             </div>
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                            <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-500 ${
                                 stat.color === 'blue' ? 'bg-[#21A9FF]/10 text-[#21A9FF]' :
-                                stat.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600' :
-                                'bg-orange-50 dark:bg-orange-500/10 text-orange-600'
+                                stat.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500' :
+                                'bg-orange-50 dark:bg-orange-500/10 text-orange-500'
                             }`}>
-                                <stat.icon className="w-6 h-6" />
+                                <stat.icon className="w-5 h-5 sm:w-7 sm:h-7" />
                             </div>
                         </div>
                     ))}
                 </div>
 
                 {/* Filters */}
-                <div className="relative z-30 bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700/50 rounded-2xl p-4 flex flex-col sm:flex-row gap-3 shadow-sm">
+                <div className="relative z-30 bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-[2rem] p-3 sm:p-4 flex flex-col lg:flex-row gap-3 shadow-sm">
                     {/* Search */}
                     <div className="flex-1 relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             type="text"
-                            placeholder="Search by student name..."
+                            placeholder="Search student name..."
                             value={search}
                             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-[#21A9FF]/50 outline-none text-sm font-semibold transition-all"
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-white focus:ring-2 focus:ring-[#21A9FF]/20 focus:border-[#21A9FF] outline-none text-sm font-bold transition-all placeholder:text-slate-400 placeholder:font-medium"
                         />
                     </div>
 
-                    <div className="flex gap-3 flex-wrap">
+                    <div className="flex flex-col sm:flex-row gap-3">
                         {/* Time Status Dropdown */}
-                        <div className="relative">
-                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        <div className="relative flex-1 sm:min-w-[180px]">
+                            <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                             <div
                                 onClick={() => { setIsTimeDropdownOpen(!isTimeDropdownOpen); setIsGradingDropdownOpen(false); }}
-                                className="pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 shadow-sm hover:border-[#21A9FF]/50 transition-colors min-w-[160px]"
+                                className="pl-11 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-widest cursor-pointer flex items-center gap-2 shadow-sm hover:border-[#21A9FF] transition-all"
                             >
-                                <span className="flex-1 text-gray-800 dark:text-white">
+                                <span className="flex-1 text-slate-700 dark:text-slate-200 truncate">
                                     {apiStatus === 'all' ? 'Any Time Status' : apiStatus === 'ontime' ? 'On Time' : 'Late'}
                                 </span>
-                                <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                                <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isTimeDropdownOpen ? 'rotate-180' : ''}`} />
                             </div>
                             {isTimeDropdownOpen && (
                                 <>
                                     <div className="fixed inset-0 z-10" onClick={() => setIsTimeDropdownOpen(false)} />
-                                    <div className="absolute top-full left-0 mt-1.5 w-44 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-xl z-20 overflow-hidden ring-1 ring-black/5">
+                                    <div className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
                                         {[
                                             { value: 'all', label: 'Any Time Status' },
                                             { value: 'ontime', label: 'On Time' },
@@ -341,14 +349,14 @@ export const InstructorSubmissionsPage = () => {
                                             <button
                                                 key={opt.value}
                                                 onClick={() => { setApiStatus(opt.value); setCurrentPage(1); setIsTimeDropdownOpen(false); }}
-                                                className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-all flex items-center justify-between ${
+                                                className={`w-full text-left px-5 py-3.5 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-between ${
                                                     apiStatus === opt.value
-                                                        ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                                                        ? 'bg-[#21A9FF]/5 text-[#21A9FF]'
+                                                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50'
                                                 }`}
                                             >
                                                 {opt.label}
-                                                {apiStatus === opt.value && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />}
+                                                {apiStatus === opt.value && <div className="w-1.5 h-1.5 bg-[#21A9FF] rounded-full" />}
                                             </button>
                                         ))}
                                     </div>
@@ -357,21 +365,21 @@ export const InstructorSubmissionsPage = () => {
                         </div>
 
                         {/* Grading Filter Dropdown */}
-                        <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        <div className="relative flex-1 sm:min-w-[180px]">
+                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                             <div
                                 onClick={() => { setIsGradingDropdownOpen(!isGradingDropdownOpen); setIsTimeDropdownOpen(false); }}
-                                className="pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 shadow-sm hover:border-[#21A9FF]/50 transition-colors min-w-[160px]"
+                                className="pl-11 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-widest cursor-pointer flex items-center gap-2 shadow-sm hover:border-[#21A9FF] transition-all"
                             >
-                                <span className="flex-1 text-gray-800 dark:text-white">
+                                <span className="flex-1 text-slate-700 dark:text-slate-200 truncate">
                                     {gradingFilter === 'all' ? 'All Submissions' : gradingFilter === 'graded' ? 'Reviewed' : 'Pending Review'}
                                 </span>
-                                <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                                <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isGradingDropdownOpen ? 'rotate-180' : ''}`} />
                             </div>
                             {isGradingDropdownOpen && (
                                 <>
                                     <div className="fixed inset-0 z-10" onClick={() => setIsGradingDropdownOpen(false)} />
-                                    <div className="absolute top-full left-0 mt-1.5 w-44 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-xl z-20 overflow-hidden ring-1 ring-black/5">
+                                    <div className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
                                         {[
                                             { value: 'all', label: 'All Submissions' },
                                             { value: 'graded', label: 'Reviewed' },
@@ -380,14 +388,14 @@ export const InstructorSubmissionsPage = () => {
                                             <button
                                                 key={opt.value}
                                                 onClick={() => { setGradingFilter(opt.value as any); setCurrentPage(1); setIsGradingDropdownOpen(false); }}
-                                                className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-all flex items-center justify-between ${
+                                                className={`w-full text-left px-5 py-3.5 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-between ${
                                                     gradingFilter === opt.value
-                                                        ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                                                        ? 'bg-[#21A9FF]/5 text-[#21A9FF]'
+                                                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50'
                                                 }`}
                                             >
                                                 {opt.label}
-                                                {gradingFilter === opt.value && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />}
+                                                {gradingFilter === opt.value && <div className="w-1.5 h-1.5 bg-[#21A9FF] rounded-full" />}
                                             </button>
                                         ))}
                                     </div>
@@ -414,83 +422,83 @@ export const InstructorSubmissionsPage = () => {
                         return (
                             <div
                                 key={sub.id}
-                                className={`bg-white dark:bg-slate-800/60 border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                                className={`bg-white dark:bg-slate-800/40 backdrop-blur-md border rounded-[2rem] p-4 sm:p-6 shadow-sm hover:shadow-xl hover:shadow-[#21A9FF]/5 transition-all duration-500 flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative overflow-hidden group ${
                                     reviewed
-                                        ? 'border-emerald-200/60 dark:border-emerald-700/30'
-                                        : 'border-gray-200 dark:border-slate-700/50'
+                                        ? 'border-emerald-200/50 dark:border-emerald-500/20'
+                                        : 'border-slate-200 dark:border-slate-700/50'
                                 }`}
                             >
                                 {/* Left: Student Info */}
-                                <div className="flex items-center gap-4 flex-1 min-w-0">
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${
+                                <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-[1.25rem] flex items-center justify-center font-black text-xl shrink-0 shadow-inner group-hover:rotate-6 transition-transform duration-500 ${
                                         reviewed
-                                            ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
-                                            : 'bg-[#21A9FF]/10 text-[#21A9FF]'
+                                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500'
+                                            : 'bg-blue-50 dark:bg-blue-500/10 text-[#21A9FF]'
                                     }`}>
                                         {(sub.name || 'S').charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <h4 className="font-bold text-gray-900 dark:text-white text-base">{sub.name || 'Student'}</h4>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1.5">
+                                            <h4 className="font-black text-slate-900 dark:text-white text-base sm:text-lg tracking-tight truncate">{sub.name || 'Student'}</h4>
                                             {sub.isLate && (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-sm shadow-red-200 dark:shadow-red-900/30 uppercase tracking-wider">
-                                                    <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                                    Late
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[9px] font-black bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/20 uppercase tracking-widest w-fit animate-pulse">
+                                                    Late Submission
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
-                                            <Clock className="w-3 h-3" /> {formatDate(sub.submissionDate)}
-                                        </p>
-                                        {/* Status Badge */}
-                                        <div className="mt-2">
-                                            {reviewed ? (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 uppercase tracking-wider animate-in fade-in">
-                                                    <CheckCircle2 className="w-3 h-3" /> Reviewed
+                                        <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
+                                            <p className="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                                                <Clock className="w-3.5 h-3.5 text-[#21A9FF]" /> {formatDate(sub.submissionDate)}
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
+                                                    reviewed ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' :
+                                                    'bg-orange-50/50 text-orange-600 border-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
+                                                }`}>
+                                                    {reviewed ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                                                    {reviewed ? 'Reviewed' : 'Pending Review'}
                                                 </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 uppercase tracking-wider">
-                                                    <Clock className="w-3 h-3" /> Pending Review
-                                                </span>
-                                            )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Right: Action Buttons */}
-                                <div className="flex items-center gap-2 border-t md:border-t-0 md:border-l border-gray-100 dark:border-slate-700/50 pt-3 md:pt-0 md:pl-5 shrink-0">
-                                    {/* View Files */}
-                                    <button
-                                        onClick={() => setFilesModal({ submissionId: sub.id, studentName: sub.name })}
-                                        className="p-2.5 bg-white dark:bg-slate-800 text-[#21A9FF] border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-[#21A9FF]/10 transition-colors shadow-sm"
-                                        title="View Files"
-                                    >
-                                        <Eye className="w-4 h-4" />
-                                    </button>
-
-                                    {/* View Feedback (only when reviewed) */}
-                                    {reviewed && (
+                                <div className="flex items-center gap-2 sm:border-l border-slate-100 dark:border-slate-800 sm:pl-6 shrink-0 mt-2 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 w-full sm:w-auto">
+                                    <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                                        {/* View Files */}
                                         <button
-                                            onClick={() => setViewFeedbackModal({ studentName: sub.name, feedback })}
-                                            className="p-2.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700/40 rounded-xl hover:bg-emerald-100 transition-colors shadow-sm"
-                                            title="View Feedback"
+                                            onClick={() => setFilesModal({ submissionId: sub.id, studentName: sub.name })}
+                                            className="flex-1 sm:flex-none p-3 bg-white dark:bg-slate-800 text-[#21A9FF] border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-[#21A9FF] hover:text-white transition-all shadow-sm active:scale-95"
+                                            title="View Files"
                                         >
-                                            <BookOpen className="w-4 h-4" />
+                                            <Eye className="w-4 h-4 mx-auto" />
                                         </button>
-                                    )}
+
+                                        {/* View Feedback (only when reviewed) */}
+                                        {reviewed && (
+                                            <button
+                                                onClick={() => setViewFeedbackModal({ studentName: sub.name, feedback })}
+                                                className="flex-1 sm:flex-none p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700/40 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-95"
+                                                title="View Feedback"
+                                            >
+                                                <BookOpen className="w-4 h-4 mx-auto" />
+                                            </button>
+                                        )}
+                                    </div>
 
                                     {/* Review / Edit Feedback */}
                                     <button
                                         onClick={() => openReviewModal(sub)}
                                         disabled={reviewMutation.isPending}
-                                        className={`px-4 py-2.5 font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed ${
+                                        className={`flex-[2] sm:flex-none px-6 py-3.5 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 group/btn disabled:opacity-50 ${
                                             reviewed
-                                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                                : 'bg-[#21A9FF] hover:bg-[#0094F2] text-white'
+                                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
+                                                : 'bg-[#21A9FF] hover:bg-[#0094F2] text-white shadow-blue-500/20'
                                         }`}
                                     >
-                                        <MessageSquare className="w-3.5 h-3.5" />
-                                        {reviewed ? 'Edit Feedback' : 'Review'}
+                                        <MessageSquare className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
+                                        {reviewed ? 'Edit' : 'Review'}
                                     </button>
                                 </div>
                             </div>

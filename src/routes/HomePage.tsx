@@ -219,11 +219,12 @@ export const HomePage = () => {
 
             {/* ── Hero Section ── */}
             <section className="relative min-h-[92vh] flex items-center overflow-hidden">
-                <ParticleNetwork />
+                <ParticleNetwork isDark={isDark} />
 
-                <div className="absolute inset-0 z-[1] pointer-events-none">
-                    <div className="absolute top-20 -left-32 w-[500px] h-[500px] rounded-full bg-[#0F5A9C]/10 blur-[120px]" />
-                    <div className="absolute bottom-10 -right-32 w-[400px] h-[400px] rounded-full bg-[#74388B]/10 blur-[120px]" />
+                <div className="absolute inset-0 z-[1] pointer-events-none overflow-hidden">
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-gradient-to-br from-[#0F5A9C]/10 to-transparent blur-[120px] dark:from-[#0F5A9C]/20" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tr from-[#74388B]/10 to-transparent blur-[150px] dark:from-[#74388B]/20" />
+                    <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] rounded-full bg-[#06b6d4]/5 blur-[100px] dark:bg-[#06b6d4]/10" />
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-28 pb-16">
@@ -592,25 +593,25 @@ export const HomePage = () => {
 
             {/* ── About / CTA Section ── */}
             <section className="py-24 relative overflow-hidden" id="about">
-                <ParticleNetwork />
+                <ParticleNetwork isDark={isDark} />
 
                 <div className="absolute inset-0 z-[1] pointer-events-none">
-                    <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#0F5A9C]/8 rounded-full blur-[150px]" />
-                    <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#74388B]/8 rounded-full blur-[150px]" />
+                    <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#0F5A9C]/8 dark:bg-[#0F5A9C]/15 rounded-full blur-[150px]" />
+                    <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#74388B]/8 dark:bg-[#74388B]/15 rounded-full blur-[150px]" />
                 </div>
 
                 <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
                     <RevealSection>
-                        <span className="inline-block text-sm font-semibold text-blue-300 mb-3 tracking-wide uppercase">
+                        <span className="inline-block text-sm font-semibold text-blue-600 dark:text-blue-400 mb-3 tracking-wide uppercase">
                             About {APP_NAME}
                         </span>
-                        <h2 className="text-3xl sm:text-4xl font-bold mb-6 text-white leading-tight">
+                        <h2 className="text-3xl sm:text-4xl font-bold mb-6 text-slate-900 dark:text-white leading-tight">
                             Built for educators who care about{' '}
-                            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                            <span className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
                                 every student
                             </span>
                         </h2>
-                        <p className="text-lg text-zinc-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+                        <p className="text-lg text-slate-600 dark:text-zinc-300 mb-10 max-w-2xl mx-auto leading-relaxed">
                             {APP_NAME} was built with one mission: give educators the AI tools they need to spend less time
                             on repetitive tasks and more time making a real difference. Whether you're a professor with 300
                             students or a tutor with 10, our platform scales to fit your needs.
@@ -622,7 +623,7 @@ export const HomePage = () => {
                             <Link to={ROUTES.SIGNUP}>
                                 <Button
                                     size="lg"
-                                    className="w-full sm:w-auto !bg-white !text-[#0F5A9C] hover:!bg-slate-100 !rounded-xl !px-8 shadow-xl cursor-pointer font-semibold"
+                                    className="w-full sm:w-auto bg-slate-900 text-white dark:bg-white dark:text-[#0F5A9C] hover:bg-slate-800 dark:hover:bg-slate-100 !rounded-xl !px-8 shadow-xl cursor-pointer font-semibold"
                                 >
                                     Get Started Free
                                     <ArrowRight className="w-5 h-5 ml-1" />
@@ -632,7 +633,7 @@ export const HomePage = () => {
                                 <Button
                                     size="lg"
                                     variant="outline"
-                                    className="w-full sm:w-auto !rounded-xl !px-8 !border-white/20 !text-white hover:!bg-white/10 cursor-pointer"
+                                    className="w-full sm:w-auto !rounded-xl !px-8 border-slate-200 text-slate-600 dark:border-white/20 dark:text-white hover:bg-slate-50 dark:hover:bg-white/10 cursor-pointer"
                                 >
                                     Sign In
                                 </Button>

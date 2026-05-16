@@ -1,6 +1,6 @@
 import { X, Calendar, FileText, MessageSquare, Download, Eye, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import type { GetMySubmissionDto, GetAssignmentDto } from '../types';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { formatDateTime, parseUtcDate } from '@/utils/dateFormat';
 
 interface ViewSubmissionPanelProps {
@@ -28,6 +28,19 @@ export const ViewSubmissionPanel = ({ open, onClose, submission, isLoading, assi
         const dueDate = parseUtcDate(assignment.dueDate);
         return (dueDate && now < dueDate) || assignment.allowLateSubmission === true;
     }, [submission, assignment]);
+
+    // Implement scroll locking when the panel is open
+    useEffect(() => {
+        if (open) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [open]);
 
     const isLate = submission?.isLate ?? false;
 

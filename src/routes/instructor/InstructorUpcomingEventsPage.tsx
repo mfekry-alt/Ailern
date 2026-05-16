@@ -131,50 +131,52 @@ export const InstructorUpcomingEventsPage = () => {
             <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4">
                 
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div className="flex items-start sm:items-center gap-4">
                         <button 
                             onClick={() => navigate(-1)}
-                            className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm"
+                            className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm shrink-0"
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div>
-                            <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-                                <CalendarDays className="w-8 h-8 text-[#21A9FF]" /> Upcoming Events
+                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3 tracking-tight">
+                                <CalendarDays className="w-7 h-7 sm:w-8 sm:h-8 text-[#21A9FF]" /> Upcoming Events
                             </h1>
-                            <p className="text-gray-500 dark:text-slate-400 font-medium text-sm mt-1">
-                                Comprehensive timeline of pending assessments and curriculum deadlines.
+                            <p className="text-gray-500 dark:text-slate-400 font-medium text-xs sm:text-sm mt-1">
+                                Comprehensive timeline of assessments and deadlines.
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                         <div className="relative">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                         <div className="relative flex-1 sm:flex-none">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input 
                                 type="text"
                                 placeholder="Search events..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all w-full md:w-64 shadow-sm"
+                                className="pl-9 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white transition-all w-full sm:w-64 shadow-sm"
                             />
                         </div>
                         
-                        <div className="relative">
+                        <div className="relative flex-1 sm:flex-none">
                             <button 
                                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                                className={`flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border ${filterType !== 'All' ? 'border-[#21A9FF] shadow-sm shadow-[#21A9FF]/10' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all`}
+                                className={`w-full flex items-center justify-between sm:justify-start gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border ${filterType !== 'All' ? 'border-[#21A9FF] shadow-sm shadow-[#21A9FF]/10' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all`}
                             >
-                                <Filter className={`w-4 h-4 ${filterType !== 'All' ? 'text-[#21A9FF]' : ''}`} />
-                                <span className="hidden sm:inline">{filterType === 'All' ? 'Filter' : filterType}</span>
+                                <div className="flex items-center gap-2">
+                                    <Filter className={`w-4 h-4 ${filterType !== 'All' ? 'text-[#21A9FF]' : ''}`} />
+                                    <span>{filterType === 'All' ? 'All Types' : filterType}</span>
+                                </div>
                                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
                             </button>
 
                             {isFilterOpen && (
                                 <>
                                     <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
-                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-20 py-2 animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="absolute right-0 top-full mt-2 w-full sm:w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-20 py-2 animate-in fade-in zoom-in-95 duration-100">
                                         {(['All', 'Assignment', 'Quiz'] as const).map((type) => (
                                             <button
                                                 key={type}
@@ -182,7 +184,7 @@ export const InstructorUpcomingEventsPage = () => {
                                                     setFilterType(type);
                                                     setIsFilterOpen(false);
                                                 }}
-                                                className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+                                                className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
                                             >
                                                 {type === 'All' ? 'All Types' : `${type}s`}
                                                 {filterType === type && <Check className="w-4 h-4 text-[#21A9FF]" />}
@@ -251,39 +253,39 @@ export const InstructorUpcomingEventsPage = () => {
                                 return (
                                     <div 
                                         key={idx}
-                                        className={`group relative bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-3xl p-6 border border-gray-200 dark:border-slate-700/50 hover:shadow-xl hover:shadow-[#21A9FF]/5 transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden`}
+                                        className={`group relative bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-3xl p-5 sm:p-6 border border-gray-200 dark:border-slate-700/50 hover:shadow-xl hover:shadow-[#21A9FF]/5 transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 overflow-hidden`}
                                     >
                                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${c.dot}`} />
                                         
-                                        <div className="flex-1 space-y-3">
-                                            <div className="flex items-center gap-3">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg ${c.badge}`}>
+                                        <div className="flex-1 space-y-2 sm:space-y-3">
+                                            <div className="flex items-center gap-2 sm:gap-3">
+                                                <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 sm:py-1 rounded-lg ${c.badge}`}>
                                                     {event.eventType}
                                                 </span>
                                                 <span className="text-gray-300 dark:text-slate-700">|</span>
-                                                <p className="text-sm font-bold text-[#21A9FF] dark:text-[#21A9FF]">
+                                                <p className="text-xs sm:text-sm font-bold text-[#21A9FF] dark:text-[#21A9FF] truncate max-w-[150px] sm:max-w-none">
                                                     {event.courseName}
                                                 </p>
                                             </div>
 
-                                            <h3 className="text-xl font-extrabold text-gray-900 dark:text-white group-hover:text-[#21A9FF] dark:group-hover:text-[#21A9FF] transition-colors">
+                                            <h3 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white group-hover:text-[#21A9FF] dark:group-hover:text-[#21A9FF] transition-colors leading-tight">
                                                 {event.title}
                                             </h3>
 
-                                            <div className="flex flex-wrap items-center gap-5 text-gray-500 dark:text-slate-400">
-                                                <div className="flex items-center gap-2 text-sm font-medium">
-                                                    <Calendar className="w-4 h-4 text-gray-400" />
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 text-gray-500 dark:text-slate-400">
+                                                <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
+                                                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                                                     {formatDate(event.availableUntil)}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-sm font-medium">
-                                                    <Clock className="w-4 h-4 text-gray-400" />
+                                                <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
+                                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                                                     {new Date(event.availableUntil).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col items-end gap-3 min-w-[140px]">
-                                            <div className={`px-4 py-2 rounded-2xl font-black text-sm border ${c.border} ${c.text} ${c.bg} shadow-sm`}>
+                                        <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-3 pt-4 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-slate-800 min-w-[140px]">
+                                            <div className={`px-4 py-2 rounded-2xl font-black text-xs sm:text-sm border ${c.border} ${c.text} ${c.bg} shadow-sm`}>
                                                 {daysUntil(event.availableUntil)}
                                             </div>
                                             <Link 

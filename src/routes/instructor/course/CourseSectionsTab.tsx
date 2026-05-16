@@ -15,6 +15,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { mapServerErrors } from '@/utils/mapServerErrors';
 import { scrollToFirstError } from '@/utils/form-utils';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface Ctx { courseId: string; numericCourseId: number | null }
 
@@ -59,6 +60,7 @@ export const CourseSectionsTab = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editModalSection, setEditModalSection] = useState<SectionDto | null>(null);
     const [filesModalSection, setFilesModalSection] = useState<SectionDto | null>(null);
+    const [sectionToDelete, setSectionToDelete] = useState<{ id: string, title: string } | null>(null);
 
     useEffect(() => {
         if (searchParams.get('create') === 'true') {
@@ -95,19 +97,30 @@ export const CourseSectionsTab = () => {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Layers className="w-6 h-6 text-[#21A9FF]" /> Sections
-                </h2>
-                <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-[#21A9FF]/25 active:scale-95">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-[#21A9FF]/10 rounded-2xl flex items-center justify-center shrink-0">
+                        <Layers className="w-6 h-6 text-[#21A9FF]" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Sections</h2>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{filteredSections.length} Total</p>
+                    </div>
+                </div>
+                <button onClick={() => setIsCreateModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-black text-xs uppercase tracking-widest px-6 py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20 active:scale-95">
                     <Plus className="w-4 h-4" /> Create Section
                 </button>
             </div>
 
             {/* Filter */}
-            <div className="relative z-30 bg-white dark:bg-slate-800/40 p-3 rounded-2xl border border-gray-200 dark:border-slate-700/50 flex shadow-sm">
+            <div className="relative z-10 bg-white/60 dark:bg-slate-800/40 backdrop-blur-md p-3 sm:p-4 rounded-[2rem] border border-slate-200 dark:border-slate-700/50 flex flex-col sm:flex-row gap-3 items-center shadow-sm">
                 <div className="flex-1 w-full relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search sections..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white font-semibold transition-all" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search sections by name..."
+                        className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/20 focus:border-[#21A9FF] text-slate-900 dark:text-white font-bold transition-all placeholder:text-slate-400 placeholder:font-medium"
+                    />
                 </div>
             </div>
 
@@ -121,31 +134,36 @@ export const CourseSectionsTab = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                     {filteredSections.map(section => (
-                        <div key={section.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl flex flex-col group hover:shadow-lg hover:border-blue-300 dark:hover:border-slate-500 transition-all overflow-hidden">
+                        <div key={section.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-[2rem] flex flex-col group hover:shadow-xl hover:shadow-blue-500/5 hover:border-[#21A9FF]/50 transition-all duration-500 overflow-hidden relative">
                             {/* Card Body */}
-
-                            {/* Card Body */}
-                            <div className="p-5 flex-1 flex flex-col">
-                                <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1.5 line-clamp-2">{section.title}</h4>
-                                <div className="flex items-center gap-2 mt-auto text-xs text-gray-500 dark:text-slate-400 font-semibold mb-2">
-                                    <FileText className="w-3.5 h-3.5 shrink-0" />
-                                    <span>{section.sectionFiles?.length || 0} Material File{(section.sectionFiles?.length !== 1) ? 's' : ''}</span>
+                            <div className="p-6 flex-1 flex flex-col">
+                                <h4 className="text-xl font-black text-slate-900 dark:text-white mb-2 line-clamp-2 tracking-tight group-hover:text-[#21A9FF] transition-colors leading-tight">{section.title}</h4>
+                                <div className="flex items-center gap-2 mt-auto p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                    <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center shrink-0">
+                                        <FileText className="w-4 h-4 text-emerald-500" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Content</p>
+                                        <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate tracking-tight">
+                                            {section.sectionFiles?.length || 0} Material File{(section.sectionFiles?.length !== 1) ? 's' : ''}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Card Footer */}
-                            <div className="border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-900/40 grid grid-cols-3 divide-x divide-gray-100 dark:divide-slate-700/50 mt-auto">
-                                <button onClick={() => setEditModalSection(section)} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] hover:bg-[#21A9FF]/10 transition-all" title="Edit Section">
-                                    <Edit className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold leading-none tracking-wide uppercase">Edit</span>
+                            <div className="border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/30 dark:bg-slate-900/40 grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700/50 mt-auto">
+                                <button onClick={() => setEditModalSection(section)} className="py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-[#21A9FF] hover:bg-white dark:hover:bg-slate-800 transition-all group/btn" title="Edit">
+                                    <Edit className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                    <span className="text-[8px] sm:text-[9px] font-black leading-none tracking-widest uppercase">Edit</span>
                                 </button>
-                                <button onClick={() => setFilesModalSection(section)} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all" title="Manage Files">
-                                    <FileText className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold leading-none tracking-wide uppercase">Files</span>
+                                <button onClick={() => setFilesModalSection(section)} className="py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-emerald-500 hover:bg-white dark:hover:bg-slate-800 transition-all group/btn" title="Files">
+                                    <FileText className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                    <span className="text-[8px] sm:text-[9px] font-black leading-none tracking-widest uppercase">Files</span>
                                 </button>
-                                <button onClick={() => { if (window.confirm('Delete this section?')) deleteMutation.mutate(section.id); }} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all" title="Delete Section">
-                                    <Trash2 className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold leading-none tracking-wide uppercase">Delete</span>
+                                <button onClick={() => setSectionToDelete({ id: section.id, title: section.title })} className="py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-red-500 hover:bg-white dark:hover:bg-slate-800 transition-all group/btn" title="Delete">
+                                    <Trash2 className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                    <span className="text-[8px] sm:text-[9px] font-black leading-none tracking-widest uppercase">Delete</span>
                                 </button>
                             </div>
                         </div>
@@ -177,6 +195,28 @@ export const CourseSectionsTab = () => {
                     qk={qk}
                 />
             )}
+
+            <ConfirmDialog
+                open={sectionToDelete !== null}
+                title="Delete this section?"
+                description={
+                    <>
+                        <span className="font-bold text-gray-900 dark:text-white">&ldquo;{sectionToDelete?.title}&rdquo;</span>
+                        {' '}will be permanently removed along with all its materials.
+                    </>
+                }
+                confirmText="Delete Section"
+                onClose={() => setSectionToDelete(null)}
+                onConfirm={() => {
+                    if (sectionToDelete) {
+                        deleteMutation.mutate(sectionToDelete.id, {
+                            onSuccess: () => setSectionToDelete(null)
+                        });
+                    }
+                }}
+                isPending={deleteMutation.isPending}
+            />
+
         </div>
     );
 };
@@ -325,19 +365,19 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
                     </div>
                 </form>
 
-                <div className="mt-8 flex gap-3 justify-end">
+                <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-end">
                     <button 
                         type="button"
                         onClick={onClose} 
                         disabled={isSubmitting} 
-                        className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition active:scale-95 disabled:opacity-50"
+                        className="w-full sm:w-auto px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95 disabled:opacity-50 order-2 sm:order-1"
                     >
                         Cancel
                     </button>
                     <button 
                         onClick={handleSubmit(onSubmit, (err) => scrollToFirstError(err))} 
                         disabled={isSubmitting} 
-                        className="flex items-center gap-2 px-8 py-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-blue-500/25 active:scale-95 disabled:opacity-50"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 order-1 sm:order-2"
                     >
                         {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                         Save Section
@@ -352,6 +392,7 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
     const qc = useQueryClient();
     const [globalError, setGlobalError] = useState('');
     const [existingFiles, setExistingFiles] = useState<SectionFileDto[]>(section.sectionFiles || []);
+    const [fileToDelete, setFileToDelete] = useState<{ id: string, name: string } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const {
@@ -371,16 +412,8 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
 
     const files = (watch('files') || []).filter((f): f is File => !!f);
 
-    const removeExistingFile = async (fileId: string) => {
-        if (!window.confirm('Delete this file?')) return;
-        try {
-            await sectionService.deleteMaterialFile(section.id, fileId);
-            setExistingFiles(prev => prev.filter(f => f.id !== fileId));
-            qc.invalidateQueries({ queryKey: qk });
-            toast.success('File deleted');
-        } catch (err) {
-            toast.error('Failed to delete file');
-        }
+    const removeExistingFile = (file: SectionFileDto) => {
+        setFileToDelete({ id: file.id, name: file.fileName });
     };
 
     const onSubmit: SubmitHandler<SectionFormData> = async (data) => {
@@ -467,7 +500,7 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                                         </div>
                                         <button 
                                             type="button"
-                                            onClick={() => removeExistingFile(file.id)} 
+                                            onClick={() => removeExistingFile(file)} 
                                             className="w-8 h-8 flex items-center justify-center bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-all shadow-sm" 
                                             title="Remove File"
                                         >
@@ -526,28 +559,54 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                             )}
                         </div>
                     </div>
-                </form>
+            </form>
 
-                <div className="mt-8 flex gap-3 justify-end">
-                    <button 
-                        type="button"
-                        onClick={onClose} 
-                        disabled={isSubmitting} 
-                        className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-sm rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition active:scale-95 disabled:opacity-50"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        onClick={handleSubmit(onSubmit, (err) => scrollToFirstError(err))} 
-                        disabled={isSubmitting} 
-                        className="flex items-center gap-2 px-8 py-2.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 disabled:opacity-50"
-                    >
-                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} 
-                        Save Changes
-                    </button>
-                </div>
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-end">
+                <button 
+                    type="button"
+                    onClick={onClose} 
+                    disabled={isSubmitting} 
+                    className="w-full sm:w-auto px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition active:scale-95 disabled:opacity-50 order-2 sm:order-1"
+                >
+                    Cancel
+                </button>
+                <button 
+                    onClick={handleSubmit(onSubmit, (err) => scrollToFirstError(err))} 
+                    disabled={isSubmitting} 
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 order-1 sm:order-2"
+                >
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} 
+                    Save Changes
+                </button>
             </div>
+
+            <ConfirmDialog
+                open={fileToDelete !== null}
+                title="Remove this file?"
+                description={
+                    <>
+                        <span className="font-bold text-gray-900 dark:text-white">&ldquo;{fileToDelete?.name}&rdquo;</span>
+                        {' '}will be permanently deleted from this section.
+                    </>
+                }
+                confirmText="Delete File"
+                onClose={() => setFileToDelete(null)}
+                onConfirm={async () => {
+                    if (fileToDelete) {
+                        try {
+                            await sectionService.deleteMaterialFile(section.id, fileToDelete.id);
+                            setExistingFiles(prev => prev.filter(f => f.id !== fileToDelete.id));
+                            qc.invalidateQueries({ queryKey: qk });
+                            toast.success('File deleted');
+                            setFileToDelete(null);
+                        } catch (err) {
+                            toast.error('Failed to delete file');
+                        }
+                    }
+                }}
+            />
         </div>
+    </div>
     );
 }
 

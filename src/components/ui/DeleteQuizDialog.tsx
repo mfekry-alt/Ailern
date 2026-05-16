@@ -28,16 +28,16 @@ export function DeleteQuizDialog({ open, quizTitle, onClose, onConfirm, isPendin
     if (!open) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="delete-quiz-title" aria-describedby="delete-quiz-desc">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="delete-quiz-title" aria-describedby="delete-quiz-desc">
             <button
                 type="button"
-                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity"
                 aria-label="Close dialog"
                 disabled={isPending}
                 onClick={() => !isPending && onClose()}
             />
-            <div className="relative w-full max-w-md overflow-hidden rounded-[1.75rem] border border-gray-200/80 bg-white shadow-2xl shadow-slate-900/20 dark:border-slate-600/60 dark:bg-slate-900 dark:shadow-black/40 animate-in fade-in zoom-in-95 duration-200">
-                <div className="absolute right-4 top-4">
+            <div className="relative w-full max-w-[440px] overflow-hidden rounded-[2.5rem] border border-gray-200/80 bg-white shadow-2xl dark:border-slate-700/60 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-300">
+                <div className="absolute right-6 top-6">
                     <button
                         type="button"
                         onClick={() => !isPending && onClose()}
@@ -49,25 +49,25 @@ export function DeleteQuizDialog({ open, quizTitle, onClose, onConfirm, isPendin
                     </button>
                 </div>
 
-                <div className="border-b border-gray-100 bg-gradient-to-br from-red-50 via-white to-amber-50/30 px-6 pb-6 pt-8 dark:border-slate-700/80 dark:from-red-950/40 dark:via-slate-900 dark:to-slate-900">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600 shadow-inner shadow-red-200/50 dark:bg-red-500/15 dark:text-red-400 dark:shadow-none">
-                        <AlertTriangle className="h-7 w-7" strokeWidth={2.25} />
+                <div className="bg-gradient-to-br from-red-50/50 via-white to-rose-50/20 px-10 pb-8 pt-12 dark:from-red-950/20 dark:via-slate-900 dark:to-slate-900">
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-red-100 bg-red-50 shadow-sm dark:border-red-500/20 dark:bg-red-500/10 animate-in slide-in-from-top-4 duration-500">
+                        <AlertTriangle className="h-10 w-10 text-red-500" strokeWidth={2.25} />
                     </div>
-                    <h2 id="delete-quiz-title" className="text-center text-xl font-black tracking-tight text-gray-900 dark:text-white">
+                    <h2 id="delete-quiz-title" className="text-center text-2xl font-black tracking-tight text-gray-900 dark:text-white mb-4">
                         Delete this quiz?
                     </h2>
-                    <p id="delete-quiz-desc" className="mt-3 text-center text-sm leading-relaxed text-gray-600 dark:text-slate-400">
-                        <span className="font-semibold text-gray-900 dark:text-slate-200">&ldquo;{quizTitle || 'Untitled quiz'}&rdquo;</span>
+                    <p id="delete-quiz-desc" className="text-center text-sm font-semibold leading-relaxed text-gray-600 dark:text-slate-400">
+                        <span className="font-bold text-gray-900 dark:text-white">&ldquo;{quizTitle || 'Untitled quiz'}&rdquo;</span>
                         {' '}will be permanently removed. This cannot be undone and may delete related questions and student data.
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 p-8 sm:items-center sm:justify-between">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={isPending}
-                        className="w-full rounded-xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:bg-gray-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto"
+                        className="w-full rounded-2xl border border-gray-200 bg-white px-6 py-4 text-sm font-black text-gray-700 shadow-sm transition-all hover:bg-gray-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto"
                     >
                         Cancel
                     </button>
@@ -75,7 +75,7 @@ export function DeleteQuizDialog({ open, quizTitle, onClose, onConfirm, isPendin
                         type="button"
                         onClick={onConfirm}
                         disabled={isPending}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-500/25 transition-all hover:from-red-700 hover:to-rose-700 disabled:opacity-70 dark:shadow-red-900/40 sm:w-auto"
+                        className="inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-red-600 px-8 py-4 text-sm font-black text-white shadow-lg shadow-red-500/30 transition-all hover:bg-red-700 disabled:opacity-70 dark:shadow-red-900/40 sm:w-auto active:scale-95 group"
                     >
                         {isPending ? (
                             <>
@@ -84,7 +84,7 @@ export function DeleteQuizDialog({ open, quizTitle, onClose, onConfirm, isPendin
                             </>
                         ) : (
                             <>
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4 group-hover:-rotate-12 transition-transform" />
                                 Delete quiz
                             </>
                         )}

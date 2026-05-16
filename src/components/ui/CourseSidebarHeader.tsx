@@ -67,20 +67,11 @@ export function CourseSidebarHeader({
                 onClick={onToggle}
                 className={`w-full flex items-center gap-3 p-2 rounded-xl border border-transparent outline-none transition-all duration-150 ease-in-out cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/60 focus-visible:ring-2 focus-visible:ring-[#21A9FF]/50 group ${collapsed ? 'justify-center' : 'justify-between'}`}
             >
-                <div className={`flex items-center gap-3 min-w-0 ${collapsed ? 'justify-center' : 'flex-1'}`}>
+                <div className={`flex items-center gap-3 min-w-0 ${collapsed ? 'justify-center' : 'flex-1 pr-8 sm:pr-0'}`}>
                     <div className="relative shrink-0 flex items-center justify-center w-10 h-10 rounded-[12px] overflow-hidden shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-700/50 bg-slate-50 dark:bg-slate-800">
-                        {hasImage ? (
-                            <img
-                                src={imageUrl}
-                                alt={title}
-                                className="w-full h-full object-cover"
-                                onError={() => setImgFailed(true)}
-                            />
-                        ) : (
-                            <div className={`w-full h-full flex items-center justify-center bg-gradient-to-tr ${gradient} text-white font-bold text-[13px] tracking-wider`}>
-                                {initials}
-                            </div>
-                        )}
+                        <div className={`w-full h-full flex items-center justify-center bg-gradient-to-tr ${gradient} text-white font-bold text-[13px] tracking-wider`}>
+                            {initials}
+                        </div>
                         {collapsed && (
                             <div className="absolute inset-0 hidden lg:flex items-center justify-center bg-slate-900/40 text-white opacity-0 group-hover:opacity-100 transition-all duration-150 backdrop-blur-[2px]">
                                 <ChevronRight className="w-5 h-5 ml-0.5" />
@@ -91,13 +82,13 @@ export function CourseSidebarHeader({
                     {!collapsed && (
                         <div className="flex-1 min-w-0 flex flex-col justify-center text-left">
                             <h2 
-                                className="text-[14.5px] font-semibold text-slate-800 dark:text-slate-100 truncate leading-tight"
+                                className="text-[14.5px] font-bold text-slate-800 dark:text-slate-100 truncate leading-tight"
                                 title={title}
                             >
                                 {title}
                             </h2>
                             {code && (
-                                <p className="text-[11.5px] font-medium text-slate-500 dark:text-slate-400 truncate tracking-wide mt-0.5">
+                                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 truncate tracking-wide mt-1">
                                     {code}
                                 </p>
                             )}
@@ -115,9 +106,9 @@ export function CourseSidebarHeader({
             {!collapsed && onMobileClose && (
                 <button 
                     onClick={onMobileClose} 
-                    className="lg:hidden absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-white shrink-0"
+                    className="lg:hidden absolute right-3 top-3.5 w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100/80 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all shadow-sm border border-slate-200 dark:border-slate-700"
                 >
-                    <X className="w-5 h-5" />
+                    <X className="w-3.5 h-3.5" />
                 </button>
             )}
         </div>

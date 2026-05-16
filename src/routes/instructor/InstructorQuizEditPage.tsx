@@ -131,14 +131,14 @@ export const InstructorQuizEditPage = () => {
             <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4">
 
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <button type="button" onClick={() => navigate(-1)} className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+                    <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                        <button type="button" onClick={() => navigate(-1)} className="w-10 h-10 sm:w-11 sm:h-11 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors shrink-0 shadow-sm active:scale-95">
                             <ArrowLeft className="w-5 h-5" />
                         </button>
-                        <div>
-                            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Update Quiz Details</h1>
-                            <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mt-1">
+                        <div className="min-w-0">
+                            <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white truncate">Update Quiz Details</h1>
+                            <p className="text-[11px] sm:text-sm text-gray-500 dark:text-slate-400 font-medium mt-0.5 sm:mt-1 truncate">
                                 Modify settings, fix timings, and adjust behavior rules.
                             </p>
                         </div>
@@ -146,7 +146,7 @@ export const InstructorQuizEditPage = () => {
                     <button
                         type="button"
                         onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', quizId!))}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 rounded-xl font-bold text-sm transition-all hover:bg-indigo-100 dark:hover:bg-indigo-500/20 hover:-translate-y-0.5 active:scale-95"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 rounded-xl font-bold text-sm transition-all hover:bg-indigo-100 dark:hover:bg-indigo-500/20 hover:-translate-y-0.5 active:scale-95 shadow-sm"
                     >
                         <ListChecks className="w-4 h-4" /> Manage Questions
                     </button>
