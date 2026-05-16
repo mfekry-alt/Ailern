@@ -112,6 +112,7 @@ export const QUERY_KEYS = {
     INSTRUCTOR_STATS: ['instructor-stats'],
     UPCOMING_EVENTS: ['upcoming-events'],
     INSTRUCTOR_MY_COURSES: ['instructor-my-courses'],
+    INSTRUCTOR_MY_COURSES_PROGRESS: ['instructor-my-courses-progress'],
     /** Student — GET /Users/students/my-courses */
     STUDENT_MY_COURSES: ['student-courses'],
     STUDENT_DASHBOARD: ['student-dashboard'],

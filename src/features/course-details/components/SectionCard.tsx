@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, Layers, Loader2, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { FileItem } from './FileItem';
 
@@ -107,7 +108,6 @@ export const SectionCard = memo(({ section, sectionOrder, courseId, numericCours
                         )}
                     </div>
                 </button>
-
                 {student && (
                     <div className="relative flex shrink-0 items-center pr-4 pl-3 sm:pr-5">
                         <div
@@ -120,38 +120,50 @@ export const SectionCard = memo(({ section, sectionOrder, courseId, numericCours
                             disabled={completion.isPending}
                             onClick={() => completion.mutate(!done)}
                             className={cn(
-                                'group/finish rounded-xl outline-none transition-transform duration-200',
-                                !completion.isPending && 'hover:scale-[1.04] active:scale-[0.97]',
+                                'group/finish relative rounded-xl outline-none transition-all duration-300',
                                 'disabled:opacity-55 disabled:pointer-events-none',
                                 'focus-visible:ring-2 focus-visible:ring-[#21A9FF]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900'
                             )}
                         >
                             {completion.isPending ? (
-                                <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#21A9FF]/30 bg-[#21A9FF]/[0.06] dark:bg-[#21A9FF]/12">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#21A9FF]/30 bg-[#21A9FF]/[0.06] dark:bg-[#21A9FF]/12">
                                     <Loader2 className="h-5 w-5 animate-spin text-[#21A9FF]" aria-hidden />
-                                </span>
+                                </div>
                             ) : (
-                                <span
+                                <motion.div
+                                    whileHover={{ scale: 1.05, rotate: 2 }}
+                                    whileTap={{ scale: 0.9, y: 2 }}
                                     className={cn(
-                                        'relative flex h-11 w-11 items-center justify-center rounded-xl border-2 transition-all duration-300',
+                                        'relative flex h-8 w-8 items-center justify-center transition-all duration-300',
                                         done
-                                            ? 'border-[#21A9FF] bg-[#21A9FF] text-white shadow-[0_14px_36px_-10px_rgba(33,169,255,0.5)] dark:shadow-[0_14px_40px_-10px_rgba(33,169,255,0.35)]'
-                                            : cn(
-                                                  'border-slate-200/95 bg-white dark:border-slate-600 dark:bg-slate-950/92',
-                                                  'hover:border-[#21A9FF]/50 hover:bg-[#21A9FF]/[0.06]'
-                                              )
+                                            ? 'bg-[#21A9FF] border-[2.5px] border-slate-900 dark:border-white shadow-[3px_3px_0px_#0f172a] dark:shadow-[3px_3px_0px_#ffffff] text-white'
+                                            : 'bg-white dark:bg-slate-800 border-[2.5px] border-slate-900 dark:border-white shadow-[3px_3px_0px_#0f172a] dark:shadow-[3px_3px_0px_#ffffff]'
                                     )}
+                                    style={{
+                                        borderRadius: done 
+                                            ? '92% 8% 88% 12% / 11% 87% 13% 89%' 
+                                            : '8% 92% 12% 88% / 87% 11% 89% 13%'
+                                    }}
                                 >
-                                    <span className="sr-only">Section completion</span>
-                                    {done ? (
-                                        <Check className="h-5 w-5 stroke-[2.75]" strokeLinecap="round" aria-hidden />
-                                    ) : (
-                                        <span
-                                            className="h-[8px] w-[8px] rounded-full bg-slate-300/90 opacity-95 dark:bg-slate-500 group-hover/finish:bg-[#21A9FF] group-hover/finish:scale-110 transition-all duration-300"
-                                            aria-hidden
-                                        />
-                                    )}
-                                </span>
+                                    <AnimatePresence mode="wait">
+                                        {done ? (
+                                            <motion.div
+                                                key="check"
+                                                initial={{ scale: 0, rotate: 40 }}
+                                                animate={{ scale: 1, rotate: 0 }}
+                                                exit={{ scale: 0 }}
+                                                transition={{ type: 'spring', damping: 10, stiffness: 200 }}
+                                            >
+                                                <Check className="h-5 w-5 stroke-[4.5] text-slate-900 dark:text-white" strokeLinecap="round" />
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div
+                                                key="empty"
+                                                className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white opacity-20"
+                                            />
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
                             )}
                         </button>
                     </div>

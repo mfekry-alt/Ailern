@@ -1,47 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Plus, Users, BookOpen, ChevronRight } from 'lucide-react';
+import { BarChart3, Plus, Users, BookOpen, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/lib/constants';
+import { useInstructorCourseProgress } from '@/features/instructor/api';
 
 interface CourseProgressOverviewProps {
     hasCourses?: boolean;
 }
 
-const mockCourses = [
-    {
-        id: '1',
-        title: 'Introduction to Programming',
-        progress: 80,
-        students: 120,
-        quizzes: 3,
-    },
-    {
-        id: '2',
-        title: 'ASP.NET Fundamentals',
-        progress: 55,
-        students: 85,
-        quizzes: 5,
-    },
-    {
-        id: '3',
-        title: 'Entity Framework Core',
-        progress: 25,
-        students: 42,
-        quizzes: 2,
-    }
-];
-
-export const CourseProgressOverview: React.FC<CourseProgressOverviewProps> = ({ hasCourses = true }) => {
-    const [animatedProgress, setAnimatedProgress] = useState<number[]>(mockCourses.map(() => 0));
+export const CourseProgressOverview: React.FC<CourseProgressOverviewProps> = () => {
+    const { data: progressData, isLoading, error } = useInstructorCourseProgress();
+    const [animatedProgress, setAnimatedProgress] = useState<number[]>([]);
 
     useEffect(() => {
-        if (hasCourses) {
+        if (progressData) {
             const timer = setTimeout(() => {
-                setAnimatedProgress(mockCourses.map(c => c.progress));
+                setAnimatedProgress(progressData.map(c => c.progressPercentage));
             }, 100);
             return () => clearTimeout(timer);
         }
-    }, [hasCourses]);
+    }, [progressData]);
 
     const getProgressColor = (progress: number) => {
         if (progress >= 70) return 'bg-emerald-500 shadow-emerald-500/30';
@@ -68,7 +46,7 @@ export const CourseProgressOverview: React.FC<CourseProgressOverviewProps> = ({ 
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-[#21A9FF]" /> Course Progress Overview
                 </h2>
-                {hasCourses && (
+                {progressData && progressData.length > 0 && (
                     <Link to={ROUTES.INSTRUCTOR_COURSES}>
                         <button className="text-sm font-bold text-[#21A9FF] dark:text-[#21A9FF] hover:text-[#0094F2] dark:hover:text-[#0094F2] flex items-center gap-1 group transition-colors">
                             Details <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -79,23 +57,32 @@ export const CourseProgressOverview: React.FC<CourseProgressOverviewProps> = ({ 
 
             {/* Content Area */}
             <div className="flex-1 relative flex flex-col">
-                {hasCourses ? (
+                {isLoading ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 text-[#21A9FF] animate-spin" />
+                    </div>
+                ) : error ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                        <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
+                        <p className="text-sm font-bold text-red-600 dark:text-red-400">Failed to load progress data</p>
+                    </div>
+                ) : progressData && progressData.length > 0 ? (
                     <div className="absolute inset-0 p-6 sm:px-8 flex flex-col gap-4 overflow-y-auto">
-                        {mockCourses.map((course, idx) => (
+                        {progressData.map((course, idx) => (
                             <div 
-                                key={course.id}
+                                key={course.courseId}
                                 className="group relative bg-gray-50 dark:bg-slate-900/50 rounded-2xl py-4 px-4 pr-16 border border-gray-100 dark:border-slate-700/50 hover:shadow-md hover:border-[#21A9FF]/30 dark:hover:border-slate-500 transition-all duration-300 flex flex-col justify-center gap-2.5 overflow-hidden hover:-translate-y-0.5"
                             >
                                 {/* Title - Shifted down slightly */}
                                 <h3 className="mt-0.5 font-bold text-gray-900 dark:text-white text-sm sm:text-base leading-tight group-hover:text-[#21A9FF] transition-colors">
-                                    {course.title}
+                                    {course.courseName}
                                 </h3>
                                 
                                 {/* Progress Bar */}
                                 <div className="w-full h-2 bg-gray-200 dark:bg-slate-700/70 rounded-full overflow-hidden">
                                     <div 
-                                        className={`h-full rounded-full transition-all duration-[1500ms] ease-out shadow-sm ${getProgressColor(course.progress)}`}
-                                        style={{ width: `${animatedProgress[idx]}%` }}
+                                        className={`h-full rounded-full transition-all duration-[1500ms] ease-out shadow-sm ${getProgressColor(course.progressPercentage)}`}
+                                        style={{ width: `${animatedProgress[idx] || 0}%` }}
                                     />
                                 </div>
                                 
@@ -103,18 +90,18 @@ export const CourseProgressOverview: React.FC<CourseProgressOverviewProps> = ({ 
                                 <div className="flex items-center gap-3 text-[10px] sm:text-xs font-bold text-gray-500 dark:text-slate-400">
                                     <div className="flex items-center gap-1.5">
                                         <Users className="w-3.5 h-3.5 text-gray-400" />
-                                        {course.students} Students
+                                        {course.studentsCount} Students
                                     </div>
                                     <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600" />
                                     <div className="flex items-center gap-1.5">
                                         <BookOpen className="w-3.5 h-3.5 text-gray-400" />
-                                        {course.quizzes} Quizzes
+                                        {course.quizzesCount} Quizzes
                                     </div>
                                 </div>
 
                                 {/* Percentage Badge - Absolute positioned at right-center */}
-                                <span className={`absolute right-4 top-1/2 -translate-y-1/2 shrink-0 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-lg shadow-sm border border-transparent group-hover:border-current transition-all ${getProgressBgColor(course.progress)} ${getProgressTextColor(course.progress)}`}>
-                                    {animatedProgress[idx]}%
+                                <span className={`absolute right-4 top-1/2 -translate-y-1/2 shrink-0 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-lg shadow-sm border border-transparent group-hover:border-current transition-all ${getProgressBgColor(course.progressPercentage)} ${getProgressTextColor(course.progressPercentage)}`}>
+                                    {animatedProgress[idx] || 0}%
                                 </span>
                             </div>
                         ))}

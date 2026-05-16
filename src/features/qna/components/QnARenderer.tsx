@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import katex from 'katex';
 import renderMathInElement from 'katex/dist/contrib/auto-render';
+import hljs from 'highlight.js';
 import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/monokai-sublime.css';
 
@@ -16,6 +17,39 @@ export function QnARenderer({ content, className = '' }: QnARendererProps) {
         if (containerRef.current) {
             containerRef.current.innerHTML = content;
 
+            // Auto-wrap LaTeX commands that are missing $ delimiters
+            // This handles cases where Tiptap/backend strips the $ signs
+            const wrapMathInTextNodes = (element: HTMLElement) => {
+                const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+                const nodesToProcess: Text[] = [];
+                let n: Node | null;
+                while ((n = walker.nextNode())) {
+                    if (n.textContent) nodesToProcess.push(n as Text);
+                }
+                
+                // LaTeX command pattern: detects \frac, \sqrt, \sum, \int, etc.
+                const latexPattern = /\\(frac|sqrt|sum|int|lim|vec|pm|cdot|times|div|leq|geq|neq|approx|infty|to|text|left|right|begin|end|alpha|beta|gamma|delta|theta|lambda|sigma|pi|omega|phi|epsilon|mu|nu|rho|tau|chi|psi|zeta|eta|over|bar|hat|tilde|dot|ddot|binom|tbinom|dbinom|log|ln|sin|cos|tan|cot|sec|csc|max|min|sup|inf|det|exp|ker|dim|hom|arg|deg|Pr|gcd|lcm|mod|bmod|pmod|equiv|sim|simeq|cong|propto|perp|parallel|subset|supset|subseteq|supseteq|in|notin|cup|cap|vee|wedge|oplus|otimes|forall|exists|nabla|partial|prime|circ|bullet|star|dagger|ddagger|ell|hbar|imath|jmath|Re|Im|wp|aleph)\b/;
+                
+                for (const textNode of nodesToProcess) {
+                    const text = textNode.textContent || '';
+                    // Skip if already has $ delimiters or is inside a KaTeX element
+                    if (text.includes('$') || !latexPattern.test(text)) continue;
+                    // Skip nodes inside code/pre blocks
+                    let parent = textNode.parentElement;
+                    let insideCode = false;
+                    while (parent && parent !== element) {
+                        if (parent.tagName === 'CODE' || parent.tagName === 'PRE') { insideCode = true; break; }
+                        parent = parent.parentElement;
+                    }
+                    if (insideCode) continue;
+                    
+                    // Wrap the entire text content with $ delimiters for KaTeX
+                    textNode.textContent = `$${text.trim()}$`;
+                }
+            };
+            
+            wrapMathInTextNodes(containerRef.current);
+
             try {
                 renderMathInElement(containerRef.current, {
                     delimiters: [
@@ -26,33 +60,46 @@ export function QnARenderer({ content, className = '' }: QnARendererProps) {
                     ],
                     throwOnError: false
                 });
+                
+                // Explicitly highlight code blocks
+                containerRef.current.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block as HTMLElement);
+                });
 
                 // Add premium features to code blocks
                 const preBlocks = containerRef.current.querySelectorAll('pre');
                 preBlocks.forEach((pre) => {
                     if (pre.parentElement?.classList.contains('code-block-wrapper')) return;
 
+                    // Clean up the pre element to ensure it fits perfectly in our wrapper
+                    pre.style.margin = '0';
+                    pre.style.borderRadius = '0';
+                    pre.style.boxShadow = 'none';
+                    pre.style.border = 'none';
+
                     const wrapper = document.createElement('div');
-                    wrapper.className = 'code-block-wrapper relative my-6 rounded-2xl overflow-hidden border border-slate-200/10 shadow-2xl';
+                    wrapper.className = 'code-block-wrapper relative my-8 rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] bg-[#23241f]';
 
                     const header = document.createElement('div');
-                    header.className = 'flex items-center justify-between px-4 py-2.5 bg-[#1a1b17] border-b border-white/5';
+                    header.className = 'flex items-center justify-between px-5 py-3 bg-[#1a1b17] border-b border-white/5 select-none';
 
                     const dots = `
-                        <div class="flex gap-1.5">
-                            <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></div>
-                            <div class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
-                            <div class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></div>
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-[#ff5f56] shadow-inner"></div>
+                            <div class="w-3 h-3 rounded-full bg-[#ffbd2e] shadow-inner"></div>
+                            <div class="w-3 h-3 rounded-full bg-[#27c93f] shadow-inner"></div>
                         </div>
                     `;
 
-                    const lang = pre.querySelector('code')?.className.replace('language-', '') || 'code';
+                    const codeElem = pre.querySelector('code');
+                    const lang = codeElem?.className.replace('language-', '') || 'code';
+                    
                     header.innerHTML = `
                         ${dots}
-                        <div class="flex items-center gap-3">
-                            <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">${lang}</span>
-                            <button class="copy-btn p-1.5 hover:bg-white/5 rounded-md transition-colors group" title="Copy Code">
-                                <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500/80">${lang}</span>
+                            <button class="copy-btn p-1.5 hover:bg-white/10 rounded-lg transition-all active:scale-90 group" title="Copy Code">
+                                <svg class="w-4 h-4 text-slate-500 group-hover:text-slate-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                             </button>
                         </div>
                     `;
@@ -87,31 +134,36 @@ export function QnARenderer({ content, className = '' }: QnARendererProps) {
                 .prose pre {
                     background-color: #23241f !important;
                     color: #f8f8f2 !important;
-                    padding: 1.5rem !important;
+                    padding: 1.5rem 2rem !important;
                     margin: 0 !important;
                     border-radius: 0 !important;
                     border: none !important;
-                    font-size: 13px !important;
-                    line-height: 1.6 !important;
+                    box-shadow: none !important;
+                    font-size: 14px !important;
+                    line-height: 1.7 !important;
+                    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+                    overflow-x: auto !important;
                 }
-                .hljs-keyword, .hljs-built_in { color: #a6e22e !important; }
+                .hljs-keyword, .hljs-built_in { color: #f92672 !important; }
                 .hljs-string { color: #e6db74 !important; }
                 .hljs-comment { color: #75715e !important; }
                 .hljs-number, .hljs-attr { color: #ae81ff !important; }
-                .hljs-title { color: #66d9ef !important; }
+                .hljs-title, .hljs-function { color: #a6e22e !important; }
+                .hljs-params { color: #f8f8f2 !important; }
                 
                 .code-block-wrapper pre::-webkit-scrollbar {
-                    height: 8px;
+                    height: 10px;
                 }
                 .code-block-wrapper pre::-webkit-scrollbar-track {
                     background: #1a1b17;
                 }
                 .code-block-wrapper pre::-webkit-scrollbar-thumb {
-                    background: #333;
-                    border-radius: 4px;
+                    background: #3e3f3a;
+                    border-radius: 5px;
+                    border: 2px solid #1a1b17;
                 }
                 .code-block-wrapper pre::-webkit-scrollbar-thumb:hover {
-                    background: #444;
+                    background: #4e4f4a;
                 }
             `}} />
             <div

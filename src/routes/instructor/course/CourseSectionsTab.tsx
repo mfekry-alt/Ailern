@@ -137,9 +137,6 @@ export const CourseSectionsTab = () => {
                         <div key={section.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-[2rem] flex flex-col group hover:shadow-xl hover:shadow-blue-500/5 hover:border-[#21A9FF]/50 transition-all duration-500 overflow-hidden relative">
                             {/* Card Body */}
                             <div className="p-6 flex-1 flex flex-col">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <span className="text-[9px] font-black text-[#21A9FF] bg-[#21A9FF]/10 px-2 py-1 rounded-lg uppercase tracking-widest">Section {section.sectionNumber}</span>
-                                </div>
                                 <h4 className="text-xl font-black text-slate-900 dark:text-white mb-2 line-clamp-2 tracking-tight group-hover:text-[#21A9FF] transition-colors leading-tight">{section.title}</h4>
                                 <div className="flex items-center gap-2 mt-auto p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                                     <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center shrink-0">
