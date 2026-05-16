@@ -269,6 +269,7 @@ export interface GetStudentCoursesDto {
     instructorName: string;
     /** Overall completion 0–100 from section completions; omitted on older payloads */
     progress?: number;
+    imageUrl?: string | null;
 }
 
 /** Learning resume row — GET /Courses/my-learning (numeric codes from API) */
@@ -893,4 +894,5 @@ export interface GetStudentProfileDto {
     assignments: StudentProfileAssignmentDto[];
     quizzes: StudentProfileQuizDto[];
     averageQuizzesScore: number;
+    progress: number;
 }

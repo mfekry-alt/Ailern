@@ -268,11 +268,11 @@ export function StudentProfileModal({ isOpen, onClose, student, courseId }: Stud
                                         <StatCard 
                                             icon={TrendingUp} 
                                             title="Progress" 
-                                            value="75%" 
+                                            value={`${profile?.progress || 0}%`} 
                                             colorClass="bg-[#21A9FF]/10 text-[#21A9FF]"
                                         >
                                             <div className="w-16 sm:w-32 bg-gray-200 dark:bg-slate-700 h-1 sm:h-1.5 rounded-full overflow-hidden">
-                                                <div className="h-full bg-[#21A9FF] transition-all duration-1000 shadow-[0_0_8px_rgba(33,169,255,0.5)]" style={{ width: `75%` }} />
+                                                <div className="h-full bg-[#21A9FF] transition-all duration-1000 shadow-[0_0_8px_rgba(33,169,255,0.5)]" style={{ width: `${profile?.progress || 0}%` }} />
                                             </div>
                                         </StatCard>
 

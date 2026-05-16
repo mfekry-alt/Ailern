@@ -86,6 +86,7 @@ export const DashboardPage = () => {
         instructor: c.instructorName || 'Course',
         progress: typeof c.progress === 'number' ? Math.min(100, Math.max(0, c.progress)) : 0,
         image: getRandomCourseImage(),
+        imageUrl: c.imageUrl,
         description: c.subtitle,
         courseCode: c.code || '',
     }));

@@ -284,10 +284,8 @@ export const AdminUsersPage = () => {
         if (!deletingUser) return;
         setIsDeleting(true);
         try {
-            const response = await deleteUserApi(deletingUser.id);
-            // Use message from API if present, otherwise fallback to default
-            showToast(response.message || 'User deleted successfully.');
-            setDeletingUser(null);
+            await deleteUserApi(deletingUser.id);
+            showToast('User deleted successfully.');
             fetchUsers();
             fetchCounts(); // Refresh counts after deletion
         } catch (err) {
@@ -295,6 +293,7 @@ export const AdminUsersPage = () => {
             showToast(apiError.message, 'error');
         } finally {
             setIsDeleting(false);
+            setDeletingUser(null);
         }
     };
 
@@ -380,25 +379,28 @@ export const AdminUsersPage = () => {
             {/* Ambient Background Glow */}
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-            <div className="max-w-[1920px] mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
-                {/* --- Toast Notification --- */}
-                {statusMessage && (
-                    <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4">
-                        <div
-                            className={`px-6 py-3 rounded-full border backdrop-blur-md font-bold text-sm flex items-center gap-2 shadow-xl ${statusMessage.type === 'success'
-                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                                : 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400'
-                                }`}
-                        >
-                            {statusMessage.type === 'success' ? (
-                                <CheckCircle2 className="w-4 h-4" />
-                            ) : (
-                                <AlertTriangle className="w-4 h-4" />
-                            )}
-                            {statusMessage.text}
-                        </div>
+            {/* Toast Notification - Moved to root to escape stacking context */}
+            {statusMessage && (
+                <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[9999] animate-in slide-in-from-top-8 duration-500">
+                    <div className={`px-8 py-4 rounded-[3rem] border shadow-2xl backdrop-blur-xl flex items-center gap-3 min-w-[320px] justify-center ${statusMessage.type === 'success'
+                        ? 'bg-[#E0E7FF]/90 border-[#C7D2FE] text-slate-900'
+                        : 'bg-red-50/90 border-red-200 text-red-900'
+                        }`}>
+                        {statusMessage.type === 'success' ? (
+                            <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-sm">
+                                <CheckCircle2 className="w-4 h-4 stroke-[3]" />
+                            </div>
+                        ) : (
+                            <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white shadow-sm">
+                                <AlertTriangle className="w-4 h-4 stroke-[3]" />
+                            </div>
+                        )}
+                        <span className="font-black text-base tracking-tight">{statusMessage.text}</span>
                     </div>
-                )}
+                </div>
+            )}
+
+            <div className="max-w-[1920px] mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
 
                 {/* --- Header --- */}
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white dark:bg-slate-800/40 backdrop-blur-md p-6 sm:p-8 rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm">
@@ -629,7 +631,7 @@ export const AdminUsersPage = () => {
 
             {/* --- Delete Confirmation Modal --- */}
             {deletingUser !== null && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-in fade-in">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in">
                     <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] max-w-md w-full overflow-hidden shadow-2xl border border-gray-200 dark:border-slate-800 animate-in zoom-in-95">
                         <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between bg-red-50/50 dark:bg-red-900/10">
                             <div className="flex items-center gap-3">

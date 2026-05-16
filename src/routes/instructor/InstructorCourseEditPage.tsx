@@ -53,6 +53,7 @@ export const InstructorCourseEditPage = () => {
     const courseId = id ? parseInt(id) : 0;
 
     const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
+    const [isExistingImageRemoved, setIsExistingImageRemoved] = useState(false);
 
     // API hooks
     const createCourseMutation = useCreateCourse();
@@ -93,11 +94,13 @@ export const InstructorCourseEditPage = () => {
         const file = e.target.files?.[0];
         if (file) {
             setValue('thumbnail', file, { shouldValidate: true });
+            setIsExistingImageRemoved(false);
         }
     };
 
     const removeImage = () => {
         setValue('thumbnail', undefined as any, { shouldValidate: true });
+        setIsExistingImageRemoved(true);
     };
 
     // Smooth scroll to first error
@@ -117,11 +120,17 @@ export const InstructorCourseEditPage = () => {
     const onSubmit: SubmitHandler<CourseFormData> = async (data) => {
         setStatusMessage(null);
         try {
-            const imageMetadata = data.thumbnail ? {
-                FileName: data.thumbnail.name,
-                FileSize: data.thumbnail.size,
-                ContentType: data.thumbnail.type
-            } : undefined;
+            let imageMetadata = undefined;
+            if (data.thumbnail) {
+                imageMetadata = {
+                    FileName: data.thumbnail.name,
+                    FileSize: data.thumbnail.size,
+                    ContentType: data.thumbnail.type
+                };
+            } else if (isExistingImageRemoved) {
+                // If explicitly removed, we pass null to signal deletion to the API
+                imageMetadata = null as any;
+            }
 
             const command = {
                 code: data.courseId.trim(),
@@ -238,7 +247,7 @@ export const InstructorCourseEditPage = () => {
                                                 className="w-full h-full object-cover"
                                                 alt="Course Preview"
                                             />
-                                        ) : existingCourse?.imageUrl ? (
+                                        ) : (existingCourse?.imageUrl && !isExistingImageRemoved) ? (
                                             <img
                                                 src={existingCourse.imageUrl || undefined}
                                                 className="w-full h-full object-cover opacity-60"
@@ -251,11 +260,11 @@ export const InstructorCourseEditPage = () => {
                                             </div>
                                         )}
                                     </div>
-                                    {(thumbnail || existingCourse?.imageUrl) && (
+                                    {(thumbnail || (existingCourse?.imageUrl && !isExistingImageRemoved)) && (
                                         <button
                                             type="button"
                                             onClick={removeImage}
-                                            className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                            className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors z-10"
                                         >
                                             <X className="w-3.5 h-3.5" />
                                         </button>

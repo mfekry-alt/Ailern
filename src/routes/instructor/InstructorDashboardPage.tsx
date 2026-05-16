@@ -182,6 +182,7 @@ const MiniCalendar = ({ events }: { events: UpcomingEventDto[] }) => {
                     const hasQuiz = dayEvents?.some((e) => e.eventType === 'Quiz');
                     const hasMixed = hasAssignment && hasQuiz;
                     const isSpecial = hasAssignment || hasQuiz;
+                    const today = isToday(day);
 
                     return (
                         <div
@@ -190,7 +191,8 @@ const MiniCalendar = ({ events }: { events: UpcomingEventDto[] }) => {
                                 group/cal relative aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-black transition-all duration-300 cursor-default
                                 ${isSpecial
                                     ? (hasMixed ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : hasQuiz ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20')
-                                    : (isToday(day) ? 'bg-white dark:bg-slate-800 border-[2.5px] border-[#812E96] text-[#812E96] shadow-md shadow-purple-500/10' : 'bg-gray-50 dark:bg-slate-900/50 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50')}
+                                    : (today ? 'bg-white dark:bg-slate-800 text-[#812E96] shadow-md shadow-purple-500/10' : 'bg-gray-50 dark:bg-slate-900/50 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50')}
+                                ${today ? 'border-[2.5px] border-[#812E96]' : ''}
                             `}
                         >
                             <span className={isSpecial ? 'mt-[-4px]' : ''}>{day}</span>
