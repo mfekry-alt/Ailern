@@ -19,7 +19,6 @@ import {
 import { CourseSidebarHeader } from '@/components/ui/CourseSidebarHeader';
 
 const NAV_ITEMS = [
-    { to: 'overview', label: 'Overview', icon: LayoutDashboard },
     { to: 'sections', label: 'Sections', icon: Layers },
     { to: 'assignments', label: 'Assignments', icon: ListChecks },
     { to: 'quizzes', label: 'Quizzes', icon: HelpCircle },

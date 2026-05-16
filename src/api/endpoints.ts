@@ -29,9 +29,12 @@ export const ENDPOINTS = {
     USERS: {
         ME: '/Users/me', // Get current authenticated user
         GET: (id: number) => `/Users/${id}`,
+        DELETE_USER: (id: number) => `/Users/${id}`,
         ADD_ROLE: (id: number) => `/Users/${id}/roles`,
         REMOVE_ROLE: (id: number) => `/Users/${id}/roles`,
         BY_ROLE: (roleId: number) => `/Users/roles/${roleId}`,
+        ROLES: '/Users/roles', // Get users with optional role filter and pagination
+        COUNT: '/Users/count', // Get total counts of users by role
         STUDENT_PROFILE: (courseId: number | string, studentId: number | string) => `/Users/student-profile?CourseId=${courseId}&StudentId=${studentId}`,
     },
 
@@ -39,6 +42,7 @@ export const ENDPOINTS = {
     COURSES: {
         LIST: '/Courses',
         GET: (id: number) => `/Courses/${id}`,
+        DETAILS: (id: number) => `/Courses/${id}/details`,
         CREATE: '/Courses',
         UPDATE: (id: number) => `/Courses/${id}`,
         DELETE: (id: number) => `/Courses/${id}`,

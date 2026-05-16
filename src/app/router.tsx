@@ -35,7 +35,6 @@ import { AIGradingResultPage } from '@/routes/student/AIGradingResultPage';
 
 // Course Details (new course-centric feature)
 import { CourseDetailsLayout } from '@/features/course-details/pages/CourseDetailsLayout';
-import { OverviewTab } from '@/features/course-details/pages/OverviewTab';
 import { SectionsTab } from '@/features/course-details/pages/SectionsTab';
 import { AssignmentsTab } from '@/features/course-details/pages/AssignmentsTab';
 import { AssignmentDetailsPage } from '@/features/course-details/pages/AssignmentDetailsPage';
@@ -132,8 +131,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
                 <Route path={ROUTES.COURSES} element={<CoursesPage />} />
                 <Route path="/courses/:courseId" element={<CourseDetailsLayout />}>
-                    <Route index element={<Navigate to="overview" replace />} />
-                    <Route path="overview" element={<OverviewTab />} />
+                    <Route index element={<Navigate to="sections" replace />} />
                     <Route path="sections" element={<SectionsTab />} />
                     <Route path="assignments" element={<AssignmentsTab />} />
                     <Route path="assignments/:assignmentId" element={<AssignmentDetailsPage />} />
