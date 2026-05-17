@@ -4,6 +4,7 @@ import {
     createAiResourcesHubConnection,
     type StatusUpdatedHandler,
     type QuestionsGeneratedHandler,
+    type AIServiceProblemHandler,
 } from '@/api/signalr/aiResourcesHub';
 
 /**
@@ -14,13 +15,17 @@ import {
 export function useAiResourcesHub(
     onStatusUpdated: StatusUpdatedHandler,
     enabled: boolean,
-    onQuestionsGenerated?: QuestionsGeneratedHandler
+    onQuestionsGenerated?: QuestionsGeneratedHandler,
+    onAIServiceProblem?: AIServiceProblemHandler
 ) {
     const handlerRef = useRef(onStatusUpdated);
     handlerRef.current = onStatusUpdated;
 
     const questionsHandlerRef = useRef(onQuestionsGenerated);
     questionsHandlerRef.current = onQuestionsGenerated;
+
+    const serviceProblemHandlerRef = useRef(onAIServiceProblem);
+    serviceProblemHandlerRef.current = onAIServiceProblem;
 
     const connectionRef = useRef<signalR.HubConnection | null>(null);
 
@@ -44,7 +49,8 @@ export function useAiResourcesHub(
 
         const conn = createAiResourcesHubConnection(
             (fileId, status, error) => handlerRef.current(fileId, status, error),
-            (count, completed) => questionsHandlerRef.current?.(count, completed)
+            (count, completed) => questionsHandlerRef.current?.(count, completed),
+            (error) => serviceProblemHandlerRef.current?.(error)
         );
         connectionRef.current = conn;
 

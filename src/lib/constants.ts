@@ -75,6 +75,8 @@ export const ROUTES = {
     INSTRUCTOR_AI_GRADING_DASHBOARD: '/instructor/courses/:courseId/manage/quizzes/:quizId/ai-evaluation',
     INSTRUCTOR_AI_GRADING_DETAILS: '/instructor/courses/:courseId/manage/quizzes/:quizId/ai-evaluation/:submissionId',
     INSTRUCTOR_AI_ASSISTANT: '/instructor/courses/:id/manage/ai-assistant',
+    INSTRUCTOR_QUIZ_MANAGE: '/instructor/quiz/:quizId/manage',
+    INSTRUCTOR_QUIZ_AI_GRADER: '/instructor/quiz/:quizId/manage/ai-grader',
 
     // Admin routes
     ADMIN: '/admin',

@@ -143,16 +143,23 @@ export const CourseQuizzesTab = () => {
                                 {/* Card header - Styled Action Bar */}
                                 <div className="px-4 pt-4 pb-2 flex justify-between items-center bg-gray-50/30 dark:bg-slate-900/10 border-b border-gray-100/50 dark:border-slate-700/20">
                                     <QuizStatusSelect quizId={quiz.id} courseId={courseId} status={status} />
-                                    {isEnded && (
+                                    <div className="flex items-center gap-2">
                                         <button 
-                                            onClick={() => navigate(`/quiz-dashboard/${quiz.id}`)}
+                                            onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_DASHBOARD.replace(':quizId', quiz.id.toString()))}
                                             className="h-8 px-2.5 flex items-center gap-1.5 text-violet-600 bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-500/20 rounded-full shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all group/analytics"
                                             title="View Analytics"
                                         >
                                             <BarChart2 className="w-3.5 h-3.5" />
                                             <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline">Stats</span>
                                         </button>
-                                    )}
+                                        <button 
+                                            onClick={() => setQuizToDelete({ id: quiz.id, title: quiz.title })}
+                                            className="h-8 w-8 flex items-center justify-center text-red-500 bg-white dark:bg-slate-800 border border-red-100 dark:border-red-500/20 rounded-full shadow-sm hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                                            title="Delete Quiz"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Card body */}

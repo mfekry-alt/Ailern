@@ -18,7 +18,6 @@ import {
     Search,
     BrainCircuit,
     RotateCcw,
-    AlertTriangle,
     Info,
 } from 'lucide-react';
 import { PDFThumbnail } from '@/components/PDFThumbnail';
@@ -77,6 +76,14 @@ const ALLOWED_CONTENT_TYPES = [
 
 /** Must match `MaxFileSizeInBytes` on the backend. */
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+const DEFAULT_AI_SERVICE_PROBLEM_MESSAGE = 'AI service unavailable. Remove and try again later.';
+
+function isAiIngestionInProgress(file: UploadedFile): boolean {
+    if (file.uploadStatus !== 'Completed') return false;
+    const status = file.aiProcessingStatus;
+    return status === 'Pending' || status === 'Processing' || status == null;
+}
 
 // --- Helpers ---
 
@@ -221,13 +228,7 @@ function MaterialsOverviewStats({ files }: { files: UploadedFile[] }) {
     );
 }
 
-function FileIngestStatusChips({
-    file,
-    onRetryFailed,
-}: {
-    file: UploadedFile;
-    onRetryFailed: (file: UploadedFile) => void | Promise<void>;
-}) {
+function FileIngestStatusChips({ file }: { file: UploadedFile }) {
     const isUploadFailed = file.uploadStatus !== 'Completed';
     const isAiFailed = file.aiProcessingStatus === 'Failed';
     const isFailed = isUploadFailed || isAiFailed;
@@ -240,11 +241,11 @@ function FileIngestStatusChips({
 
     if (isFailed) {
         badge = (
-            <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-semibold tracking-tight border border-red-200 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-100">
-                ✖ Failed
+            <span className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold tracking-tight border border-red-200/80 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+                Failed
             </span>
         );
-        hint = isAiFailed && file.error ? file.error : 'Processing failed — please close this or retry.';
+        hint = isAiFailed && file.error ? file.error : isUploadFailed ? 'Upload failed.' : 'Processing failed.';
     } else if (isReady) {
         badge = (
             <span className="inline-flex items-center rounded-md px-2 py-1 text-[10px] font-semibold tracking-tight border border-emerald-200 bg-emerald-100 text-emerald-950 dark:border-emerald-800/55 dark:bg-emerald-950/40 dark:text-emerald-100">
@@ -271,24 +272,19 @@ function FileIngestStatusChips({
     }
 
     return (
-        <div className="mt-2 space-y-1.5">
-            <div className="flex flex-wrap items-center gap-1">
-                {badge}
-                {isFailed && (
-                    <button
-                        type="button"
-                        onClick={() => void onRetryFailed(file)}
-                        className="inline-flex items-center gap-0.5 rounded-md border border-red-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-red-800 hover:bg-red-50 dark:border-red-900/55 dark:bg-slate-950 dark:text-red-200 dark:hover:bg-red-950/35"
-                    >
-                        <RotateCcw className="h-3 w-3 shrink-0" aria-hidden />
-                        Retry
-                    </button>
-                )}
-            </div>
+        <div className="mt-2 space-y-1">
+            {badge}
             {hint ? (
-                <div className={`text-[10px] leading-snug rounded-md ${isFailed ? 'bg-red-50 p-2 border border-red-100 text-red-800 dark:bg-red-950/30 dark:border-red-900/50 dark:text-red-200 mt-2 font-medium break-words' : 'text-slate-500 dark:text-slate-400 mt-1 line-clamp-2'}`} title={hint}>
+                <p
+                    className={
+                        isFailed
+                            ? 'text-[11px] leading-snug text-red-700/90 line-clamp-2 dark:text-red-300/90'
+                            : 'text-[10px] leading-snug text-slate-500 line-clamp-2 dark:text-slate-400'
+                    }
+                    title={hint}
+                >
                     {hint}
-                </div>
+                </p>
             ) : null}
         </div>
     );
@@ -356,7 +352,19 @@ export const CourseAIAssistantTab = () => {
         }
     }, [courseId]);
 
-    const hubEnabled = uploadedFiles.length > 0;
+    const hubEnabled = uploadedFiles.length > 0 || uploadingFiles.length > 0;
+
+    const handleAIServiceProblem = useCallback((error?: string) => {
+        const message = error?.trim() || DEFAULT_AI_SERVICE_PROBLEM_MESSAGE;
+        setUploadedFiles((prev) => {
+            const inProgressIds = new Set(prev.filter(isAiIngestionInProgress).map((f) => f.id));
+            return prev.map((f) =>
+                inProgressIds.has(f.id)
+                    ? { ...f, aiProcessingStatus: 'Failed' as const, error: message }
+                    : f
+            );
+        });
+    }, []);
 
     useAiResourcesHub(
         useCallback((fileId, status, error) => {
@@ -377,7 +385,9 @@ export const CourseAIAssistantTab = () => {
                 return next;
             });
         }, []),
-        hubEnabled
+        hubEnabled,
+        undefined,
+        handleAIServiceProblem
     );
 
     // --- Effects ---
@@ -579,34 +589,6 @@ export const CourseAIAssistantTab = () => {
         }
     };
 
-    /** Remove failed ingestion record so the instructor can upload again (no backend retry endpoint). */
-    const retryFailedAiResource = useCallback(
-        async (file: UploadedFile) => {
-            try {
-                // Delete from backend just in case it wasn't fully removed automatically
-                await aiResourcesService.deleteResource(courseId, file.id).catch(() => {});
-                setUploadedFiles((prev) => prev.filter((f) => f.id !== file.id));
-                
-                const cachedFile = cachedFilesRef.current.get(file.id);
-                if (cachedFile) {
-                    toast.info('Retrying upload automatically...', {
-                        description: 'Re-uploading the original file.',
-                    });
-                    void handleFiles([cachedFile]);
-                } else {
-                    toast.message('Removed failed material', {
-                        description: 'Please select the file again from the upload area.',
-                    });
-                    fileInputRef.current?.click();
-                }
-            } catch (error) {
-                const apiError = handleApiError(error);
-                toast.error('Could not remove file', { description: apiError.message });
-            }
-        },
-        [courseId, handleFiles]
-    );
-
     // --- Drag and Drop Logic ---
 
     const onDragOver = (e: React.DragEvent) => {
@@ -754,13 +736,17 @@ export const CourseAIAssistantTab = () => {
                                 const aiActive =
                                     file.uploadStatus === 'Completed' &&
                                     file.aiProcessingStatus === 'Processing';
+                                const isFailed =
+                                    file.uploadStatus === 'Failed' || file.aiProcessingStatus === 'Failed';
                                 return (
                                     <div
                                         key={file.id}
                                         className={`relative flex flex-col rounded-2xl border bg-white p-3 transition-colors dark:bg-slate-900/70 ${
-                                            aiActive
-                                                ? 'motion-safe:animate-ai-processing-ring border-violet-300 dark:border-violet-600/60'
-                                                : 'border-slate-200 hover:border-indigo-300/70 dark:border-slate-800 dark:hover:border-indigo-500/35'
+                                            isFailed
+                                                ? 'border-red-200 ring-1 ring-red-100 dark:border-red-900/50 dark:ring-red-950/40'
+                                                : aiActive
+                                                  ? 'motion-safe:animate-ai-processing-ring border-violet-300 dark:border-violet-600/60'
+                                                  : 'border-slate-200 hover:border-indigo-300/70 dark:border-slate-800 dark:hover:border-indigo-500/35'
                                         } animate-in zoom-in-95`}
                                         style={{ animationDelay: `${Math.min(idx, 8) * 40}ms` }}
                                     >
@@ -798,10 +784,10 @@ export const CourseAIAssistantTab = () => {
                                                     {file.aiProcessingStatus === 'Failed' ? (
                                                         <button
                                                             type="button"
-                                                            title="Dismiss"
-                                                            aria-label="Dismiss failed material"
-                                                            onClick={() => setUploadedFiles(prev => prev.filter(f => f.id !== file.id))}
-                                                            className="rounded-lg border border-slate-200 bg-white/95 p-2 text-slate-600 shadow-sm hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:bg-slate-800/95 dark:hover:bg-slate-700 dark:hover:text-white"
+                                                            title="Remove failed material"
+                                                            aria-label="Remove failed material"
+                                                            onClick={() => void deleteFile(file.id, file.name)}
+                                                            className="rounded-lg border border-red-200 bg-white/95 p-2 text-red-600 shadow-sm hover:bg-red-50 hover:text-red-700 dark:border-red-900/55 dark:bg-slate-800/95 dark:text-red-300 dark:hover:bg-red-950/40"
                                                         >
                                                             <X className="h-4 w-4" />
                                                         </button>
@@ -831,7 +817,7 @@ export const CourseAIAssistantTab = () => {
                                                 {formatFileSize(file.size)}
                                             </span>
                                         </div>
-                                        <FileIngestStatusChips file={file} onRetryFailed={retryFailedAiResource} />
+                                        <FileIngestStatusChips file={file} />
                                     </div>
                                 );
                             })}
@@ -876,14 +862,6 @@ export const CourseAIAssistantTab = () => {
                                     <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                                         Drop files to train your AI assistant, or click to browse.
                                     </p>
-                                    <div className="text-left text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 mt-3 space-y-1 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50">
-                                        <p className="font-medium text-slate-700 dark:text-slate-300">Upload lectures, notes, or text files to help the AI understand your course. This content will be used for:</p>
-                                        <ul className="list-disc pl-4 space-y-0.5 mt-1">
-                                            <li>Generating exam questions</li>
-                                            <li>Grading student answers</li>
-                                            <li>Assisting students</li>
-                                        </ul>
-                                    </div>
                                     <div className="flex flex-wrap justify-center gap-2 pt-2">
                                         {['PDF', 'DOCX', 'TXT'].map((type) => (
                                             <span
