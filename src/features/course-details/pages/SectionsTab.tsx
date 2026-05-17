@@ -223,41 +223,26 @@ export const SectionsTab = () => {
 
 
     return (
-
-        <div className="space-y-8 animate-fade-in">
-
-            <div className="flex items-center gap-4">
-
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center border border-blue-200/50 dark:border-blue-800/50">
-
+        <div className="space-y-8 animate-in fade-in duration-700">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center border border-blue-200/50 dark:border-blue-800/50 shrink-0">
                     <Layers className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-
                 </div>
-
                 <div>
-
-                    <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                         Course Sections
-
                     </h2>
-
-                    <p className="text-gray-500 dark:text-slate-400 text-sm mt-0.5">
-
-                        {sections.length} {sections.length === 1 ? 'section' : 'sections'} available
-
-                    </p>
-
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                            {sections.length} {sections.length === 1 ? 'section' : 'sections'} available
+                        </p>
+                    </div>
                 </div>
-
             </div>
 
-
-
-            <div className="space-y-3">
-
+            <div className="space-y-4 sm:space-y-5">
                 {sections.map((section, index) => (
-
                     <SectionCard
                         key={section.id}
                         section={section}
@@ -265,13 +250,9 @@ export const SectionsTab = () => {
                         courseId={courseId}
                         numericCourseId={courseKey}
                     />
-
                 ))}
-
             </div>
-
         </div>
-
     );
 
 };

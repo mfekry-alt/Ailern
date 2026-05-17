@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { assignmentService } from '@/api/services';
 import { ROUTES } from '@/lib/constants';
 import { Plus, FileText, Edit, Trash2, Loader2, Calendar, Eye, Filter, ChevronDown, Search, Download, X } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type { GetAssignmentDto } from '@/types/api.types';
 import { useDeleteAssignment, useCourseAssignments, useAssignment } from '@/features/assignments/api';
 
@@ -31,6 +32,7 @@ export const CourseAssignmentsTab = () => {
     const [search, setSearch] = useState('');
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [filesModal, setFilesModal] = useState<{ assignmentId: number, title: string } | null>(null);
+    const [assignmentToDelete, setAssignmentToDelete] = useState<{ id: number, title: string } | null>(null);
 
     const { data: assignmentDetail, isLoading: isLoadingFiles } = useAssignment(filesModal?.assignmentId || 0);
     const assignmentFiles = assignmentDetail?.submissionFiles || assignmentDetail?.files || [];
@@ -68,38 +70,49 @@ export const CourseAssignmentsTab = () => {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                    <FileText className="w-6 h-6 text-[#21A9FF]" /> Assignments
-                </h2>
-                <button onClick={() => navigate(`/instructor/courses/${numericCourseId}/assignments/create`)} className="flex items-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-[#21A9FF]/25 active:scale-95">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center shrink-0">
+                        <FileText className="w-6 h-6 text-[#21A9FF]" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Assignments</h2>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{filteredAssignments.length} Total</p>
+                    </div>
+                </div>
+                <button onClick={() => navigate(`/instructor/courses/${numericCourseId}/assignments/create`)} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#21A9FF] hover:bg-[#0094F2] text-white font-black text-xs uppercase tracking-widest px-6 py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20 active:scale-95">
                     <Plus className="w-4 h-4" /> Create Assignment
                 </button>
             </div>
 
             {/* Filters */}
-            <div className="relative z-30 bg-white dark:bg-slate-800/40 p-3 rounded-2xl border border-gray-200 dark:border-slate-700/50 flex flex-col sm:flex-row gap-3 items-center shadow-sm">
+            <div className="relative z-10 bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-[2rem] p-3 sm:p-4 flex flex-col lg:flex-row gap-3 shadow-sm">
                 {/* Search */}
                 <div className="flex-1 w-full relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search assignments..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white font-semibold transition-all" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search assignments..."
+                        className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-600 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/20 focus:border-[#21A9FF] text-slate-900 dark:text-white font-bold transition-all placeholder:text-slate-400 placeholder:font-medium"
+                    />
                 </div>
 
                 {/* Status Dropdown */}
-                <div className="relative shrink-0">
-                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <div className="relative shrink-0 w-full lg:w-auto">
+                    <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     <div
                         onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                        className="pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-bold cursor-pointer flex items-center gap-2 shadow-sm hover:border-blue-300 dark:hover:border-slate-500 transition-colors min-w-[160px]"
+                        className="pl-11 pr-4 py-3 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-widest cursor-pointer flex items-center gap-2 shadow-sm hover:border-[#21A9FF] transition-all min-w-[180px]"
                     >
-                        <span className="flex-1 text-gray-800 dark:text-white">
+                        <span className="flex-1 text-slate-700 dark:text-slate-200">
                             {filterStatus === 'all' ? 'All Status' : filterStatus}
                         </span>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-300 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                     </div>
                     {isStatusDropdownOpen && (
                         <>
                             <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
-                            <div className="absolute top-full right-0 mt-1.5 w-48 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-xl z-20 overflow-hidden ring-1 ring-black/5">
+                            <div className="absolute top-full right-0 mt-2 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
                                 {[
                                     { value: 'all' as const, label: 'All Status' },
                                     { value: 'Draft' as const, label: 'Draft' },
@@ -109,13 +122,13 @@ export const CourseAssignmentsTab = () => {
                                     <button
                                         key={opt.value}
                                         onClick={() => { setFilterStatus(opt.value); setIsStatusDropdownOpen(false); }}
-                                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-all flex items-center justify-between ${filterStatus === opt.value
-                                                ? 'bg-blue-50 dark:bg-[#21A9FF]/10 text-[#21A9FF]'
-                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
+                                        className={`w-full text-left px-5 py-3.5 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-between ${filterStatus === opt.value
+                                                ? 'bg-[#21A9FF]/5 text-[#21A9FF]'
+                                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50'
                                             }`}
                                     >
                                         {opt.label}
-                                        {filterStatus === opt.value && <div className="w-1.5 h-1.5 bg-[#21A9FF] rounded-full" />}
+                                        {filterStatus === opt.value && <div className="w-1.5 h-1.5 bg-[#21A9FF] rounded-full shadow-[0_0_10px_#21A9FF]" />}
                                     </button>
                                 ))}
                             </div>
@@ -133,51 +146,55 @@ export const CourseAssignmentsTab = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                     {filteredAssignments.map((assignment) => {
-                        return (
-                            <div key={assignment.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl flex flex-col group hover:shadow-lg hover:border-blue-300 dark:hover:border-slate-500 transition-all overflow-hidden">
+                        return (                            <div key={assignment.id} className="bg-white dark:bg-slate-800/40 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-[2rem] flex flex-col group hover:shadow-xl hover:shadow-blue-500/5 hover:border-[#21A9FF]/50 transition-all duration-500 overflow-hidden relative">
                                 {/* Card header */}
-                                <div className="p-5 pb-0 flex justify-between items-start">
+                                <div className="p-6 pb-0 flex justify-between items-start">
                                     {getStatusBadge(assignment.isPublished, assignment.dueDate)}
                                 </div>
 
                                 {/* Card body */}
-                                <div className="p-5 flex-1 flex flex-col">
-                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1.5 line-clamp-2">{assignment.title}</h4>
-                                    <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-4 line-clamp-2">{assignment.instructions || 'No description'}</p>
+                                <div className="p-6 flex-1 flex flex-col">
+                                    <h4 className="text-xl font-black text-slate-900 dark:text-white mb-2 line-clamp-2 tracking-tight group-hover:text-[#21A9FF] transition-colors">{assignment.title}</h4>
+                                    <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mb-5 line-clamp-2 leading-relaxed">{assignment.instructions || 'No special instructions provided.'}</p>
 
                                     {/* Meta info */}
-                                    <div className="mt-auto space-y-2.5">
-                                        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-400">
-                                            <Calendar className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                                            <span className="font-semibold">Due:</span>
-                                            <span className="truncate">{toLocal(assignment.dueDate)}</span>
+                                    <div className="mt-auto">
+                                        <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <div className="w-8 h-8 bg-orange-50 dark:bg-orange-500/10 rounded-xl flex items-center justify-center shrink-0">
+                                                <Calendar className="w-4 h-4 text-orange-500" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Deadline</p>
+                                                <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate tracking-tight">{toLocal(assignment.dueDate)}</p>
+                                            </div>
                                             {new Date(assignment.dueDate) < new Date() && (
-                                                <span className="ml-1 text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-1.5 py-0.5 rounded">Past Due</span>
+                                                <span className="ml-auto text-[8px] font-black text-red-500 uppercase tracking-widest bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded-lg border border-red-100 dark:border-red-500/20">Overdue</span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Card footer / Actions */}
-                                <div className="border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-900/40 grid grid-cols-4 divide-x divide-gray-100 dark:divide-slate-700/50 mt-auto">
-                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT.replace(':id', assignment.id.toString()))} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all" title="Edit Assignment">
-                                        <Edit className="w-4 h-4" />
-                                        <span className="text-[10px] font-bold leading-none tracking-wide uppercase">Edit</span>
+                                <div className="border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/30 dark:bg-slate-900/40 grid grid-cols-4 divide-x divide-slate-100 dark:divide-slate-700/50 mt-auto">
+                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_ASSIGNMENT_EDIT.replace(':id', assignment.id.toString()))} className="py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-[#21A9FF] hover:bg-white dark:hover:bg-slate-800 transition-all group/btn" title="Edit">
+                                        <Edit className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                        <span className="text-[8px] sm:text-[9px] font-black leading-none tracking-widest uppercase">Edit</span>
                                     </button>
-                                    <button onClick={() => setFilesModal({ assignmentId: assignment.id, title: assignment.title })} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all" title="View Files">
-                                        <FileText className="w-4 h-4" />
-                                        <span className="text-[10px] font-bold leading-none tracking-wide uppercase">Files</span>
+                                    <button onClick={() => setFilesModal({ assignmentId: assignment.id, title: assignment.title })} className="py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-emerald-500 hover:bg-white dark:hover:bg-slate-800 transition-all group/btn" title="Files">
+                                        <FileText className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                        <span className="text-[8px] sm:text-[9px] font-black leading-none tracking-widest uppercase">Files</span>
                                     </button>
-                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', assignment.id.toString()))} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all" title="View Submissions">
-                                        <Eye className="w-4 h-4" />
-                                        <span className="text-[10px] font-bold leading-none tracking-wide uppercase truncate w-full text-center px-1">Submissions</span>
+                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', assignment.id.toString()))} className="py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-indigo-500 hover:bg-white dark:hover:bg-slate-800 transition-all group/btn" title="Submissions">
+                                        <Eye className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                        <span className="text-[8px] sm:text-[9px] font-black leading-none tracking-widest uppercase truncate w-full text-center px-0.5">Submits</span>
                                     </button>
-                                    <button onClick={() => { if (window.confirm('Delete this assignment permanently?')) deleteAssignmentMutation.mutate(assignment.id); }} className="py-3.5 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all" title="Delete Assignment">
-                                        <Trash2 className="w-4 h-4" />
-                                        <span className="text-[10px] font-bold leading-none tracking-wide uppercase">Delete</span>
+                                    <button onClick={() => setAssignmentToDelete({ id: assignment.id, title: assignment.title })} className="py-4 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:text-red-500 hover:bg-white dark:hover:bg-slate-800 transition-all group/btn" title="Delete">
+                                        <Trash2 className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                        <span className="text-[8px] sm:text-[9px] font-black leading-none tracking-widest uppercase">Del</span>
                                     </button>
                                 </div>
                             </div>
+
                         );
                     })}
                 </div>
@@ -255,6 +272,27 @@ export const CourseAssignmentsTab = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog
+                open={assignmentToDelete !== null}
+                title="Delete this assignment?"
+                description={
+                    <>
+                        <span className="font-bold text-gray-900 dark:text-white">&ldquo;{assignmentToDelete?.title}&rdquo;</span>
+                        {' '}will be permanently removed. This cannot be undone.
+                    </>
+                }
+                confirmText="Delete Assignment"
+                onClose={() => setAssignmentToDelete(null)}
+                onConfirm={() => {
+                    if (assignmentToDelete) {
+                        deleteAssignmentMutation.mutate(assignmentToDelete.id, {
+                            onSuccess: () => setAssignmentToDelete(null)
+                        });
+                    }
+                }}
+                isPending={deleteAssignmentMutation.isPending}
+            />
         </div>
     );
 };

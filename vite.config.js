@@ -21,6 +21,7 @@ export default defineConfig({
     },
   },
   server: {
+    port: 5173,
     proxy: {
       // ⚡ This rule tells Vite: "If a request starts with /api, send it to the real backend"
       '/api': {

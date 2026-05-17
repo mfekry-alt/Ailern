@@ -14,14 +14,15 @@ import {
     ListChecks,
     LayoutDashboard,
     Menu,
+    MessageSquareText,
 } from 'lucide-react';
 import { CourseSidebarHeader } from '@/components/ui/CourseSidebarHeader';
 
 const NAV_ITEMS = [
-    { to: 'overview', label: 'Overview', icon: LayoutDashboard },
     { to: 'sections', label: 'Sections', icon: Layers },
     { to: 'assignments', label: 'Assignments', icon: ListChecks },
     { to: 'quizzes', label: 'Quizzes', icon: HelpCircle },
+    { to: 'qna', label: 'Q&A Board', icon: MessageSquareText },
 ] as const;
 
 const FALLBACK_COURSE_IMAGE = '/course-default.png';
@@ -125,7 +126,7 @@ export const CourseDetailsLayout = () => {
                     ${collapsed ? 'w-[72px]' : 'w-64'}
                 `}
             >
-                <CourseSidebarHeader 
+                <CourseSidebarHeader
                     courseName={courseTitle}
                     courseCode={courseCode}
                     imageUrl={courseImageSrc}
@@ -154,17 +155,15 @@ export const CourseDetailsLayout = () => {
                                     const base = `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black transition-all duration-300 group relative
                                         ${collapsed ? 'justify-center px-0' : ''}`;
                                     if (lockedTab) {
-                                        return `${base} ${
-                                            isActive
+                                        return `${base} ${isActive
                                                 ? 'bg-amber-500/20 text-amber-950 dark:text-amber-100 border border-amber-300/60 dark:border-amber-500/40'
                                                 : 'text-amber-900/90 dark:text-amber-200/90 border border-transparent hover:bg-amber-500/10 dark:hover:bg-amber-500/10'
-                                        }`;
+                                            }`;
                                     }
-                                    return `${base} ${
-                                        isActive
+                                    return `${base} ${isActive
                                             ? 'bg-[#21A9FF]/10 text-[#21A9FF] active shadow-sm'
                                             : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
-                                    }`;
+                                        }`;
                                 }}
                             >
                                 {!lockedTab && (
@@ -190,9 +189,8 @@ export const CourseDetailsLayout = () => {
                     <button
                         type="button"
                         onClick={handleBackToCourseCatalog}
-                        className={`flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl text-sm font-black text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white transition-all group ${
-                            collapsed ? 'justify-center px-0' : ''
-                        }`}
+                        className={`flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl text-sm font-black text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white transition-all group ${collapsed ? 'justify-center px-0' : ''
+                            }`}
                     >
                         <ChevronLeft className="w-5 h-5 shrink-0 group-hover:-translate-x-1 transition-transform" />
                         {!collapsed && <span>All Courses</span>}
@@ -201,11 +199,10 @@ export const CourseDetailsLayout = () => {
             </aside>
 
             <div
-                className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${
-                    collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
-                }`}
+                className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
+                    }`}
             >
-                <div className="lg:hidden flex items-center gap-3 p-4 bg-white dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-700/50 sticky top-0 z-20">
+                <div className="lg:hidden flex items-center gap-3 p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-700/50 fixed top-[72px] left-0 right-0 z-30 h-16">
                     <button
                         type="button"
                         onClick={() => setMobileOpen(true)}
@@ -213,22 +210,14 @@ export const CourseDetailsLayout = () => {
                     >
                         <Menu className="w-5 h-5" />
                     </button>
-                    <img
-                        src={courseImageSrc}
-                        alt=""
-                        className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900"
-                        loading="lazy"
-                        onError={() => setCourseThumbFailed(true)}
-                    />
                     <div className="min-w-0 flex-1">
                         <h2 className="text-sm font-extrabold text-gray-900 dark:text-white truncate">
                             {isLoading ? 'Loading...' : courseTitle}
                         </h2>
                     </div>
-                    <UserAvatarBadge size="sm" />
                 </div>
 
-                <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto no-scrollbar">
+                <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto no-scrollbar lg:pt-8 pt-20">
                     <Outlet context={{ courseId, numericCourseId: numericId, course }} />
                 </div>
             </div>

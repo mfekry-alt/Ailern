@@ -47,7 +47,7 @@ const CustomInput = forwardRef<
         `}
     >
         <div className={`p-2 rounded-xl ${iconColor.replace('text-', 'bg-').replace('-500', '-500/10')} ${iconColor} shrink-0`}>
-            <Calendar className="w-4.5 h-4.5" />
+            <Calendar className="w-5 h-5" />
         </div>
         <div className="flex-1 flex flex-col min-w-0">
             {value ? (

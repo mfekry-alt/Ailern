@@ -3,7 +3,7 @@ import { Outlet, useParams, useNavigate, NavLink } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCourse } from '@/features/courses/api';
 import { QUERY_KEYS } from '@/lib/constants';
-import { ChevronLeft, ChevronRight, Layers, FileText, HelpCircle, Users, Menu, X, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Layers, FileText, HelpCircle, Users, Menu, X, Sparkles, MessageSquareText } from 'lucide-react';
 import { CourseSidebarHeader } from '@/components/ui/CourseSidebarHeader';
 
 const NAV_ITEMS = [
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
     { to: 'quizzes', label: 'Quizzes', icon: HelpCircle },
     { to: 'students', label: 'Students', icon: Users },
     { to: 'ai-assistant', label: 'Knowledge Base', icon: Sparkles },
+    { to: 'qna', label: 'Q&A Board', icon: MessageSquareText },
 ] as const;
 
 export const CourseManageLayout = () => {
@@ -44,14 +45,14 @@ export const CourseManageLayout = () => {
         <div className="flex bg-gray-50 dark:bg-slate-900" style={{ minHeight: 'calc(100vh - 72px)' }}>
             {/* Mobile overlay */}
             {mobileOpen && (
-                <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setMobileOpen(false)} />
+                <div className="fixed inset-0 bg-black/40 z-[45] lg:hidden" onClick={() => setMobileOpen(false)} />
             )}
 
             {/* Sidebar */}
             <aside
                 className={`
-                    fixed top-0 lg:top-[72px] left-0 z-40
-                    h-screen lg:h-[calc(100vh-72px)]
+                    fixed top-[72px] left-0 z-50
+                    h-[calc(100vh-72px)]
                     bg-white dark:bg-slate-800/60 backdrop-blur-md
                     border-r border-gray-200 dark:border-slate-700/50
                     flex flex-col transition-all duration-300 ease-out shrink-0
@@ -112,7 +113,7 @@ export const CourseManageLayout = () => {
             {/* Main content */}
             <div className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'}`}>
                 {/* Mobile top bar */}
-                <div className="lg:hidden flex items-center gap-3 p-4 bg-white dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-700/50 sticky top-0 z-20">
+                <div className="lg:hidden flex items-center gap-3 p-4 bg-white dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-700/50 sticky top-[72px] z-40 shadow-sm backdrop-blur-md">
                     <button onClick={() => setMobileOpen(true)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300">
                         <Menu className="w-5 h-5" />
                     </button>

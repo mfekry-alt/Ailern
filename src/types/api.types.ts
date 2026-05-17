@@ -120,6 +120,7 @@ export interface GetUsersByRoleDto {
     phoneNumber: string;
     createdBy: string;
     role: string;
+    imageUrl?: string | null;
 }
 
 export interface GetUsersByRoleDtoPaginationResult {
@@ -136,6 +137,13 @@ export interface AddUserToRoleCommand {
 
 export interface DeleteUserRoleCommand {
     role: string;
+}
+
+export interface GetUserCountsDto {
+    totalUsers: number;
+    totalStudent: number;
+    totalInstructors: number;
+    totalAdmins: number;
 }
 
 // ============================================================================
@@ -172,13 +180,15 @@ export interface GetAllCoursesDto {
     id: number;
     code: string;
     name: string;
-    courseStatus: string;
     createdAt: string;
     instructorId: number;
+    instructorName: string;
+    enrolledStudents: number;
     totalStudents: number;
     totalSections: number;
     description: string | null;
     imageUrl?: string | null;
+    courseProgress?: number;
 }
 
 export interface GetAllCoursesDtoPaginationResult {
@@ -187,6 +197,23 @@ export interface GetAllCoursesDtoPaginationResult {
     start: number;
     end: number;
     items: GetAllCoursesDto[];
+}
+
+export interface GetCourseDetailsDto {
+    id: number;
+    imagePath: string | null;
+    courseName: string;
+    courseCode: string;
+    courseDescription: string;
+    instructorId: number;
+    instructorName: string;
+    instructorEmail: string;
+    instructorImage: string | null;
+    totalEnrollments: number;
+    totalMaterialNumber: number;
+    totalMaterialSize: number;
+    totalAiResourcesNumber: number;
+    totalAiResourcesSize: number;
 }
 
 export interface GetAvailableCoursesDto {
@@ -242,6 +269,7 @@ export interface GetStudentCoursesDto {
     instructorName: string;
     /** Overall completion 0–100 from section completions; omitted on older payloads */
     progress?: number;
+    imageUrl?: string | null;
 }
 
 /** Learning resume row — GET /Courses/my-learning (numeric codes from API) */
@@ -473,6 +501,8 @@ export interface CreateQuizBody {
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
     shuffleOptions: boolean;
+    enableAIGrading?: boolean;
+    globalAIInstructions?: string;
 }
 
 export interface UpdateQuizBody {
@@ -485,6 +515,8 @@ export interface UpdateQuizBody {
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
     shuffleOptions: boolean;
+    enableAIGrading?: boolean;
+    globalAIInstructions?: string;
 }
 
 // --- Request DTOs (questions upsert) ---
@@ -497,6 +529,26 @@ export interface OptionRequest {
 /** @deprecated Use OptionRequest instead */
 export type QuizOptionRequest = OptionRequest;
 
+export type ExpectedAnswerImportance = "must-have" | "nice-to-have";
+
+export interface ExpectedAnswerPoint {
+    id: string;
+    text: string;
+    importance: ExpectedAnswerImportance;
+}
+
+export interface QuestionAIRubric {
+    name: string;
+    weight: number;
+}
+
+export interface EssayQuestionAIConfig {
+    modelAnswer?: string | null;
+    expectedPoints?: ExpectedAnswerPoint[] | null;
+    rubric?: QuestionAIRubric[] | null;
+    aiInstructions?: string | null;
+}
+
 export interface QuestionUpsertRequest {
     id?: string | null;
     questionText: string;
@@ -504,6 +556,7 @@ export interface QuestionUpsertRequest {
     mark: number;
     instructions?: string | null;
     explanation?: string | null;
+    aiConfig?: EssayQuestionAIConfig | null;
     options: OptionRequest[];
 }
 
@@ -560,6 +613,7 @@ export interface QuestionDto {
     explanation?: string | null;
     order: number;
     options?: OptionDto[] | null;
+    aiConfig?: EssayQuestionAIConfig | null;
 }
 
 export interface GetQuizDto {
@@ -577,6 +631,8 @@ export interface GetQuizDto {
     shuffleQuestions?: boolean | null;
     shuffleOptions?: boolean | null;
     attemptTimeLimit?: number;
+    enableAIGrading?: boolean;
+    globalAIInstructions?: string;
     createdAt?: string | null;
     questions?: QuestionDto[] | null;
     /** Client / older payloads */
@@ -771,6 +827,14 @@ export interface InstructorStatsDto {
     totalAssignments: number;
 }
 
+export interface InstructorCourseProgressDto {
+    courseId: number;
+    courseName: string;
+    studentsCount: number;
+    quizzesCount: number;
+    progressPercentage: number;
+}
+
 export interface UpcomingEventDto {
     title: string;
     eventType: 'Assignment' | 'Quiz';
@@ -830,4 +894,5 @@ export interface GetStudentProfileDto {
     assignments: StudentProfileAssignmentDto[];
     quizzes: StudentProfileQuizDto[];
     averageQuizzesScore: number;
+    progress: number;
 }

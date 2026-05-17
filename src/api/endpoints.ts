@@ -29,9 +29,12 @@ export const ENDPOINTS = {
     USERS: {
         ME: '/Users/me', // Get current authenticated user
         GET: (id: number) => `/Users/${id}`,
+        DELETE_USER: (id: number) => `/Users/${id}`,
         ADD_ROLE: (id: number) => `/Users/${id}/roles`,
         REMOVE_ROLE: (id: number) => `/Users/${id}/roles`,
         BY_ROLE: (roleId: number) => `/Users/roles/${roleId}`,
+        ROLES: '/Users/roles', // Get users with optional role filter and pagination
+        COUNT: '/Users/count', // Get total counts of users by role
         STUDENT_PROFILE: (courseId: number | string, studentId: number | string) => `/Users/student-profile?CourseId=${courseId}&StudentId=${studentId}`,
     },
 
@@ -39,6 +42,7 @@ export const ENDPOINTS = {
     COURSES: {
         LIST: '/Courses',
         GET: (id: number) => `/Courses/${id}`,
+        DETAILS: (id: number) => `/Courses/${id}/details`,
         CREATE: '/Courses',
         UPDATE: (id: number) => `/Courses/${id}`,
         DELETE: (id: number) => `/Courses/${id}`,
@@ -130,6 +134,10 @@ export const ENDPOINTS = {
         GET_RESULT: (attemptId: string) => `/Attempts/${attemptId}/result`,
         GET_STUDENT_ANSWERS: (attemptId: string) => `/Attempts/${attemptId}/student-answers`,
         GRADE: (attemptId: string) => `/Attempts/${attemptId}/grade`,
+        /** POST — Trigger AI grading for an attempt */
+        AI_GRADE: (attemptId: string) => `/Attempts/${attemptId}/ai-grade`,
+        /** GET — Fetch AI grading result for an attempt */
+        AI_RESULT: (attemptId: string) => `/Attempts/${attemptId}/ai-result`,
     },
 
     // Instructor Dashboard endpoints
@@ -137,11 +145,24 @@ export const ENDPOINTS = {
         STATS: '/Dashboard/instructor',
         UPCOMING_EVENTS: '/Dashboard/UpcomingEvents',
         MY_COURSES: '/Users/instructor/my-courses',
+        MY_COURSES_PROGRESS: '/Users/instructor/my-courses-progress',
     },
 
     // Dashboard endpoints
     DASHBOARD: {
         QUIZ: (quizId: string) => `/Dashboard/quiz/${quizId}`,
         ADMIN: '/Dashboard/admin',
+    },
+
+    DISCUSSIONS: {
+        LIST: (courseId: number | string) => `/Courses/course/${courseId}/discussions`,
+        CREATE: (courseId: number | string) => `/Courses/course/${courseId}/discussions`,
+        UP_VOTE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/up_vote`,
+        DOWN_VOTE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/down_vote`,
+        UPDATE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/update`,
+        DELETE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}`,
+        PIN: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/pin`,
+        UNPIN: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/un_pin`,
+        ANSWER: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/answer`,
     },
 } as const;

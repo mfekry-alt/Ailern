@@ -21,6 +21,7 @@ import type {
     GetStudentProfileDto,
     UpdateStudentCourseProgressCommand,
     GetMyLearningDto,
+    GetCourseDetailsDto,
 } from '@/types/api.types';
 
 const EMPTY_COURSES_RESULT: GetAllCoursesDtoPaginationResult = {
@@ -132,8 +133,10 @@ export const getAllCourses = async (
             ENDPOINTS.COURSES.LIST,
             {
                 params: {
-                    pageNumber: defaultParams.PageNumber || 1,
-                    pageSize: defaultParams.PageSize || 50
+                    pageNo: defaultParams.PageNumber || 1,
+                    pageSize: defaultParams.PageSize || 50,
+                    sortBy: defaultParams.SortBy,
+                    order: defaultParams.Order
                 }
             }
         );
@@ -163,7 +166,7 @@ export const getAllCourses = async (
 
         // WORKAROUND 1: Lowercase params
         try {
-            const res2 = await api.get('/Courses', { params: { pageNumber: 1, pageSize: 50 } });
+            const res2 = await api.get('/Courses', { params: { pageNo: 1, pageSize: 50 } });
             const d2 = res2.data.data || res2.data; // Check both wrapper and direct
             if (d2?.items?.length > 0) {
                 result.items = d2.items;
@@ -200,6 +203,11 @@ export const getAllCourses = async (
 
 export const getCourseById = async (id: number): Promise<GetCourseDto> => {
     const response = await api.get<any>(ENDPOINTS.COURSES.GET(id));
+    return response.data?.data || response.data;
+};
+
+export const getCourseDetails = async (id: number): Promise<GetCourseDetailsDto> => {
+    const response = await api.get<any>(ENDPOINTS.COURSES.DETAILS(id));
     return response.data?.data || response.data;
 };
 
