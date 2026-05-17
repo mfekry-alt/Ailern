@@ -18,7 +18,9 @@ import {
     BarChart2, 
     Search, 
     ChevronDown,
-    Eye
+    Eye,
+    BrainCircuit,
+    Settings
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -134,16 +136,23 @@ export const CourseQuizzesTab = () => {
                                 {/* Card header - Styled Action Bar */}
                                 <div className="px-4 pt-4 pb-2 flex justify-between items-center bg-gray-50/30 dark:bg-slate-900/10 border-b border-gray-100/50 dark:border-slate-700/20">
                                     <QuizStatusSelect quizId={quiz.id} courseId={courseId} status={status} />
-                                    {isEnded && (
+                                    <div className="flex items-center gap-2">
                                         <button 
-                                            onClick={() => navigate(`/quiz-dashboard/${quiz.id}`)}
+                                            onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_DASHBOARD.replace(':quizId', quiz.id.toString()))}
                                             className="h-8 px-2.5 flex items-center gap-1.5 text-violet-600 bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-500/20 rounded-full shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all group/analytics"
                                             title="View Analytics"
                                         >
                                             <BarChart2 className="w-3.5 h-3.5" />
                                             <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline">Stats</span>
                                         </button>
-                                    )}
+                                        <button 
+                                            onClick={() => setQuizToDelete({ id: quiz.id, title: quiz.title })}
+                                            className="h-8 w-8 flex items-center justify-center text-red-500 bg-white dark:bg-slate-800 border border-red-100 dark:border-red-500/20 rounded-full shadow-sm hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                                            title="Delete Quiz"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Card body */}
@@ -186,23 +195,27 @@ export const CourseQuizzesTab = () => {
                                     </div>
                                 </div>
 
-                                {/* Card footer / Actions (Symmetric with Assignments) */}
-                                <div className="border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-900/40 grid grid-cols-4 divide-x divide-gray-100 dark:divide-slate-700/50 mt-auto">
+                                {/* Card footer / Actions */}
+                                <div className="border-t border-gray-100 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-900/40 grid grid-cols-5 divide-x divide-gray-100 dark:divide-slate-700/50 mt-auto">
                                     <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all" title="Edit Quiz">
-                                        <Edit className="w-4 h-4" />
-                                        <span className="text-[9px] font-bold leading-none tracking-wide uppercase">Edit</span>
+                                        <Settings className="w-4 h-4" />
+                                        <span className="text-[8px] font-black leading-none tracking-tight uppercase">Settings</span>
                                     </button>
                                     <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_QUESTIONS_EDIT.replace(':id', quiz.id.toString()))} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all" title="Manage Questions">
                                         <ListChecks className="w-4 h-4" />
-                                        <span className="text-[9px] font-bold leading-none tracking-wide uppercase">Questions</span>
+                                        <span className="text-[8px] font-black leading-none tracking-tight uppercase">Questions</span>
                                     </button>
-                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS.replace(':quizId', quiz.id.toString()))} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all" title="View Submissions">
+                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_AI_GRADER.replace(':quizId', quiz.id.toString()))} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all" title="AI Grader">
+                                        <BrainCircuit className="w-4 h-4" />
+                                        <span className="text-[8px] font-black leading-none tracking-tight uppercase">AI Grader</span>
+                                    </button>
+                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS.replace(':quizId', quiz.id.toString()))} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-all" title="View Submissions">
                                         <Eye className="w-4 h-4" />
-                                        <span className="text-[9px] font-bold leading-none tracking-wide uppercase truncate w-full text-center px-1">Submissions</span>
+                                        <span className="text-[8px] font-black leading-none tracking-tight uppercase">Submissions</span>
                                     </button>
-                                    <button onClick={() => setQuizToDelete({ id: quiz.id, title: quiz.title })} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all" title="Delete Quiz">
-                                        <Trash2 className="w-4 h-4" />
-                                        <span className="text-[9px] font-bold leading-none tracking-wide uppercase">Delete</span>
+                                    <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_DASHBOARD.replace(':quizId', quiz.id.toString()))} className="py-2.5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-all" title="View Analytics">
+                                        <BarChart2 className="w-4 h-4" />
+                                        <span className="text-[8px] font-black leading-none tracking-tight uppercase">Analytics</span>
                                     </button>
                                 </div>
                             </div>

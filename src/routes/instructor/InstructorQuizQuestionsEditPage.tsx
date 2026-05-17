@@ -202,7 +202,7 @@ export const InstructorQuizQuestionsEditPage = () => {
                 instructions: q.instructions ?? '',
                 explanation: q.explanation ?? '',
                 options: q.options?.map(o => ({
-                    optionId: o.optionId ?? null,
+                    optionId: o.id ?? null,
                     optionText: o.optionText,
                     isCorrect: o.isCorrect
                 })) || []
@@ -364,7 +364,7 @@ export const InstructorQuizQuestionsEditPage = () => {
                                 </h1>
                                 <div className="flex items-center gap-3 mt-1.5 ml-0.5">
                                     <span className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest max-w-[200px] sm:max-w-md truncate">
-                                        {settings?.title || quiz.title}
+                                        {settings?.title || quiz?.title}
                                     </span>
                                     <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                                     <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md border shadow-sm ${statusBadgeClass}`}>

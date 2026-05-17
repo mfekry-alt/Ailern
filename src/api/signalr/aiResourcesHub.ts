@@ -7,9 +7,14 @@ export const AI_RESOURCES_HUB_METHOD = 'StatusUpdated';
 /** Must match server SendAsync("QuestionsGenerated", ...) */
 export const QUESTIONS_GENERATED_METHOD = 'QuestionsGenerated';
 
+/** Must match server SendAsync("AIServiceProblem", ...) */
+export const AI_SERVICE_PROBLEM_METHOD = 'AIServiceProblem';
+
 export type AiResourceLiveStatus = 'Pending' | 'Processing' | 'Completed' | 'Failed';
 
 export type QuestionsGeneratedHandler = (questionsCount: number, completed: boolean) => void;
+
+export type AIServiceProblemHandler = (error?: string) => void;
 
 export function getAiResourcesHubUrl(): string {
     const api = import.meta.env.VITE_API_URL ?? 'https://localhost:7080/api/';
@@ -37,7 +42,8 @@ export type StatusUpdatedHandler = (fileId: string, status: AiResourceLiveStatus
  */
 export function createAiResourcesHubConnection(
     onStatusUpdated: StatusUpdatedHandler,
-    onQuestionsGenerated?: QuestionsGeneratedHandler
+    onQuestionsGenerated?: QuestionsGeneratedHandler,
+    onAIServiceProblem?: AIServiceProblemHandler
 ): signalR.HubConnection {
     const hubUrl = getAiResourcesHubUrl();
 
@@ -65,6 +71,13 @@ export function createAiResourcesHubConnection(
             const count = Number(questionsCount) || 0;
             const isCompleted = Boolean(completed);
             onQuestionsGenerated(count, isCompleted);
+        });
+    }
+
+    if (onAIServiceProblem) {
+        connection.on(AI_SERVICE_PROBLEM_METHOD, (error: unknown) => {
+            const errorMsg = error != null && String(error).trim() !== '' ? String(error).trim() : undefined;
+            onAIServiceProblem(errorMsg);
         });
     }
 
