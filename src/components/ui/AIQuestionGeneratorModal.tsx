@@ -205,11 +205,12 @@ export function AIQuestionGeneratorModal({ isOpen, quizId, onClose, onGenerate, 
     const generateMutation = useMutation({
         mutationFn: (data: GenerationFormData) => quizService.generateQuizQuestionsByAI(quizId as string, {
             fileIds: data.selectedFileIds,
+            topics: data.options.topics || [],
             questionsCount: data.totalQuestions,
             questionTypeCounts: { MCQ: data.questionTypes.mcq, TrueFalse: data.questionTypes.trueFalse, Written: data.questionTypes.written },
             questionDifficultyPercents: { Easy: data.difficulty.easy, Medium: data.difficulty.medium, Hard: data.difficulty.hard },
-            query: `${(data.options.topics || []).join(', ')} | ${data.options.instructions || ''}`.trim()
-        } as any),
+            query: data.options.instructions || ''
+        }),
         onSuccess: (_data: any) => {
             if (!quizId) {
                 const questions = _data?.questions ?? _data?.data ?? [];

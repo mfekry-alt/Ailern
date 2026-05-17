@@ -27,6 +27,7 @@ export interface QuizGenerationFile {
 
 export interface GenerateQuizByAIPayload {
     fileIds?: string[];
+    topics?: string[];
     questionsCount: number;
     questionTypeCounts: {
         MCQ: number;
