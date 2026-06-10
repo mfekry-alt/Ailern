@@ -836,6 +836,8 @@ export interface InstructorCourseProgressDto {
 }
 
 export interface UpcomingEventDto {
+    id?: number | string;
+    courseId?: number;
     title: string;
     eventType: 'Assignment' | 'Quiz';
     courseName: string;

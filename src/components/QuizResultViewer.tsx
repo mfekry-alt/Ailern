@@ -5,6 +5,19 @@ import { attemptsService } from '@/api/services';
 import type { AttemptResult } from '@/api/services/attempts.service';
 import type { AnswerDto } from '@/types/api.types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { QnARenderer } from '@/features/qna/components/QnARenderer';
+
+const decodeHtml = (html: string) => {
+    if (!html) return '';
+    let result = html;
+    const decoder = document.createElement('textarea');
+    for (let i = 0; i < 3; i++) {
+        if (!result.includes('&')) break;
+        decoder.innerHTML = result;
+        result = decoder.value;
+    }
+    return result;
+};
 
 export const QuizResultViewer = () => {
     const { id: quizId, attemptId } = useParams<{ id: string; attemptId: string }>();
@@ -154,7 +167,9 @@ export const QuizResultViewer = () => {
                                                         {answer.type}
                                                     </span>
                                                 </div>
-                                                <p className="text-lg font-semibold text-gray-900 dark:text-white">{answer.questionText}</p>
+                                                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                                                    <QnARenderer content={decodeHtml(answer.questionText)} />
+                                                </div>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-black text-gray-900 dark:text-white">{answer.score} / {answer.maxScore}</p>
@@ -186,9 +201,9 @@ export const QuizResultViewer = () => {
                                                         return (
                                                             <div key={`${answer.order}-${option.order}`} className={`rounded-xl border px-4 py-3 ${optionState}`}>
                                                                 <div className="flex items-center justify-between gap-3">
-                                                                    <p className={`text-sm font-medium ${isCorrect ? 'text-emerald-800 dark:text-emerald-200' : isSelectedWrong ? 'text-red-800 dark:text-red-200' : 'text-gray-800 dark:text-slate-200'}`}>
-                                                                        {option.optionText}
-                                                                    </p>
+                                                                    <div className={`text-sm font-medium ${isCorrect ? 'text-emerald-800 dark:text-emerald-200' : isSelectedWrong ? 'text-red-800 dark:text-red-200' : 'text-gray-800 dark:text-slate-200'}`}>
+                                                                        <QnARenderer content={decodeHtml(option.optionText)} />
+                                                                    </div>
                                                                     <div className="flex items-center gap-2">
                                                                         {option.isSelected && (
                                                                             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded ${isCorrect ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-500/20' : 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-500/20'}`}>
@@ -217,15 +232,15 @@ export const QuizResultViewer = () => {
                                                         : 'border-amber-400 bg-amber-50 dark:border-amber-400/50 dark:bg-amber-400/10'
                                             }`}>
                                                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Your Answer</p>
-                                                <p className={`text-sm whitespace-pre-wrap ${
-                                                    answer.score === answer.maxScore && answer.maxScore > 0
-                                                        ? 'text-emerald-900 dark:text-emerald-100'
-                                                        : answer.score === 0
-                                                            ? 'text-red-900 dark:text-red-100'
-                                                            : 'text-amber-900 dark:text-amber-100'
-                                                }`}>
-                                                    {answer.answer?.trim() ? answer.answer : 'No answer submitted.'}
-                                                </p>
+                                                {answer.answer?.trim() ? (
+                                                    <div className="bg-white/80 dark:bg-slate-950/60 rounded-lg p-3.5 border border-gray-100 dark:border-slate-800/80">
+                                                        <QnARenderer content={decodeHtml(answer.answer)} />
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm text-gray-400 dark:text-slate-500 font-medium italic">
+                                                        No answer submitted.
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
 

@@ -3,7 +3,7 @@ import katex from 'katex';
 import renderMathInElement from 'katex/dist/contrib/auto-render';
 import hljs from 'highlight.js';
 import 'katex/dist/katex.min.css';
-import 'highlight.js/styles/monokai-sublime.css';
+import '@/styles/code-highlight.css';
 
 interface QnARendererProps {
     content: string;
@@ -78,10 +78,10 @@ export function QnARenderer({ content, className = '' }: QnARendererProps) {
                     pre.style.border = 'none';
 
                     const wrapper = document.createElement('div');
-                    wrapper.className = 'code-block-wrapper relative my-8 rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] bg-[#23241f]';
+                    wrapper.className = 'code-block-wrapper relative my-8 rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] bg-[#1e1e1e]';
 
                     const header = document.createElement('div');
-                    header.className = 'flex items-center justify-between px-5 py-3 bg-[#1a1b17] border-b border-white/5 select-none';
+                    header.className = 'flex items-center justify-between px-5 py-3 bg-[#181818] border-b border-white/5 select-none';
 
                     const dots = `
                         <div class="flex gap-2">
@@ -129,43 +129,7 @@ export function QnARenderer({ content, className = '' }: QnARendererProps) {
 
     return (
         <div className={`relative ${className}`}>
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                .prose pre {
-                    background-color: #23241f !important;
-                    color: #f8f8f2 !important;
-                    padding: 1.5rem 2rem !important;
-                    margin: 0 !important;
-                    border-radius: 0 !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                    font-size: 14px !important;
-                    line-height: 1.7 !important;
-                    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
-                    overflow-x: auto !important;
-                }
-                .hljs-keyword, .hljs-built_in { color: #f92672 !important; }
-                .hljs-string { color: #e6db74 !important; }
-                .hljs-comment { color: #75715e !important; }
-                .hljs-number, .hljs-attr { color: #ae81ff !important; }
-                .hljs-title, .hljs-function { color: #a6e22e !important; }
-                .hljs-params { color: #f8f8f2 !important; }
-                
-                .code-block-wrapper pre::-webkit-scrollbar {
-                    height: 10px;
-                }
-                .code-block-wrapper pre::-webkit-scrollbar-track {
-                    background: #1a1b17;
-                }
-                .code-block-wrapper pre::-webkit-scrollbar-thumb {
-                    background: #3e3f3a;
-                    border-radius: 5px;
-                    border: 2px solid #1a1b17;
-                }
-                .code-block-wrapper pre::-webkit-scrollbar-thumb:hover {
-                    background: #4e4f4a;
-                }
-            `}} />
+            {/* Syntax highlighting styles are provided by @/styles/code-highlight.css */}
             <div
                 ref={containerRef}
                 className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-li:my-1"

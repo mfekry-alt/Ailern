@@ -1,0 +1,347 @@
+/**
+ * Ailern — VS Code Dark+ Inspired Syntax Highlighting
+ * Semantic highlighting for C#, SQL, Python, C++ and more.
+ *
+ * Color palette reference:
+ *   Keywords       → #C586C0 (Purple)
+ *   Functions      → #DCDCAA (Yellow)
+ *   Types/Classes  → #4EC9B0 (Teal)
+ *   Strings        → #CE9178 (Orange)
+ *   Numbers        → #B5CEA8 (Light Green)
+ *   Comments       → #6A9955 (Green)
+ *   Variables      → #9CDCFE (Light Blue)
+ *   Operators      → #D4D4D4 (Light Gray)
+ *   Decorators     → #DCDCAA (Yellow)
+ *   Constants/Enums→ #4FC1FF (Bright Blue)
+ */
+
+/* ─── Base Code Block ──────────────────────────────────────────────── */
+.hljs {
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+  font-size: 14px !important;
+  line-height: 1.7 !important;
+  padding: 1.5rem 2rem !important;
+  border-radius: 0 !important;
+  overflow-x: auto !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  tab-size: 4;
+}
+
+/* ─── 1. Keywords ──────────────────────────────────────────────────── */
+/* C#:  public, private, class, interface, async, await, return, using, etc.
+   Python: def, class, for, while, if, else, import, from, etc.
+   SQL:  SELECT, INSERT, UPDATE, DELETE, JOIN, WHERE, etc.
+   C++:  int, void, class, template, namespace, etc. */
+.hljs-keyword,
+.hljs-selector-tag {
+  color: #C586C0 !important;
+  font-weight: 500;
+}
+
+/* SQL keywords, built-in language constructs */
+.hljs-built_in {
+  color: #4EC9B0 !important;
+}
+
+/* ─── 2. Functions & Methods ───────────────────────────────────────── */
+/* DateTime.Now(), Console.WriteLine(), print(), ExecuteQuery() */
+.hljs-title,
+.hljs-title.function_,
+.hljs-title.class_.inherited__,
+.hljs-section {
+  color: #DCDCAA !important;
+  font-weight: 500;
+}
+
+/* ─── 3. Types / Classes / Interfaces ──────────────────────────────── */
+/* DateTime, String, UserService, List<T> */
+.hljs-type,
+.hljs-title.class_ {
+  color: #4EC9B0 !important;
+  font-weight: 500;
+}
+
+/* ─── 4. Strings ───────────────────────────────────────────────────── */
+/* "Hello World", 'A' */
+.hljs-string,
+.hljs-template-variable,
+.hljs-addition {
+  color: #CE9178 !important;
+}
+
+/* ─── 5. Numbers ───────────────────────────────────────────────────── */
+/* 10, 3.14, 1000, 0xFF */
+.hljs-number,
+.hljs-literal {
+  color: #B5CEA8 !important;
+}
+
+/* ─── 6. Comments ──────────────────────────────────────────────────── */
+/* //, /* *\/, #, -- */
+.hljs-comment,
+.hljs-quote {
+  color: #6A9955 !important;
+  font-style: italic;
+}
+
+/* ─── 7. Variables ─────────────────────────────────────────────────── */
+/* x, count, result, data */
+.hljs-variable,
+.hljs-template-variable {
+  color: #9CDCFE !important;
+}
+
+/* ─── 8. Operators / Punctuation ───────────────────────────────────── */
+/* =, +, -, *, ==, !=, <, >, &&, || */
+.hljs-operator {
+  color: #d4d4d4 !important;
+}
+
+/* ─── 9. Decorators / Attributes ───────────────────────────────────── */
+/* @property, [HttpGet], @classmethod */
+.hljs-meta,
+.hljs-meta .hljs-keyword,
+.hljs-meta .hljs-string {
+  color: #DCDCAA !important;
+}
+
+/* Preprocessor directives (#include, #define, #region) */
+.hljs-meta .hljs-keyword {
+  color: #C586C0 !important;
+}
+
+/* ─── 10. Constants / Enums / Booleans ─────────────────────────────── */
+/* true, false, null, None */
+.hljs-literal {
+  color: #569CD6 !important;
+}
+
+/* ─── 11. Symbols / Special ────────────────────────────────────────── */
+.hljs-symbol,
+.hljs-bullet {
+  color: #4FC1FF !important;
+}
+
+/* ─── 12. Regular Expressions ──────────────────────────────────────── */
+.hljs-regexp {
+  color: #D16969 !important;
+}
+
+/* ─── 13. Tags (HTML/XML) ──────────────────────────────────────────── */
+.hljs-name,
+.hljs-tag {
+  color: #569CD6 !important;
+}
+
+.hljs-attr {
+  color: #9CDCFE !important;
+}
+
+/* ─── 14. Deletion (diff) ──────────────────────────────────────────── */
+.hljs-deletion {
+  color: #CE9178 !important;
+  background: rgba(244, 63, 94, 0.1);
+}
+
+.hljs-addition {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+/* ─── 15. Emphasis & Strong ────────────────────────────────────────── */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+/* ─── 16. Parameters ───────────────────────────────────────────────── */
+.hljs-params {
+  color: #9CDCFE !important;
+}
+
+/* ─── 17. Subst (interpolation) ────────────────────────────────────── */
+.hljs-subst {
+  color: #d4d4d4 !important;
+}
+
+/* ─── 18. Property / Attribute ─────────────────────────────────────── */
+.hljs-property {
+  color: #9CDCFE !important;
+}
+
+/* ─── Code Block Wrapper (premium) ─────────────────────────────────── */
+.code-block-wrapper {
+  position: relative;
+  margin: 2rem 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  background: #1e1e1e;
+}
+
+.code-block-wrapper pre {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* ─── Header Bar (macOS style) ─────────────────────────────────────── */
+.code-block-wrapper .code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  background: #181818;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  user-select: none;
+}
+
+/* Traffic light dots */
+.code-block-wrapper .traffic-dots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.code-block-wrapper .traffic-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: block;
+}
+
+.code-block-wrapper .traffic-dots span:nth-child(1) {
+  background: #ff5f56;
+  box-shadow: 0 0 6px rgba(255, 95, 86, 0.4);
+}
+
+.code-block-wrapper .traffic-dots span:nth-child(2) {
+  background: #ffbd2e;
+  box-shadow: 0 0 6px rgba(255, 189, 46, 0.4);
+}
+
+.code-block-wrapper .traffic-dots span:nth-child(3) {
+  background: #27c93f;
+  box-shadow: 0 0 6px rgba(39, 201, 63, 0.4);
+}
+
+/* Language badge */
+.code-block-wrapper .lang-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* ─── Scrollbar ────────────────────────────────────────────────────── */
+.code-block-wrapper pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.code-block-wrapper pre::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.code-block-wrapper pre::-webkit-scrollbar-thumb {
+  background: #3e3e42;
+  border-radius: 4px;
+  border: 2px solid #1e1e1e;
+}
+
+.code-block-wrapper pre::-webkit-scrollbar-thumb:hover {
+  background: #4e4e52;
+}
+
+/* ─── Line Number Gutter (optional class) ──────────────────────────── */
+.code-with-lines {
+  counter-reset: line;
+}
+
+.code-with-lines .line {
+  counter-increment: line;
+  display: inline-block;
+  width: 100%;
+}
+
+.code-with-lines .line::before {
+  content: counter(line);
+  display: inline-block;
+  width: 2.5em;
+  margin-right: 1em;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.15);
+  user-select: none;
+  font-size: 12px;
+}
+
+/* ─── Selection highlight ──────────────────────────────────────────── */
+.hljs ::selection {
+  background: rgba(33, 169, 255, 0.25);
+}
+
+.hljs::-moz-selection {
+  background: rgba(33, 169, 255, 0.25);
+}
+
+/* ─── Editor-specific overrides (TipTap prose) ─────────────────────── */
+.prose pre {
+  background-color: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  padding: 1.5rem 2rem !important;
+  border-radius: 1rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace !important;
+  font-size: 14px !important;
+  line-height: 1.7 !important;
+  position: relative;
+  box-shadow:
+    0 10px 30px -10px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset !important;
+  overflow-x: auto !important;
+}
+
+.prose pre code {
+  background: transparent !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+}
+
+/* ─── Copy Button ──────────────────────────────────────────────────── */
+.copy-btn {
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.copy-btn:active {
+  transform: scale(0.9);
+}
+
+.copy-btn svg {
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.2s;
+}
+
+.copy-btn:hover svg {
+  color: rgba(255, 255, 255, 0.7);
+}

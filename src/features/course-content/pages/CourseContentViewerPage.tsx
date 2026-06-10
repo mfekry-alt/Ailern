@@ -9,8 +9,9 @@
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, BookOpen, AlertCircle, RefreshCw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, BookOpen, AlertCircle, RefreshCw, Loader2, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { toast } from 'sonner';
+import { ReportContentModal } from '@/components/ReportContentModal';
 
 import { useCourseSections } from '@/features/course-details/api';
 import { useCourseQuizzes } from '@/features/course-details/api';
@@ -61,6 +62,7 @@ export const CourseContentViewerPage = () => {
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
     const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
     const [navbarHeight, setNavbarHeight] = useState(56);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     // Resume position state (passed to viewers)
     const [initialVideoTime, setInitialVideoTime] = useState<number | undefined>(resumeVideoTime);
@@ -373,6 +375,26 @@ export const CourseContentViewerPage = () => {
 
                     {/* Right: Navigation Controls */}
                     <div className="flex items-center gap-2 shrink-0">
+                        {/* Report Content Button */}
+                        {isStudent && activeFile && (
+                            <button
+                                onClick={() => setIsReportModalOpen(true)}
+                                className="flex items-center gap-1.5 px-2 sm:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
+                                         border border-red-300 dark:border-red-500/30 text-red-600 dark:text-red-400
+                                         hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-400 dark:hover:border-red-500/50
+                                         active:scale-95 shrink-0"
+                                title="Report this content"
+                            >
+                                <Flag className="w-4 h-4" />
+                                <span className="hidden sm:inline">Report</span>
+                            </button>
+                        )}
+
+                        {/* Separator */}
+                        {isStudent && activeFile && (
+                            <div className="w-px h-6 bg-gray-200 dark:bg-slate-700 hidden sm:block" />
+                        )}
+
                         {/* Previous Button */}
                         <button
                             onClick={handlePrevFile}
@@ -469,6 +491,13 @@ export const CourseContentViewerPage = () => {
                     />
                 </div>
             </main>
+
+            {/* Report Content Modal */}
+            <ReportContentModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                materialName={activeFile?.fileName}
+            />
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/lib/constants';
@@ -18,6 +18,9 @@ import {
     type AttemptQuestion,
 } from '@/api/services/attempts.service';
 import { QnARenderer } from '@/features/qna/components/QnARenderer';
+import { useExamTimer } from '@/hooks/useExamTimer';
+import { ExamAnswerEditor } from '@/components/ui/ExamAnswerEditor';
+import { AnswerPreviewer } from '@/components/ui/AnswerPreviewer';
 
 // ─── Local state types ─────────────────────────────────────────────────────
 
@@ -41,7 +44,7 @@ export const QuizAttemptViewer = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState<LocalAnswer[]>([]);
     const [flagged, setFlagged] = useState<Set<string>>(new Set());
-    const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+    const [endDateStr, setEndDateStr] = useState<string | null>(null);
     const [attemptId, setAttemptId] = useState<string | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -69,7 +72,7 @@ export const QuizAttemptViewer = () => {
                 setQuizTitle(quiz.title);
 
                 let currentAttemptId: string | null = null;
-                let endDateStr: string | null = null;
+                let localEndDateStr: string | null = null;
 
                 if (shouldResume) {
                     const attemptsDto = await getMyAttemptsForQuiz(id);
@@ -78,14 +81,14 @@ export const QuizAttemptViewer = () => {
                         .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime())[0];
 
                     currentAttemptId = activeAttempt?.id ?? null;
-                    endDateStr = activeAttempt?.attemptEndTime ?? null;
+                    localEndDateStr = activeAttempt?.attemptEndTime ?? null;
                     if (!currentAttemptId) {
                         throw new Error('No active attempt found to resume.');
                     }
                 } else {
                     const attempt = await startQuizAttempt(id);
                     currentAttemptId = attempt.id;
-                    endDateStr = attempt.attemptEndDate;
+                    localEndDateStr = attempt.attemptEndDate;
                     
                     if (state?.courseId) {
                         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.COURSE_QUIZZES(state.courseId) });
@@ -108,15 +111,14 @@ export const QuizAttemptViewer = () => {
                     }));
                 if (preFilledAnswers.length > 0) setAnswers(preFilledAnswers);
 
-                if (endDateStr) {
-                    const normalized = endDateStr.endsWith('Z') || endDateStr.includes('+') ? endDateStr : endDateStr + 'Z';
-                    const endMs = new Date(normalized).getTime();
-                    const nowMs = Date.now();
-                    const remaining = Math.max(0, Math.floor((endMs - nowMs) / 1000));
-                    setTimeRemaining(remaining);
+                // Determine the end time for the timer
+                if (localEndDateStr) {
+                    setEndDateStr(localEndDateStr);
                 } else {
+                    // Fallback: compute end date from quiz time limit
                     const fallbackMinutes = quiz.attemptTimeLimit || 30;
-                    setTimeRemaining(fallbackMinutes * 60);
+                    const fallbackEnd = new Date(Date.now() + fallbackMinutes * 60 * 1000).toISOString();
+                    setEndDateStr(fallbackEnd);
                 }
             } catch (err) {
                 console.error('Quiz loading error:', err);
@@ -158,21 +160,18 @@ export const QuizAttemptViewer = () => {
         }
     }, [returnPath]);
 
-    // Timer countdown
-    useEffect(() => {
-        if (timeRemaining === null || isSubmitting) return;
-        const interval = setInterval(() => {
-            setTimeRemaining(prev => {
-                if (prev !== null && prev <= 1) {
-                    clearInterval(interval);
-                    doSubmit('auto');
-                    return 0;
-                }
-                return prev !== null ? prev - 1 : null;
-            });
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [timeRemaining, isSubmitting, doSubmit]);
+    // ── Timestamp-based countdown timer (drift-proof) ───────────────────
+    const handleTimerExpire = useCallback(() => {
+        if (!isSubmitting) doSubmit('auto');
+    }, [doSubmit, isSubmitting]);
+
+    const { remainingSeconds, formattedTime, isExpired } = useExamTimer({
+        attemptEndDate: endDateStr ?? new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        attemptId: attemptId ?? '',
+        onExpire: handleTimerExpire,
+        syncIntervalMs: 30_000,
+        disabled: !endDateStr || !attemptId || isSubmitting,
+    });
 
     // Auto-save
     useEffect(() => {
@@ -215,6 +214,14 @@ export const QuizAttemptViewer = () => {
         });
     };
 
+    const handleEditorNext = () => {
+        if (currentIndex === questions.length - 1) {
+            setShowSubmitConfirm(true);
+        } else {
+            setCurrentIndex(v => v + 1);
+        }
+    };
+
     const toggleFlag = () => {
         if (!currentQ) return;
         setFlagged(prev => {
@@ -242,11 +249,7 @@ export const QuizAttemptViewer = () => {
     const totalAnswered = answers.filter(a => a.optionId || a.writtenAnswer).length;
     const progressPercent = questions.length > 0 ? (totalAnswered / questions.length) * 100 : 0;
 
-    const formatTime = (seconds: number) => {
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    };
+    // formatTime is now provided by useExamTimer as formattedTime
 
     const getStatus = (qId: string) => {
         if (flagged.has(qId)) return 'flagged';
@@ -288,7 +291,7 @@ export const QuizAttemptViewer = () => {
         </div>
     );
  
-    const isUrgent = timeRemaining !== null && timeRemaining < 120;
+    const isUrgent = endDateStr !== null && remainingSeconds < 120;
 
     return (
         <div className="h-screen overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 text-slate-900 flex flex-col font-sans">
@@ -304,7 +307,7 @@ export const QuizAttemptViewer = () => {
                 <div className={`flex items-center gap-3 px-5 py-2 rounded-2xl border transition-all duration-500 ${isUrgent ? 'border-red-200 bg-red-50/80 shadow-red-100 shadow-md animate-pulse' : 'border-slate-100 bg-white/80 shadow-sm'}`}>
                     <Clock className={`w-4 h-4 ${isUrgent ? 'text-red-500' : 'text-indigo-500'}`} />
                     <span className={`text-lg font-black font-mono tabular-nums tracking-wider ${isUrgent ? 'text-red-600' : 'text-slate-800'}`}>
-                        {timeRemaining !== null ? formatTime(timeRemaining) : '--:--'}
+                        {endDateStr !== null ? formattedTime : '--:--'}
                     </span>
                 </div>
             </header>
@@ -351,12 +354,18 @@ export const QuizAttemptViewer = () => {
  
                         <div className="grid gap-3">
                             {currentQ.type === 'Written' ? (
-                                <textarea
-                                    className="w-full p-5 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 min-h-[200px] transition-all text-base placeholder:text-slate-300 resize-none"
-                                    placeholder="Write your answer here..."
-                                    value={getWrittenValue(currentQ.id)}
-                                    onChange={(e) => handleWrittenAnswer(e.target.value)}
-                                />
+                                <div className="space-y-5">
+                                    <ExamAnswerEditor
+                                        value={getWrittenValue(currentQ.id)}
+                                        onChange={(html) => handleWrittenAnswer(html)}
+                                        onNext={handleEditorNext}
+                                        isLastQuestion={currentIndex === questions.length - 1}
+                                    />
+                                    <AnswerPreviewer
+                                        value={getWrittenValue(currentQ.id)}
+                                        label="ANSWER PREVIEW"
+                                    />
+                                </div>
                             ) : currentQ.type === 'TrueFalse' ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {currentQ.options.map(opt => {

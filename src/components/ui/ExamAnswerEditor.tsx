@@ -1,41 +1,34 @@
-/**
- * Q&A Board — Instructor Reply Editor
- * TipTap-based rich text editor with code highlighting and KaTeX support.
- */
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
-import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
-
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import Underline from '@tiptap/extension-underline';
 import { common, createLowlight } from 'lowlight';
 import '@/styles/code-highlight.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Bold,
     Italic,
-    Underline,
+    Underline as UnderlineIcon,
     Strikethrough,
     Code,
     Heading2,
     Heading3,
     List,
     ListOrdered,
-    ImagePlus,
     Maximize2,
     Minimize2,
     Send,
     Type,
     Quote,
-    Code2,
     Sigma,
     Terminal,
 } from 'lucide-react';
-import { CodeEditorDrawer } from '@/components/ui/CodeEditorDrawer';
 import { MathEditorModal } from '@/components/ui/MathEditorModal';
 
-/* ─── Toolbar Button ───────────────────────────────────────────────────── */
+const lowlight = createLowlight(common);
+
 function ToolBtn({
     icon: Icon,
     label,
@@ -72,7 +65,7 @@ function ToolBtn({
             <Icon className={`w-4.5 h-4.5 transition-transform ${active ? 'scale-110' : ''}`} />
             {active && (
                 <motion.div
-                    layoutId="tool-active-indicator"
+                    layoutId="tool-active-indicator-exam"
                     className="absolute -bottom-1 w-1 h-1 rounded-full bg-[#21A9FF]"
                 />
             )}
@@ -84,58 +77,30 @@ function Divider() {
     return <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />;
 }
 
-/* ─── Tool Tile ───────────────────────────────────────────────────────── */
-function ToolTile({
-    icon: Icon,
-    label,
-    description,
-    onClick,
-    color,
-    active,
-}: {
-    icon: React.ElementType;
-    label: string;
-    description: string;
-    onClick: () => void;
-    color: string;
-    active?: boolean;
-}) {
-    return (
-        <motion.button
-            whileHover={{ y: -4, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onClick}
-            className={`flex items-center gap-4 p-4 bg-white dark:bg-slate-800 border rounded-2xl transition-all text-left group
-                ${active 
-                    ? 'border-[#21A9FF] ring-4 ring-[#21A9FF]/10 dark:ring-[#21A9FF]/5' 
-                    : 'border-slate-100 dark:border-slate-700/50'}
-            `}
-        >
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${color}`}>
-                <Icon className="w-6 h-6" />
-            </div>
-            <div>
-                <span className="block text-[13px] font-bold text-slate-800 dark:text-slate-100">{label}</span>
-                <span className="block text-[11px] text-slate-400 font-medium">{description}</span>
-            </div>
-        </motion.button>
-    );
+interface ExamAnswerEditorProps {
+    value: string;
+    onChange: (html: string) => void;
+    placeholder?: string;
+    className?: string;
+    onNext?: () => void;
+    isLastQuestion?: boolean;
 }
 
-const lowlight = createLowlight(common);
-
-/* ─── Main Editor ──────────────────────────────────────────────────────── */
-interface InstructorReplyEditorProps {
-    onSubmit: (html: string) => void;
-    isSubmitting?: boolean;
-}
-
-export function InstructorReplyEditor({ onSubmit, isSubmitting }: InstructorReplyEditorProps) {
+export function ExamAnswerEditor({
+    value,
+    onChange,
+    placeholder = 'Write your answer here... Use the toolbar for formatting, code blocks, and more.',
+    className = '',
+    onNext,
+    isLastQuestion = false,
+}: ExamAnswerEditorProps) {
     const [fullscreen, setFullscreen] = useState(false);
-    const [drawers, setDrawers] = useState({
-        code: false,
-        math: false,
-    });
+    const [mathModalOpen, setMathModalOpen] = useState(false);
+
+    const onNextRef = useRef(onNext);
+    useEffect(() => {
+        onNextRef.current = onNext;
+    }, [onNext]);
 
     const editor = useEditor({
         extensions: [
@@ -153,6 +118,7 @@ export function InstructorReplyEditor({ onSubmit, isSubmitting }: InstructorRepl
                     },
                 },
             }),
+            Underline,
             CodeBlockLowlight.configure({
                 lowlight,
                 HTMLAttributes: {
@@ -161,29 +127,32 @@ export function InstructorReplyEditor({ onSubmit, isSubmitting }: InstructorRepl
                 },
             }),
             Placeholder.configure({
-                placeholder: 'Write your reply... Use the toolbar for formatting, code blocks, and more.',
+                placeholder: placeholder,
             }),
         ],
         editorProps: {
             attributes: {
-                class: `prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[120px] px-4 py-3 ${
+                class: `prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[180px] px-5 py-4 ${
                     fullscreen ? 'min-h-[50vh]' : ''
                 }`,
             },
             handleKeyDown: (_view, event) => {
-                // Ctrl+Enter to submit
+                // Ctrl+Enter to save & proceed / submit
                 if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-                    handleSubmit();
-                    return true;
+                    if (onNextRef.current) {
+                        onNextRef.current();
+                        return true;
+                    }
                 }
                 return false;
             },
         },
+        content: value,
         onUpdate: ({ editor }) => {
-            setEditorContent(editor.getText());
+            // Note: We use getHTML() to support rich styling & KaTeX
+            onChange(editor.getHTML());
         },
-        onSelectionUpdate: ({ editor }) => {
-            // Force a re-render to update toolbar button states
+        onSelectionUpdate: () => {
             setEditorStateCounter(s => s + 1);
         },
         onTransaction: () => {
@@ -191,20 +160,34 @@ export function InstructorReplyEditor({ onSubmit, isSubmitting }: InstructorRepl
         },
     });
 
-    const [editorContent, setEditorContent] = useState('');
     const [_, setEditorStateCounter] = useState(0);
+    const lastContentRef = useRef(value);
 
-    const handleSubmit = useCallback(() => {
-        if (!editor || editorContent.trim().length === 0) return;
-        onSubmit(editor.getHTML());
-        editor.commands.clearContent();
-        setEditorContent('');
-    }, [editor, onSubmit, editorContent]);
-
-    const handleInsertCode = useCallback((code: string, language: string) => {
+    // Update parent when editor content changes
+    useEffect(() => {
         if (!editor) return;
-        editor.chain().focus().toggleCodeBlock({ language }).insertContent(code).run();
-    }, [editor]);
+
+        const handleUpdate = () => {
+            const html = editor.getHTML();
+            if (html !== lastContentRef.current) {
+                lastContentRef.current = html;
+                onChange(html);
+            }
+        };
+
+        editor.on('update', handleUpdate);
+        return () => {
+            editor.off('update', handleUpdate);
+        };
+    }, [editor, onChange]);
+
+    // Sync content from prop only if different from editor and lastContentRef
+    useEffect(() => {
+        if (editor && value !== editor.getHTML() && value !== lastContentRef.current) {
+            lastContentRef.current = value;
+            editor.commands.setContent(value);
+        }
+    }, [value, editor]);
 
     const handleInsertMath = useCallback((latex: string) => {
         if (!editor) return;
@@ -216,14 +199,14 @@ export function InstructorReplyEditor({ onSubmit, isSubmitting }: InstructorRepl
     const editorContainer = (
         <motion.div
             layout
-            className={`rounded-2xl border bg-white dark:bg-slate-800/70 shadow-sm overflow-hidden transition-all duration-300 ${
+            className={`rounded-2xl border bg-white dark:bg-slate-900/50 overflow-hidden transition-all duration-300 ${
                 fullscreen
                     ? 'fixed inset-4 z-50 flex flex-col shadow-2xl border-slate-200 dark:border-slate-700/60'
                     : 'border-slate-200 dark:border-slate-700/60 focus-within:border-[#21A9FF] focus-within:ring-4 focus-within:ring-[#21A9FF]/10'
-            }`}
+            } ${className}`}
         >
             {/* Toolbar */}
-            <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-800/40 flex-wrap sticky top-0 z-10">
+            <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/40 flex-wrap sticky top-0 z-10">
                 <ToolBtn
                     icon={Bold}
                     label="Bold (Ctrl+B)"
@@ -300,7 +283,7 @@ export function InstructorReplyEditor({ onSubmit, isSubmitting }: InstructorRepl
                 <ToolBtn
                     icon={Sigma}
                     label="Math Equation"
-                    onClick={() => setDrawers(d => ({ ...d, math: true }))}
+                    onClick={() => setMathModalOpen(true)}
                 />
 
                 <div className="flex-1" />
@@ -312,42 +295,38 @@ export function InstructorReplyEditor({ onSubmit, isSubmitting }: InstructorRepl
                 />
             </div>
 
-
             {/* Editor Content */}
             <div className={`overflow-y-auto ${fullscreen ? 'flex-1' : 'max-h-[50vh]'}`}>
                 <EditorContent editor={editor} />
             </div>
 
-            {/* Drawers */}
-            <CodeEditorDrawer
-                isOpen={drawers.code}
-                onClose={() => setDrawers(d => ({ ...d, code: false }))}
-                onApply={handleInsertCode}
-            />
+            {/* Math Editor Modal */}
             <MathEditorModal
-                isOpen={drawers.math}
-                onClose={() => setDrawers(d => ({ ...d, math: false }))}
+                isOpen={mathModalOpen}
+                onClose={() => setMathModalOpen(false)}
                 onApply={handleInsertMath}
+                compact={true}
             />
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/30">
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900/30">
                 <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-[10px] font-mono">Ctrl</kbd>
+                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-mono">Ctrl</kbd>
                     {' + '}
-                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-[10px] font-mono">Enter</kbd>
-                    {' to submit'}
+                    <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-mono">Enter</kbd>
+                    {isLastQuestion ? ' to submit exam' : ' to next question'}
                 </span>
-                <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={handleSubmit}
-                    disabled={isSubmitting || !editor || editorContent.trim().length === 0}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#21A9FF] to-[#0094F2] text-white text-sm font-bold shadow-md shadow-[#21A9FF]/20 hover:shadow-lg hover:shadow-[#21A9FF]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <Send className="w-4 h-4" />
-                    {isSubmitting ? 'Submitting...' : 'Submit Reply'}
-                </motion.button>
+                {onNext && (
+                    <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={onNext}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#21A9FF] to-[#0094F2] text-white text-sm font-bold shadow-md shadow-[#21A9FF]/20 hover:shadow-lg hover:shadow-[#21A9FF]/30 transition-all cursor-pointer"
+                    >
+                        <Send className="w-4 h-4" />
+                        {isLastQuestion ? 'Submit Exam' : 'Next Question'}
+                    </motion.button>
+                )}
             </div>
         </motion.div>
     );

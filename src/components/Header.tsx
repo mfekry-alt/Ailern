@@ -197,6 +197,7 @@ export const Header = () => {
                 { label: 'Users', path: ROUTES.ADMIN_USERS },
                 { label: 'Courses', path: ROUTES.ADMIN_COURSES },
                 { label: 'Reports', path: ROUTES.ADMIN_REPORTS },
+                { label: 'Content Reports', path: ROUTES.ADMIN_CONTENT_REPORTS },
                 { label: 'Settings', path: ROUTES.ADMIN_SETTINGS },
             ];
         }

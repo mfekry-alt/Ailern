@@ -14,7 +14,7 @@ import {
 import Underline from '@tiptap/extension-underline';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
-import 'highlight.js/styles/github-dark.css';
+import '@/styles/code-highlight.css';
 
 const lowlight = createLowlight(common);
 
@@ -248,34 +248,6 @@ export const RichTextEditor = ({
 
 
             <style dangerouslySetInnerHTML={{ __html: `
-                .prose pre {
-                    background-color: #0d1117 !important;
-                    color: #e6edf3 !important;
-                    padding: 1.5rem !important;
-                    border-radius: 1rem !important;
-                    border: 1px solid rgba(255,255,255,0.1);
-                    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
-                    font-size: 0.85rem !important;
-                    line-height: 1.6 !important;
-                    position: relative;
-                    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-                }
-                .prose pre code {
-                    background: transparent !important;
-                    padding: 0 !important;
-                    color: inherit !important;
-                }
-                .prose blockquote {
-                    border-left-width: 4px !important;
-                    border-left-color: rgba(33, 169, 255, 0.4) !important;
-                    padding-left: 1.5rem !important;
-                    font-style: italic !important;
-                    color: #64748b !important;
-                    margin: 1.5rem 0 !important;
-                }
-                .dark .prose blockquote {
-                    color: #94a3b8 !important;
-                }
                 .ProseMirror:focus {
                     outline: none;
                 }

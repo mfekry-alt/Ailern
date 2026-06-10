@@ -138,6 +138,8 @@ export const ENDPOINTS = {
         AI_GRADE: (attemptId: string) => `/Attempts/${attemptId}/ai-grade`,
         /** GET — Fetch AI grading result for an attempt */
         AI_RESULT: (attemptId: string) => `/Attempts/${attemptId}/ai-result`,
+        /** GET — NTP-style time sync: returns serverTime + attemptEndTime */
+        SYNC: (attemptId: string) => `/Attempts/${attemptId}/sync`,
     },
 
     // Instructor Dashboard endpoints
