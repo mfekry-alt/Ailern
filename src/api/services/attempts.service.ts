@@ -18,8 +18,18 @@ import type {
 export interface StartAttemptResponse {
     attemptId: string;
     attemptEndDate: string;
+    /** UTC ISO-8601 timestamp of when the attempt was started */
+    startedAt: string;
+    /** Duration of the quiz in minutes */
+    durationMinutes: number;
     /** Alias for legacy callers */
     id: string;
+}
+
+/** Response from the NTP-style time sync endpoint */
+export interface SyncTimeResponse {
+    serverTime: string;
+    attemptEndTime: string;
 }
 
 /** Normalized attempt question for UI (maps from AttemptQuestionDto) */
@@ -134,16 +144,18 @@ export const startQuizAttempt = async (quizId: string): Promise<StartAttemptResp
 
     activeStartPromise = (async () => {
         try {
-            const response = await api.post<ApiResponse<{ attemptId: string; attemptEndDate: string }>>(
+            const response = await api.post<ApiResponse<{ attemptId: string; attemptEndDate: string; startedAt?: string; durationMinutes?: number }>>(
                 ENDPOINTS.ATTEMPTS.START(quizId),
                 {}
             );
-            const raw: { attemptId?: string; attemptEndDate?: string; id?: string; endDate?: string } =
-                unwrapData<{ attemptId?: string; attemptEndDate?: string; id?: string; endDate?: string }>(response.data)
+            const raw: { attemptId?: string; attemptEndDate?: string; id?: string; endDate?: string; startedAt?: string; durationMinutes?: number } =
+                unwrapData<{ attemptId?: string; attemptEndDate?: string; id?: string; endDate?: string; startedAt?: string; durationMinutes?: number }>(response.data)
                 ?? {};
             const attemptId = String(raw?.attemptId ?? (raw as { id?: string })?.id ?? '');
             const attemptEndDate = String(raw?.attemptEndDate ?? (raw as { endDate?: string })?.endDate ?? '');
-            return { attemptId, id: attemptId, attemptEndDate };
+            const startedAt = raw?.startedAt ?? '';
+            const durationMinutes = raw?.durationMinutes ?? 0;
+            return { attemptId, id: attemptId, attemptEndDate, startedAt, durationMinutes };
         } finally {
             activeStartPromise = null;
         }
@@ -154,6 +166,20 @@ export const startQuizAttempt = async (quizId: string): Promise<StartAttemptResp
 
 /** @deprecated Use startQuizAttempt instead */
 export const startOrResumeQuizAttempt = startQuizAttempt;
+
+// ─── Time Sync ─────────────────────────────────────────────────────────────
+
+/** GET /api/Attempts/{attemptId}/sync — returns serverTime + attemptEndTime for NTP calibration */
+export const syncAttemptTime = async (attemptId: string): Promise<SyncTimeResponse> => {
+    const response = await api.get<ApiResponse<SyncTimeResponse>>(
+        ENDPOINTS.ATTEMPTS.SYNC(attemptId)
+    );
+    const data = unwrapData<SyncTimeResponse>(response.data);
+    if (!data) {
+        throw new Error('Time sync failed: no data returned');
+    }
+    return data;
+};
 
 // ─── Get Attempt Questions ─────────────────────────────────────────────────
 

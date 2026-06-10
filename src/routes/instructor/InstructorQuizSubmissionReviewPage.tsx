@@ -15,6 +15,19 @@ import {
     Check
 } from 'lucide-react';
 import { attemptsService } from '@/api/services';
+import { QnARenderer } from '@/features/qna/components/QnARenderer';
+
+const decodeHtml = (html: string) => {
+    if (!html) return '';
+    let result = html;
+    const decoder = document.createElement('textarea');
+    for (let i = 0; i < 3; i++) {
+        if (!result.includes('&')) break;
+        decoder.innerHTML = result;
+        result = decoder.value;
+    }
+    return result;
+};
 import type { AnswerDto, AttemptStatus, GradeSubmissionBody } from '@/types/api.types';
 import { QUERY_KEYS, ROUTES } from '@/lib/constants';
 import { toast } from 'sonner';
@@ -263,7 +276,9 @@ export const InstructorQuizSubmissionReviewPage = () => {
                                                 {formatType(answer.type)}
                                             </span>
                                         </div>
-                                        <h3 className="text-xl font-extrabold text-gray-900 dark:text-white leading-snug">{answer.questionText}</h3>
+                                        <div className="text-xl font-extrabold text-gray-900 dark:text-white leading-snug">
+                                            <QnARenderer content={decodeHtml(answer.questionText)} />
+                                        </div>
                                     </div>
                                     <div className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
                                         isFull
@@ -293,7 +308,9 @@ export const InstructorQuizSubmissionReviewPage = () => {
                                                     }`}
                                                 >
                                                     <div className="flex items-center justify-between gap-3">
-                                                        <p className="text-sm font-bold text-gray-800 dark:text-slate-200">{opt.optionText}</p>
+                                                        <div className="text-sm font-bold text-gray-800 dark:text-slate-200">
+                                                            <QnARenderer content={decodeHtml(opt.optionText)} />
+                                                        </div>
                                                         <div className="flex items-center gap-2 shrink-0">
                                                             {opt.isCorrect && (
                                                                 <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 px-2 py-0.5 rounded-lg">
@@ -312,13 +329,18 @@ export const InstructorQuizSubmissionReviewPage = () => {
                                     </div>
                                 )}
 
-                                {/* Written Answer */}
                                 {answer.type === 'Written' && (
                                     <div className="mb-6 rounded-[1.5rem] border border-gray-100 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/60 p-5 shadow-inner">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-slate-500 mb-3">Student Answer</p>
-                                        <p className="text-base text-gray-800 dark:text-slate-200 whitespace-pre-wrap font-medium italic">
-                                            {answer.answer?.trim() ? `"${answer.answer}"` : 'No answer submitted.'}
-                                        </p>
+                                        {answer.answer?.trim() ? (
+                                            <div className="bg-white dark:bg-slate-950/60 rounded-xl p-4 border border-gray-200/55 dark:border-slate-800/80">
+                                                <QnARenderer content={decodeHtml(answer.answer)} />
+                                            </div>
+                                        ) : (
+                                            <p className="text-base text-gray-400 dark:text-slate-500 font-medium italic">
+                                                No answer submitted.
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 

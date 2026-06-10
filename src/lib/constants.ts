@@ -86,6 +86,7 @@ export const ROUTES = {
     ADMIN_COURSES: '/admin/courses',
     ADMIN_REPORTS: '/admin/reports',
     ADMIN_SETTINGS: '/admin/settings',
+    ADMIN_CONTENT_REPORTS: '/admin/content-reports',
 } as const;
 
 export const QUERY_KEYS = {

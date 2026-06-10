@@ -185,7 +185,7 @@ export function QnAList({ courseId, isInstructor, onOpenModal }: QnAListProps) {
 
             {/* Empty state */}
             {!isLoading && questions.length === 0 && (
-                <QnAEmptyState onAskQuestion={onOpenModal} isFiltered={isFiltered} />
+                <QnAEmptyState onAskQuestion={onOpenModal} isFiltered={isFiltered} isInstructor={isInstructor} />
             )}
 
             {/* Results count */}

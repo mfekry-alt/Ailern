@@ -8,9 +8,10 @@ import { MessageSquarePlus, Sparkles } from 'lucide-react';
 interface QnAEmptyStateProps {
     onAskQuestion: () => void;
     isFiltered?: boolean;
+    isInstructor?: boolean;
 }
 
-export function QnAEmptyState({ onAskQuestion, isFiltered }: QnAEmptyStateProps) {
+export function QnAEmptyState({ onAskQuestion, isFiltered, isInstructor }: QnAEmptyStateProps) {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -51,20 +52,24 @@ export function QnAEmptyState({ onAskQuestion, isFiltered }: QnAEmptyStateProps)
                         No questions yet
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mb-6 leading-relaxed">
-                        Be the first to start a discussion! Ask about course concepts, assignments, or anything you'd like clarified.
+                        {isInstructor
+                            ? 'No student questions have been posted yet. They will appear here when students ask for help.'
+                            : "Be the first to start a discussion! Ask about course concepts, assignments, or anything you'd like clarified."}
                     </p>
                 </>
             )}
 
-            <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={onAskQuestion}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#21A9FF] to-[#0094F2] text-white text-sm font-bold shadow-lg shadow-[#21A9FF]/25 hover:shadow-[#21A9FF]/40 transition-shadow"
-            >
-                <MessageSquarePlus className="w-4 h-4" />
-                Ask the First Question
-            </motion.button>
+            {!isInstructor && (
+                <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={onAskQuestion}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#21A9FF] to-[#0094F2] text-white text-sm font-bold shadow-lg shadow-[#21A9FF]/25 hover:shadow-[#21A9FF]/40 transition-shadow"
+                >
+                    <MessageSquarePlus className="w-4 h-4" />
+                    Ask the First Question
+                </motion.button>
+            )}
         </motion.div>
     );
 }

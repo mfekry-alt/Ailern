@@ -1,11 +1,13 @@
-import { useEffect, useLayoutEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 /**
  * Locks the body scroll when a component is mounted.
  * Useful for modals to prevent background scrolling.
  */
-export function useLockBodyScroll() {
+export function useLockBodyScroll(active: boolean = true) {
     useLayoutEffect(() => {
+        if (!active) return;
+
         // Get original body overflow
         const originalStyle = window.getComputedStyle(document.body).overflow;
         
@@ -16,5 +18,5 @@ export function useLockBodyScroll() {
         return () => {
             document.body.style.overflow = originalStyle;
         };
-    }, []);
+    }, [active]);
 }

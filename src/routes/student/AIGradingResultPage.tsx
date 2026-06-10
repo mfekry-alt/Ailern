@@ -8,6 +8,19 @@ import {
 } from 'lucide-react';
 import { getAIGradingResult } from '@/features/ai-grading/api/ai-grading.service';
 import type { AIGradingAttemptResult, AIGradedQuestion } from '@/features/ai-grading/types/ai-grading.types';
+import { QnARenderer } from '@/features/qna/components/QnARenderer';
+
+const decodeHtml = (html: string) => {
+    if (!html) return '';
+    let result = html;
+    const decoder = document.createElement('textarea');
+    for (let i = 0; i < 3; i++) {
+        if (!result.includes('&')) break;
+        decoder.innerHTML = result;
+        result = decoder.value;
+    }
+    return result;
+};
 
 /* ─── Score Ring ────────────────────────────────────────────────────────── */
 function ScoreRing({ percentage }: { percentage: number }) {
@@ -75,8 +88,9 @@ function QuestionCard({ q, index }: { q: AIGradedQuestion; index: number }) {
                                 {q.type === 'MCQ' ? 'Multiple Choice' : q.type === 'TrueFalse' ? 'True / False' : 'Written'}
                             </span>
                         </div>
-                        <h3 className="text-base font-bold text-gray-900 dark:text-white leading-snug truncate"
-                            dangerouslySetInnerHTML={{ __html: q.questionText }} />
+                        <div className="text-base font-bold text-gray-900 dark:text-white leading-snug">
+                            <QnARenderer content={decodeHtml(q.questionText)} />
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
@@ -112,7 +126,9 @@ function QuestionCard({ q, index }: { q: AIGradedQuestion; index: number }) {
                                             <span className="w-6 h-6 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-xs font-black text-gray-400 shadow-sm border border-gray-100 dark:border-slate-700">
                                                 {String.fromCharCode(65 + i)}
                                             </span>
-                                            <span className="font-semibold text-sm">{opt.optionText}</span>
+                                            <span className="font-semibold text-sm">
+                                                <QnARenderer content={decodeHtml(opt.optionText)} />
+                                            </span>
                                         </div>
                                         {icon}
                                     </div>

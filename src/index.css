@@ -190,6 +190,7 @@ html.dark body {
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
@@ -197,8 +198,13 @@ html.dark body {
 
 /* Shine effect for progress bars */
 @keyframes shine {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(100%); }
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .animate-shine {
@@ -212,11 +218,27 @@ html.dark body {
 
 /* Shake animation for error feedback */
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-6px);
+  }
+
+  40% {
+    transform: translateX(6px);
+  }
+
+  60% {
+    transform: translateX(-4px);
+  }
+
+  80% {
+    transform: translateX(4px);
+  }
 }
 
 .animate-slide-in-left {
@@ -325,6 +347,7 @@ html {
 .hero-float-badge {
   animation: heroFloat 3s ease-in-out infinite;
 }
+
 /* تغيير لون تحديد النص في الموقع كله */
 ::selection {
   background-color: rgba(147, 51, 234, 0.3);
@@ -339,8 +362,14 @@ html {
   color: white;
 }
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* ── react-datepicker custom theme ── */
 .react-datepicker-popper,
@@ -352,7 +381,7 @@ html {
   font-family: 'Inter', system-ui, sans-serif !important;
   border: 1px solid #e5e7eb !important;
   border-radius: 1.25rem !important;
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
   overflow: hidden;
   background: #fff !important;
   display: flex !important;
@@ -394,8 +423,9 @@ html {
 .react-datepicker__day-names {
   margin-top: 8px;
 }
+
 .react-datepicker__day-name {
-  color: rgba(255,255,255,0.75) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
   font-weight: 700 !important;
   font-size: 0.75rem !important;
   text-transform: uppercase;
@@ -407,9 +437,11 @@ html {
 .react-datepicker__navigation--next {
   top: 16px !important;
 }
+
 .react-datepicker__navigation--previous {
   left: 14px !important;
 }
+
 .react-datepicker__navigation--next {
   right: 146px !important;
 }
@@ -419,10 +451,12 @@ html {
     right: 14px !important;
   }
 }
+
 .react-datepicker__navigation-icon::before {
-  border-color: rgba(255,255,255,0.85) !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
   border-width: 2px 2px 0 0 !important;
 }
+
 .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
   border-color: #fff !important;
 }
@@ -441,36 +475,43 @@ html {
   transition: all 0.2s ease !important;
   margin: 1px !important;
 }
+
 .react-datepicker__day:hover {
   background: #eef2ff !important;
   color: #4f46e5 !important;
   transform: scale(1.1);
 }
+
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
   background: linear-gradient(135deg, #6366f1, #3b82f6) !important;
   color: #fff !important;
   font-weight: 800 !important;
-  box-shadow: 0 4px 10px rgba(99,102,241,0.4);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
   transform: scale(1.05);
 }
+
 .react-datepicker__day--selected:hover {
   background: linear-gradient(135deg, #4f46e5, #2563eb) !important;
   color: #fff !important;
 }
+
 .react-datepicker__day--today {
   font-weight: 800 !important;
   border: 2px solid #6366f1 !important;
   line-height: calc(2.2rem - 4px) !important;
 }
+
 .react-datepicker__day--disabled {
   color: #d1d5db !important;
   cursor: not-allowed !important;
   background: transparent !important;
 }
+
 .react-datepicker__day--disabled:hover {
   transform: none !important;
 }
+
 .react-datepicker__day--outside-month {
   color: #c7c7c7 !important;
 }
@@ -490,9 +531,11 @@ html {
     height: 180px !important;
   }
 }
+
 .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
   width: 100% !important;
 }
+
 .react-datepicker-time__header {
   background: linear-gradient(135deg, #818cf8, #60a5fa) !important;
   padding: 16px 12px 12px !important;
@@ -507,23 +550,26 @@ html {
   margin: 4px 6px !important;
   color: #475569 !important;
 }
+
 .react-datepicker__time-list-item:hover {
   background: #fff !important;
   color: #4f46e5 !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transform: translateX(2px);
 }
+
 .react-datepicker__time-list-item--selected {
   background: linear-gradient(135deg, #6366f1, #3b82f6) !important;
   color: #fff !important;
   font-weight: 800 !important;
-  box-shadow: 0 4px 10px rgba(99,102,241,0.3) !important;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3) !important;
   transform: translateX(4px);
 }
 
 .react-datepicker__time-list::-webkit-scrollbar {
   width: 6px;
 }
+
 .react-datepicker__time-list::-webkit-scrollbar-thumb {
   background-color: #cbd5e1;
   border-radius: 4px;
@@ -544,6 +590,7 @@ html {
     padding: 1rem !important;
   }
 }
+
 .react-datepicker-time__caption {
   display: block;
   font-weight: 800 !important;
@@ -553,9 +600,11 @@ html {
   color: #64748b !important;
   margin-bottom: 0.5rem !important;
 }
+
 .react-datepicker-time__input-container {
   width: 100% !important;
 }
+
 input.react-datepicker-time__input {
   width: 100% !important;
   padding: 0.6rem 0.85rem !important;
@@ -568,23 +617,28 @@ input.react-datepicker-time__input {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   box-sizing: border-box !important;
 }
+
 input.react-datepicker-time__input:focus {
   outline: none !important;
   border-color: #6366f1 !important;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
 }
+
 html.dark .react-datepicker__input-time-container {
   border-top-color: #334155 !important;
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
 }
+
 html.dark .react-datepicker-time__caption {
   color: #94a3b8 !important;
 }
+
 html.dark input.react-datepicker-time__input {
   border-color: #475569 !important;
   background: #0f172a !important;
   color: #f1f5f9 !important;
 }
+
 html.dark input.react-datepicker-time__input:focus {
   border-color: #818cf8 !important;
   box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25) !important;
@@ -598,32 +652,40 @@ html.dark input.react-datepicker-time__input:focus {
 html.dark .react-datepicker {
   background: #1e293b !important;
   border-color: #334155 !important;
-  box-shadow: 0 20px 40px -12px rgba(0,0,0,0.5), 0 8px 20px -8px rgba(0,0,0,0.4) !important;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5), 0 8px 20px -8px rgba(0, 0, 0, 0.4) !important;
 }
+
 html.dark .react-datepicker__header {
   background: linear-gradient(135deg, #4338ca, #3730a3) !important;
 }
+
 html.dark .react-datepicker__day {
   color: #e2e8f0 !important;
 }
+
 html.dark .react-datepicker__day:hover {
   background: #334155 !important;
   color: #a5b4fc !important;
 }
+
 html.dark .react-datepicker__day--selected,
 html.dark .react-datepicker__day--keyboard-selected {
   background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
   color: #fff !important;
 }
+
 html.dark .react-datepicker__day--today {
   border-color: #818cf8 !important;
 }
+
 html.dark .react-datepicker__day--disabled {
   color: #475569 !important;
 }
+
 html.dark .react-datepicker__day--outside-month {
   color: #475569 !important;
 }
+
 html.dark .react-datepicker__time-container {
   border-left-color: #334155 !important;
 }
@@ -634,16 +696,20 @@ html.dark .react-datepicker__time-container {
     border-left-color: transparent !important;
   }
 }
+
 html.dark .react-datepicker__time {
   background: #1e293b !important;
 }
+
 html.dark .react-datepicker__time-list-item {
   color: #cbd5e1 !important;
 }
+
 html.dark .react-datepicker__time-list-item:hover {
   background: #334155 !important;
   color: #a5b4fc !important;
 }
+
 html.dark .react-datepicker__time-list-item--selected {
   background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
   color: #fff !important;
@@ -655,10 +721,12 @@ html.dark .react-datepicker__time-list-item--selected {
   backdrop-filter: blur(12px);
   border-radius: 0 0 0.75rem 0.75rem;
 }
+
 .vjs-theme-custom .vjs-play-progress,
 .vjs-theme-custom .vjs-volume-level {
   background: #3b82f6;
 }
+
 .vjs-theme-custom .vjs-big-play-button {
   background: rgba(59, 130, 246, 0.85);
   border: none;
@@ -669,10 +737,12 @@ html.dark .react-datepicker__time-list-item--selected {
   font-size: 2.5rem;
   transition: transform 0.2s, background 0.2s;
 }
+
 .vjs-theme-custom .vjs-big-play-button:hover {
   background: rgba(59, 130, 246, 1);
   transform: scale(1.1);
 }
+
 .vjs-theme-custom .video-js {
   border-radius: 0.75rem;
   overflow: hidden;
@@ -697,6 +767,7 @@ input[type="range"]::-webkit-slider-runnable-track {
   border-radius: 10px;
   transition: background 0.3s ease;
 }
+
 html.dark input[type="range"]::-webkit-slider-runnable-track {
   background: #1e293b;
 }
@@ -714,6 +785,7 @@ input[type="range"]::-webkit-slider-thumb {
   transition: transform 0.2s ease, background 0.2s ease;
   border: 3px solid #fff;
 }
+
 html.dark input[type="range"]::-webkit-slider-thumb {
   border-color: #0f172a;
 }
@@ -730,6 +802,7 @@ input[type="range"]::-moz-range-track {
   background: #e2e8f0;
   border-radius: 10px;
 }
+
 html.dark input[type="range"]::-moz-range-track {
   background: #1e293b;
 }
@@ -747,7 +820,7 @@ input[type="range"]::-moz-range-thumb {
 /* ── react-datepicker refinements ── */
 .react-datepicker {
   border-radius: 1.5rem !important;
-  box-shadow: 0 25px 70px -12px rgba(0,0,0,0.25) !important;
+  box-shadow: 0 25px 70px -12px rgba(0, 0, 0, 0.25) !important;
 }
 
 .react-datepicker__header {
@@ -782,6 +855,7 @@ html.dark .tiptap p.is-editor-empty:first-child::before {
   margin: 1rem 0 0.5rem;
   color: #1e293b;
 }
+
 html.dark .tiptap h2 {
   color: #f1f5f9;
 }
@@ -792,6 +866,7 @@ html.dark .tiptap h2 {
   margin: 0.75rem 0 0.4rem;
   color: #334155;
 }
+
 html.dark .tiptap h3 {
   color: #e2e8f0;
 }
@@ -821,6 +896,7 @@ html.dark .tiptap h3 {
   font-style: italic;
   color: #64748b;
 }
+
 html.dark .tiptap blockquote {
   color: #94a3b8;
   border-left-color: #21A9FF30;
@@ -837,6 +913,7 @@ html.dark .tiptap blockquote {
   line-height: 1.6;
   color: #e2e8f0;
 }
+
 html.dark .tiptap pre {
   background: #020617;
 }
@@ -849,6 +926,7 @@ html.dark .tiptap pre {
   font-size: 0.85em;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
+
 html.dark .tiptap code {
   background: #1e293b;
   color: #fb7185;
@@ -880,6 +958,7 @@ html.dark .tiptap code {
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
+
 html.dark .tiptap th,
 html.dark .tiptap td {
   border-color: #334155;
@@ -890,6 +969,7 @@ html.dark .tiptap td {
   font-weight: 700;
   font-size: 0.85rem;
 }
+
 html.dark .tiptap th {
   background: #1e293b;
 }
@@ -899,6 +979,143 @@ html.dark .tiptap th {
   border-top: 2px solid #e2e8f0;
   margin: 1.5rem 0;
 }
+
 html.dark .tiptap hr {
   border-top-color: #334155;
+}
+
+/* ── Custom Scrollbar Global Utility ── */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.55);
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(71, 85, 105, 0.4);
+}
+
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(71, 85, 105, 0.7);
+}
+
+/* --- Progress Checkbox Styling --- */
+.progress-checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+  border-radius: 5px;
+}
+
+.progress-checkbox-container {
+  display: block;
+  position: relative;
+  cursor: pointer;
+  font-size: 20px;
+  user-select: none;
+  border-radius: 6px;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.progress-checkbox-container:hover {
+  transform: translateY(-1px);
+}
+
+
+.progress-checkbox-container:active {
+  transform: translateY(1px);
+}
+
+/* Create a custom checkbox */
+.progress-checkmark {
+  position: relative;
+  top: 0;
+  left: 0;
+  height: 1.35em;
+  width: 1.35em;
+  background-color: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 2px 2px 0px #cbd5e1;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+html.dark .progress-checkmark {
+  background-color: #1e293b;
+  border-color: #475569;
+  box-shadow: 2px 2px 0px #475569;
+}
+
+/* When the checkbox is checked, add a blue background */
+.progress-checkbox-container input:checked~.progress-checkmark {
+  border-color: #0094F2;
+  background-image: linear-gradient(135deg, #21A9FF 0%, #0094F2 100%);
+  box-shadow: 3px 3px 0px rgba(33, 169, 255, 0.35);
+  transform: scale(1.05);
+}
+
+html.dark .progress-checkbox-container input:checked~.progress-checkmark {
+  border-color: #21A9FF;
+  background-image: linear-gradient(135deg, #21A9FF 0%, #0094F2 100%);
+  box-shadow: 3px 3px 0px rgba(33, 169, 255, 0.2);
+  transform: scale(1.05);
+}
+
+/* Hover effects on unchecked checkboxes */
+.progress-checkbox-container:hover input:not(:checked)~.progress-checkmark {
+  border-color: #94a3b8;
+  background-color: #e2e8f0;
+  box-shadow: 3px 3px 0px #94a3b8;
+}
+
+html.dark .progress-checkbox-container:hover input:not(:checked)~.progress-checkmark {
+  border-color: #64748b;
+  background-color: #334155;
+  box-shadow: 3px 3px 0px #64748b;
+}
+
+/* Create the checkmark/indicator (hidden when not checked) */
+.progress-checkmark:after {
+  content: "";
+  position: absolute;
+  opacity: 0;
+  left: 50%;
+  top: 45%;
+  width: 0.28em;
+  height: 0.58em;
+  border: solid white;
+  border-width: 0 0.18em 0.18em 0;
+  transform: translate(-50%, -50%) rotate(45deg) scale(0.6);
+  transition: opacity 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Show the checkmark when checked */
+.progress-checkbox-container input:checked~.progress-checkmark:after {
+  opacity: 1;
+  transform: translate(-50%, -50%) rotate(45deg) scale(1);
 }

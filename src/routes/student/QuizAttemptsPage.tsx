@@ -12,8 +12,7 @@ import {
     Eye,
     Play,
     RotateCcw,
-    AlertCircle,
-    Sparkles
+    AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -44,59 +43,7 @@ export const QuizAttemptsPage = () => {
         window.scrollTo({ top: 0, behavior: 'instant' });
     }, []);
 
-    const [activeAIGradingId, setActiveAIGradingId] = useState<string | null>(() => {
-        return localStorage.getItem(`ai-grading-${id}`) || null;
-    });
 
-    const [aiGradedIds, setAiGradedIds] = useState<string[]>(() => {
-        try {
-            return JSON.parse(localStorage.getItem(`ai-graded-${id}`) || '[]');
-        } catch {
-            return [];
-        }
-    });
-
-    useEffect(() => {
-        if (!activeAIGradingId) {
-            localStorage.removeItem(`ai-grading-${id}`);
-            return;
-        }
-
-        localStorage.setItem(`ai-grading-${id}`, activeAIGradingId);
-        let cancelled = false;
-
-        const runAIGrading = async () => {
-            try {
-                const { triggerAIGrading } = await import('@/features/ai-grading/api/ai-grading.service');
-                await triggerAIGrading(activeAIGradingId);
-
-                if (cancelled) return;
-                setActiveAIGradingId(null);
-                setAiGradedIds(prev => {
-                    const next = Array.from(new Set([...prev, activeAIGradingId]));
-                    localStorage.setItem(`ai-graded-${id}`, JSON.stringify(next));
-                    return next;
-                });
-                toast.success("AI has successfully evaluated this attempt 🎉");
-                navigate(`/quizzes/${id}/attempt/${activeAIGradingId}/ai-result`);
-            } catch (err) {
-                if (cancelled) return;
-                console.error('AI grading failed:', err);
-                toast.error("AI grading failed. Please try again.");
-                setActiveAIGradingId(null);
-            }
-        };
-
-        runAIGrading();
-        return () => { cancelled = true; };
-    }, [activeAIGradingId, id, navigate]);
-
-
-    useEffect(() => {
-        localStorage.setItem(`ai-graded-${id}`, JSON.stringify(aiGradedIds));
-    }, [aiGradedIds, id]);
-
-    const hasAIGradedAttempt = aiGradedIds.length > 0;
 
     const { data: attemptsDto, isLoading } = useQuery<GetAttemptsByQuizIdDto | null>({
         queryKey: ['quiz-attempts', id],
@@ -198,13 +145,7 @@ export const QuizAttemptsPage = () => {
                     </div>
                 </div>
 
-                {/* AI Grading Hint */}
-                {activeAIGradingId && (
-                    <div className="bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20 rounded-xl p-3 flex items-center justify-center gap-2 text-violet-700 dark:text-violet-400 text-[11px] sm:text-sm font-bold animate-in fade-in slide-in-from-top-2">
-                        <Sparkles className="w-4 h-4 shrink-0" />
-                        <span className="text-center">AI grading may take a few moments. You’ll be notified once it’s ready.</span>
-                    </div>
-                )}
+
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -270,38 +211,28 @@ export const QuizAttemptsPage = () => {
                 ) : (
                     <div className="space-y-3">
                         {attempts.map((attempt) => {
-                            const isAIGraded = aiGradedIds.includes(attempt.id);
-                            const effectiveStatus = activeAIGradingId === attempt.id ? 'Processing' :
-                                isAIGraded ? 'Reviewed' :
-                                    attempt.status;
-
                             const score = getScorePercentage(attempt);
-                            const revealScore = canRevealScore({ ...attempt, status: effectiveStatus as AttemptStatus });
-                            const info = getStatusInfo(effectiveStatus as any);
-                            const isInProgress = effectiveStatus === 'InProgress';
-                            const isProcessing = effectiveStatus === 'Processing';
+                            const revealScore = canRevealScore(attempt);
+                            const info = getStatusInfo(attempt.status);
+                            const isInProgress = attempt.status === 'InProgress';
 
                             return (
                                 <div
                                     key={attempt.id}
-                                    className={`bg-white dark:bg-slate-800/60 border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${effectiveStatus === 'Reviewed'
+                                    className={`bg-white dark:bg-slate-800/60 border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${attempt.status === 'Reviewed'
                                             ? 'border-emerald-200/60 dark:border-emerald-700/30'
-                                            : effectiveStatus === 'Processing'
-                                                ? 'border-violet-300 dark:border-violet-500/50 shadow-violet-100 dark:shadow-violet-900/20'
-                                                : effectiveStatus === 'Submitted'
-                                                    ? 'border-blue-200/60 dark:border-blue-700/30'
-                                                    : 'border-gray-200 dark:border-slate-700/50'
+                                            : attempt.status === 'Submitted'
+                                                ? 'border-blue-200/60 dark:border-blue-700/30'
+                                                : 'border-gray-200 dark:border-slate-700/50'
                                         }`}
                                 >
                                     {/* Left: Attempt Info */}
                                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 flex-1 min-w-0 text-center sm:text-left">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${effectiveStatus === 'Reviewed'
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${attempt.status === 'Reviewed'
                                                 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
-                                                : effectiveStatus === 'Processing'
-                                                    ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.5)]'
-                                                    : effectiveStatus === 'Submitted'
-                                                        ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400'
-                                                        : 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400'
+                                                : attempt.status === 'Submitted'
+                                                    ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400'
+                                                    : 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400'
                                             }`}>
                                             {attempt.attemptNumber}
                                         </div>
@@ -309,18 +240,12 @@ export const QuizAttemptsPage = () => {
                                             <div className="flex flex-col sm:flex-row items-center gap-2">
                                                 <h4 className="font-bold text-gray-900 dark:text-white text-base">Attempt #{attempt.attemptNumber}</h4>
                                                 <div className="flex flex-wrap justify-center sm:justify-start gap-2">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider ${effectiveStatus === 'Reviewed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' :
-                                                            effectiveStatus === 'Submitted' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' :
-                                                                effectiveStatus === 'Processing' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400' :
-                                                                    'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400'
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider ${attempt.status === 'Reviewed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' :
+                                                            attempt.status === 'Submitted' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' :
+                                                                'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400'
                                                         }`}>
-                                                        <info.icon className={`w-3 h-3 ${isProcessing ? 'animate-spin' : ''}`} /> {info.label}
+                                                        <info.icon className="w-3 h-3" /> {info.label}
                                                     </span>
-                                                    {isAIGraded && (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-violet-100 to-fuchsia-100 text-fuchsia-700 dark:from-violet-500/20 dark:to-fuchsia-500/20 dark:text-fuchsia-400 border border-fuchsia-200 dark:border-fuchsia-500/30">
-                                                            <Sparkles className="w-2.5 h-2.5" /> AI Graded
-                                                        </span>
-                                                    )}
                                                 </div>
                                             </div>
                                             <p className="text-[11px] sm:text-xs text-gray-500 dark:text-slate-400 mt-1 flex items-center justify-center sm:justify-start gap-1.5 font-medium">
@@ -341,78 +266,25 @@ export const QuizAttemptsPage = () => {
                                         {isInProgress ? (
                                             <button
                                                 onClick={() => navigate(`/quizzes/${id}/attempt`, { state: { resume: true } })}
-                                                disabled={!!activeAIGradingId}
-                                                className={`flex-1 sm:flex-none px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${activeAIGradingId
-                                                        ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
-                                                        : 'bg-orange-500 hover:bg-orange-600 text-white active:scale-95'
-                                                    }`}
+                                                className="flex-1 sm:flex-none px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white active:scale-95"
                                             >
                                                 <Play className="w-3.5 h-3.5" />
                                                 Resume
                                                 <ChevronRight className="w-3.5 h-3.5" />
                                             </button>
                                         ) : (
-                                            <>
-                                                {effectiveStatus === 'Submitted' && (
-                                                    <div className="group relative flex-1 sm:flex-none">
-                                                        <button
-                                                            onClick={() => setActiveAIGradingId(attempt.id)}
-                                                            disabled={!!activeAIGradingId || hasAIGradedAttempt}
-                                                            className={`w-full px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${(activeAIGradingId || hasAIGradedAttempt)
-                                                                    ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
-                                                                    : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white active:scale-95'
-                                                                }`}
-                                                        >
-                                                            <Sparkles className="w-3.5 h-3.5" />
-                                                            Grade with AI
-                                                        </button>
-                                                        {(!hasAIGradedAttempt && !!activeAIGradingId && activeAIGradingId !== attempt.id) && (
-                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] text-center px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                                                                You can only grade one attempt using AI
-                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-white" />
-                                                            </div>
-                                                        )}
-                                                        {hasAIGradedAttempt && (
-                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] text-center px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                                                                An attempt has already been graded for this quiz
-                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {isProcessing && (
-                                                    <button
-                                                        disabled
-                                                        className="flex-1 sm:flex-none px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 cursor-not-allowed"
-                                                    >
-                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        AI is grading...
-                                                    </button>
-                                                )}
-                                                {isAIGraded && !isProcessing && (
-                                                    <button
-                                                        onClick={() => navigate(`/quizzes/${id}/attempt/${attempt.id}/ai-result`)}
-                                                        className="flex-1 sm:flex-none px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 bg-gradient-to-r from-violet-100 to-fuchsia-100 hover:from-violet-200 hover:to-fuchsia-200 text-fuchsia-700 dark:from-violet-500/20 dark:to-fuchsia-500/20 dark:hover:from-violet-500/30 dark:hover:to-fuchsia-500/30 dark:text-fuchsia-400 active:scale-95"
-                                                    >
-                                                        <Sparkles className="w-3.5 h-3.5" />
-                                                        AI Result
-                                                    </button>
-                                                )}
-                                                <button
-                                                    onClick={() => navigate(`/quizzes/${id}/attempt/${attempt.id}`)}
-                                                    disabled={isProcessing || !!activeAIGradingId}
-                                                    className={`flex-1 sm:flex-none px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${isProcessing || !!activeAIGradingId
-                                                            ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
-                                                            : effectiveStatus === 'Reviewed'
-                                                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95'
-                                                                : 'bg-[#21A9FF] hover:bg-[#0094F2] text-white active:scale-95'
-                                                        }`}
-                                                >
-                                                    <Eye className="w-3.5 h-3.5" />
-                                                    {effectiveStatus === 'Reviewed' ? 'View Result' : 'View Details'}
-                                                    <ChevronRight className="w-3.5 h-3.5" />
-                                                </button>
-                                            </>
+                                            <button
+                                                onClick={() => navigate(`/quizzes/${id}/attempt/${attempt.id}`)}
+                                                className={`flex-1 sm:flex-none px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${
+                                                    attempt.status === 'Reviewed'
+                                                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95'
+                                                        : 'bg-[#21A9FF] hover:bg-[#0094F2] text-white active:scale-95'
+                                                }`}
+                                            >
+                                                <Eye className="w-3.5 h-3.5" />
+                                                {attempt.status === 'Reviewed' ? 'View Result' : 'View Details'}
+                                                <ChevronRight className="w-3.5 h-3.5" />
+                                            </button>
                                         )}
                                     </div>
                                 </div>
