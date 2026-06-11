@@ -1,5 +1,13 @@
 /**
  * Admin Content Reports Page
+ * 
+ * A premium moderation dashboard for administrators to manage content reports.
+ * Uses real API data from GET /api/Users/admin/content-reports
+ * and supports resolving/approving reports via PUT /api/Users/admin/content-reports?reportid={reportId}
+ */
+import {
+    AlertTriangle, RefreshCw, BarChart3, Clock, CheckCircle, 
+    XCircle, Shield, Loader2, BookOpen, AlertCircle, Sparkles, HelpCircle, Eye
  *
  * A comprehensive moderation dashboard for administrators to manage
  * content reports submitted by students. Features:
@@ -46,1010 +54,481 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts';
-import {
-  getReportStats,
-  REPORT_REASONS,
-  type ContentReport,
-  type ReportStatus,
-  type ReportReason,
-  type MaterialType,
-} from '@/mocks/contentReports';
+import { useReportsDashboard, useApproveReport } from '@/hooks/useContentReports';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import {
-  getContentReports,
-  getContentReportDetails,
-  rejectContentReport,
-} from '@/api/services/content-reports.service';
-import type { ApiContentReportDetail } from '@/api/services/content-reports.service';
-import { handleApiError } from '@/api/client';
+import { REPORT_TYPE_LABELS } from '@/types/api.types';
 
-// ─── Status Badge ────────────────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<ReportStatus, { color: string; bg: string; icon: React.ElementType }> =
-  {
-    Pending: {
-      color: 'text-amber-700 dark:text-amber-300',
-      bg: 'bg-amber-50 dark:bg-amber-500/10 border-amber-200/50 dark:border-amber-500/20',
-      icon: Clock,
-    },
-    'Under Review': {
-      color: 'text-blue-700 dark:text-blue-300',
-      bg: 'bg-blue-50 dark:bg-blue-500/10 border-blue-200/50 dark:border-blue-500/20',
-      icon: Eye,
-    },
-    Approved: {
-      color: 'text-green-700 dark:text-green-300',
-      bg: 'bg-green-50 dark:bg-green-500/10 border-green-200/50 dark:border-green-500/20',
-      icon: CheckCircle,
-    },
-    Rejected: {
-      color: 'text-red-700 dark:text-red-300',
-      bg: 'bg-red-50 dark:bg-red-500/10 border-red-200/50 dark:border-red-500/20',
-      icon: XCircle,
-    },
-  };
-
-const StatusBadge = ({ status }: { status: ReportStatus }) => {
-  const config = STATUS_CONFIG[status];
-  const Icon = config.icon;
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${config.bg} ${config.color}`}
-    >
-      <Icon className="w-3.5 h-3.5" />
-      {status}
-    </span>
-  );
-};
-
-// ─── Material Type Icon ──────────────────────────────────────────────────────
-
-const MaterialIcon = ({ type }: { type: MaterialType }) => {
-  const icons: Record<MaterialType, { icon: React.ElementType; color: string; bg: string }> = {
-    Video: {
-      icon: Video,
-      color: 'text-purple-600 dark:text-purple-400',
-      bg: 'bg-purple-50 dark:bg-purple-500/10',
-    },
-    PDF: {
-      icon: FileText,
-      color: 'text-red-600 dark:text-red-400',
-      bg: 'bg-red-50 dark:bg-red-500/10',
-    },
-    Document: {
-      icon: File,
-      color: 'text-blue-600 dark:text-blue-400',
-      bg: 'bg-blue-50 dark:bg-blue-500/10',
-    },
-    Image: {
-      icon: ImageIcon,
-      color: 'text-emerald-600 dark:text-emerald-400',
-      bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-    },
-  };
-  const config = icons[type];
-  const Icon = config.icon;
-  return (
-    <div
-      className={`w-9 h-9 rounded-xl ${config.bg} flex items-center justify-center ${config.color}`}
-    >
-      <Icon className="w-4.5 h-4.5" />
-    </div>
-  );
-};
-
-// ─── Stat Card ───────────────────────────────────────────────────────────────
+// ─── Stat Card Component ─────────────────────────────────────────────────────
 
 interface StatCardProps {
-  label: string;
-  value: number;
-  icon: React.ElementType;
-  color: string;
-  bgColor: string;
-  trend?: string;
+    label: string;
+    value: number;
+    icon: React.ElementType;
+    color: string;
+    bgColor: string;
+    description?: string;
+    glowColor: string;
 }
 
-const StatCard = ({ label, value, icon: Icon, color, bgColor, trend }: StatCardProps) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-white dark:bg-slate-800/40 backdrop-blur-md p-6 rounded-2xl border border-gray-200 dark:border-slate-700/50 shadow-sm hover:shadow-lg hover:border-blue-500/30 transition-all group"
-  >
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-          {label}
-        </p>
-        <h3 className="text-3xl font-black text-gray-900 dark:text-white">{value}</h3>
-        {trend && (
-          <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> {trend}
-          </p>
-        )}
-      </div>
-      <div
-        className={`w-14 h-14 rounded-xl ${bgColor} flex items-center justify-center ${color} group-hover:scale-110 transition-transform shadow-inner`}
-      >
-        <Icon className="w-7 h-7" />
-      </div>
-    </div>
-  </motion.div>
+const StatCard = ({ label, value, icon: Icon, color, bgColor, description, glowColor }: StatCardProps) => (
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -5, scale: 1.02 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 shadow-lg hover:shadow-2xl hover:border-indigo-500/30 transition-all duration-300 relative group overflow-hidden"
+    >
+        <div className={`absolute top-0 right-0 w-32 h-32 rounded-full filter blur-[40px] opacity-10 group-hover:opacity-25 transition-opacity duration-300 -mr-10 -mt-10 ${glowColor}`} />
+        <div className="flex items-center justify-between relative z-10">
+            <div className="space-y-1">
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    {label}
+                </p>
+                <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{value}</h3>
+                {description && (
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
+                        {description}
+                    </p>
+                )}
+            </div>
+            <div className={`w-14 h-14 rounded-2xl ${bgColor} flex items-center justify-center ${color} group-hover:rotate-6 transition-all duration-300 shadow-md`}>
+                <Icon className="w-7 h-7" />
+            </div>
+        </div>
+    </motion.div>
 );
 
-// ─── Report Detail Drawer ────────────────────────────────────────────────────
+// ─── Skeleton Loader Component ───────────────────────────────────────────────
 
-interface ReportDrawerProps {
-  report: ContentReport | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onAction: (reportId: string, newStatus: ReportStatus) => void;
-}
+const SkeletonCard = () => (
+    <div className="bg-slate-100/50 dark:bg-slate-800/30 animate-pulse h-32 rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50" />
+);
 
-const ReportDrawer = ({ report, isOpen, onClose, onAction }: ReportDrawerProps) => {
-  const [confirmAction, setConfirmAction] = useState<{
-    status: ReportStatus;
-    title: string;
-    description: string;
-  } | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+const SkeletonChart = () => (
+    <div className="bg-slate-100/50 dark:bg-slate-800/30 animate-pulse h-[380px] rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50" />
+);
 
-  // API integration for details
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-  const [detailsError, setDetailsError] = useState<string | null>(null);
-  const [detailedReport, setDetailedReport] = useState<ApiContentReportDetail | null>(null);
-
-  // Lock body scroll when open to prevent background scrolling
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
-
-  // Fetch details on report selection
-  useEffect(() => {
-    if (isOpen && report) {
-      const fetchDetails = async () => {
-        setIsLoadingDetails(true);
-        setDetailsError(null);
-        try {
-          const data = await getContentReportDetails(report.id);
-          setDetailedReport(data);
-        } catch (err) {
-          const apiError = handleApiError(err);
-          setDetailsError(apiError.message);
-        } finally {
-          setIsLoadingDetails(false);
-        }
-      };
-      fetchDetails();
-    } else {
-      setDetailedReport(null);
-      setDetailsError(null);
-      setIsLoadingDetails(false);
-    }
-  }, [isOpen, report]);
-
-  const handleConfirmAction = async () => {
-    if (!report || !confirmAction) return;
-    setIsProcessing(true);
-    try {
-      if (confirmAction.status === 'Rejected') {
-        await rejectContentReport(report.id);
-        toast.success('Report rejected — content kept.');
-        onAction(report.id, 'Rejected');
-        onClose();
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        onAction(report.id, confirmAction.status);
-        onClose();
-      }
-    } catch (err) {
-      const apiError = handleApiError(err);
-      toast.error(apiError.message);
-    } finally {
-      setIsProcessing(false);
-      setConfirmAction(null);
-    }
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  return (
-    <>
-      <AnimatePresence>
-        {isOpen && report && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={onClose}
-              className="fixed inset-0 bg-slate-900/50 z-[100]"
-            />
-
-            {/* Drawer */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
-              className="fixed top-0 right-0 h-full w-full max-w-xl bg-white dark:bg-slate-900 shadow-2xl z-[101] flex flex-col"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-                    <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                      Report Details
-                    </h2>
-                  </div>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-rose-500 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-6">
-                {isLoadingDetails ? (
-                  <div className="h-64 flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-                    <p className="text-sm font-semibold text-slate-500">Loading details...</p>
-                  </div>
-                ) : detailsError ? (
-                  <div className="h-64 flex flex-col items-center justify-center gap-3 text-center px-6">
-                    <AlertCircle className="w-10 h-10 text-red-500" />
-                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                      Failed to load details
-                    </p>
-                    <p className="text-xs text-slate-500">{detailsError}</p>
-                  </div>
-                ) : detailedReport ? (
-                  <>
-                    {/* Status */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Current Status
-                      </span>
-                      <StatusBadge status={mapStatusFromApi(detailedReport.reportStatus)} />
-                    </div>
-
-                    {/* Report Information */}
-                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 space-y-4 border border-slate-200/50 dark:border-slate-700/50">
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                        <Flag className="w-4 h-4 text-red-500" />
-                        Report Information
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs font-bold text-slate-400 mb-1">Date Submitted</p>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {formatDate(detailedReport.submittedAt)}
-                          </p>
-                        </div>
-                        <div className="col-span-2">
-                          <p className="text-xs font-bold text-slate-400 mb-1">Reason</p>
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 border border-red-200/50 dark:border-red-500/20">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            {mapReasonFromApi(detailedReport.reportType)}
-                          </span>
-                        </div>
-                        {detailedReport.reportComment && (
-                          <div className="col-span-2">
-                            <p className="text-xs font-bold text-slate-400 mb-1">
-                              Additional Comment
-                            </p>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
-                              {detailedReport.reportComment}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Reporter Info */}
-                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 space-y-4 border border-slate-200/50 dark:border-slate-700/50">
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-blue-500" />
-                        Reporter
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs font-bold text-slate-400 mb-1">Name</p>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {detailedReport.reporterName}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-400 mb-1">Email</p>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                            {detailedReport.reporterEmail}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Reported Material */}
-                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 space-y-4 border border-slate-200/50 dark:border-slate-700/50">
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-purple-500" />
-                        Reported Material
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                          <p className="text-xs font-bold text-slate-400 mb-1">Material Name</p>
-                          <div className="flex items-center gap-3">
-                            <MaterialIcon type={getMaterialType(detailedReport.materialName)} />
-                            <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                              {detailedReport.materialName}
-                            </p>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-400 mb-1">Material Type</p>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {detailedReport.materialType}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-400 mb-1">Course Name</p>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {detailedReport.courseName}
-                          </p>
-                        </div>
-                        <div className="col-span-2">
-                          <p className="text-xs font-bold text-slate-400 mb-1">Instructor Name</p>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {detailedReport.instructorName}
-                          </p>
-                        </div>
-                        <div className="col-span-2">
-                          <p className="text-xs font-bold text-slate-400 mb-1">Instructor Email</p>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {detailedReport.instructorEmail}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Preview Section */}
-                      <div>
-                        <p className="text-xs font-bold text-slate-400 mb-2">Preview</p>
-                        <div className="w-full h-40 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center overflow-hidden">
-                          {detailedReport.previewMaterialUrl ? (
-                            <>
-                              {getMaterialType(detailedReport.materialName) === 'Video' && (
-                                <video
-                                  src={detailedReport.previewMaterialUrl}
-                                  controls
-                                  className="w-full h-full object-contain bg-slate-950"
-                                />
-                              )}
-                              {getMaterialType(detailedReport.materialName) === 'PDF' && (
-                                <iframe
-                                  src={detailedReport.previewMaterialUrl}
-                                  title={detailedReport.materialName}
-                                  className="w-full h-full border-none bg-white"
-                                />
-                              )}
-                              {getMaterialType(detailedReport.materialName) === 'Image' && (
-                                <img
-                                  src={detailedReport.previewMaterialUrl}
-                                  alt={detailedReport.materialName}
-                                  className="w-full h-full object-contain bg-slate-900"
-                                />
-                              )}
-                              {getMaterialType(detailedReport.materialName) === 'Document' && (
-                                <iframe
-                                  src={detailedReport.previewMaterialUrl}
-                                  title={detailedReport.materialName}
-                                  className="w-full h-full border-none bg-white"
-                                />
-                              )}
-                            </>
-                          ) : (
-                            <p className="text-xs font-semibold text-slate-400">
-                              No Preview Available
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-
-              {/* Footer Actions */}
-              {detailedReport && !isLoadingDetails && !detailsError && (
-                <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
-                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
-                    Moderation Actions
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    {detailedReport.reportStatus !== 'UnderReview' && (
-                      <button
-                        onClick={() =>
-                          setConfirmAction({
-                            status: 'Under Review',
-                            title: 'Mark Under Review',
-                            description:
-                              'This report will be marked as under review. The content will remain available while being reviewed.',
-                          })
-                        }
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all active:scale-95"
-                      >
-                        <Eye className="w-4 h-4" />
-                        Mark Under Review
-                      </button>
-                    )}
-                    {detailedReport.reportStatus !== 'Rejected' && (
-                      <button
-                        onClick={() =>
-                          setConfirmAction({
-                            status: 'Rejected',
-                            title: 'Keep Content',
-                            description:
-                              'This action means the content does not violate our guidelines. The report will be marked as rejected.',
-                          })
-                        }
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-sm font-bold hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all active:scale-95"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Keep Content
-                      </button>
-                    )}
-                    {detailedReport.reportStatus !== 'Approved' && (
-                      <button
-                        onClick={() =>
-                          setConfirmAction({
-                            status: 'Approved',
-                            title: 'Remove Content',
-                            description:
-                              'This action means the content violates our guidelines and should be removed. This action cannot be undone.',
-                          })
-                        }
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-lg shadow-red-500/25 transition-all active:scale-95"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Remove Content
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Confirm Dialog */}
-      <ConfirmDialog
-        open={!!confirmAction}
-        title={confirmAction?.title || ''}
-        description={confirmAction?.description || ''}
-        confirmText={confirmAction?.status === 'Approved' ? 'Remove Content' : 'Confirm'}
-        onClose={() => setConfirmAction(null)}
-        onConfirm={handleConfirmAction}
-        isPending={isProcessing}
-        variant={
-          confirmAction?.status === 'Approved'
-            ? 'danger'
-            : confirmAction?.status === 'Under Review'
-              ? 'info'
-              : 'warning'
-        }
-        icon={
-          confirmAction?.status === 'Approved'
-            ? XCircle
-            : confirmAction?.status === 'Under Review'
-              ? Eye
-              : CheckCircle
-        }
-      />
-    </>
-  );
-};
+const SkeletonTable = () => (
+    <div className="space-y-4">
+        <div className="bg-slate-100/50 dark:bg-slate-800/30 animate-pulse h-12 rounded-xl" />
+        <div className="bg-slate-100/50 dark:bg-slate-800/30 animate-pulse h-16 rounded-xl" />
+        <div className="bg-slate-100/50 dark:bg-slate-800/30 animate-pulse h-16 rounded-xl" />
+        <div className="bg-slate-100/50 dark:bg-slate-800/30 animate-pulse h-16 rounded-xl" />
+    </div>
+);
 
 // ─── Chart Colors ────────────────────────────────────────────────────────────
 
 const CHART_COLORS = {
-  pending: '#F59E0B',
-  underReview: '#3B82F6',
-  approved: '#10B981',
-  rejected: '#EF4444',
+    pending: '#F59E0B',      // Amber
+    underReview: '#3B82F6',  // Blue
+    approved: '#10B981',     // Green
+    rejected: '#EF4444',     // Red
 };
 
-const REASON_COLORS = [
-  '#8B5CF6',
-  '#EC4899',
-  '#3B82F6',
-  '#10B981',
-  '#F59E0B',
-  '#EF4444',
-  '#06B6D4',
-  '#84CC16',
-  '#F97316',
-  '#6366F1',
-  '#14B8A6',
-  '#A855F7',
-];
-
-// --- Page Size Selector Component ---
-interface PageSizeSelectorProps {
-  pageSize: number;
-  onPageSizeChange: (size: number) => void;
-  disabled?: boolean;
-}
-
-const PageSizeSelector = ({ pageSize, onPageSizeChange, disabled }: PageSizeSelectorProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const options = [5, 10, 25, 50];
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={disabled}
-        className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full text-[10px] font-black text-gray-700 dark:text-slate-200 hover:border-[#21A9FF]/50 transition-all shadow-sm group disabled:opacity-50"
-      >
-        {pageSize} / page
-        <ChevronDown
-          className={`w-3 h-3 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-2xl z-50 p-1.5 overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
-            {options.map((option) => (
-              <button
-                key={option}
-                onClick={() => {
-                  onPageSizeChange(option);
-                  setIsOpen(false);
-                }}
-                className={`w-full flex items-center justify-center py-2 rounded-xl text-xs font-black transition-all ${
-                  pageSize === option
-                    ? 'bg-[#21A9FF]/10 text-[#21A9FF]'
-                    : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-800'
-                }`}
-              >
-                {option} / page
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
+// Custom Tooltip component for Recharts
+const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-800 shadow-2xl text-xs space-y-1">
+                <p className="font-black text-white truncate max-w-xs">{payload[0].name}</p>
+                <p className="font-bold text-indigo-400">
+                    Count: <span className="text-white text-sm font-black">{payload[0].value}</span>
+                </p>
+            </div>
+        );
+    }
+    return null;
 };
-
-// Skeleton row component for loading state
-const SkeletonRow = () => (
-  <tr className="animate-pulse">
-    <td className="py-4 px-6">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gray-200 dark:bg-slate-700" />
-        <div className="h-4 w-32 bg-gray-200 dark:bg-slate-700 rounded" />
-      </div>
-    </td>
-    <td className="py-4 px-6 hidden md:table-cell">
-      <div className="h-4 w-24 bg-gray-200 dark:bg-slate-700 rounded" />
-    </td>
-    <td className="py-4 px-6 hidden xl:table-cell">
-      <div className="h-4 w-20 bg-gray-200 dark:bg-slate-700 rounded" />
-    </td>
-    <td className="py-4 px-6 hidden lg:table-cell">
-      <div className="h-4 w-40 bg-gray-200 dark:bg-slate-700 rounded" />
-    </td>
-    <td className="py-4 px-6 hidden md:table-cell">
-      <div className="h-4 w-24 bg-gray-200 dark:bg-slate-700 rounded" />
-    </td>
-    <td className="py-4 px-6">
-      <div className="h-6 w-20 bg-gray-200 dark:bg-slate-700 rounded-full" />
-    </td>
-    <td className="py-4 px-6">
-      <div className="flex justify-end">
-        <div className="h-8 w-8 bg-gray-200 dark:bg-slate-700 rounded-lg" />
-      </div>
-    </td>
-  </tr>
-);
-
-const getMaterialType = (fileName: string): MaterialType => {
-  const ext = fileName.split('.').pop()?.toLowerCase();
-  if (['mp4', 'mkv', 'avi', 'mov', 'webm'].includes(ext || '')) return 'Video';
-  if (ext === 'pdf') return 'PDF';
-  if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext || '')) return 'Image';
-  return 'Document';
-};
-
-const mapReasonToApi = (reason: string): string | undefined => {
-  switch (reason) {
-    case 'Pornographic / Sexual Content':
-      return 'SexualContent';
-    case 'Hate Speech':
-      return 'HateSpeech';
-    case 'Religious Insult':
-      return 'ReligiousInsult';
-    case 'Harassment or Bullying':
-      return 'Bullying';
-    case 'Misinformation':
-      return 'Misinformation';
-    case 'Copyright Violation':
-      return 'CopyrightViolation';
-    case 'Dangerous or Illegal Activities':
-      return 'IllegalActivities';
-    case 'Terrorism or Extremism':
-      return 'Terrorism';
-    case 'Child Safety Concerns':
-      return 'ChildSafetyConcerns';
-    case 'Other':
-      return 'Other';
-    default:
-      return undefined;
-  }
-};
-
-const mapReasonFromApi = (apiReason: string): ReportReason => {
-  switch (apiReason) {
-    case 'SexualContent':
-      return 'Pornographic / Sexual Content';
-    case 'HateSpeech':
-      return 'Hate Speech';
-    case 'ReligiousInsult':
-      return 'Religious Insult';
-    case 'Bullying':
-      return 'Harassment or Bullying';
-    case 'Misinformation':
-      return 'Misinformation';
-    case 'CopyrightViolation':
-      return 'Copyright Violation';
-    case 'IllegalActivities':
-      return 'Dangerous or Illegal Activities';
-    case 'Terrorism':
-      return 'Terrorism or Extremism';
-    case 'ChildSafetyConcerns':
-      return 'Child Safety Concerns';
-    case 'Other':
-      return 'Other';
-    default:
-      return 'Other';
-  }
-};
-
-const mapStatusFromApi = (status: string): ReportStatus => {
-  if (status === 'UnderReview') return 'Under Review';
-  if (status === 'Pending') return 'Pending';
-  if (status === 'Approved') return 'Approved';
-  if (status === 'Rejected') return 'Rejected';
-  return 'Pending';
-};
-
-// ─── Main Page Component ─────────────────────────────────────────────────────
 
 export const AdminContentReportsPage = () => {
-  const [reports, setReports] = useState<ContentReport[]>([]);
-  const [selectedReport, setSelectedReport] = useState<ContentReport | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<string>('All Types');
+    const { data, isLoading, error, refetch, isFetching } = useReportsDashboard();
+    const approveMutation = useApproveReport();
 
-  // API integration states
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pageNo, setPageNo] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [pagination, setPagination] = useState<{
-    totalResults: number;
-    pagesCount: number;
-    start: number;
-    end: number;
-  } | null>(null);
+    const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  // Fetch reports from API
-  const fetchReports = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const apiType = typeFilter !== 'All Types' ? typeFilter : null;
-      const data = await getContentReports({
-        pageNo,
-        pageSize,
-        type: apiType,
-      });
+    // ─── Chart Data Formatting ───────────────────────────────────────────────
 
-      // Map API items to ContentReport shape
-      const mappedItems = data.items.map((item) => ({
-        id: item.reportId,
-        materialName: item.material,
-        materialType: getMaterialType(item.material),
-        courseName: 'N/A',
-        courseId: 0,
-        instructorName: 'N/A',
-        reason: mapReasonFromApi(item.reason),
-        additionalComment: item.comment,
-        reporterName: item.reporter,
-        reporterEmail: 'N/A',
-        reporterId: '',
-        submittedDate: item.date,
-        status: mapStatusFromApi(item.status),
-      }));
+    const statusChartData = useMemo(() => {
+        if (!data) return [];
+        return [
+            { name: 'Pending', value: data.pendingReports || 0, color: CHART_COLORS.pending },
+            { name: 'Under Review', value: data.underReviewReports || 0, color: CHART_COLORS.underReview },
+            { name: 'Approved', value: data.approvedReports || 0, color: CHART_COLORS.approved },
+            { name: 'Rejected', value: data.rejectedReports || 0, color: CHART_COLORS.rejected },
+        ].filter(item => item.value > 0);
+    }, [data]);
 
-      setReports(mappedItems);
-      setPagination({
-        totalResults: data.totalResults,
-        pagesCount: data.pagesCount,
-        start: data.start,
-        end: data.end,
-      });
-    } catch (err) {
-      const apiError = handleApiError(err);
-      setError(apiError.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pageNo, pageSize, typeFilter]);
+    const reasonChartData = useMemo(() => {
+        if (!data?.topReportReasons) return [];
+        return Object.entries(data.topReportReasons)
+            .map(([reason, count]) => {
+                const friendlyLabel = REPORT_TYPE_LABELS[reason as keyof typeof REPORT_TYPE_LABELS] || reason;
+                return { name: friendlyLabel, value: count };
+            })
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 8);
+    }, [data]);
 
-  // Fetch on parameter changes
-  useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
+    const topMaterialsChartData = useMemo(() => {
+        if (!data?.topReportForMaterial) return [];
+        return Object.entries(data.topReportForMaterial)
+            .map(([material, count]) => ({ name: material, value: count }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+    }, [data]);
 
-  // Reset to page 1 on filter or page size change
-  useEffect(() => {
-    setPageNo(1);
-  }, [typeFilter, pageSize]);
+    // Materials list for the table
+    const materialsList = useMemo(() => {
+        if (!data?.topReportForMaterial) return [];
+        return Object.entries(data.topReportForMaterial)
+            .map(([materialName, count]) => ({ materialName, count }))
+            .sort((a, b) => b.count - a.count); // Show most reported at the top
+    }, [data]);
 
-  const stats = useMemo(() => {
-    const pageStats = getReportStats(reports);
-    if (pagination) {
-      return {
-        ...pageStats,
-        total: pagination.totalResults,
-      };
-    }
-    return pageStats;
-  }, [reports, pagination]);
+    // ─── Actions ─────────────────────────────────────────────────────────────
 
-  const filteredReports = reports;
+    const handleApproveClick = (materialName: string) => {
+        setSelectedMaterial(materialName);
+        setIsConfirmOpen(true);
+    };
 
-  // Handle report status change — refresh from API to stay in sync
-  const handleReportAction = (_reportId: string, _newStatus: ReportStatus) => {
-    // Re-fetch the list to reflect the server-side change.
-    // Current pageNo, pageSize, and typeFilter are preserved automatically.
-    fetchReports();
-  };
+    const handleConfirmApprove = () => {
+        if (!selectedMaterial) return;
 
-  // Chart data: Status Distribution
-  const statusChartData = [
-    { name: 'Pending', value: stats.pending, color: CHART_COLORS.pending },
-    { name: 'Under Review', value: stats.underReview, color: CHART_COLORS.underReview },
-    { name: 'Approved', value: stats.approved, color: CHART_COLORS.approved },
-    { name: 'Rejected', value: stats.rejected, color: CHART_COLORS.rejected },
-  ].filter((item) => item.value > 0);
+        approveMutation.mutate(selectedMaterial, {
+            onSuccess: () => {
+                toast.success(`Content report for "${selectedMaterial}" resolved successfully.`);
+                setIsConfirmOpen(false);
+                setSelectedMaterial(null);
+            },
+            onError: (err: any) => {
+                const message = err?.response?.data?.message || err?.message || 'Failed to resolve report.';
+                toast.error(message);
+            }
+        });
+    };
 
-  // Chart data: Reason Distribution (top 6)
-  const reasonChartData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    reports.forEach((r) => {
-      counts[r.reason] = (counts[r.reason] || 0) + 1;
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([name, value]) => ({ name: name.split(' / ')[0].split(' or ')[0], value }));
-  }, [reports]);
+    // ─── Render States ───────────────────────────────────────────────────────
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const openDrawer = (report: ContentReport) => {
-    setSelectedReport(report);
-    setIsDrawerOpen(true);
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0f1d] p-4 sm:p-8 lg:p-10 transition-colors duration-300 font-sans pb-20 relative overflow-hidden">
-      {/* Ambient Background */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-red-500/5 rounded-full blur-[120px] pointer-events-none" />
-
-      <div className="max-w-[1920px] mx-auto space-y-8 relative z-10 animate-in fade-in duration-700">
-        {/* ─── Header ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white dark:bg-slate-800/40 backdrop-blur-md p-6 sm:p-8 rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm">
-          <div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-              <AlertTriangle className="w-8 h-8 text-amber-500" /> Content Reports
-            </h1>
-            <p className="text-sm font-semibold text-gray-500 dark:text-slate-400 mt-2">
-              Review and moderate reported course materials to maintain platform safety.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200/50 dark:border-amber-500/20 text-amber-700 dark:text-amber-300 text-sm font-bold">
-              {stats.pending} Pending
-            </span>
-          </div>
-        </div>
-
-        {/* ─── Stats Cards ────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            label="Total Reports"
-            value={stats.total}
-            icon={BarChart3}
-            color="text-blue-500"
-            bgColor="bg-blue-500/10"
-          />
-          <StatCard
-            label="Pending Reports"
-            value={stats.pending}
-            icon={Clock}
-            color="text-amber-500"
-            bgColor="bg-amber-500/10"
-            trend="Needs attention"
-          />
-          <StatCard
-            label="Approved (Removed)"
-            value={stats.approved}
-            icon={CheckCircle}
-            color="text-green-500"
-            bgColor="bg-green-500/10"
-          />
-          <StatCard
-            label="Rejected (Kept)"
-            value={stats.rejected}
-            icon={XCircle}
-            color="text-red-500"
-            bgColor="bg-red-500/10"
-          />
-        </div>
-
-        {/* ─── Charts ─────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {/* Status Distribution */}
-          <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm">
-            <div className="mb-6">
-              <h2 className="text-xl font-black text-gray-900 dark:text-white">
-                Status Distribution
-              </h2>
-              <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 mt-1">
-                Breakdown of reports by current status
-              </p>
-            </div>
-            <div className="h-[280px] w-full">
-              {statusChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={statusChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={95}
-                      paddingAngle={3}
-                      dataKey="value"
-                      animationDuration={1000}
+    if (error) {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1d] flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center max-w-md bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl"
+                >
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">
+                        Failed to Load Dashboard
+                    </h2>
+                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-6">
+                        An error occurred while fetching content reports data. Please try again.
+                    </p>
+                    <button
+                        onClick={() => refetch()}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all mx-auto shadow-lg shadow-blue-500/25 active:scale-95"
                     >
-                      {statusChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1e293b',
-                        borderRadius: '12px',
-                        border: 'none',
-                        color: '#fff',
-                        fontWeight: 'bold',
-                      }}
-                    />
-                    <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={10} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-gray-400 text-sm">No data available</p>
+                        <RefreshCw className="w-4 h-4" />
+                        Retry Loading
+                    </button>
+                </motion.div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1d] p-4 sm:p-8 lg:p-10 transition-colors duration-300 font-sans pb-20 relative overflow-hidden">
+            {/* Ambient Background Glows */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-red-500/5 rounded-full blur-[120px] pointer-events-none" />
+
+            <div className="max-w-[1920px] mx-auto space-y-8 relative z-10">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-6 sm:p-8 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 shadow-lg">
+                    <div>
+                        <h1 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                            <AlertTriangle className="w-8 h-8 text-amber-500" /> Content Reports
+                        </h1>
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                            Review and moderate reported course materials using aggregated real-time metrics.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => refetch()}
+                            disabled={isLoading || isFetching}
+                            className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-sm"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${(isLoading || isFetching) ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </button>
+                    </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Reason Distribution */}
-          <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm">
-            <div className="mb-6">
-              <h2 className="text-xl font-black text-gray-900 dark:text-white">
-                Top Report Reasons
-              </h2>
-              <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 mt-1">
-                Most common reasons for content reports
-              </p>
-            </div>
-            <div className="h-[280px] w-full">
-              {reasonChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={reasonChartData}
-                    margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
-                    layout="vertical"
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      horizontal={false}
-                      stroke="#334155"
-                      opacity={0.2}
-                    />
-                    <XAxis
-                      type="number"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 12, fill: '#64748b' }}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 11, fill: '#64748b' }}
-                      width={110}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1e293b',
-                        borderRadius: '12px',
-                        border: 'none',
-                        color: '#fff',
-                        fontWeight: 'bold',
-                      }}
-                    />
-                    <Bar
-                      dataKey="value"
-                      name="Reports"
-                      radius={[0, 8, 8, 0]}
-                      animationDuration={1000}
-                    >
-                      {reasonChartData.map((_entry, index) => (
-                        <Cell
-                          key={`bar-${index}`}
-                          fill={REASON_COLORS[index % REASON_COLORS.length]}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-gray-400 text-sm">No data available</p>
+                {/* Statistics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {isLoading ? (
+                        <>
+                            <SkeletonCard />
+                            <SkeletonCard />
+                            <SkeletonCard />
+                        </>
+                    ) : (
+                        <>
+                            <StatCard
+                                label="Total Reports"
+                                value={data?.totalReports || 0}
+                                icon={BarChart3}
+                                color="text-blue-500"
+                                bgColor="bg-blue-500/10"
+                                glowColor="bg-blue-500"
+                            />
+                            <StatCard
+                                label="Under Review"
+                                value={data?.underReviewReports || 0}
+                                icon={Eye}
+                                color="text-amber-500"
+                                bgColor="bg-amber-500/10"
+                                description="Currently reviewing"
+                                glowColor="bg-amber-500"
+                            />
+                            <StatCard
+                                label="Rejected (Kept)"
+                                value={data?.rejectedReports || 0}
+                                icon={XCircle}
+                                color="text-red-500"
+                                bgColor="bg-red-500/10"
+                                glowColor="bg-red-500"
+                            />
+                        </>
+                    )}
                 </div>
               )}
             </div>
           </div>
         </div>
 
+                {/* Dashboard Charts */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                    {isLoading ? (
+                        <>
+                            <SkeletonChart />
+                            <SkeletonChart />
+                            <SkeletonChart />
+                        </>
+                    ) : (
+                        <>
+                            {/* Status Distribution */}
+                            <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 shadow-lg flex flex-col justify-between">
+                                <div>
+                                    <h2 className="text-xl font-black text-slate-900 dark:text-white">Status Distribution</h2>
+                                    <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-1 mb-6">
+                                        Breakdown of reports by current status
+                                    </p>
+                                </div>
+                                <div className="h-[260px] w-full">
+                                    {statusChartData.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={statusChartData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={65}
+                                                    outerRadius={95}
+                                                    paddingAngle={4}
+                                                    dataKey="value"
+                                                    animationDuration={1000}
+                                                >
+                                                    {statusChartData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip content={<CustomTooltip />} />
+                                                <Legend
+                                                    verticalAlign="bottom"
+                                                    height={36}
+                                                    iconType="circle"
+                                                    iconSize={8}
+                                                    wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                            <AlertCircle className="w-8 h-8 opacity-40 mb-2" />
+                                            <p className="text-sm font-medium">No status data available</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Top Report Reasons */}
+                            <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 shadow-lg flex flex-col justify-between">
+                                <div>
+                                    <h2 className="text-xl font-black text-slate-900 dark:text-white">Top Report Reasons</h2>
+                                    <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-1 mb-6">
+                                        Most common reasons content is flagged
+                                    </p>
+                                </div>
+                                <div className="h-[260px] w-full">
+                                    {reasonChartData.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={reasonChartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }} layout="vertical">
+                                                <defs>
+                                                    <linearGradient id="reasonGrad" x1="0" y1="0" x2="1" y2="0">
+                                                        <stop offset="0%" stopColor="#6366F1" />
+                                                        <stop offset="100%" stopColor="#EC4899" />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" opacity={0.1} />
+                                                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 'bold' }} />
+                                                <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 'bold' }} width={140} />
+                                                <Tooltip content={<CustomTooltip />} />
+                                                <Bar dataKey="value" name="Reports" radius={[0, 8, 8, 0]} fill="url(#reasonGrad)" animationDuration={1000} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                            <AlertCircle className="w-8 h-8 opacity-40 mb-2" />
+                                            <p className="text-sm font-medium">No reasons statistics available</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Most Reported Materials Premium Chart */}
+                            <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 shadow-lg flex flex-col justify-between">
+                                <div>
+                                    <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                        <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
+                                        Most Reported
+                                    </h2>
+                                    <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-1 mb-6">
+                                        Materials with highest report volume
+                                    </p>
+                                </div>
+                                <div className="h-[260px] w-full">
+                                    {topMaterialsChartData.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={topMaterialsChartData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }} layout="vertical">
+                                                <defs>
+                                                    <linearGradient id="materialGrad" x1="0" y1="0" x2="1" y2="0">
+                                                        <stop offset="0%" stopColor="#3B82F6" />
+                                                        <stop offset="100%" stopColor="#10B981" />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" opacity={0.1} />
+                                                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 'bold' }} />
+                                                <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 'bold' }} width={140} />
+                                                <Tooltip content={<CustomTooltip />} />
+                                                <Bar dataKey="value" name="Reports count" radius={[0, 8, 8, 0]} fill="url(#materialGrad)" animationDuration={1000} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                            <AlertCircle className="w-8 h-8 opacity-40 mb-2" />
+                                            <p className="text-sm font-medium">No reported materials data</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Most Reported Materials Table */}
+                <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 shadow-lg overflow-hidden">
+                    <div className="p-6 sm:p-8 border-b border-slate-200/50 dark:border-slate-800/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/20 dark:bg-slate-900/20">
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 dark:text-white">Flagged Course Materials</h2>
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
+                                Summary of content pieces pending review sorted by frequency
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2.5 rounded-2xl">
+                            <HelpCircle className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                                Aggregated view - actions apply to the material resource
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        {isLoading ? (
+                            <div className="p-8">
+                                <SkeletonTable />
+                            </div>
+                        ) : (
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/50">
+                                        <th className="text-left px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Material Description / File Name</th>
+                                        <th className="text-center px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider w-40">Active Reports Count</th>
+                                        <th className="text-right px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider w-48">Moderation Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                    {materialsList.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={3} className="px-6 py-16 text-center">
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center">
+                                                        <BookOpen className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                                                    </div>
+                                                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">All clean!</p>
+                                                    <p className="text-xs text-slate-400 dark:text-slate-500">There are no reports submitted for any course materials currently.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        materialsList.map(({ materialName, count }) => (
+                                            <tr
+                                                key={materialName}
+                                                className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30">
+                                                            <BookOpen className="w-4.5 h-4.5" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-xl">
+                                                                {materialName}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30">
+                                                        {count} reports
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleApproveClick(materialName)}
+                                                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95 border-none"
+                                                    >
+                                                        <CheckCircle className="w-3.5 h-3.5" />
+                                                        Resolve / Approve
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
         {/* ─── Filters & Search ───────────────────────────────────────── */}
         <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
           <div className="p-6 sm:p-8 border-b border-gray-200 dark:border-slate-700/50">
@@ -1261,6 +740,18 @@ export const AdminContentReportsPage = () => {
                   </span>
                 </div>
 
+            {/* Confirm Approval Dialog */}
+            <ConfirmDialog
+                open={isConfirmOpen}
+                title="Approve & Resolve Material Reports"
+                description={`This action approves and resolves all outstanding content reports for "${selectedMaterial}". Proceeding will signal compliance validation for this resource.`}
+                confirmText="Resolve Reports"
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={handleConfirmApprove}
+                isPending={approveMutation.isPending}
+                variant="info"
+                icon={CheckCircle}
+            />
                 <button
                   onClick={() => setPageNo((p) => Math.min(pagination.pagesCount, p + 1))}
                   disabled={pageNo === pagination.pagesCount || isLoading}

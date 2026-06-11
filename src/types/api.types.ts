@@ -898,3 +898,42 @@ export interface GetStudentProfileDto {
     averageQuizzesScore: number;
     progress: number;
 }
+
+// ============================================================================
+// Content Reporting Types
+// ============================================================================
+
+export type ReportType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export const REPORT_TYPE_LABELS: Record<string | number, string> = {
+    0: 'Sexual Content',
+    1: 'Hate Speech',
+    2: 'Harassment',
+    3: 'Dangerous Content',
+    4: 'Copyright Violation',
+    5: 'Misinformation',
+    6: 'Spam',
+    'SexualContent': 'Sexual Content',
+    'HateSpeech': 'Hate Speech',
+    'Harassment': 'Harassment',
+    'DangerousContent': 'Dangerous Content',
+    'CopyrightViolation': 'Copyright Violation',
+    'Misinformation': 'Misinformation',
+    'Spam': 'Spam',
+};
+
+export const ALL_REPORT_TYPES: ReportType[] = [0, 1, 2, 3, 4, 5, 6];
+
+export interface SubmitReportCommand {
+    reportType: ReportType;
+}
+
+export interface ContentReportsDashboardData {
+    totalReports: number;
+    pendingReports: number;
+    approvedReports: number;
+    underReviewReports: number;
+    rejectedReports: number;
+    topReportReasons: Record<string, number>;
+    topReportForMaterial: Record<string, number>;
+}

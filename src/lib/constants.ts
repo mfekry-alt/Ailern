@@ -127,6 +127,7 @@ export const QUERY_KEYS = {
     MY_LEARNING: ['my-learning'],
     DISCUSSIONS: (courseId: string | number) => ['discussions', courseId],
     DISCUSSION: (discussionId: string | number) => ['discussion', discussionId],
+    REPORTS_DASHBOARD: ['reports-dashboard'],
 } as const;
 
 export const STORAGE_KEYS = {

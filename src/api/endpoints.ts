@@ -124,16 +124,19 @@ export const ENDPOINTS = {
       `/Quizzes/${quizId}/ai-generated-questions/accept-all`,
   },
 
-  // Sections endpoints
-  SECTIONS: {
-    BY_COURSE: (courseId: number) => `/Sections/courses/${courseId}/sections`,
-    GET: (sectionId: string) => `/Sections/${sectionId}`,
-    CREATE: '/Sections',
-    UPDATE: (sectionId: string) => `/Sections/${sectionId}`,
-    DELETE: (sectionId: string) => `/Sections/${sectionId}`,
-    /** Student — mark section complete/incomplete */
-    STUDENT_PROGRESS: (sectionId: string) => `/Sections/${sectionId}/progress`,
-  },
+    // Sections endpoints
+    SECTIONS: {
+        BY_COURSE: (courseId: number) => `/Sections/courses/${courseId}/sections`,
+        GET: (sectionId: string) => `/Sections/${sectionId}`,
+        CREATE: '/Sections',
+        UPDATE: (sectionId: string) => `/Sections/${sectionId}`,
+        DELETE: (sectionId: string) => `/Sections/${sectionId}`,
+        /** Student — mark section complete/incomplete */
+        STUDENT_PROGRESS: (sectionId: string) => `/Sections/${sectionId}/progress`,
+        /** Student — report a material in a section */
+        REPORT_MATERIAL: (sectionId: string, materialId: string) =>
+            `/Sections/${sectionId}/material/${materialId}/reports`,
+    },
 
   // Quiz Attempts endpoints
   ATTEMPTS: {
@@ -169,22 +172,23 @@ export const ENDPOINTS = {
     ADMIN: '/Dashboard/admin',
   },
 
-  DISCUSSIONS: {
-    LIST: (courseId: number | string) => `/Courses/course/${courseId}/discussions`,
-    CREATE: (courseId: number | string) => `/Courses/course/${courseId}/discussions`,
-    UP_VOTE: (courseId: number | string, discussionId: string | number) =>
-      `/Courses/course/${courseId}/discussions/${discussionId}/up_vote`,
-    DOWN_VOTE: (courseId: number | string, discussionId: string | number) =>
-      `/Courses/course/${courseId}/discussions/${discussionId}/down_vote`,
-    UPDATE: (courseId: number | string, discussionId: string | number) =>
-      `/Courses/course/${courseId}/discussions/${discussionId}/update`,
-    DELETE: (courseId: number | string, discussionId: string | number) =>
-      `/Courses/course/${courseId}/discussions/${discussionId}`,
-    PIN: (courseId: number | string, discussionId: string | number) =>
-      `/Courses/course/${courseId}/discussions/${discussionId}/pin`,
-    UNPIN: (courseId: number | string, discussionId: string | number) =>
-      `/Courses/course/${courseId}/discussions/${discussionId}/un_pin`,
-    ANSWER: (courseId: number | string, discussionId: string | number) =>
-      `/Courses/course/${courseId}/discussions/${discussionId}/answer`,
-  },
+    // Content Reports endpoints (Admin)
+    REPORTS: {
+        /** GET — Admin dashboard with aggregated stats */
+        DASHBOARD: '/Users/admin/content-reports',
+        /** PUT — Approve a single report */
+        APPROVE: (reportId: string) => `/Users/admin/content-reports?reportid=${reportId}`,
+    },
+
+    DISCUSSIONS: {
+        LIST: (courseId: number | string) => `/Courses/course/${courseId}/discussions`,
+        CREATE: (courseId: number | string) => `/Courses/course/${courseId}/discussions`,
+        UP_VOTE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/up_vote`,
+        DOWN_VOTE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/down_vote`,
+        UPDATE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/update`,
+        DELETE: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}`,
+        PIN: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/pin`,
+        UNPIN: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/un_pin`,
+        ANSWER: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/answer`,
+    },
 } as const;
