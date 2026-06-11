@@ -14,3 +14,4 @@ export * as sectionService from './section.service';
 export * as attemptsService from './attempts.service';
 export * as instructorService from './instructor.service';
 export * as dashboardService from './dashboard.service';
+export * as contentReportsService from './content-reports.service';
