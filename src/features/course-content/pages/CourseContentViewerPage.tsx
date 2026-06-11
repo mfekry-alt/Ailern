@@ -497,6 +497,8 @@ export const CourseContentViewerPage = () => {
                 isOpen={isReportModalOpen}
                 onClose={() => setIsReportModalOpen(false)}
                 materialName={activeFile?.fileName}
+                sectionId={activeSectionId || ''}
+                materialId={activeFile?.id || ''}
             />
         </div>
     );

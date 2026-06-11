@@ -120,6 +120,9 @@ export const ENDPOINTS = {
         DELETE: (sectionId: string) => `/Sections/${sectionId}`,
         /** Student — mark section complete/incomplete */
         STUDENT_PROGRESS: (sectionId: string) => `/Sections/${sectionId}/progress`,
+        /** Student — report a material in a section */
+        REPORT_MATERIAL: (sectionId: string, materialId: string) =>
+            `/Sections/${sectionId}/material/${materialId}/reports`,
     },
 
     // Quiz Attempts endpoints
@@ -154,6 +157,14 @@ export const ENDPOINTS = {
     DASHBOARD: {
         QUIZ: (quizId: string) => `/Dashboard/quiz/${quizId}`,
         ADMIN: '/Dashboard/admin',
+    },
+
+    // Content Reports endpoints (Admin)
+    REPORTS: {
+        /** GET — Admin dashboard with aggregated stats */
+        DASHBOARD: '/Users/admin/content-reports',
+        /** PUT — Approve a single report */
+        APPROVE: (reportId: string) => `/Users/admin/content-reports?reportid=${reportId}`,
     },
 
     DISCUSSIONS: {

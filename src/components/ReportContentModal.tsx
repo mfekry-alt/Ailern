@@ -2,37 +2,44 @@
  * ReportContentModal
  * 
  * A modern modal dialog for students to report inappropriate course materials.
- * Features animated open/close, character counter, dropdown, loading state, and accessibility.
+ * Integrates with the backend POST /api/Sections/{id}/material/{materialId}/reports API.
+ * Features animated open/close, dropdown, loading states, and accessibility.
  */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertTriangle, Loader2, ChevronDown, Shield } from 'lucide-react';
 import { toast } from 'sonner';
-import { REPORT_REASONS, type ReportReason } from '@/mocks/contentReports';
+import { useReportMaterial } from '@/hooks/useContentReports';
+import { ALL_REPORT_TYPES, REPORT_TYPE_LABELS, type ReportType } from '@/types/api.types';
 
 interface ReportContentModalProps {
     isOpen: boolean;
     onClose: () => void;
     materialName?: string;
+    sectionId: string;
+    materialId: string;
 }
 
-const MAX_COMMENT_LENGTH = 500;
-
-export const ReportContentModal = ({ isOpen, onClose, materialName }: ReportContentModalProps) => {
-    const [reason, setReason] = useState<ReportReason | ''>('');
-    const [comment, setComment] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+export const ReportContentModal = ({
+    isOpen,
+    onClose,
+    materialName,
+    sectionId,
+    materialId,
+}: ReportContentModalProps) => {
+    const [reason, setReason] = useState<ReportType | ''>('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+
+    const reportMutation = useReportMaterial();
 
     // Reset form when modal opens
     useEffect(() => {
         if (isOpen) {
             setReason('');
-            setComment('');
-            setIsSubmitting(false);
             setIsDropdownOpen(false);
             setHasAttemptedSubmit(false);
+            reportMutation.reset();
         }
     }, [isOpen]);
 
@@ -52,31 +59,45 @@ export const ReportContentModal = ({ isOpen, onClose, materialName }: ReportCont
     useEffect(() => {
         if (!isOpen) return;
         const handleKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !isSubmitting) {
+            if (e.key === 'Escape' && !reportMutation.isPending) {
                 onClose();
             }
         };
         document.addEventListener('keydown', handleKey);
         return () => document.removeEventListener('keydown', handleKey);
-    }, [isOpen, isSubmitting, onClose]);
+    }, [isOpen, reportMutation.isPending, onClose]);
 
     const handleSubmit = async () => {
         setHasAttemptedSubmit(true);
         if (!reason) return;
+        if (!sectionId || !materialId) {
+            toast.error('Unable to submit report: Missing section or material ID.');
+            return;
+        }
 
-        setIsSubmitting(true);
-
-        // Simulate API call with mock delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        setIsSubmitting(false);
-        onClose();
-        toast.success('Your report has been submitted and will be reviewed by an administrator.');
+        reportMutation.mutate(
+            {
+                sectionId,
+                materialId,
+                data: {
+                    reportType: reason,
+                },
+            },
+            {
+                onSuccess: () => {
+                    toast.success('Your report has been submitted and will be reviewed by an administrator.');
+                    onClose();
+                },
+                onError: (error: any) => {
+                    const message = error?.response?.data?.message || error?.message || 'Failed to submit report. Please try again.';
+                    toast.error(message);
+                },
+            }
+        );
     };
 
-    const characterCount = comment.length;
-    const isOverLimit = characterCount > MAX_COMMENT_LENGTH;
     const isReasonInvalid = hasAttemptedSubmit && !reason;
+    const isSubmitting = reportMutation.isPending;
 
     return (
         <AnimatePresence>
@@ -166,7 +187,9 @@ export const ReportContentModal = ({ isOpen, onClose, materialName }: ReportCont
                                         aria-haspopup="listbox"
                                         id="report-reason-select"
                                     >
-                                        <span className={reason ? '' : 'opacity-60'}>{reason || 'Select a reason...'}</span>
+                                        <span className={reason ? '' : 'opacity-60'}>
+                                            {reason ? REPORT_TYPE_LABELS[reason] : 'Select a reason...'}
+                                        </span>
                                         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${reason ? 'text-slate-400' : 'text-slate-300'}`} />
                                     </button>
 
@@ -181,24 +204,24 @@ export const ReportContentModal = ({ isOpen, onClose, materialName }: ReportCont
                                                 role="listbox"
                                                 aria-labelledby="report-reason-select"
                                             >
-                                                {REPORT_REASONS.map((r) => (
+                                                {ALL_REPORT_TYPES.map((type) => (
                                                     <button
-                                                        key={r}
+                                                        key={type}
                                                         type="button"
                                                         role="option"
-                                                        aria-selected={reason === r}
+                                                        aria-selected={reason === type}
                                                         onClick={() => {
-                                                            setReason(r);
+                                                            setReason(type);
                                                             setIsDropdownOpen(false);
                                                         }}
                                                         className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors
-                                                            ${reason === r
+                                                            ${reason === type
                                                                 ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300'
                                                                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                                                             }
                                                             first:rounded-t-xl last:rounded-b-xl`}
                                                     >
-                                                        {r}
+                                                        {REPORT_TYPE_LABELS[type]}
                                                     </button>
                                                 ))}
                                             </motion.div>
@@ -210,35 +233,6 @@ export const ReportContentModal = ({ isOpen, onClose, materialName }: ReportCont
                                             Please select a reason for your report.
                                         </p>
                                     )}
-                                </div>
-                            </div>
-
-                            {/* Additional Comment */}
-                            <div>
-                                <label htmlFor="report-comment" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                                    Additional Details <span className="text-slate-400 font-medium">(Optional)</span>
-                                </label>
-                                <textarea
-                                    id="report-comment"
-                                    value={comment}
-                                    onChange={(e) => setComment(e.target.value.slice(0, MAX_COMMENT_LENGTH + 50))}
-                                    disabled={isSubmitting}
-                                    placeholder="Provide more information about the issue..."
-                                    rows={4}
-                                    className={`w-full px-4 py-3 rounded-xl border text-sm font-medium resize-none transition-all
-                                        ${isOverLimit
-                                            ? 'border-red-300 dark:border-red-500/30 focus:ring-red-500/20'
-                                            : 'border-slate-200 dark:border-slate-700 focus:ring-blue-500/20'
-                                        }
-                                        bg-white dark:bg-slate-800/50 text-slate-900 dark:text-white
-                                        placeholder:text-slate-400 dark:placeholder:text-slate-500
-                                        focus:outline-none focus:ring-2 focus:border-transparent
-                                        disabled:opacity-50 custom-scrollbar`}
-                                />
-                                <div className="flex items-center justify-end mt-1.5">
-                                    <span className={`text-xs font-semibold ${isOverLimit ? 'text-red-500' : characterCount > MAX_COMMENT_LENGTH * 0.8 ? 'text-amber-500' : 'text-slate-400'}`}>
-                                        {characterCount}/{MAX_COMMENT_LENGTH}
-                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -257,7 +251,7 @@ export const ReportContentModal = ({ isOpen, onClose, materialName }: ReportCont
                                 <button
                                     type="button"
                                     onClick={handleSubmit}
-                                    disabled={isSubmitting || isOverLimit}
+                                    disabled={isSubmitting}
                                     className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-lg shadow-red-500/25 transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
                                 >
                                     {isSubmitting ? (
