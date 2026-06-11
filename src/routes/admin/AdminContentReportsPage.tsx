@@ -5,16 +5,54 @@
  * Uses real API data from GET /api/Users/admin/content-reports
  * and supports resolving/approving reports via PUT /api/Users/admin/content-reports?reportid={reportId}
  */
-import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
     AlertTriangle, RefreshCw, BarChart3, Clock, CheckCircle, 
     XCircle, Shield, Loader2, BookOpen, AlertCircle, Sparkles, HelpCircle, Eye
+ *
+ * A comprehensive moderation dashboard for administrators to manage
+ * content reports submitted by students. Features:
+ * - Dashboard statistics with cards
+ * - Filterable & searchable reports table
+ * - Right-side detail drawer
+ * - Moderation action buttons with confirmation dialogs
+ * - Charts for report distribution
+ */
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  FileText,
+  Video,
+  Image as ImageIcon,
+  File,
+  X,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Shield,
+  Loader2,
+  BarChart3,
+  TrendingUp,
+  AlertCircle,
+  Flag,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-    PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
-    BarChart, Bar, XAxis, YAxis, CartesianGrid
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from 'recharts';
 import { useReportsDashboard, useApproveReport } from '@/hooks/useContentReports';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -231,6 +269,9 @@ export const AdminContentReportsPage = () => {
                         </button>
                     </div>
                 </div>
+              )}
+            </div>
+          </div>
 
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -270,6 +311,10 @@ export const AdminContentReportsPage = () => {
                         </>
                     )}
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
 
                 {/* Dashboard Charts */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -484,8 +529,216 @@ export const AdminContentReportsPage = () => {
                             </table>
                         )}
                     </div>
+        {/* ─── Filters & Search ───────────────────────────────────────── */}
+        <div className="bg-white dark:bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-gray-200 dark:border-slate-700/50 shadow-sm overflow-hidden">
+          <div className="p-6 sm:p-8 border-b border-gray-200 dark:border-slate-700/50">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="w-full sm:w-72">
+                <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                  Report Type
+                </label>
+                <div className="relative">
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer pr-10"
+                    id="filter-type"
+                  >
+                    <option value="All Types">All Types</option>
+                    <option value="SexualContent">SexualContent</option>
+                    <option value="HateSpeech">HateSpeech</option>
+                    <option value="ReligiousInsult">ReligiousInsult</option>
+                    <option value="Bullying">Bullying</option>
+                    <option value="Misinformation">Misinformation</option>
+                    <option value="CopyrightViolation">CopyrightViolation</option>
+                    <option value="IllegalActivities">IllegalActivities</option>
+                    <option value="Terrorism">Terrorism</option>
+                    <option value="ChildSafetyConcerns">ChildSafetyConcerns</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
                 </div>
+              </div>
             </div>
+          </div>
+
+          {/* ─── Reports Table ──────────────────────────────────────── */}
+          <div className="overflow-x-auto">
+            <table className="w-full" id="content-reports-table">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-slate-700/50 bg-gray-50/50 dark:bg-slate-900/50">
+                  <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    Material
+                  </th>
+                  <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider hidden md:table-cell">
+                    Reason
+                  </th>
+                  <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider hidden xl:table-cell">
+                    Reporter
+                  </th>
+                  <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider hidden lg:table-cell">
+                    Comment
+                  </th>
+                  <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider hidden md:table-cell">
+                    Date
+                  </th>
+                  <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-right px-6 py-4 text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800/50">
+                {isLoading ? (
+                  <>
+                    {Array.from({ length: 5 }).map((_, idx) => (
+                      <SkeletonRow key={idx} />
+                    ))}
+                  </>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center text-red-500">
+                          <AlertTriangle className="w-8 h-8" />
+                        </div>
+                        <p className="text-sm font-bold text-red-600 dark:text-red-400">{error}</p>
+                        <button
+                          onClick={fetchReports}
+                          className="mt-2 px-4 py-2 bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 rounded-xl font-medium hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredReports.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
+                          <AlertCircle className="w-8 h-8 text-gray-300 dark:text-slate-600" />
+                        </div>
+                        <p className="text-sm font-bold text-gray-500 dark:text-slate-400">
+                          No reports found
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-slate-500">
+                          Try adjusting your filters or search query.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredReports.map((report) => (
+                    <tr
+                      key={report.id}
+                      className="hover:bg-blue-50/50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer group"
+                      onClick={() => openDrawer(report)}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <MaterialIcon type={report.materialType} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
+                              {report.materialName}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 hidden md:table-cell">
+                        <span className="text-xs font-semibold text-gray-600 dark:text-slate-400 truncate max-w-[150px] block">
+                          {report.reason}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 hidden xl:table-cell">
+                        <p className="text-sm font-medium text-gray-700 dark:text-slate-300">
+                          {report.reporterName}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4 hidden lg:table-cell">
+                        <p className="text-sm font-medium text-gray-700 dark:text-slate-300 truncate max-w-[200px]">
+                          {report.additionalComment || 'No comment'}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4 hidden md:table-cell">
+                        <p className="text-sm text-gray-500 dark:text-slate-400 whitespace-nowrap">
+                          {formatDate(report.submittedDate)}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={report.status} />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDrawer(report);
+                          }}
+                          className="p-2 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* --- Pagination --- */}
+          {!isLoading && !error && pagination && filteredReports.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3 border-t border-gray-100 dark:border-slate-700/50 gap-4 bg-gray-50/30 dark:bg-slate-900/5">
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                    Results
+                  </p>
+                  <p className="text-[11px] font-bold text-gray-600 dark:text-slate-400">
+                    Showing{' '}
+                    <span className="text-[#21A9FF]">
+                      {pagination.start} - {pagination.end}
+                    </span>{' '}
+                    of{' '}
+                    <span className="text-gray-900 dark:text-white font-black">
+                      {pagination.totalResults}
+                    </span>{' '}
+                    reports
+                  </p>
+                </div>
+                <div className="h-6 w-px bg-gray-200 dark:bg-slate-700" />
+                <PageSizeSelector
+                  pageSize={pageSize}
+                  onPageSizeChange={setPageSize}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="flex items-center gap-3 bg-white dark:bg-slate-800/50 p-1 rounded-2xl border border-gray-100 dark:border-slate-700/50 shadow-sm">
+                <button
+                  onClick={() => setPageNo((p) => Math.max(1, p - 1))}
+                  disabled={pageNo === 1 || isLoading}
+                  className="p-1.5 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-500 hover:text-blue-600 hover:bg-blue-500/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+
+                <div className="px-1 flex items-center gap-1.5">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                    Page
+                  </span>
+                  <span className="text-xs font-black text-gray-900 dark:text-white">{pageNo}</span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                    of
+                  </span>
+                  <span className="text-xs font-black text-gray-900 dark:text-white">
+                    {pagination.pagesCount}
+                  </span>
+                </div>
 
             {/* Confirm Approval Dialog */}
             <ConfirmDialog
@@ -499,6 +752,26 @@ export const AdminContentReportsPage = () => {
                 variant="info"
                 icon={CheckCircle}
             />
+                <button
+                  onClick={() => setPageNo((p) => Math.min(pagination.pagesCount, p + 1))}
+                  disabled={pageNo === pagination.pagesCount || isLoading}
+                  className="p-1.5 rounded-xl bg-gray-50 dark:bg-slate-900 text-gray-500 hover:text-blue-600 hover:bg-blue-500/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-    );
+      </div>
+
+      {/* Report Detail Drawer */}
+      <ReportDrawer
+        report={selectedReport}
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onAction={handleReportAction}
+      />
+    </div>
+  );
 };
