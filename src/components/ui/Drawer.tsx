@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 interface DrawerProps {
     isOpen: boolean;
     onClose: () => void;
-    title: string;
+    title: React.ReactNode;
     children: React.ReactNode;
     footer?: React.ReactNode;
 }
@@ -47,7 +47,11 @@ export const Drawer = ({ isOpen, onClose, title, children, footer }: DrawerProps
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
                             <div>
-                                <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+                                {typeof title === 'string' ? (
+                                    <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{title}</h2>
+                                ) : (
+                                    title
+                                )}
                             </div>
                             <button
                                 onClick={onClose}

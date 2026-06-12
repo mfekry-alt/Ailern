@@ -69,7 +69,7 @@ export const ReportContentModal = ({
 
     const handleSubmit = async () => {
         setHasAttemptedSubmit(true);
-        if (!reason) return;
+        if (reason === '') return;
         if (!sectionId || !materialId) {
             toast.error('Unable to submit report: Missing section or material ID.');
             return;
@@ -89,14 +89,17 @@ export const ReportContentModal = ({
                     onClose();
                 },
                 onError: (error: any) => {
-                    const message = error?.response?.data?.message || error?.message || 'Failed to submit report. Please try again.';
+                    let message = error?.response?.data?.message || error?.message || 'Failed to submit report. Please try again.';
+                    if (message.includes('has already been submitted')) {
+                        message = 'You have already reported this material.';
+                    }
                     toast.error(message);
                 },
             }
         );
     };
 
-    const isReasonInvalid = hasAttemptedSubmit && !reason;
+    const isReasonInvalid = hasAttemptedSubmit && reason === '';
     const isSubmitting = reportMutation.isPending;
 
     return (
@@ -178,7 +181,7 @@ export const ReportContentModal = ({
                                         className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl border text-left text-sm font-medium transition-all
                                             ${isReasonInvalid
                                                 ? 'border-red-300 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/5 text-red-900 dark:text-red-300'
-                                                : reason
+                                                : reason !== ''
                                                     ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-900 dark:text-white'
                                                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-400 dark:text-slate-500'
                                             }
@@ -187,10 +190,10 @@ export const ReportContentModal = ({
                                         aria-haspopup="listbox"
                                         id="report-reason-select"
                                     >
-                                        <span className={reason ? '' : 'opacity-60'}>
-                                            {reason ? REPORT_TYPE_LABELS[reason] : 'Select a reason...'}
+                                        <span className={reason !== '' ? '' : 'opacity-60'}>
+                                            {reason !== '' ? REPORT_TYPE_LABELS[reason] : 'Select a reason...'}
                                         </span>
-                                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${reason ? 'text-slate-400' : 'text-slate-300'}`} />
+                                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${reason !== '' ? 'text-slate-400' : 'text-slate-300'}`} />
                                     </button>
 
                                     <AnimatePresence>

@@ -342,27 +342,7 @@ export const SignupPage = () => {
                         )}
                     </div>
 
-                    {/* Job Title (instructor only) */}
-                    {userType === 'instructor' && (
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-zinc-300 mb-1.5">
-                                Job Title
-                            </label>
-                            <select
-                                className={inputClass}
-                                {...(form as ReturnType<typeof useForm<InstructorFormData>>).register('jobTitle')}
-                                defaultValue=""
-                            >
-                                <option value="" disabled>Select your role</option>
-                                {JOB_TITLES.map((t) => (
-                                    <option key={t} value={t}>{t}</option>
-                                ))}
-                            </select>
-                            {(form.formState.errors as any).jobTitle && (
-                                <p className={errorClass}>{(form.formState.errors as any).jobTitle.message}</p>
-                            )}
-                        </div>
-                    )}
+
 
                     {/* Submit */}
                     <button
