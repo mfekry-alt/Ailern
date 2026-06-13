@@ -9,7 +9,7 @@ import { useUpcomingEvents } from '@/features/instructor/api';
 import { ROUTES } from '@/lib/constants';
 import type { UpcomingEventDto } from '@/types/api.types';
 
-type ExtendedEvent = Omit<UpcomingEventDto, 'id' | 'courseId'> & {
+interface ExtendedEvent extends Omit<UpcomingEventDto, 'courseId' | 'id'> {
     id?: number | string;
     courseId?: number | string;
 };

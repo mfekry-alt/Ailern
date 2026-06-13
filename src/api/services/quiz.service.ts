@@ -6,6 +6,7 @@ import { ENDPOINTS } from '../endpoints';
 import type {
     ApiEnvelope,
     ApiResponse,
+    AttemptStatus,
     CreateQuizBody,
     GetAllQuizDto,
     GetQuizDto,
@@ -239,7 +240,7 @@ export const upsertQuizQuestions = async (
 
 export const getQuizSubmissions = async (
     quizId: string,
-    status?: 'InProgress' | 'Submitted' | 'Reviewed' | null,
+    status?: AttemptStatus | null,
     pageNo: number = 1,
     pageSize: number = 10
 ): Promise<PaginationResult<GetSubmissionsByQuizIdDto>> => {

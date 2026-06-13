@@ -40,9 +40,10 @@ export const QuizResultViewer = () => {
                 setError(null);
                 const resultData = await attemptsService.getAttemptResult(attemptId);
                 setResult(resultData);
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Failed to load result:', err);
-                setError('Failed to load quiz results. Please try again.');
+                const apiMessage = err.response?.data?.message || err.message;
+                setError(apiMessage || 'Failed to load quiz results. Please try again.');
             } finally {
                 setIsLoading(false);
             }
@@ -67,6 +68,28 @@ export const QuizResultViewer = () => {
     }
 
     if (error || !result) {
+        const isNotFinished = error?.toLowerCase().includes('quiz is not finished yet');
+        if (isNotFinished) {
+            return (
+                <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col items-center justify-center p-4 transition-colors duration-300 font-sans">
+                    <div className="flex items-center gap-4 bg-[#FDF2F2] dark:bg-red-950/20 border border-[#FBD5D5] dark:border-red-900/30 px-8 py-4.5 rounded-full shadow-lg shadow-red-500/5 max-w-2xl w-full">
+                        <div className="w-6 h-6 rounded-full bg-[#E02424] flex items-center justify-center shrink-0 shadow-sm">
+                            <span className="text-white font-extrabold text-sm leading-none select-none">!</span>
+                        </div>
+                        <p className="text-xs sm:text-sm md:text-base font-extrabold text-[#1F2937] dark:text-white text-center flex-1 leading-snug">
+                            {error}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => navigate(`/quizzes/${quizId}/attempts`)}
+                        className="mt-8 px-6 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-white rounded-xl font-bold transition-colors shadow-sm text-sm"
+                    >
+                        Back to Attempts
+                    </button>
+                </div>
+            );
+        }
+
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 transition-colors duration-300">
                 <div className="bg-white dark:bg-slate-800/50 border border-red-200 dark:border-red-900/50 p-8 rounded-2xl max-w-md text-center shadow-xl backdrop-blur-sm">
@@ -130,7 +153,7 @@ export const QuizResultViewer = () => {
                         </div>
                         <div className="bg-gray-50 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
                             <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Status</p>
-                            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{result.status}</p>
+                            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{result.status === 'Graded' ? 'Reviewed' : result.status}</p>
                         </div>
                     </div>
                 </div>

@@ -647,7 +647,7 @@ export interface GetQuizDto {
 // Quiz Submission & Grading Types
 // ============================================================================
 
-export type AttemptStatus = 'InProgress' | 'Submitted' | 'Reviewed';
+export type AttemptStatus = 'InProgress' | 'Submitted' | 'Reviewed' | 'Graded';
 
 export interface GetSubmissionsByQuizIdDto {
     id: string;
