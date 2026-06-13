@@ -20,6 +20,8 @@ export interface QuizFormData {
     showResultOnClose: boolean;
     shuffleQuestions: boolean;
     shuffleOptions: boolean;
+    enableAIGrading?: boolean;
+    globalAIInstructions?: string;
 }
 
 const quizSchema = yup.object().shape({

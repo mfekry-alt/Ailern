@@ -10,7 +10,7 @@ import { useInstructorAssignments } from '@/features/assignments/api';
 import { ROUTES } from '@/lib/constants';
 import type { UpcomingEventDto } from '@/types/api.types';
 
-interface ExtendedEvent extends UpcomingEventDto {
+interface ExtendedEvent extends Omit<UpcomingEventDto, 'courseId' | 'id'> {
     id?: number | string;
     courseId?: number | string;
 }
