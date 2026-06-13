@@ -5,15 +5,14 @@ import {
     Filter, Search, CalendarDays, SortAsc, ArrowRight,
     ChevronDown, Check
 } from 'lucide-react';
-import { useUpcomingEvents, useInstructorMyCourses } from '@/features/instructor/api';
-import { useInstructorAssignments } from '@/features/assignments/api';
+import { useUpcomingEvents } from '@/features/instructor/api';
 import { ROUTES } from '@/lib/constants';
 import type { UpcomingEventDto } from '@/types/api.types';
 
 interface ExtendedEvent extends Omit<UpcomingEventDto, 'courseId' | 'id'> {
     id?: number | string;
     courseId?: number | string;
-}
+};
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -76,41 +75,12 @@ export const InstructorUpcomingEventsPage = () => {
 
     // ── Data fetching ──────────────────────────────────────────────────
     const { data: events, isLoading: eventsLoading, error: eventsError } = useUpcomingEvents();
-    const { data: coursesData, isLoading: coursesLoading } = useInstructorMyCourses({ PageNumber: 1, PageSize: 50 });
-    const { data: assignmentsData, isLoading: assignmentsLoading } = useInstructorAssignments({ PageNumber: 1, PageSize: 50 });
 
-    // Merge logic
+    // Simplify allEvents logic to only sort the events array returned by useUpcomingEvents
     const allEvents = useMemo(() => {
-        const eventsList: ExtendedEvent[] = events ? [...events] : [];
-        
-        if (assignmentsData && coursesData?.items) {
-            const now = new Date().getTime();
-            const upcomingAssignments = assignmentsData
-                .filter(a => new Date(a.dueDate).getTime() > now && a.isPublished !== false)
-                .map(a => ({
-                    id: a.id,
-                    courseId: a.courseId,
-                    courseName: coursesData.items.find(c => c.id === a.courseId)?.name || 'Course Assignment',
-                    title: a.title,
-                    availableUntil: a.dueDate,
-                    eventType: 'Assignment' as const
-                }));
-            
-            eventsList.push(...upcomingAssignments);
-        }
-
-        // Add courseId to quizzes if possible by matching course name
-        if (coursesData?.items) {
-            eventsList.forEach(ev => {
-                if (ev.eventType === 'Quiz' && !ev.courseId) {
-                    const course = coursesData.items.find(c => c.name === ev.courseName);
-                    if (course) ev.courseId = course.id;
-                }
-            });
-        }
-
-        return eventsList.sort((a, b) => new Date(a.availableUntil).getTime() - new Date(b.availableUntil).getTime());
-    }, [events, assignmentsData, coursesData]);
+        if (!events) return [];
+        return [...events].sort((a, b) => new Date(a.availableUntil).getTime() - new Date(b.availableUntil).getTime());
+    }, [events]);
 
     // Filtering logic
     const filteredEvents = useMemo(() => {
@@ -124,7 +94,7 @@ export const InstructorUpcomingEventsPage = () => {
         });
     }, [allEvents, searchQuery, filterType]);
 
-    const isLoading = eventsLoading || (assignmentsLoading && assignmentsData === undefined) || coursesLoading;
+    const isLoading = eventsLoading;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8 transition-colors duration-300 font-sans pb-20">
@@ -240,8 +210,8 @@ export const InstructorUpcomingEventsPage = () => {
                                 const getDetailsPath = () => {
                                     const type = event.eventType || (event as any).type;
                                     if (type === 'Assignment') {
-                                        return event.id 
-                                            ? ROUTES.INSTRUCTOR_SUBMISSIONS.replace(':assignmentId', String(event.id))
+                                        return event.courseId 
+                                            ? `${ROUTES.INSTRUCTOR_MANAGE_COURSE.replace(':id', String(event.courseId))}/assignments`
                                             : ROUTES.INSTRUCTOR_ASSIGNMENTS;
                                     } else {
                                         // Quiz logic: link to course management
@@ -268,9 +238,11 @@ export const InstructorUpcomingEventsPage = () => {
                                                 </p>
                                             </div>
 
-                                            <h3 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white group-hover:text-[#21A9FF] dark:group-hover:text-[#21A9FF] transition-colors leading-tight">
-                                                {event.title}
-                                            </h3>
+                                            <Link to={getDetailsPath()}>
+                                                <h3 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white group-hover:text-[#21A9FF] dark:group-hover:text-[#21A9FF] transition-colors leading-tight hover:underline">
+                                                    {event.title}
+                                                </h3>
+                                            </Link>
 
                                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 text-gray-500 dark:text-slate-400">
                                                 <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
