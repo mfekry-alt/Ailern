@@ -145,9 +145,26 @@ export const CourseQuizzesTab = () => {
                                     <QuizStatusSelect quizId={quiz.id} courseId={courseId} status={status} />
                                     <div className="flex items-center gap-2">
                                         <button 
-                                            onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_DASHBOARD.replace(':quizId', quiz.id.toString()))}
-                                            className="h-8 px-2.5 flex items-center gap-1.5 text-violet-600 bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-500/20 rounded-full shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all group/analytics"
-                                            title="View Analytics"
+                                            onClick={() => {
+                                                if (!isEnded) {
+                                                    toast.custom(() => (
+                                                        <div className="flex items-center gap-3.5 px-6 py-4 min-w-[340px] rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-red-100/60 dark:border-red-500/20 shadow-[0_20px_60px_-12px_rgba(220,38,38,0.15),0_8px_24px_-8px_rgba(0,0,0,0.08)]">
+                                                            <div className="shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/25">
+                                                                <span className="text-white text-lg font-black">!</span>
+                                                            </div>
+                                                            <p className="text-[13px] leading-snug text-slate-600 dark:text-slate-300">
+                                                                <span className="font-extrabold text-slate-900 dark:text-white">Statistics are available</span>{' '}
+                                                                only after the quiz ends.
+                                                            </p>
+                                                        </div>
+                                                    ), { duration: 4000 });
+                                                    return;
+                                                    return;
+                                                }
+                                                navigate(ROUTES.INSTRUCTOR_QUIZ_DASHBOARD.replace(':quizId', quiz.id.toString()));
+                                            }}
+                                            className={`h-8 px-2.5 flex items-center gap-1.5 ${isEnded ? 'text-violet-600' : 'text-slate-400 cursor-not-allowed'} bg-white dark:bg-slate-800 border ${isEnded ? 'border-violet-100 dark:border-violet-500/20' : 'border-slate-200 dark:border-slate-700'} rounded-full shadow-sm ${isEnded ? 'hover:shadow-md hover:scale-105 active:scale-95' : ''} transition-all group/analytics`}
+                                            title={isEnded ? 'View Analytics' : 'Statistics are available only after the quiz ends'}
                                         >
                                             <BarChart2 className="w-3.5 h-3.5" />
                                             <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline">Stats</span>

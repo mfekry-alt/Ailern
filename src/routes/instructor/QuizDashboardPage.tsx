@@ -146,7 +146,7 @@ export const QuizDashboardPage = () => {
     const navigate = useNavigate();
     const [mode, setMode] = useState<DashboardMode>('Avg');
 
-    const { data, isLoading, isError, refetch } = useQuizDashboard(quizId ?? '');
+    const { data, isLoading, isError, error, refetch } = useQuizDashboard(quizId ?? '');
     const { data: quizMeta } = useQuiz(quizId ?? '');
 
     // ── Loading skeleton ──────────────────────────────────────────────────
@@ -176,6 +176,7 @@ export const QuizDashboardPage = () => {
 
     // ── Error state ───────────────────────────────────────────────────────
     if (isError || !data) {
+        const errorMessage = (error as any)?.response?.data?.message || (error as any)?.message || 'Could not fetch quiz dashboard data. Make sure the quiz ID is correct and try again.';
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
                 <div className="bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/50 rounded-2xl p-10 text-center max-w-md shadow-xl">
@@ -183,8 +184,8 @@ export const QuizDashboardPage = () => {
                         <AlertCircle className="w-8 h-8 text-red-500" />
                     </div>
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Failed to load analytics</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
-                        Could not fetch quiz dashboard data. Make sure the quiz ID is correct and try again.
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 font-medium">
+                        {errorMessage}
                     </p>
                     <div className="flex gap-3 justify-center">
                         <button

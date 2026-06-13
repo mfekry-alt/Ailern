@@ -35,8 +35,9 @@ export function QuizStatusSelect({ quizId, courseId, status, className = '' }: P
                     toast.success(next === 'Published' ? 'Quiz published successfully.' : 'Quiz set to draft.');
                     setIsOpen(false);
                 },
-                onError: () => {
-                    toast.error('Failed to update status.');
+                onError: (error: any) => {
+                    const message = error?.response?.data?.message || error?.message || 'Failed to update status.';
+                    toast.error(message);
                     setIsOpen(false);
                 },
             }
