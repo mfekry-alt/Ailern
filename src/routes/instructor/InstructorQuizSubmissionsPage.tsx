@@ -68,6 +68,7 @@ export const InstructorQuizSubmissionsPage = () => {
     const getStatusInfo = (status: AttemptStatus) => {
         switch (status) {
             case 'Reviewed':
+            case 'Graded':
                 return { label: 'Reviewed', color: 'emerald', icon: CheckCircle2 };
             case 'Submitted':
                 return { label: 'Submitted', color: 'blue', icon: CheckCircle2 };
@@ -91,7 +92,7 @@ export const InstructorQuizSubmissionsPage = () => {
 
     const stats = [
         { label: 'Total Submissions', value: page?.totalResults ?? 0, icon: Users, color: 'blue' },
-        { label: 'Reviewed', value: page?.items.filter(i => i.status === 'Reviewed').length ?? 0, icon: CheckCircle2, color: 'emerald' },
+        { label: 'Reviewed', value: page?.items.filter(i => i.status === 'Reviewed' || i.status === 'Graded').length ?? 0, icon: CheckCircle2, color: 'emerald' },
         { label: 'Pending Review', value: page?.items.filter(i => i.status === 'Submitted').length ?? 0, icon: Clock, color: 'orange' },
     ];
 
@@ -219,14 +220,14 @@ export const InstructorQuizSubmissionsPage = () => {
                                 <div
                                     key={row.id}
                                     className={`bg-white dark:bg-slate-800/40 backdrop-blur-md border rounded-[2rem] p-4 sm:p-6 shadow-sm hover:shadow-xl hover:shadow-[#21A9FF]/5 transition-all duration-500 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 relative overflow-hidden group ${
-                                        row.status === 'Reviewed'
+                                        row.status === 'Reviewed' || row.status === 'Graded'
                                             ? 'border-emerald-200/50 dark:border-emerald-500/20'
                                             : 'border-slate-200 dark:border-slate-700/50'
                                     }`}
                                 >
                                     {/* Left: Student Info */}                                     <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                                         <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center font-black text-base sm:text-xl shrink-0 shadow-inner group-hover:rotate-6 transition-transform duration-500 ${
-                                            row.status === 'Reviewed'
+                                            row.status === 'Reviewed' || row.status === 'Graded'
                                                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                                                 : 'bg-[#21A9FF] text-white shadow-lg shadow-blue-500/20'
                                         }`}>
@@ -245,7 +246,7 @@ export const InstructorQuizSubmissionsPage = () => {
                                                 </p>
                                                 <div className="flex items-center gap-1.5">
                                                     <span className={`inline-flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest border transition-colors ${
-                                                        row.status === 'Reviewed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' :
+                                                        row.status === 'Reviewed' || row.status === 'Graded' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' :
                                                         row.status === 'Submitted' ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:text-[#21A9FF] dark:border-blue-500/20' :
                                                         'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
                                                     }`}>
@@ -270,13 +271,13 @@ export const InstructorQuizSubmissionsPage = () => {
                                                     .replace(':attemptId', row.id)
                                             )}
                                             className={`w-full sm:w-auto px-5 py-3 sm:px-6 sm:py-3.5 font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 group/btn ${
-                                                row.status === 'Reviewed'
+                                                row.status === 'Reviewed' || row.status === 'Graded'
                                                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
                                                     : 'bg-[#21A9FF] hover:bg-[#0094F2] text-white shadow-blue-500/20'
                                             }`}
                                         >
                                             <MessageSquare className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
-                                            {row.status === 'Reviewed' ? 'Edit Review' : 'Review & Grade'}
+                                            {row.status === 'Reviewed' || row.status === 'Graded' ? 'Edit Review' : 'Review & Grade'}
                                             <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                                         </button>
                                     </div>

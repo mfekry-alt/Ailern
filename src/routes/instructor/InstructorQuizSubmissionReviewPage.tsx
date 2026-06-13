@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -58,6 +58,13 @@ export const InstructorQuizSubmissionReviewPage = () => {
         enabled: !!attemptId,
     });
 
+    useEffect(() => {
+        if (data?.status) {
+            const mappedStatus = data.status === 'Graded' ? 'Reviewed' : data.status;
+            setTargetStatus(mappedStatus as AttemptStatus);
+        }
+    }, [data?.status]);
+
     const answers = useMemo(() => {
         const list = data?.answers ?? [];
         return [...list].sort((a, b) => a.order - b.order);
@@ -102,7 +109,7 @@ export const InstructorQuizSubmissionReviewPage = () => {
 
             const payload: GradeSubmissionBody = {
                 grades: payloadRows,
-                status: targetStatus,
+                status: targetStatus === 'Reviewed' ? ('Graded' as AttemptStatus) : targetStatus,
             };
             await attemptsService.gradeSubmission(attemptId, payload);
         },
@@ -151,7 +158,7 @@ export const InstructorQuizSubmissionReviewPage = () => {
     }
 
     const stats = [
-        { label: 'Status', value: data.status, icon: Target, color: data.status === 'Reviewed' ? 'emerald' : 'blue' },
+        { label: 'Status', value: data.status === 'Graded' ? 'Reviewed' : data.status, icon: Target, color: (data.status === 'Reviewed' || data.status === 'Graded') ? 'emerald' : 'blue' },
         { label: 'Score', value: `${data.score} / ${data.totalScore}`, icon: FileText, color: 'violet' },
         { label: 'Questions', value: answers.length, icon: MessageSquare, color: 'orange' },
         { label: 'Time Spent', value: `${data.timeSpent || 0}m`, icon: Clock, color: 'emerald' },

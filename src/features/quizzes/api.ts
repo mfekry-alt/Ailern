@@ -102,13 +102,18 @@ export const useUpsertQuizQuestions = (quizId: string) => {
  */
 export const useQuizSubmissions = (
     quizId: string,
-    status?: 'InProgress' | 'Submitted' | 'Reviewed' | null,
+    status?: 'InProgress' | 'Submitted' | 'Reviewed' | 'Graded' | null,
     pageNo: number = 1,
     pageSize: number = 10
 ) =>
     useQuery({
         queryKey: [...QUERY_KEYS.QUIZ_SUBMISSIONS(quizId, status), pageNo, pageSize],
-        queryFn: () => quizService.getQuizSubmissions(quizId, status, pageNo, pageSize),
+        queryFn: () => quizService.getQuizSubmissions(
+            quizId,
+            status === 'Reviewed' ? 'Graded' : status,
+            pageNo,
+            pageSize
+        ),
         enabled: !!quizId,
     });
 
