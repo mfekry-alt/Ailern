@@ -389,33 +389,7 @@ export const QuizAttemptsPage = () => {
                                             </button>
                                         ) : (
                                             <>
-                                                {effectiveStatus === 'Submitted' && (
-                                                    <div className="group relative flex-1 sm:flex-none">
-                                                        <button
-                                                            onClick={() => setActiveAIGradingId(attempt.id)}
-                                                            disabled={!!activeAIGradingId || hasAIGradedAttempt}
-                                                            className={`w-full px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${(activeAIGradingId || hasAIGradedAttempt)
-                                                                    ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
-                                                                    : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white active:scale-95'
-                                                                }`}
-                                                        >
-                                                            <Sparkles className="w-3.5 h-3.5" />
-                                                            Grade with AI
-                                                        </button>
-                                                        {(!hasAIGradedAttempt && !!activeAIGradingId && activeAIGradingId !== attempt.id) && (
-                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] text-center px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                                                                You can only grade one attempt using AI
-                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-white" />
-                                                            </div>
-                                                        )}
-                                                        {hasAIGradedAttempt && (
-                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] text-center px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                                                                An attempt has already been graded for this quiz
-                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                                {}
                                                 {isProcessing && (
                                                     <button
                                                         disabled

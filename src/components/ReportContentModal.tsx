@@ -12,6 +12,17 @@ import { toast } from 'sonner';
 import { useReportMaterial } from '@/hooks/useContentReports';
 import { ALL_REPORT_TYPES, REPORT_TYPE_LABELS, type ReportType } from '@/types/api.types';
 
+const REPORT_TYPE_MAP: Record<ReportType, string> = {
+    0: 'SexualContent',
+    1: 'HateSpeech',
+    2: 'Harassment',
+    3: 'DangerousContent',
+    4: 'CopyrightViolation',
+    5: 'Misinformation',
+    6: 'Spam',
+    7: 'Other',
+};
+
 interface ReportContentModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -27,7 +38,8 @@ export const ReportContentModal = ({
     sectionId,
     materialId,
 }: ReportContentModalProps) => {
-    const [reason, setReason] = useState<ReportType | ''>('');
+    const [reportType, setReportType] = useState<ReportType | ''>('');
+    const [comment, setComment] = useState<string>('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 
@@ -36,7 +48,8 @@ export const ReportContentModal = ({
     // Reset form when modal opens
     useEffect(() => {
         if (isOpen) {
-            setReason('');
+            setReportType('');
+            setComment('');
             setIsDropdownOpen(false);
             setHasAttemptedSubmit(false);
             reportMutation.reset();
@@ -69,18 +82,21 @@ export const ReportContentModal = ({
 
     const handleSubmit = async () => {
         setHasAttemptedSubmit(true);
-        if (reason === '') return;
+        if (reportType === '') return;
         if (!sectionId || !materialId) {
             toast.error('Unable to submit report: Missing section or material ID.');
             return;
         }
+
+        const mappedType = REPORT_TYPE_MAP[reportType];
 
         reportMutation.mutate(
             {
                 sectionId,
                 materialId,
                 data: {
-                    reportType: reason,
+                    reportType: mappedType,
+                    reason: comment,
                 },
             },
             {
@@ -99,7 +115,7 @@ export const ReportContentModal = ({
         );
     };
 
-    const isReasonInvalid = hasAttemptedSubmit && reason === '';
+    const isReasonInvalid = hasAttemptedSubmit && reportType === '';
     const isSubmitting = reportMutation.isPending;
 
     return (
@@ -181,7 +197,7 @@ export const ReportContentModal = ({
                                         className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl border text-left text-sm font-medium transition-all
                                             ${isReasonInvalid
                                                 ? 'border-red-300 dark:border-red-500/30 bg-red-50/50 dark:bg-red-500/5 text-red-900 dark:text-red-300'
-                                                : reason !== ''
+                                                : reportType !== ''
                                                     ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-900 dark:text-white'
                                                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-400 dark:text-slate-500'
                                             }
@@ -190,10 +206,10 @@ export const ReportContentModal = ({
                                         aria-haspopup="listbox"
                                         id="report-reason-select"
                                     >
-                                        <span className={reason !== '' ? '' : 'opacity-60'}>
-                                            {reason !== '' ? REPORT_TYPE_LABELS[reason] : 'Select a reason...'}
+                                        <span className={reportType !== '' ? '' : 'opacity-60'}>
+                                            {reportType !== '' ? REPORT_TYPE_LABELS[reportType] : 'Select a reason...'}
                                         </span>
-                                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${reason !== '' ? 'text-slate-400' : 'text-slate-300'}`} />
+                                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${reportType !== '' ? 'text-slate-400' : 'text-slate-300'}`} />
                                     </button>
 
                                     <AnimatePresence>
@@ -212,13 +228,13 @@ export const ReportContentModal = ({
                                                         key={type}
                                                         type="button"
                                                         role="option"
-                                                        aria-selected={reason === type}
+                                                        aria-selected={reportType === type}
                                                         onClick={() => {
-                                                            setReason(type);
+                                                            setReportType(type);
                                                             setIsDropdownOpen(false);
                                                         }}
                                                         className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors
-                                                            ${reason === type
+                                                            ${reportType === type
                                                                 ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300'
                                                                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                                                             }
@@ -237,6 +253,21 @@ export const ReportContentModal = ({
                                         </p>
                                     )}
                                 </div>
+                            </div>
+
+                            {/* Comment Text Field */}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                                    Comment / Additional Details
+                                </label>
+                                <textarea
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                    placeholder="Provide details about why you are reporting this content..."
+                                    rows={4}
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-900 dark:text-white text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                                />
                             </div>
                         </div>
 
