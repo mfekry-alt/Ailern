@@ -159,21 +159,7 @@ export const QuizResultViewer = () => {
                     </div>
                 </div>
 
-                <AiWeakTopicsCard 
-                    weakTopics={
-                        (result.weakTopics && result.weakTopics.length > 0) 
-                            ? result.weakTopics 
-                            : [
-                                'Derived Horizontal Fragmentation',
-                                'Data Replication Benefits',
-                                'Fragmentation Transparency',
-                                'Horizontal vs Vertical Fragmentation',
-                                'Fragment Reconstruction',
-                                'Distributed Query Processing',
-                                'Concurrency Control'
-                            ]
-                    } 
-                />
+                <AiWeakTopicsCard weakTopics={result.weakTopics} />
 
                 <div className="space-y-6 pt-3">
                     <div className="flex items-center gap-3 border-b border-gray-200 dark:border-slate-700/50 pb-4">

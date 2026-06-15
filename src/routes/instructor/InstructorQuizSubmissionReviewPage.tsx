@@ -319,21 +319,7 @@ export const InstructorQuizSubmissionReviewPage = () => {
                     ))}
                 </div>
 
-                <AiWeakTopicsCard 
-                    weakTopics={
-                        (data.weakTopics && data.weakTopics.length > 0) 
-                            ? data.weakTopics 
-                            : [
-                                'Derived Horizontal Fragmentation',
-                                'Data Replication Benefits',
-                                'Fragmentation Transparency',
-                                'Horizontal vs Vertical Fragmentation',
-                                'Fragment Reconstruction',
-                                'Distributed Query Processing',
-                                'Concurrency Control'
-                            ]
-                    } 
-                />
+                <AiWeakTopicsCard weakTopics={data.weakTopics} />
 
                 {/* Questions List */}
                 <div className="space-y-6">
