@@ -225,8 +225,7 @@ export const enrollInCourse = async (id: number): Promise<void> => {
 };
 
 export const enrollStudentByEmail = async (id: number, email: string): Promise<void> => {
-    // Sending email in the payload. Adjust if backend expects query param or different format.
-    await api.post<ApiResponse>(ENDPOINTS.COURSES.ENROLL(id), { email });
+    await api.post<ApiResponse>(ENDPOINTS.COURSES.ENROLL(id), { studentEmail: email });
 };
 
 export const getAvailableCourses = async (params?: PaginationParams): Promise<GetAvailableCoursesDtoPaginationResult> => {
