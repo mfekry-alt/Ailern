@@ -153,13 +153,10 @@ export const InstructorQuizSubmissionsPage = () => {
     }
 
     const stats = [
-        { label: 'Total', value: page?.totalResults ?? 0, icon: Users, color: 'blue' },
-        { label: 'Graded', value: page?.items.filter(i => i.status === 'Graded').length ?? 0, icon: CheckCircle2, color: 'emerald' },
-        { label: 'AI Graded', value: page?.items.filter(i => i.isAIGraded).length ?? 0, icon: Sparkles, color: 'violet' },
-        { label: 'Pending', value: page?.items.filter(i => i.status === 'Submitted').length ?? 0, icon: Clock, color: 'orange' },
         { label: 'Total Submissions', value: page?.totalResults ?? 0, icon: Users, color: 'blue' },
         { label: 'Reviewed', value: page?.items.filter(i => i.status === 'Reviewed' || i.status === 'Graded').length ?? 0, icon: CheckCircle2, color: 'emerald' },
         { label: 'Pending Review', value: page?.items.filter(i => i.status === 'Submitted').length ?? 0, icon: Clock, color: 'orange' },
+        { label: 'AI Graded', value: page?.items.filter(i => i.isAIGraded).length ?? 0, icon: Sparkles, color: 'violet' },
     ];
 
     return (
