@@ -6,4 +6,5 @@ export * from './MathEditorModal';
 export * from './Modal';
 export * from './StudentProfileModal';
 export * from './ConfirmDialog';
+export * from './AiWeakTopicsCard';
 

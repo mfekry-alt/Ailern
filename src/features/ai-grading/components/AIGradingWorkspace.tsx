@@ -66,7 +66,10 @@ export const AIGradingWorkspace: React.FC<AIGradingWorkspaceProps> = ({
         }
         setValidationError(null);
         
-        const validCriteria = criteria.filter(c => c.criterion.trim() !== '');
+        const validCriteria = criteria.filter(c => c.criterion.trim() !== '').map(c => {
+            const { isLocked, ...rest } = c as any;
+            return rest;
+        });
         
         const payload: AIGradingConfigUpdateRequest = {
             modelAnswer,
@@ -83,25 +86,35 @@ export const AIGradingWorkspace: React.FC<AIGradingWorkspaceProps> = ({
 
 
 
+    const cleanHtmlText = (html: string) => {
+        if (!html) return '';
+        return html.replace(/<[^>]*>/g, '').trim();
+    };
+
     return (
         <div className="flex flex-col h-full relative">
             {/* Header (Question Context) */}
-            <div className="p-6 pb-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/60 shrink-0">
-                <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+            <div className="p-6 pb-5 bg-white/50 dark:bg-slate-900/40 backdrop-blur-sm shrink-0">
+                <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#21A9FF] animate-pulse" />
                         Question Context
                     </span>
-                    <span className="px-3 py-1 bg-[#21A9FF]/10 text-[#21A9FF] rounded-lg text-xs font-black uppercase tracking-wider">
-                        {item.mark} Marks Total
+                    <span className="px-3 py-1.5 bg-gradient-to-r from-[#21A9FF]/10 to-indigo-500/10 border border-[#21A9FF]/20 text-[#21A9FF] rounded-xl text-xs font-black uppercase tracking-wider shadow-sm">
+                        {criteria.reduce((sum, c) => sum + Number(c.mark || 0), 0)} MARKS TOTAL
                     </span>
                 </div>
-                <p className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 leading-relaxed">
-                    {item.questionText}
-                </p>
+                <div className="relative pl-6 py-2 bg-gradient-to-r from-[#21A9FF]/5 to-transparent rounded-2xl overflow-hidden">
+                    {/* Floating active rounded indicator bar */}
+                    <div className="absolute left-0 top-1 bottom-1 w-1 bg-gradient-to-b from-[#21A9FF] to-indigo-600 rounded-full" />
+                    <p className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed select-text">
+                        "{cleanHtmlText(item.questionText)}"
+                    </p>
+                </div>
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6 pb-28 bg-slate-50/50 dark:bg-transparent custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 dark:bg-transparent custom-scrollbar">
                 <div className="max-w-3xl mx-auto space-y-8">
                     <AIReferenceAnswerEditor
                         value={modelAnswer}
@@ -112,36 +125,57 @@ export const AIGradingWorkspace: React.FC<AIGradingWorkspaceProps> = ({
                     <AICriteriaEditor
                         criteria={criteria}
                         onChange={setCriteria}
+                        maxMark={item.mark}
                     />
                 </div>
             </div>
 
             {/* Sticky Action Bar */}
-            <div className="absolute bottom-0 left-0 right-0 border-t border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-b-[2.5rem] z-10 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-b-[2.5rem] shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] shrink-0">
                 {validationError && (
-                    <div className="px-4 pt-3 flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                        <p className="text-sm font-semibold text-red-600 dark:text-red-400">{validationError}</p>
+                    <div className="mx-6 mt-4 p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                        <div>
+                            <h4 className="text-sm font-bold text-rose-800 dark:text-rose-400 leading-none">Marks Allocation Warning</h4>
+                            <p className="text-xs text-rose-600 dark:text-rose-400/80 mt-1.5 leading-relaxed">{validationError}</p>
+                        </div>
                     </div>
                 )}
-                <div className="p-4 flex items-center justify-end gap-3">
-                    <button
-                        type="button"
-                        onClick={handleCancel}
-                        disabled={!isDirty || isSaving}
-                        className="flex items-center gap-2 px-5 py-3 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <X className="w-4 h-4" /> Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={!isDirty || isSaving}
-                        className="flex items-center gap-2 px-6 py-3 bg-[#21A9FF] hover:bg-[#0094F2] text-white text-sm font-black rounded-xl transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
-                    >
-                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {isSaving ? 'Saving...' : 'Save Changes'}
-                    </button>
+                <div className="p-4 px-6 flex items-center justify-between gap-3">
+                    {/* Live Unsaved / Saved status tracker */}
+                    <div className="flex items-center gap-2 text-xs font-bold transition-all duration-300">
+                        {isDirty ? (
+                            <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-200/35 dark:border-amber-500/20 animate-pulse">
+                                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                Unsaved changes detected
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-200/35 dark:border-emerald-500/20">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                Criteria synced
+                            </span>
+                        )}
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={handleCancel}
+                            disabled={!isDirty || isSaving}
+                            className="flex items-center gap-2 px-5 py-3 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200/40 dark:hover:border-slate-700/40 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+                        >
+                            <X className="w-4 h-4" /> Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={!isDirty || isSaving}
+                            className="flex items-center gap-2 px-6 py-3 bg-[#21A9FF] hover:bg-[#0094F2] text-white text-sm font-black rounded-xl transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                        >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

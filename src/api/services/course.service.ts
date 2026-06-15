@@ -224,6 +224,11 @@ export const enrollInCourse = async (id: number): Promise<void> => {
     await api.post<ApiResponse>(ENDPOINTS.COURSES.ENROLL(id));
 };
 
+export const enrollStudentByEmail = async (id: number, email: string): Promise<void> => {
+    // Sending email in the payload. Adjust if backend expects query param or different format.
+    await api.post<ApiResponse>(ENDPOINTS.COURSES.ENROLL(id), { email });
+};
+
 export const getAvailableCourses = async (params?: PaginationParams): Promise<GetAvailableCoursesDtoPaginationResult> => {
     const response = await api.get<any>(
         ENDPOINTS.COURSES.AVAILABLE_COURSES, { params }

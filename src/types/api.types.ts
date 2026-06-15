@@ -804,6 +804,7 @@ export interface AttemptResultDto {
     timeSpent: number;
     totalScore: number;
     score: number;
+    weakTopics?: string[];
 }
 
 // ============================================================================
