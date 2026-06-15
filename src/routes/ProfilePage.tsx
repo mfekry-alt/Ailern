@@ -124,7 +124,7 @@ export const ProfilePage = () => {
 
     return (
         <>
-            <div className="min-h-screen p-6 sm:p-10 lg:p-16 max-w-[1920px] mx-auto bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans pb-32 relative">
+            <div className="min-h-screen p-6 md:p-8 lg:p-12 xl:p-16 max-w-[1920px] mx-auto bg-gray-50 dark:bg-slate-900 transition-colors duration-300 font-sans pb-32 relative">
 
             {/* Background Accents */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-b from-blue-600/5 to-transparent pointer-events-none"></div>
@@ -138,31 +138,31 @@ export const ProfilePage = () => {
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_70%)] from-white/10"></div>
                     </div>
 
-                    <div className="px-6 sm:px-12 pb-8 sm:pb-10 flex flex-col md:flex-row items-center md:items-end justify-between gap-6 sm:gap-8">
-                        <div className="flex flex-col md:flex-row items-center md:items-end gap-5 sm:gap-8 -mt-16 sm:-mt-24 relative z-[60] text-center md:text-left w-full md:w-auto">
+                    <div className="px-6 md:px-8 lg:px-10 xl:px-12 pb-8 lg:pb-10 flex flex-col lg:flex-row items-center lg:items-end justify-between gap-4 lg:gap-6 xl:gap-8">
+                        <div className="flex flex-col lg:flex-row items-center lg:items-end gap-4 lg:gap-6 xl:gap-8 -mt-16 lg:-mt-24 relative z-[60] text-center lg:text-left w-full lg:w-auto">
                             {/* Avatar */}
                             <div className="relative group shrink-0" ref={dropdownRef}>
                                 <div 
-                                    className="w-32 h-32 sm:w-48 sm:h-48 rounded-[2.5rem] sm:rounded-[3rem] bg-white dark:bg-slate-800 p-2 sm:p-2.5 shadow-2xl ring-4 ring-black/5 dark:ring-white/5 transform transition-hover hover:scale-105 duration-500 cursor-pointer overflow-hidden"
+                                    className="w-32 h-32 lg:w-48 lg:h-48 rounded-[2.5rem] lg:rounded-[3rem] bg-white dark:bg-slate-800 p-2 lg:p-2.5 shadow-2xl ring-4 ring-black/5 dark:ring-white/5 transform transition-hover hover:scale-105 duration-500 cursor-pointer overflow-hidden"
                                     onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)}
                                 >
-                                    <div className="w-full h-full rounded-[2.2rem] sm:rounded-[2.5rem] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-blue-600 dark:text-blue-400 overflow-hidden border border-gray-100 dark:border-slate-600">
+                                    <div className="w-full h-full rounded-[2.2rem] lg:rounded-[2.5rem] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center text-blue-600 dark:text-blue-400 overflow-hidden border border-gray-100 dark:border-slate-600">
                                         {user?.avatar ? (
                                             <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
                                         ) : (
-                                            <UserIcon className="w-12 h-12 sm:w-16 sm:h-16 opacity-50" />
+                                            <UserIcon className="w-12 h-12 lg:w-16 lg:h-16 opacity-50" />
                                         )}
                                     </div>
                                     
                                     {/* Edit Overlay */}
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem] sm:rounded-[3rem] pointer-events-none">
-                                        <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-[2.5rem] lg:rounded-[3rem] pointer-events-none">
+                                        <Camera className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
                                     </div>
                                 </div>
 
                                 {/* Avatar Management Dropdown */}
                                 {isAvatarDropdownOpen && (
-                                    <div className="absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 top-[calc(100%+12px)] w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-[2rem] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-4">
+                                    <div className="absolute left-1/2 -translate-x-1/2 lg:left-0 lg:translate-x-0 top-[calc(100%+12px)] w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-[2rem] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-4">
                                         <div className="p-3 space-y-1">
                                             {user?.avatar && (
                                                 <button 
@@ -213,8 +213,8 @@ export const ProfilePage = () => {
 
                             {/* User Main Info */}
                             <div className="space-y-2 sm:space-y-3 mb-2 flex-1">
-                                <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-2 sm:gap-4">
-                                    <h1 className="text-2xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+                                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-2 sm:gap-4">
+                                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
                                         {personalForm.firstName} {personalForm.lastName}
                                     </h1>
                                     <div className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-xl border-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${roleConfig.bg} ${roleConfig.color} ${roleConfig.border}`}>
@@ -222,14 +222,14 @@ export const ProfilePage = () => {
                                         {roleConfig.label}
                                     </div>
                                 </div>
-                                <p className="text-gray-500 dark:text-slate-400 font-bold text-base sm:text-lg flex items-center justify-center md:justify-start gap-2">
+                                <p className="text-gray-500 dark:text-slate-400 font-bold text-base sm:text-lg flex items-center justify-center lg:justify-start gap-2">
                                     <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                                     {userRole === 'instructor' ? roleForm.title : (userRole === 'admin' ? roleForm.department : 'Undergraduate Student')}
                                 </p>
                             </div>
                         </div>
 
-                        <button onClick={handleSignOut} className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-2xl font-black text-sm transition-all hover:shadow-lg active:scale-95">
+                        <button onClick={handleSignOut} className="w-full lg:w-auto shrink-0 whitespace-nowrap flex items-center justify-center gap-3 px-8 py-4 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-2xl font-black text-sm transition-all hover:shadow-lg active:scale-95">
                             <LogOut className="w-5 h-5" /> SIGN OUT
                         </button>
                     </div>
@@ -258,7 +258,7 @@ export const ProfilePage = () => {
                                     </button>
                                 </div>
  
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                                     {[
                                         { id: 'firstName', label: 'First Name', icon: UserIcon },
                                         { id: 'lastName', label: 'Last Name', icon: UserIcon },
@@ -316,7 +316,7 @@ export const ProfilePage = () => {
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                                     {userRole === 'student' && (
                                         <>
                                             <div className="space-y-3">

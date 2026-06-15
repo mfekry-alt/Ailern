@@ -5,6 +5,19 @@ import { attemptsService } from '@/api/services';
 import type { AttemptResult } from '@/api/services/attempts.service';
 import type { AnswerDto } from '@/types/api.types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { QnARenderer } from '@/features/qna/components/QnARenderer';
+
+const decodeHtml = (html: string) => {
+    if (!html) return '';
+    let result = html;
+    const decoder = document.createElement('textarea');
+    for (let i = 0; i < 3; i++) {
+        if (!result.includes('&')) break;
+        decoder.innerHTML = result;
+        result = decoder.value;
+    }
+    return result;
+};
 
 export const QuizResultViewer = () => {
     const { id: quizId, attemptId } = useParams<{ id: string; attemptId: string }>();
@@ -27,9 +40,10 @@ export const QuizResultViewer = () => {
                 setError(null);
                 const resultData = await attemptsService.getAttemptResult(attemptId);
                 setResult(resultData);
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Failed to load result:', err);
-                setError('Failed to load quiz results. Please try again.');
+                const apiMessage = err.response?.data?.message || err.message;
+                setError(apiMessage || 'Failed to load quiz results. Please try again.');
             } finally {
                 setIsLoading(false);
             }
@@ -54,6 +68,28 @@ export const QuizResultViewer = () => {
     }
 
     if (error || !result) {
+        const isNotFinished = error?.toLowerCase().includes('quiz is not finished yet');
+        if (isNotFinished) {
+            return (
+                <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col items-center justify-center p-4 transition-colors duration-300 font-sans">
+                    <div className="flex items-center gap-4 bg-[#FDF2F2] dark:bg-red-950/20 border border-[#FBD5D5] dark:border-red-900/30 px-8 py-4.5 rounded-full shadow-lg shadow-red-500/5 max-w-2xl w-full">
+                        <div className="w-6 h-6 rounded-full bg-[#E02424] flex items-center justify-center shrink-0 shadow-sm">
+                            <span className="text-white font-extrabold text-sm leading-none select-none">!</span>
+                        </div>
+                        <p className="text-xs sm:text-sm md:text-base font-extrabold text-[#1F2937] dark:text-white text-center flex-1 leading-snug">
+                            {error}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => navigate(`/quizzes/${quizId}/attempts`)}
+                        className="mt-8 px-6 py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-white rounded-xl font-bold transition-colors shadow-sm text-sm"
+                    >
+                        Back to Attempts
+                    </button>
+                </div>
+            );
+        }
+
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 transition-colors duration-300">
                 <div className="bg-white dark:bg-slate-800/50 border border-red-200 dark:border-red-900/50 p-8 rounded-2xl max-w-md text-center shadow-xl backdrop-blur-sm">
@@ -117,7 +153,7 @@ export const QuizResultViewer = () => {
                         </div>
                         <div className="bg-gray-50 dark:bg-slate-900/40 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
                             <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Status</p>
-                            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{result.status}</p>
+                            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{result.status === 'Graded' ? 'Reviewed' : result.status}</p>
                         </div>
                     </div>
                 </div>
@@ -154,7 +190,9 @@ export const QuizResultViewer = () => {
                                                         {answer.type}
                                                     </span>
                                                 </div>
-                                                <p className="text-lg font-semibold text-gray-900 dark:text-white">{answer.questionText}</p>
+                                                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                                                    <QnARenderer content={decodeHtml(answer.questionText)} />
+                                                </div>
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-sm font-black text-gray-900 dark:text-white">{answer.score} / {answer.maxScore}</p>
@@ -186,9 +224,9 @@ export const QuizResultViewer = () => {
                                                         return (
                                                             <div key={`${answer.order}-${option.order}`} className={`rounded-xl border px-4 py-3 ${optionState}`}>
                                                                 <div className="flex items-center justify-between gap-3">
-                                                                    <p className={`text-sm font-medium ${isCorrect ? 'text-emerald-800 dark:text-emerald-200' : isSelectedWrong ? 'text-red-800 dark:text-red-200' : 'text-gray-800 dark:text-slate-200'}`}>
-                                                                        {option.optionText}
-                                                                    </p>
+                                                                    <div className={`text-sm font-medium ${isCorrect ? 'text-emerald-800 dark:text-emerald-200' : isSelectedWrong ? 'text-red-800 dark:text-red-200' : 'text-gray-800 dark:text-slate-200'}`}>
+                                                                        <QnARenderer content={decodeHtml(option.optionText)} />
+                                                                    </div>
                                                                     <div className="flex items-center gap-2">
                                                                         {option.isSelected && (
                                                                             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded ${isCorrect ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-500/20' : 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-500/20'}`}>
@@ -217,15 +255,15 @@ export const QuizResultViewer = () => {
                                                         : 'border-amber-400 bg-amber-50 dark:border-amber-400/50 dark:bg-amber-400/10'
                                             }`}>
                                                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2">Your Answer</p>
-                                                <p className={`text-sm whitespace-pre-wrap ${
-                                                    answer.score === answer.maxScore && answer.maxScore > 0
-                                                        ? 'text-emerald-900 dark:text-emerald-100'
-                                                        : answer.score === 0
-                                                            ? 'text-red-900 dark:text-red-100'
-                                                            : 'text-amber-900 dark:text-amber-100'
-                                                }`}>
-                                                    {answer.answer?.trim() ? answer.answer : 'No answer submitted.'}
-                                                </p>
+                                                {answer.answer?.trim() ? (
+                                                    <div className="bg-white/80 dark:bg-slate-950/60 rounded-lg p-3.5 border border-gray-100 dark:border-slate-800/80">
+                                                        <QnARenderer content={decodeHtml(answer.answer)} />
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm text-gray-400 dark:text-slate-500 font-medium italic">
+                                                        No answer submitted.
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
 

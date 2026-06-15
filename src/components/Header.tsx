@@ -197,6 +197,7 @@ export const Header = () => {
                 { label: 'Users', path: ROUTES.ADMIN_USERS },
                 { label: 'Courses', path: ROUTES.ADMIN_COURSES },
                 { label: 'Reports', path: ROUTES.ADMIN_REPORTS },
+                { label: 'Content Reports', path: ROUTES.ADMIN_CONTENT_REPORTS },
                 { label: 'Settings', path: ROUTES.ADMIN_SETTINGS },
             ];
         }
@@ -310,29 +311,7 @@ export const Header = () => {
                         </div>
                     ) : (
                         <>
-                            {/* Search */}
-                            <div className="relative w-[260px] hidden md:block group" ref={searchRef}>
-                                <form onSubmit={handleSearch}>
-                                    <div className="flex items-center h-10 px-3 rounded-full relative bg-gray-100/80 dark:bg-slate-800/80 border border-transparent focus-within:border-[#21A9FF]/50 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-4 focus-within:ring-[#21A9FF]/10 transition-all duration-300">
-                                        <Search className="absolute left-3 w-4 h-4 text-gray-400 group-focus-within:text-[#21A9FF] transition-colors" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search Courses..."
-                                            value={searchQuery}
-                                            onChange={(e) => handleSearchChange(e.target.value)}
-                                            onFocus={() => { if (searchResults.length > 0) setShowSearchResults(true); }}
-                                            className="bg-transparent border-none outline-none text-sm w-full pl-7 pr-2 text-gray-700 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-500"
-                                        />
-                                    </div>
-                                </form>
 
-                                {/* Search Results Dropdown */}
-                                {showSearchResults && (
-                                    <div className="absolute right-0 top-[calc(100%+8px)] w-full bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-700/80 shadow-xl rounded-2xl overflow-hidden backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2">
-                                        {renderSearchResultsContent()}
-                                    </div>
-                                )}
-                            </div>
 
                             {/* Theme Toggle Button */}
                             <button

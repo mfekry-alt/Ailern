@@ -84,6 +84,7 @@ export const ROUTES = {
     ADMIN_COURSES: '/admin/courses',
     ADMIN_REPORTS: '/admin/reports',
     ADMIN_SETTINGS: '/admin/settings',
+    ADMIN_CONTENT_REPORTS: '/admin/content-reports',
 } as const;
 
 export const QUERY_KEYS = {
@@ -124,6 +125,7 @@ export const QUERY_KEYS = {
     MY_LEARNING: ['my-learning'],
     DISCUSSIONS: (courseId: string | number) => ['discussions', courseId],
     DISCUSSION: (discussionId: string | number) => ['discussion', discussionId],
+    REPORTS_DASHBOARD: ['reports-dashboard'],
 } as const;
 
 export const STORAGE_KEYS = {

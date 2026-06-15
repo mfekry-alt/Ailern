@@ -181,27 +181,14 @@ const SidebarSectionItem = ({
                 {isStudent && onToggleComplete && (
                     <div className="flex items-center pr-4 pl-2">
                         <div className="h-8 w-px bg-gray-200 dark:bg-slate-700 mr-3" />
-                        <button
-                            onClick={() => onToggleComplete(!isCompleted)}
-                            className={cn(
-                                'relative flex h-8 w-8 items-center justify-center transition-all duration-300',
-                                isCompleted
-                                    ? 'bg-[#21A9FF] border-[2.5px] border-slate-900 dark:border-white shadow-[3px_3px_0px_#0f172a] dark:shadow-[3px_3px_0px_#ffffff] text-white'
-                                    : 'bg-white dark:bg-slate-800 border-[2.5px] border-slate-900 dark:border-white shadow-[3px_3px_0px_#0f172a] dark:shadow-[3px_3px_0px_#ffffff] text-slate-300 dark:text-slate-600'
-                            )}
-                            style={{
-                                borderRadius: isCompleted 
-                                    ? '92% 8% 88% 12% / 11% 87% 13% 89%' 
-                                    : '8% 92% 12% 88% / 87% 11% 89% 13%'
-                            }}
-                            title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
-                        >
-                            {isCompleted ? (
-                                <Check className="h-5 w-5 stroke-[4.5] text-slate-900 dark:text-white" strokeLinecap="round" />
-                            ) : (
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white opacity-20" />
-                            )}
-                        </button>
+                        <label className="progress-checkbox-container" title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}>
+                            <input
+                                type="checkbox"
+                                checked={isCompleted}
+                                onChange={() => onToggleComplete(!isCompleted)}
+                            />
+                            <div className="progress-checkmark" />
+                        </label>
                     </div>
                 )}
             </div>

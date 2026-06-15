@@ -10,9 +10,12 @@ interface CodeEditorDrawerProps {
 
 const LANGUAGES = [
     { label: 'JavaScript', value: 'javascript' },
+    { label: 'TypeScript', value: 'typescript' },
     { label: 'Python', value: 'python' },
+    { label: 'C#', value: 'csharp' },
     { label: 'Java', value: 'java' },
     { label: 'C++', value: 'cpp' },
+    { label: 'C', value: 'c' },
     { label: 'HTML/CSS', value: 'html' },
     { label: 'SQL', value: 'sql' },
     { label: 'Plain Text', value: 'text' },

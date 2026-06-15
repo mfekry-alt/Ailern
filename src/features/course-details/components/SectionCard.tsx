@@ -114,58 +114,21 @@ export const SectionCard = memo(({ section, sectionOrder, courseId, numericCours
                             className="absolute left-0 top-1/2 hidden h-[55%] w-px -translate-y-1/2 bg-gradient-to-b from-transparent via-slate-200/95 to-transparent dark:via-slate-600 sm:block"
                             aria-hidden
                         />
-                        <button
-                            type="button"
-                            aria-pressed={done}
-                            disabled={completion.isPending}
-                            onClick={() => completion.mutate(!done)}
-                            className={cn(
-                                'group/finish relative rounded-xl outline-none transition-all duration-300',
-                                'disabled:opacity-55 disabled:pointer-events-none',
-                                'focus-visible:ring-2 focus-visible:ring-[#21A9FF]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900'
-                            )}
-                        >
-                            {completion.isPending ? (
-                                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#21A9FF]/30 bg-[#21A9FF]/[0.06] dark:bg-[#21A9FF]/12">
-                                    <Loader2 className="h-5 w-5 animate-spin text-[#21A9FF]" aria-hidden />
-                                </div>
-                            ) : (
-                                <motion.div
-                                    whileHover={{ scale: 1.05, rotate: 2 }}
-                                    whileTap={{ scale: 0.9, y: 2 }}
-                                    className={cn(
-                                        'relative flex h-8 w-8 items-center justify-center transition-all duration-300',
-                                        done
-                                            ? 'bg-[#21A9FF] border-[2.5px] border-slate-900 dark:border-white shadow-[3px_3px_0px_#0f172a] dark:shadow-[3px_3px_0px_#ffffff] text-white'
-                                            : 'bg-white dark:bg-slate-800 border-[2.5px] border-slate-900 dark:border-white shadow-[3px_3px_0px_#0f172a] dark:shadow-[3px_3px_0px_#ffffff]'
-                                    )}
-                                    style={{
-                                        borderRadius: done 
-                                            ? '92% 8% 88% 12% / 11% 87% 13% 89%' 
-                                            : '8% 92% 12% 88% / 87% 11% 89% 13%'
-                                    }}
-                                >
-                                    <AnimatePresence mode="wait">
-                                        {done ? (
-                                            <motion.div
-                                                key="check"
-                                                initial={{ scale: 0, rotate: 40 }}
-                                                animate={{ scale: 1, rotate: 0 }}
-                                                exit={{ scale: 0 }}
-                                                transition={{ type: 'spring', damping: 10, stiffness: 200 }}
-                                            >
-                                                <Check className="h-5 w-5 stroke-[4.5] text-slate-900 dark:text-white" strokeLinecap="round" />
-                                            </motion.div>
-                                        ) : (
-                                            <motion.div
-                                                key="empty"
-                                                className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white opacity-20"
-                                            />
-                                        )}
-                                    </AnimatePresence>
-                                </motion.div>
-                            )}
-                        </button>
+                        {completion.isPending ? (
+                            <div className="flex h-7 w-7 items-center justify-center rounded-[5px] border border-[#21A9FF]/30 bg-[#21A9FF]/[0.06] dark:bg-[#21A9FF]/12">
+                                <Loader2 className="h-4 w-4 animate-spin text-[#21A9FF]" aria-hidden />
+                            </div>
+                        ) : (
+                            <label className="progress-checkbox-container">
+                                <input
+                                    type="checkbox"
+                                    checked={done}
+                                    onChange={() => completion.mutate(!done)}
+                                    disabled={completion.isPending}
+                                />
+                                <div className="progress-checkmark" />
+                            </label>
+                        )}
                     </div>
                 )}
             </div>

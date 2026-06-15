@@ -56,18 +56,18 @@ export const CourseProgressOverview: React.FC<CourseProgressOverviewProps> = () 
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 relative flex flex-col">
+            <div className="flex-1 flex flex-col min-h-[150px]">
                 {isLoading ? (
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="flex-1 flex items-center justify-center py-12">
                         <Loader2 className="w-8 h-8 text-[#21A9FF] animate-spin" />
                     </div>
                 ) : error ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center py-12">
                         <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
                         <p className="text-sm font-bold text-red-600 dark:text-red-400">Failed to load progress data</p>
                     </div>
                 ) : progressData && progressData.length > 0 ? (
-                    <div className="absolute inset-0 p-6 sm:px-8 flex flex-col gap-4 overflow-y-auto">
+                    <div className="flex-1 p-6 sm:px-8 flex flex-col gap-4 overflow-y-auto max-h-[320px] sm:max-h-[400px]">
                         {progressData.map((course, idx) => (
                             <div 
                                 key={course.courseId}
@@ -107,7 +107,7 @@ export const CourseProgressOverview: React.FC<CourseProgressOverviewProps> = () 
                         ))}
                     </div>
                 ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-gray-50/50 dark:bg-slate-900/20">
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-gray-50/50 dark:bg-slate-900/20 py-12 min-h-[220px]">
                         <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mb-5 shadow-sm border border-gray-100 dark:border-slate-700">
                             <BarChart3 className="w-10 h-10 text-gray-400 dark:text-slate-500" />
                         </div>

@@ -659,9 +659,13 @@ export interface GetQuizDto {
 // Quiz Submission & Grading Types
 // ============================================================================
 
+<<<<<<< HEAD
 export type AttemptStatus = 'InProgress' | 'Submitted' | 'Graded';
 
 export type AIGradingStatus = 'Pending' | 'InProgress' | 'Graded' | 'Overwritten' | 'Failed';
+=======
+export type AttemptStatus = 'InProgress' | 'Submitted' | 'Reviewed' | 'Graded';
+>>>>>>> b9b51a51088bec7db091a080d2f5b13a2f879e40
 
 export interface GetSubmissionsByQuizIdDto {
     id: string;
@@ -854,6 +858,8 @@ export interface InstructorCourseProgressDto {
 }
 
 export interface UpcomingEventDto {
+    id?: number | string;
+    courseId?: number;
     title: string;
     eventType: 'Assignment' | 'Quiz';
     courseName: string;
@@ -913,4 +919,43 @@ export interface GetStudentProfileDto {
     quizzes: StudentProfileQuizDto[];
     averageQuizzesScore: number;
     progress: number;
+}
+
+// ============================================================================
+// Content Reporting Types
+// ============================================================================
+
+export type ReportType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export const REPORT_TYPE_LABELS: Record<string | number, string> = {
+    0: 'Sexual Content',
+    1: 'Hate Speech',
+    2: 'Harassment',
+    3: 'Dangerous Content',
+    4: 'Copyright Violation',
+    5: 'Misinformation',
+    6: 'Spam',
+    'SexualContent': 'Sexual Content',
+    'HateSpeech': 'Hate Speech',
+    'Harassment': 'Harassment',
+    'DangerousContent': 'Dangerous Content',
+    'CopyrightViolation': 'Copyright Violation',
+    'Misinformation': 'Misinformation',
+    'Spam': 'Spam',
+};
+
+export const ALL_REPORT_TYPES: ReportType[] = [0, 1, 2, 3, 4, 5, 6];
+
+export interface SubmitReportCommand {
+    reportType: ReportType;
+}
+
+export interface ContentReportsDashboardData {
+    totalReports: number;
+    pendingReports: number;
+    approvedReports: number;
+    underReviewReports: number;
+    rejectedReports: number;
+    topReportReasons: Record<string, number>;
+    topReportForMaterial: Record<string, number>;
 }

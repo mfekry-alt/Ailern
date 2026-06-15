@@ -2,8 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { getStudentDashboardData } from '@/api/services/student.service';
+import { getUpcomingEvents } from '@/api/services/instructor.service';
 import { StudentCourseCard } from '@/components/StudentCourseCard';
 import { QUERY_KEYS } from '@/lib/constants';
+import type { UpcomingEventDto } from '@/types/api.types';
 
 // Material Symbol Icon Component
 const MaterialIcon = ({ name, className = '' }: { name: string; className?: string }) => (
@@ -47,7 +49,13 @@ export const DashboardPage = () => {
         staleTime: 5 * 60 * 1000
     });
 
-    if (isLoading) {
+    const { data: upcomingEvents, isLoading: eventsLoading, error: eventsError } = useQuery({
+        queryKey: QUERY_KEYS.UPCOMING_EVENTS,
+        queryFn: getUpcomingEvents,
+        staleTime: 5 * 60 * 1000
+    });
+
+    if (isLoading || eventsLoading) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-slate-900">
                 <div className="flex flex-col items-center space-y-4">
@@ -58,7 +66,7 @@ export const DashboardPage = () => {
         );
     }
 
-    if (error) {
+    if (error || eventsError) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-slate-900 p-6">
                 <div className="p-8 text-center bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-300 rounded-2xl max-w-md backdrop-blur-sm">
@@ -70,12 +78,15 @@ export const DashboardPage = () => {
         );
     }
 
-    const upcomingDeadlines = data?.upcomingAssignments?.slice(0, 3).map(a => ({
-        id: a.id,
-        title: a.title,
-        dueDate: formatDateForDeadline(a.dueDate),
-        fullDate: formatDate(a.dueDate),
-        daysLeft: Math.ceil((new Date(a.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    const upcomingDeadlines = upcomingEvents?.slice(0, 3).map((event) => ({
+        id: event.id || event.title,
+        courseId: event.courseId,
+        title: event.title,
+        eventType: event.eventType,
+        courseName: event.courseName,
+        dueDate: formatDateForDeadline(event.availableUntil),
+        fullDate: formatDate(event.availableUntil),
+        daysLeft: Math.ceil((new Date(event.availableUntil).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     })) || [];
 
     const continueLearningRows = Array.isArray(data?.continueLearning) ? data!.continueLearning : [];
@@ -216,15 +227,22 @@ export const DashboardPage = () => {
 
                         {/* Right Column - Deadlines */}
                         <div className="w-full xl:w-96 space-y-6">
-                            <div className="bg-white dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/50 rounded-[2rem] p-6 space-y-6 h-full shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)]">
+                            <div className="bg-white dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/50 rounded-[2rem] p-6 space-y-6 h-full shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
                                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/50 pb-4">
-                                    <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
-                                        <MaterialIcon name="alarm" className="text-indigo-600 dark:text-indigo-400" />
-                                        Deadlines
-                                    </h2>
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                            <MaterialIcon name="alarm" className="text-xl font-bold" />
+                                        </div>
+                                        <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                                            Deadlines
+                                        </h2>
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-full">
+                                        {upcomingDeadlines.length} Due
+                                    </span>
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="space-y-3.5">
                                     {upcomingDeadlines.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-10 opacity-60">
                                             <MaterialIcon name="done_all" className="text-5xl mb-2 text-slate-400 dark:text-slate-500" />
@@ -234,27 +252,69 @@ export const DashboardPage = () => {
                                         upcomingDeadlines.map((deadline) => (
                                             <div
                                                 key={deadline.id}
-                                                className="group flex space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 hover:bg-indigo-50/50 dark:hover:bg-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all cursor-pointer shadow-sm hover:shadow-md"
-                                                onClick={() => navigate(`/assignments/${deadline.id}`)}
+                                                className="group flex items-start space-x-4 p-3.5 -mx-2 rounded-2xl transition-all duration-300 hover:bg-slate-50 dark:hover:bg-slate-700/40 cursor-pointer"
+                                                onClick={() => {
+                                                    if (deadline.courseId) {
+                                                        navigate(deadline.eventType === 'Quiz' ? `/courses/${deadline.courseId}/quizzes` : `/courses/${deadline.courseId}/assignments`);
+                                                    } else {
+                                                        navigate(deadline.eventType === 'Quiz' ? '/quizzes' : '/assignments');
+                                                    }
+                                                }}
                                             >
-                                                {/* Calendar Tear-off Design */}
-                                                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white dark:bg-slate-800 rounded-xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-                                                    <div className="bg-indigo-500 dark:bg-indigo-600/80 text-white text-[9px] sm:text-[10px] font-black text-center py-0.5 sm:py-1 uppercase tracking-widest">
-                                                        {deadline.dueDate.month}
-                                                    </div>
-                                                    <div className="flex-1 flex items-center justify-center text-lg sm:text-xl font-black text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-800">
-                                                        {deadline.dueDate.day}
+                                                {/* Enhanced Calendar Binder Tear-off Design */}
+                                                <div className="relative flex-shrink-0">
+                                                    {/* Calendar Binder Metallic Rings */}
+                                                    <div className="absolute -top-1 left-2.5 w-1.5 h-3 bg-gradient-to-b from-slate-300 to-slate-500 dark:from-slate-500 dark:to-slate-700 rounded-full z-10 shadow-sm"></div>
+                                                    <div className="absolute -top-1 right-2.5 w-1.5 h-3 bg-gradient-to-b from-slate-300 to-slate-500 dark:from-slate-500 dark:to-slate-700 rounded-full z-10 shadow-sm"></div>
+                                                    
+                                                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white dark:bg-slate-800 rounded-2xl flex flex-col overflow-hidden border border-slate-200/70 dark:border-slate-700/60 shadow-sm group-hover:shadow-md transition-all duration-300">
+                                                        <div className={`${deadline.eventType === 'Quiz' ? 'bg-gradient-to-r from-purple-500 to-indigo-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'} text-white text-[8px] sm:text-[9px] font-black text-center pt-1.5 pb-1 uppercase tracking-widest leading-none`}>
+                                                            {deadline.dueDate.month}
+                                                        </div>
+                                                        <div className="flex-1 flex items-center justify-center text-lg sm:text-xl font-black text-slate-800 dark:text-slate-200 bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-800/60">
+                                                            {deadline.dueDate.day}
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-1 flex-1 flex flex-col justify-center min-w-0">
-                                                    <h4 className="font-bold text-xs sm:text-sm leading-tight text-slate-900 dark:text-white line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{deadline.title}</h4>
-                                                    <div className="flex items-center justify-between mt-1">
-                                                        <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${deadline.daysLeft <= 2 ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700'
-                                                            }`}>
-                                                            {deadline.daysLeft > 0 ? `${deadline.daysLeft} days left` : 'Due Today'}
+                                                <div className="space-y-1.5 flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md ${
+                                                            deadline.eventType === 'Quiz' 
+                                                                ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300' 
+                                                                : 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300'
+                                                        }`}>
+                                                            {deadline.eventType}
                                                         </span>
-                                                        <MaterialIcon name="chevron_right" className="text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-sm" />
+                                                        <span className="text-slate-400 dark:text-slate-500 text-[10px] font-semibold truncate max-w-[120px] sm:max-w-none">{deadline.courseName}</span>
+                                                    </div>
+                                                    <h4 className="font-bold text-xs sm:text-sm leading-tight text-slate-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">{deadline.title}</h4>
+                                                    <div className="flex items-center justify-between pt-0.5">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${
+                                                                deadline.daysLeft <= 1 
+                                                                    ? 'bg-rose-500 animate-pulse' 
+                                                                    : deadline.daysLeft <= 3 
+                                                                        ? 'bg-amber-500' 
+                                                                        : 'bg-emerald-500'
+                                                            }`} />
+                                                            <span className={`text-[10px] font-black uppercase tracking-wider ${
+                                                                deadline.daysLeft <= 1 
+                                                                    ? 'text-rose-600 dark:text-rose-400' 
+                                                                    : deadline.daysLeft <= 3 
+                                                                        ? 'text-amber-600 dark:text-amber-400' 
+                                                                        : 'text-emerald-600 dark:text-emerald-400'
+                                                            }`}>
+                                                                {deadline.daysLeft > 1 
+                                                                    ? `${deadline.daysLeft} days left` 
+                                                                    : deadline.daysLeft === 1 
+                                                                        ? '1 day left' 
+                                                                        : deadline.daysLeft === 0 
+                                                                            ? 'Due Today' 
+                                                                            : 'Overdue'}
+                                                            </span>
+                                                        </div>
+                                                        <MaterialIcon name="arrow_forward" className="text-slate-300 dark:text-slate-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-all duration-200 group-hover:translate-x-1 text-sm sm:text-base" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -262,14 +322,7 @@ export const DashboardPage = () => {
                                     )}
                                 </div>
 
-                                {upcomingDeadlines.length > 0 && (
-                                    <button
-                                        onClick={() => navigate('/assignments')}
-                                        className="w-full py-3 rounded-xl border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 font-medium text-sm hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors"
-                                    >
-                                        View Calendar
-                                    </button>
-                                )}
+
                             </div>
                         </div>
                     </div>

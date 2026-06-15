@@ -376,7 +376,7 @@ export const InstructorQuizQuestionsEditPage = () => {
             await upsertQuestionsMutation.mutateAsync(payloadQuestions);
             setSuccess(true);
             toast.success('Questions saved successfully.');
-            setTimeout(() => navigate(-1), 1500);
+            setTimeout(() => navigate(`/instructor/courses/${quiz?.courseId}/manage/quizzes`), 1500);
         } catch (e: any) {
             console.error('[UpsertQuestions] error:', e);
             if (e?.response?.data?.errors) {
@@ -463,7 +463,7 @@ export const InstructorQuizQuestionsEditPage = () => {
                 <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-gray-200 dark:border-slate-800 py-3 sm:py-4 px-4 sm:px-8">
                     <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto">
-                            <button onClick={() => navigate(-1)} className="w-10 h-10 sm:w-11 sm:h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl flex items-center justify-center text-slate-400 hover:text-[#21A9FF] hover:border-[#21A9FF]/30 transition-all shrink-0 shadow-sm active:scale-90">
+                            <button onClick={() => navigate(`/instructor/courses/${quiz?.courseId}/manage/quizzes`)} className="w-10 h-10 sm:w-11 sm:h-11 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl flex items-center justify-center text-slate-400 hover:text-[#21A9FF] hover:border-[#21A9FF]/30 transition-all shrink-0 shadow-sm active:scale-90">
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
                             <div className="min-w-0">
@@ -1067,7 +1067,7 @@ export const InstructorQuizQuestionsEditPage = () => {
                             </div>
                         </div>
                         <div className="flex w-full md:w-auto gap-2 sm:gap-3 items-stretch">
-                            <button onClick={() => navigate(-1)} disabled={isSubmitting} className="px-4 sm:px-6 py-3 sm:py-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] transition-all hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 active:scale-95">
+                            <button onClick={() => navigate(`/instructor/courses/${quiz?.courseId}/manage/quizzes`)} disabled={isSubmitting} className="px-4 sm:px-6 py-3 sm:py-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] transition-all hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 active:scale-95">
                                 Cancel
                             </button>
                             <button
