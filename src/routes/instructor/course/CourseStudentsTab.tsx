@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { courseService } from '@/api/services';
-import { Users, Loader2, Search, ChevronLeft, ChevronRight, Eye, Trash2, UserMinus } from 'lucide-react';
+import { Users, Loader2, Search, ChevronLeft, ChevronRight, Eye, Trash2, UserMinus, Plus } from 'lucide-react';
 import type { GetStudentsByCourseIdDto, PaginationResult } from '@/types/api.types';
 import { StudentProfileModal } from '@/components/ui/StudentProfileModal';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { AddStudentModal } from '@/components/ui/AddStudentModal';
 
 interface Ctx { courseId: string; numericCourseId: number | null }
 
@@ -55,6 +56,7 @@ export const CourseStudentsTab = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedStudent, setSelectedStudent] = useState<GetStudentsByCourseIdDto | null>(null);
     const [studentToRemove, setStudentToRemove] = useState<GetStudentsByCourseIdDto | null>(null);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const queryKey = ['course-students', numericCourseId, page, debouncedSearch];
 
@@ -91,6 +93,18 @@ export const CourseStudentsTab = () => {
     const handleRemoveStudent = (s: GetStudentsByCourseIdDto) => {
         setStudentToRemove(s);
     };
+
+    const addMutation = useMutation({
+        mutationFn: (email: string) => courseService.enrollStudentByEmail(numericCourseId!, email),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['course-students', numericCourseId] });
+            toast.success('Student added successfully!');
+            setIsAddModalOpen(false);
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message || 'Failed to add student. Please check the email and try again.');
+        }
+    });
 
     const students = data?.items || [];
     const totalResults = data?.totalResults || 0;
@@ -132,6 +146,13 @@ export const CourseStudentsTab = () => {
                 <div className="flex items-center gap-2 px-5 py-3 bg-[#21A9FF]/5 dark:bg-[#21A9FF]/10 rounded-2xl border border-[#21A9FF]/10 w-full sm:w-auto justify-center">
                     <span className="text-[10px] font-black text-[#21A9FF] uppercase tracking-widest whitespace-nowrap">{totalResults} Enrolled Students</span>
                 </div>
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-[#21A9FF] hover:bg-[#0094F2] text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-[#21A9FF]/20 active:scale-95 shrink-0"
+                >
+                    <UserMinus className="w-4 h-4 hidden" /> {/* For spacing maybe, or just use Plus */}
+                    <span className="flex items-center gap-2"><Plus className="w-4 h-4" /> Add Student</span>
+                </button>
             </div>
 
             {/* Students List */}
@@ -350,6 +371,13 @@ export const CourseStudentsTab = () => {
                     }
                 }}
                 isPending={removeMutation.isPending}
+            />
+
+            <AddStudentModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onConfirm={async (email) => { await addMutation.mutateAsync(email); }}
+                isPending={addMutation.isPending}
             />
         </div>
     );

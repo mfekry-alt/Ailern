@@ -110,6 +110,7 @@ export interface AttemptResult {
     attemptNumber?: number;
     timeSpent?: number;
     raw?: AttemptResultDto;
+    weakTopics?: string[];
 }
 
 export interface StudentAnswer {
@@ -291,6 +292,7 @@ export const getAttemptResult = async (attemptId: string): Promise<AttemptResult
                 attemptNumber: undefined,
                 timeSpent: data.timeSpent,
                 raw: data,
+                weakTopics: data.weakTopics,
             };
         } finally {
             delete activeResultPromises[attemptId];

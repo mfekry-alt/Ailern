@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS, ROUTES } from '@/lib/constants';
@@ -80,6 +80,14 @@ export const InstructorSubmissionsPage = () => {
         submissionId: number;
         studentName: string;
     } | null>(null);
+
+    const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
+    useEffect(() => {
+        if (feedbackModal && modalTextareaRef.current) {
+            modalTextareaRef.current.style.height = 'auto';
+            modalTextareaRef.current.style.height = `${modalTextareaRef.current.scrollHeight}px`;
+        }
+    }, [feedbackText, feedbackModal]);
 
     // ── Toast ──────────────────────────────────────────────────────────────
     const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -562,14 +570,16 @@ export const InstructorSubmissionsPage = () => {
                             </header>
                             <div className="p-6">
                                 <label className="block text-[11px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                                    Instructor Feedback
+                                    Feedback
                                 </label>
                                 <textarea
-                                    rows={6}
+                                    ref={modalTextareaRef}
+                                    rows={3}
                                     placeholder="Write your feedback for this student..."
                                     value={feedbackText}
                                     onChange={(e) => setFeedbackText(e.target.value)}
                                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/50 text-gray-900 dark:text-white text-sm font-medium resize-none transition-all"
+                                    style={{ minHeight: '80px', overflowY: 'hidden' }}
                                 />
                                 {feedbackText.trim() === '' && (
                                     <p className="text-xs text-orange-500 mt-1.5 font-semibold">Feedback cannot be empty.</p>

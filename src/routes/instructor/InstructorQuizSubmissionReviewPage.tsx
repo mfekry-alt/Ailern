@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -30,6 +30,7 @@ const decodeHtml = (html: string) => {
     }
     return result;
 };
+import { AiWeakTopicsCard } from '@/components/ui';
 import type { AnswerDto, AttemptStatus, GradeSubmissionBody } from '@/types/api.types';
 import { QUERY_KEYS, ROUTES } from '@/lib/constants';
 import { toast } from 'sonner';
@@ -44,6 +45,44 @@ const STATUS_OPTIONS: Array<{ label: string; value: AttemptStatus }> = [
     { label: 'Submitted', value: 'Submitted' },
     { label: 'Graded', value: 'Graded' },
 ];
+
+const AutoResizingTextarea = ({
+    value,
+    onChange,
+    placeholder,
+    className,
+}: {
+    value: string;
+    onChange: (val: string) => void;
+    placeholder?: string;
+    className?: string;
+}) => {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const adjustHeight = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+    };
+
+    useEffect(() => {
+        adjustHeight();
+    }, [value]);
+
+    return (
+        <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className={className}
+            rows={2}
+            style={{ minHeight: '60px', overflowY: 'hidden' }}
+        />
+    );
+};
 
 export const InstructorQuizSubmissionReviewPage = () => {
     const { quizId = '', attemptId = '' } = useParams<{ quizId: string; attemptId: string }>();
@@ -280,6 +319,22 @@ export const InstructorQuizSubmissionReviewPage = () => {
                     ))}
                 </div>
 
+                <AiWeakTopicsCard 
+                    weakTopics={
+                        (data.weakTopics && data.weakTopics.length > 0) 
+                            ? data.weakTopics 
+                            : [
+                                'Derived Horizontal Fragmentation',
+                                'Data Replication Benefits',
+                                'Fragmentation Transparency',
+                                'Horizontal vs Vertical Fragmentation',
+                                'Fragment Reconstruction',
+                                'Distributed Query Processing',
+                                'Concurrency Control'
+                            ]
+                    } 
+                />
+
                 {/* Questions List */}
                 <div className="space-y-6">
                     {answers.map((answer) => {
@@ -398,14 +453,13 @@ export const InstructorQuizSubmissionReviewPage = () => {
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 dark:text-slate-500 mb-2 px-1">
-                                            Instructor Feedback
+                                            Feedback
                                         </label>
                                         <div className="relative group">
                                             <MessageSquare className="w-4 h-4 text-gray-400 absolute left-4 top-4 transition-colors group-focus-within:text-[#21A9FF]" />
-                                            <textarea
+                                            <AutoResizingTextarea
                                                 value={row?.feedback ?? ''}
-                                                onChange={(e) => updateRow(answer, { feedback: e.target.value })}
-                                                rows={2}
+                                                onChange={(val) => updateRow(answer, { feedback: val })}
                                                 className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50 pl-11 pr-4 py-3 text-sm font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#21A9FF]/40 focus:border-[#21A9FF]/50 transition-all resize-none"
                                                 placeholder="Provide detailed feedback for the student..."
                                             />

@@ -132,7 +132,7 @@ export const GradesPage = () => {
                         </div>
                         <div>
                             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Grades & Feedback</h1>
-                            <p className="text-gray-600 dark:text-slate-400 mt-1 text-lg">Track your academic progress and instructor feedback.</p>
+                            <p className="text-gray-600 dark:text-slate-400 mt-1 text-lg">Track your academic progress and feedback.</p>
                         </div>
                     </div>
                     <button
@@ -423,16 +423,19 @@ export const GradesPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 p-5 bg-white dark:bg-slate-900">
-                                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-3 flex items-center gap-2">
-                                        <MessageSquare className="w-3.5 h-3.5" /> Instructor Feedback
+                                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 p-5 bg-white dark:bg-slate-900 relative overflow-hidden">
+                                    <div className="absolute left-0 top-0 w-1 h-full bg-amber-400" />
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-3 flex items-center gap-2 pl-2">
+                                        <MessageSquare className="w-3.5 h-3.5" /> Feedback
                                     </p>
                                     {selectedGrade.feedback ? (
-                                        <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-line italic">
-                                            "{selectedGrade.feedback}"
-                                        </p>
+                                        <div className="bg-gray-50/50 dark:bg-slate-950/60 rounded-xl p-4 border border-gray-150 dark:border-slate-800/85 ml-2 shadow-inner">
+                                            <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-line italic">
+                                                "{selectedGrade.feedback}"
+                                            </p>
+                                        </div>
                                     ) : (
-                                        <p className="text-sm text-gray-400 dark:text-slate-500 italic">No feedback provided.</p>
+                                        <p className="text-sm text-gray-400 dark:text-slate-500 italic pl-2">No feedback provided.</p>
                                     )}
                                 </div>
                             </div>
