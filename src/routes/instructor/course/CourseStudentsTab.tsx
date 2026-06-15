@@ -376,7 +376,13 @@ export const CourseStudentsTab = () => {
             <AddStudentModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
-                onConfirm={async (email) => { await addMutation.mutateAsync(email); }}
+                onConfirm={async (email) => { 
+                    try {
+                        await addMutation.mutateAsync(email); 
+                    } catch (error) {
+                        // Error is already handled by useMutation's onError callback
+                    }
+                }}
                 isPending={addMutation.isPending}
             />
         </div>
