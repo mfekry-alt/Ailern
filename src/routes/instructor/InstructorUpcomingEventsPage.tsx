@@ -325,7 +325,7 @@ export const InstructorUpcomingEventsPage = () => {
 
                 {/* ─── Glassmorphic Filter & Sort Bar ─── */}
                 <div 
-                    className="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl border border-gray-200/80 dark:border-slate-700/50 rounded-2xl sm:rounded-[1.75rem] p-3 sm:p-4 flex flex-col md:flex-row gap-3 shadow-sm"
+                    className="relative z-30 bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl border border-gray-200/80 dark:border-slate-700/50 rounded-2xl sm:rounded-[1.75rem] p-3 sm:p-4 flex flex-col md:flex-row gap-3 shadow-sm"
                     style={{ animation: 'slideUp 0.6s ease-out' }}
                 >
                     {/* Search */}
@@ -359,7 +359,7 @@ export const InstructorUpcomingEventsPage = () => {
                             {isFilterOpen && (
                                 <>
                                     <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
-                                    <div className="absolute top-full right-0 mt-2 w-full min-w-[170px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-20 py-1.5 animate-in fade-in zoom-in-95 duration-150 origin-top">
+                                    <div className="absolute top-full right-0 mt-2 w-full min-w-[170px] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150 origin-top">
                                         {(['All', 'Assignment', 'Quiz'] as const).map((type) => (
                                             <button
                                                 key={type}
