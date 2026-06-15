@@ -17,25 +17,7 @@ import * as yup from 'yup';
 import { mapServerErrors } from '@/utils/mapServerErrors';
 import { scrollToFirstError } from '@/utils/form-utils';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-
-const ALLOWED_CONTENT_TYPES = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'text/plain',
-    'image/jpeg',
-    'image/png',
-    'application/zip',
-    'video/mp4',
-    'video/webm',
-    'video/ogg',
-    'video/x-msvideo',
-    'video/quicktime',
-    'video/x-matroska'
-];
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_VIDEO_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+import { validateUploadedFile } from '@/lib/validators';
 
 const assignmentSchema = yup.object().shape({
     title: yup.string()
@@ -48,13 +30,12 @@ const assignmentSchema = yup.object().shape({
         .min(new Date(), 'DueDate must be in the future.'),
     allowLateSubmission: yup.boolean().default(false),
     files: yup.array().of(
-        yup.mixed<File>().test('fileValidation', 'Invalid file', (file) => {
+        yup.mixed<File>().test('fileValidation', function (file) {
             if (!file) return true;
-            if (!file.name.includes('.')) return false;
-            if (!ALLOWED_CONTENT_TYPES.includes(file.type)) return false;
-            const isVideo = file.type.startsWith('video/');
-            const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
-            if (file.size > maxSize) return false;
+            const errors = validateUploadedFile(file);
+            if (errors.length > 0) {
+                return this.createError({ message: errors[0].message });
+            }
             return true;
         })
     ).max(10, 'You can upload a maximum of 10 files.').optional().default([])
@@ -81,6 +62,15 @@ const getContentType = (fileName: string): string => {
         'png': 'image/png'
     };
     return map[ext || ''] || 'application/octet-stream';
+};
+const getFilesErrorMessage = (filesError: any): string | null => {
+    if (!filesError) return null;
+    if (filesError.message) return filesError.message;
+    if (Array.isArray(filesError)) {
+        const firstErr = filesError.find(e => e && e.message);
+        if (firstErr) return firstErr.message;
+    }
+    return 'Invalid files selection';
 };
 
 export const InstructorAssignmentEditPage = () => {
@@ -117,6 +107,7 @@ export const InstructorAssignmentEditPage = () => {
     });
 
     const attachments = (watch('files') || []).filter((f): f is File => !!f);
+    const filesErrorMsg = getFilesErrorMessage(errors.files);
     const courseIdNum = assignmentData?.courseId || 0;
     const { data: courseData } = useCourse(courseIdNum);
 
@@ -416,15 +407,15 @@ export const InstructorAssignmentEditPage = () => {
                                 <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">Reference Materials (Optional)</h3>
                             </div>
 
-                            <label className={`relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed rounded-[2rem] cursor-pointer group transition-all duration-500 bg-gradient-to-b from-gray-50/50 to-white dark:from-slate-800/20 dark:to-slate-900/40 hover:shadow-lg hover:shadow-[#21A9FF]/5 outline-none ${errors.files ? 'border-red-400 bg-red-50/30 dark:bg-red-500/5' : 'border-gray-300 dark:border-slate-600 hover:border-[#21A9FF]'}`}>
+                             <label className={`relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-12 border-2 border-dashed rounded-[2rem] cursor-pointer group transition-all duration-500 bg-gradient-to-b from-gray-50/50 to-white dark:from-slate-800/20 dark:to-slate-900/40 hover:shadow-lg hover:shadow-[#21A9FF]/5 outline-none ${filesErrorMsg ? 'border-red-400 bg-red-50/30 dark:bg-red-500/5' : 'border-gray-300 dark:border-slate-600 hover:border-[#21A9FF]'}`}>
                                 <div className="absolute inset-0 bg-[#21A9FF]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 group-hover:-translate-y-1 group-active:scale-95 transition-all duration-500 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-slate-700 relative z-10">
                                     <div className="absolute inset-0 bg-[#21A9FF] opacity-20 blur-xl rounded-full group-hover:opacity-40 transition-opacity duration-500" />
-                                    <Upload className={`w-8 h-8 relative z-10 ${errors.files ? 'text-red-500' : 'text-[#21A9FF]'}`} />
+                                    <Upload className={`w-8 h-8 relative z-10 ${filesErrorMsg ? 'text-red-500' : 'text-[#21A9FF]'}`} />
                                 </div>
                                 <div className="text-center relative z-10">
-                                    <span className={`text-lg font-extrabold transition-colors ${errors.files ? 'text-red-600' : 'text-gray-900 dark:text-white group-hover:text-[#21A9FF]'}`}>Click to upload more files</span>
-                                    {errors.files && <p className="mt-2 text-sm font-bold text-red-500">{errors.files.message}</p>}
+                                    <span className={`text-lg font-extrabold transition-colors ${filesErrorMsg ? 'text-red-600' : 'text-gray-900 dark:text-white group-hover:text-[#21A9FF]'}`}>Click to upload more files</span>
+                                    {filesErrorMsg && <p className="mt-2 text-sm font-bold text-red-500">{filesErrorMsg}</p>}
                                 </div>
                                 <input type="file" multiple onChange={handleFileUpload} className="hidden" />
                             </label>

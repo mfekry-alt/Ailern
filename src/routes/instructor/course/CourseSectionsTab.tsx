@@ -17,6 +17,8 @@ import { mapServerErrors } from '@/utils/mapServerErrors';
 import { scrollToFirstError } from '@/utils/form-utils';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
+import { validateUploadedFile } from '@/lib/validators';
+
 interface Ctx { courseId: string; numericCourseId: number | null }
 
 const VIDEO_EXTS = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'];
@@ -26,11 +28,30 @@ const isVideoFile = (contentType: string, fileName: string) => {
     return VIDEO_EXTS.includes(ext);
 };
 
+const getFilesErrorMessage = (filesError: any): string | null => {
+    if (!filesError) return null;
+    if (filesError.message) return filesError.message;
+    if (Array.isArray(filesError)) {
+        const firstErr = filesError.find(e => e && e.message);
+        if (firstErr) return firstErr.message;
+    }
+    return 'Invalid files selection';
+};
+
 const sectionSchema = yup.object().shape({
     title: yup.string()
         .min(3, 'Section name must be at least 3 characters.')
         .required('Section name is required.'),
-    files: yup.array().of(yup.mixed<File>()).optional().default([])
+    files: yup.array().of(
+        yup.mixed<File>().test('fileValidation', function (file) {
+            if (!file) return true;
+            const errors = validateUploadedFile(file);
+            if (errors.length > 0) {
+                return this.createError({ message: errors[0].message });
+            }
+            return true;
+        })
+    ).optional().default([])
 });
 
 type SectionFormData = yup.InferType<typeof sectionSchema>;
@@ -230,6 +251,13 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
     const [globalError, setGlobalError] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
+
     const {
         register,
         handleSubmit,
@@ -318,7 +346,7 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Include Files (Optional)</label>
                         <div className="flex flex-col gap-2">
-                            <label className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${isSubmitting ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-300 dark:border-slate-600'}`}>
+                            <label className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${isSubmitting ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-300 dark:border-slate-600'} ${errors.files ? 'border-red-400 bg-red-50/10' : ''}`}>
                                 <Upload className="w-5 h-5 text-gray-400" />
                                 <span className="text-sm font-semibold text-gray-600 dark:text-slate-400">Select Files</span>
                                 <input 
@@ -334,6 +362,11 @@ function CreateSectionModal({ numericCourseId, onClose, qk, sections }: { numeri
                                     }} 
                                 />
                             </label>
+                            {errors.files && (
+                                <p className="text-[11px] font-bold text-red-500 mt-1 ml-1 animate-in fade-in">
+                                    {getFilesErrorMessage(errors.files)}
+                                </p>
+                            )}
 
                             {files.length > 0 && (
                                 <div className="space-y-1.5 mt-2 max-h-48 overflow-y-auto pr-1">
@@ -394,6 +427,13 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
     const [existingFiles, setExistingFiles] = useState<SectionFileDto[]>(section.sectionFiles || []);
     const [fileToDelete, setFileToDelete] = useState<{ id: string, name: string } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     const {
         register,
@@ -515,7 +555,7 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5">Upload New Files</label>
                         <div className="flex flex-col gap-2">
-                            <label className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${isSubmitting ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-300 dark:border-slate-600'}`}>
+                            <label className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${isSubmitting ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-50 dark:hover:bg-slate-800/50 border-gray-300 dark:border-slate-600'} ${errors.files ? 'border-red-400 bg-red-50/10' : ''}`}>
                                 <Upload className="w-5 h-5 text-gray-400" />
                                 <span className="text-sm font-semibold text-gray-600 dark:text-slate-400">Select Files</span>
                                 <input 
@@ -531,6 +571,11 @@ function EditSectionModal({ section, onClose, qk, sections }: { section: Section
                                     }} 
                                 />
                             </label>
+                            {errors.files && (
+                                <p className="text-[11px] font-bold text-red-500 mt-1 ml-1 animate-in fade-in">
+                                    {getFilesErrorMessage(errors.files)}
+                                </p>
+                            )}
                             {files.length > 0 && (
                                 <div className="space-y-2 mt-3 max-h-40 overflow-y-auto pr-1">
                                     {files.map((file, i) => (
@@ -617,6 +662,13 @@ function SectionFilesModal({ section, onClose, qk }: { section: SectionDto; onCl
         [...(section.sectionFiles || [])].sort((a, b) => a.orderIndex - b.orderIndex)
     );
     const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
 
     useEffect(() => {
         setLocalFiles([...(section.sectionFiles || [])].sort((a, b) => a.orderIndex - b.orderIndex));
