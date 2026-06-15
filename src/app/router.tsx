@@ -68,14 +68,9 @@ import { InstructorAssignmentEditPage } from '@/routes/instructor/InstructorAssi
 import { InstructorSubmissionsPage } from '@/routes/instructor/InstructorSubmissionsPage';
 import { InstructorUpcomingEventsPage } from '@/routes/instructor/InstructorUpcomingEventsPage';
 import { QuizDashboardPage } from '@/routes/instructor/QuizDashboardPage';
-import { InstructorQuizAiGraderPage } from '@/routes/instructor/InstructorQuizAiGraderPage';
 import { InstructorQuizSubmissionsPage } from '@/routes/instructor/InstructorQuizSubmissionsPage';
 import { InstructorQuizSubmissionReviewPage } from '@/routes/instructor/InstructorQuizSubmissionReviewPage';
-import { AIGradingDetailsPage } from '@/features/ai-grading/pages/AIGradingDetailsPage';
-import { AIEvaluationPage } from '@/features/ai-grading/pages/AIEvaluationPage';
-import { AIEvaluationSetupTab } from '@/features/ai-grading/components/AIEvaluationSetupTab';
-import { AIEvaluationResultsTab } from '@/features/ai-grading/components/AIEvaluationResultsTab';
-import { AIEvaluationConfigPage } from '@/features/ai-grading/pages/AIEvaluationConfigPage';
+import { AIGradingCenterPage } from '@/features/ai-grading/pages/AIGradingCenterPage';
 
 // Admin pages
 import { AdminDashboardPage } from '@/routes/admin/AdminDashboardPage';
@@ -184,13 +179,6 @@ export const AppRouter = () => {
                     <Route path="qna" element={<CourseQnABoardTab />} />
                     <Route path="qna/:questionId" element={<CourseQnADetailTab />} />
                 </Route>
-                <Route path="/instructor/courses/:id/manage/quizzes/:quizId/ai-evaluation" element={<AIEvaluationPage />}>
-                    <Route index element={<Navigate to="results" replace />} />
-                    <Route path="setup" element={<AIEvaluationSetupTab />} />
-                    <Route path="results" element={<AIEvaluationResultsTab />} />
-                    <Route path="configure" element={<AIEvaluationConfigPage />} />
-                </Route>
-                <Route path="/instructor/courses/:id/manage/quizzes/:quizId/ai-evaluation/:submissionId" element={<AIGradingDetailsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_GRADEBOOK} element={<InstructorGradebookPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENTS} element={<InstructorAssignmentsPage />} />
                 <Route path={ROUTES.INSTRUCTOR_ASSIGNMENT_CREATE} element={<Navigate to={ROUTES.INSTRUCTOR_ASSIGNMENTS} replace />} />
@@ -203,7 +191,6 @@ export const AppRouter = () => {
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_CREATE} element={<InstructorQuizCreatePage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_DASHBOARD} element={<QuizDashboardPage />} />
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_SUBMISSIONS} element={<InstructorQuizSubmissionsPage />} />
-                <Route path={ROUTES.INSTRUCTOR_QUIZ_AI_GRADER} element={<InstructorQuizAiGraderPage />} />
 
                 <Route path={ROUTES.INSTRUCTOR_QUIZ_SUBMISSION_REVIEW} element={<InstructorQuizSubmissionReviewPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
@@ -217,6 +204,16 @@ export const AppRouter = () => {
                 element={
                     <RequireRole roles={[ROLES.INSTRUCTOR, ROLES.ADMIN]}>
                         <InstructorQuizQuestionsEditPage />
+                    </RequireRole>
+                }
+            />
+
+            {/* Standalone AI Grading Center */}
+            <Route
+                path={ROUTES.INSTRUCTOR_QUIZ_AI_GRADING}
+                element={
+                    <RequireRole roles={[ROLES.INSTRUCTOR, ROLES.ADMIN]}>
+                        <AIGradingCenterPage />
                     </RequireRole>
                 }
             />

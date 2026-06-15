@@ -72,11 +72,9 @@ export const ROUTES = {
     INSTRUCTOR_QUIZ_DASHBOARD: '/quiz-dashboard/:quizId',
     INSTRUCTOR_QUIZ_SUBMISSIONS: '/instructor/quizzes/:quizId/submissions',
     INSTRUCTOR_QUIZ_SUBMISSION_REVIEW: '/instructor/quizzes/:quizId/submissions/:attemptId',
-    INSTRUCTOR_AI_GRADING_DASHBOARD: '/instructor/courses/:courseId/manage/quizzes/:quizId/ai-evaluation',
-    INSTRUCTOR_AI_GRADING_DETAILS: '/instructor/courses/:courseId/manage/quizzes/:quizId/ai-evaluation/:submissionId',
     INSTRUCTOR_AI_ASSISTANT: '/instructor/courses/:id/manage/ai-assistant',
     INSTRUCTOR_QUIZ_MANAGE: '/instructor/quiz/:quizId/manage',
-    INSTRUCTOR_QUIZ_AI_GRADER: '/instructor/quiz/:quizId/manage/ai-grader',
+    INSTRUCTOR_QUIZ_AI_GRADING: '/quizzes/:quizId/ai-grading',
 
     // Admin routes
     ADMIN: '/admin',

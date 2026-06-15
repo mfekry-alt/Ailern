@@ -102,7 +102,7 @@ export const useUpsertQuizQuestions = (quizId: string) => {
  */
 export const useQuizSubmissions = (
     quizId: string,
-    status?: 'InProgress' | 'Submitted' | 'Reviewed' | null,
+    status?: 'InProgress' | 'Submitted' | 'Graded' | null,
     pageNo: number = 1,
     pageSize: number = 10
 ) =>
@@ -111,6 +111,20 @@ export const useQuizSubmissions = (
         queryFn: () => quizService.getQuizSubmissions(quizId, status, pageNo, pageSize),
         enabled: !!quizId,
     });
+
+/**
+ * Trigger AI grading for one or more attempts
+ */
+export const useAIGradeQuiz = (quizId: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (attemptIds: string[]) =>
+            quizService.aiGradeQuiz(quizId, attemptIds),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZ_SUBMISSIONS(quizId) });
+        },
+    });
+};
 
 /**
  * Grade a quiz submission

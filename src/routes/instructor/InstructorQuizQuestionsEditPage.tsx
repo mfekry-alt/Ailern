@@ -5,9 +5,8 @@ import { storage } from '@/lib/storage';
 import {
     ArrowLeft, Plus, Trash2, CheckCircle2, Loader2,
     GripVertical, Sparkles, ListChecks, HelpCircle, AlertTriangle, Save,
-    ChevronDown, ChevronUp, Check, Filter, FileText, LayoutGrid, BrainCircuit, XCircle, Sparkles as SparklesIcon, Eye
+    ChevronDown, ChevronUp, Check, Filter, FileText, LayoutGrid, BrainCircuit, XCircle, Eye
 } from 'lucide-react';
-import { AIRubricBuilder } from '@/components/ui/AIRubricBuilder';
 import { useQuiz, useUpsertQuizQuestions, useAiGeneratedQuestions, useAcceptAiGeneratedQuestion, useRejectAiGeneratedQuestion } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
 import { toast } from 'sonner';
@@ -43,10 +42,12 @@ const questionSchema = yup.object().shape({
     instructions: yup.string()
         .max(1000, 'Instructions cannot exceed 1000 characters.')
         .optional()
+        .nullable()
         .default(''),
     explanation: yup.string()
         .max(1000, 'Explanation cannot exceed 1000 characters.')
         .optional()
+        .nullable()
         .default(''),
     options: yup.array().of(
         yup.object().shape({
@@ -66,30 +67,27 @@ const questionSchema = yup.object().shape({
             }),
         otherwise: (schema) => schema.optional().nullable()
     }),
-    aiConfig: yup.object().shape({
-        modelAnswer: yup.string().optional().default(''),
-        aiInstructions: yup.string().optional().default(''),
-        rubric: yup.array().of(
-            yup.object().shape({
-                name: yup.string().required('Name is required.'),
-                weight: yup.number().required('Score is required.').min(0, 'Score must be >= 0')
-            })
-        ).optional().default([])
-        .test('total-weight', 'Total rubric score must equal the question points', function(rubric) {
-            if (!rubric || rubric.length === 0) return true;
-            const question = this.from && this.from[1] ? this.from[1].value : {};
-            const mark = (question as any)?.mark || 0;
-            const total = rubric.reduce((sum, item) => sum + (item.weight || 0), 0);
-            return Math.abs(total - mark) < 0.01;
-        }),
-    }).optional().nullable().default(null),
 });
 
 const builderSchema = yup.object().shape({
     questions: yup.array().of(questionSchema).required(),
 });
 
-type BuilderFormData = yup.InferType<typeof builderSchema>;
+type BuilderFormData = {
+    questions: {
+        id?: string | null;
+        questionText: string;
+        questionType: 'MCQ' | 'TrueFalse' | 'Written';
+        mark: number;
+        instructions?: string | null;
+        explanation?: string | null;
+        options?: {
+            optionId?: string | null;
+            optionText: string;
+            isCorrect: boolean;
+        }[] | null;
+    }[];
+};
 
 // ─── Defaults ──────────────────────────────────────────────────────────────
 
@@ -111,11 +109,6 @@ const defaultQuestion = (type: QuestionType = 'MCQ') => ({
     mark: 5,
     instructions: '',
     explanation: '',
-    aiConfig: {
-        modelAnswer: '',
-        aiInstructions: '',
-        rubric: []
-    },
     options: type === 'MCQ' ? makeMCQOptions() : type === 'TrueFalse' ? makeTFOptions() : [],
 });
 
@@ -270,23 +263,8 @@ export const InstructorQuizQuestionsEditPage = () => {
                 mark: q.mark,
                 instructions: q.instructions || '',
                 explanation: q.explanation || '',
-                aiConfig: q.aiConfig ? {
-                    modelAnswer: q.aiConfig.modelAnswer || (q as any).modelAnswer || '',
-                    aiInstructions: q.aiConfig.aiInstructions || (q as any).aiInstructions || '',
-                    rubric: (q.aiConfig.rubric || (q as any).rubric || []).map((r: any) => ({
-                        name: r.name || r.title || '',
-                        weight: r.weight || 0
-                    }))
-                } : {
-                    modelAnswer: (q as any).modelAnswer || '',
-                    aiInstructions: (q as any).aiInstructions || '',
-                    rubric: ((q as any).rubric || []).map((r: any) => ({
-                        name: r.name || r.title || '',
-                        weight: r.weight || 0
-                    }))
-                },
                 options: (q.options || []).map(o => ({
-                    optionId: o.id ?? null,
+                    optionId: o.optionId ?? o.id ?? null,
                     optionText: o.optionText,
                     isCorrect: o.isCorrect
                 }))
@@ -314,11 +292,6 @@ export const InstructorQuizQuestionsEditPage = () => {
                 optionText: o.optionText,
                 isCorrect: o.isCorrect
             })) || [],
-            aiConfig: {
-                modelAnswer: '',
-                aiInstructions: '',
-                rubric: []
-            }
         }));
         append(newQs);
         setShowAIModal(false);
@@ -339,19 +312,10 @@ export const InstructorQuizQuestionsEditPage = () => {
                 instructions: q.instructions ?? '',
                 explanation: q.explanation ?? '',
                 options: q.options?.map(o => ({
-                    optionId: o.id ?? null,
+                    optionId: o.optionId ?? o.id ?? null,
                     optionText: o.optionText,
                     isCorrect: o.isCorrect
                 })) || [],
-                aiConfig: q.aiConfig ? {
-                    modelAnswer: q.aiConfig.modelAnswer || (q as any).modelAnswer || '',
-                    aiInstructions: q.aiConfig.aiInstructions || (q as any).aiInstructions || '',
-                    rubric: q.aiConfig.rubric || (q as any).rubric || []
-                } : {
-                    modelAnswer: (q as any).modelAnswer || '',
-                    aiInstructions: (q as any).aiInstructions || '',
-                    rubric: (q as any).rubric || []
-                }
             }));
             append(qsToAppend);
         }
@@ -372,7 +336,7 @@ export const InstructorQuizQuestionsEditPage = () => {
     const addOption = (qIndex: number) => {
         const currentOptions = watch(`questions.${qIndex}.options`) || [];
         if (currentOptions.length >= 5) return;
-        setValue(`questions.${qIndex}.options`, [...currentOptions, { optionText: '', isCorrect: false }], { shouldValidate: true });
+        setValue(`questions.${qIndex}.options`, [...currentOptions, { optionText: '', isCorrect: false }], { shouldValidate: false });
     };
 
     const removeOption = (qIndex: number, optIndex: number) => {
@@ -391,24 +355,23 @@ export const InstructorQuizQuestionsEditPage = () => {
             setApiError('');
             setSuccess(false);
 
-            const payloadQuestions: QuestionUpsertRequest[] = data.questions.map(q => ({
-                id: q.id ?? null,
-                questionType: q.questionType as QuestionType,
-                questionText: q.questionText,
-                mark: q.mark,
-                instructions: q.instructions || undefined,
-                explanation: q.explanation || undefined,
-                options: q.options?.map(o => ({
-                    optionId: o.optionId ?? null,
-                    optionText: o.optionText,
-                    isCorrect: Boolean(o.isCorrect)
-                })) || [],
-                aiConfig: q.aiConfig ? {
-                    modelAnswer: q.aiConfig.modelAnswer,
-                    aiInstructions: q.aiConfig.aiInstructions,
-                    rubric: q.aiConfig.rubric
-                } : undefined
-            }));
+            const payloadQuestions: QuestionUpsertRequest[] = data.questions.map(q => {
+                const req: QuestionUpsertRequest = {
+                    id: q.id ?? null,
+                    questionType: q.questionType as QuestionType,
+                    questionText: q.questionText,
+                    mark: q.mark,
+                    instructions: q.instructions || undefined,
+                    explanation: q.explanation || undefined,
+                    options: q.options?.map(o => ({
+                        optionId: o.optionId ?? null,
+                        optionText: o.optionText,
+                        isCorrect: Boolean(o.isCorrect)
+                    })) || []
+                };
+
+                return req;
+            });
 
             await upsertQuestionsMutation.mutateAsync(payloadQuestions);
             setSuccess(true);
@@ -865,11 +828,18 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                                             <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                                         </div>
                                                                         <span className="text-xs sm:text-sm font-black text-gray-400 w-5 sm:w-6">{String.fromCharCode(65 + i)}.</span>
-                                                                        <input
-                                                                            {...register(`questions.${idx}.options.${i}.optionText`)}
-                                                                            type="text"
-                                                                            placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                                                                            className="flex-1 bg-transparent outline-none text-xs sm:text-sm font-semibold text-gray-900 dark:text-white py-1.5 sm:py-2 placeholder-gray-400 min-w-0"
+                                                                        <Controller
+                                                                            control={control}
+                                                                            name={`questions.${idx}.options.${i}.optionText`}
+                                                                            defaultValue={opt.optionText ?? ''}
+                                                                            render={({ field }) => (
+                                                                                <input
+                                                                                    {...field}
+                                                                                    type="text"
+                                                                                    placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                                                                                    className="flex-1 bg-transparent outline-none text-xs sm:text-sm font-semibold text-gray-900 dark:text-white py-1.5 sm:py-2 placeholder-gray-400 min-w-0"
+                                                                                />
+                                                                            )}
                                                                         />
                                                                         <label className="flex items-center gap-1 sm:gap-2 cursor-pointer pl-2 sm:pl-3 border-l border-gray-200 dark:border-slate-700 shrink-0">
                                                                             <input
@@ -922,20 +892,6 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                                 <span className={`font-bold text-base sm:text-lg ${opt.isCorrect ? 'text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-slate-300'}`}>{opt.optionText}</span>
                                                             </label>
                                                         ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {qType === 'Written' && (
-                                                <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-top-2">
-                                                    <div className="text-center p-6 sm:p-10 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-[2rem] sm:rounded-[2.5rem] bg-gray-50/30 dark:bg-slate-900/10 flex flex-col items-center gap-3 sm:gap-4 transition-all hover:bg-gray-50/50">
-                                                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-400">
-                                                            <BrainCircuit className="w-5 h-5 sm:w-6 sm:h-6" />
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <p className="text-xs sm:text-sm font-bold text-gray-600 dark:text-slate-300 px-2">AI grading for this question is managed in the AI Evaluation Center.</p>
-                                                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-400 font-black">Configure rubrics and model answers after the quiz ends.</p>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -1103,7 +1059,7 @@ export const InstructorQuizQuestionsEditPage = () => {
                                     <span className="text-[9px] sm:text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest">{fields.length} Qs</span>
                                 </div>
                                 <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 sm:py-2 rounded-xl border border-purple-100 dark:border-purple-500/10">
-                                    <SparklesIcon className="w-3.5 h-3.5 text-purple-400" />
+                                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
                                     <span className="text-[9px] sm:text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">
                                         {(watch('questions') || []).reduce((sum, q) => sum + (Number(q.mark) || 0), 0)} Pts
                                     </span>

@@ -8,6 +8,8 @@ import type {
     AIGradingAttemptResult,
     AIGradedQuestion,
     GradingMode,
+    AIGradingCriteriaResponse,
+    AIGradingConfigUpdateRequest,
 } from '../types/ai-grading.types';
 import type { ApiResponse, AttemptResultDto, AnswerDto } from '@/types/api.types';
 
@@ -114,3 +116,32 @@ function mapAttemptResultToAIGrading(
         gradedAt: new Date().toISOString(),
     };
 }
+
+// ─── AI Grading Configuration ───────────────────────────────────────────────
+
+/**
+ * Fetches the AI grading configuration for a quiz.
+ * GET /api/quizzes/{quizId}/ai-grading-criteria
+ */
+export const getAIGradingCriteria = async (quizId: string): Promise<AIGradingCriteriaResponse> => {
+    const response = await api.get<ApiResponse<AIGradingCriteriaResponse>>(
+        ENDPOINTS.QUIZZES.AI_GRADING_CRITERIA(quizId)
+    );
+    const data = unwrapData<AIGradingCriteriaResponse>(response.data);
+    return data ?? [];
+};
+
+/**
+ * Updates the AI grading configuration for a specific question.
+ * PUT /api/quizzes/{quizId}/questions/{questionId}/grading-config
+ */
+export const updateQuestionAIGradingConfig = async (
+    quizId: string,
+    questionId: string,
+    payload: AIGradingConfigUpdateRequest
+): Promise<void> => {
+    await api.put<ApiResponse<null>>(
+        ENDPOINTS.QUIZZES.UPDATE_GRADING_CONFIG(quizId, questionId),
+        payload
+    );
+};

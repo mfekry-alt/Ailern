@@ -23,8 +23,8 @@ import type { AttemptMetaData, GetAttemptsByQuizIdDto, AttemptStatus } from '@/t
 
 const getStatusInfo = (status: AttemptStatus | 'Processing') => {
     switch (status) {
-        case 'Reviewed':
-            return { label: 'Reviewed', color: 'emerald', icon: CheckCircle2 };
+        case 'Graded':
+            return { label: 'Graded', color: 'emerald', icon: CheckCircle2 };
         case 'Submitted':
             return { label: 'Submitted', color: 'blue', icon: CheckCircle2 };
         case 'InProgress':
@@ -129,7 +129,7 @@ export const QuizAttemptsPage = () => {
     const showResultOnClose = attemptsDto?.showResultOnClose === true;
 
     const isAfterQuizClose = (availableUntil?: string) => {
-        if (!availableUntil) return false;
+        if (!availableUntil) return true;
         const normalized =
             availableUntil.endsWith('Z') || availableUntil.includes('+')
                 ? availableUntil
@@ -140,7 +140,7 @@ export const QuizAttemptsPage = () => {
     const quizClosed = isAfterQuizClose(quizAvailableUntil);
 
     const canRevealScore = (attempt: AttemptMetaData) => {
-        const reviewed = String(attempt.status).toLowerCase() === 'reviewed';
+        const reviewed = String(attempt.status).toLowerCase() === 'graded';
         return quizClosed && (reviewed || showResultOnClose);
     };
 
@@ -150,7 +150,7 @@ export const QuizAttemptsPage = () => {
     };
 
     const stats = useMemo(() => {
-        const reviewedCount = attempts.filter(a => a.status === 'Reviewed').length;
+        const reviewedCount = attempts.filter(a => a.status === 'Graded').length;
         const submittedCount = attempts.filter(a => a.status === 'Submitted').length;
         const inProgressCount = attempts.filter(a => a.status === 'InProgress').length;
         const highestScore = attempts.length > 0
@@ -159,7 +159,7 @@ export const QuizAttemptsPage = () => {
 
         return [
             { label: 'Total Attempts', value: attempts.length, icon: History, color: 'blue' },
-            { label: 'Reviewed', value: reviewedCount, icon: CheckCircle2, color: 'emerald' },
+            { label: 'Graded', value: reviewedCount, icon: CheckCircle2, color: 'emerald' },
             { label: 'Highest Score', value: `${highestScore}%`, icon: Trophy, color: 'orange' },
         ];
     }, [attempts]);
@@ -272,7 +272,7 @@ export const QuizAttemptsPage = () => {
                         {attempts.map((attempt) => {
                             const isAIGraded = aiGradedIds.includes(attempt.id);
                             const effectiveStatus = activeAIGradingId === attempt.id ? 'Processing' :
-                                isAIGraded ? 'Reviewed' :
+                                isAIGraded ? 'Graded' :
                                     attempt.status;
 
                             const score = getScorePercentage(attempt);
@@ -284,7 +284,7 @@ export const QuizAttemptsPage = () => {
                             return (
                                 <div
                                     key={attempt.id}
-                                    className={`bg-white dark:bg-slate-800/60 border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${effectiveStatus === 'Reviewed'
+                                    className={`bg-white dark:bg-slate-800/60 border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${effectiveStatus === 'Graded'
                                             ? 'border-emerald-200/60 dark:border-emerald-700/30'
                                             : effectiveStatus === 'Processing'
                                                 ? 'border-violet-300 dark:border-violet-500/50 shadow-violet-100 dark:shadow-violet-900/20'
@@ -295,7 +295,7 @@ export const QuizAttemptsPage = () => {
                                 >
                                     {/* Left: Attempt Info */}
                                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 flex-1 min-w-0 text-center sm:text-left">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${effectiveStatus === 'Reviewed'
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${effectiveStatus === 'Graded'
                                                 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'
                                                 : effectiveStatus === 'Processing'
                                                     ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.5)]'
@@ -309,7 +309,7 @@ export const QuizAttemptsPage = () => {
                                             <div className="flex flex-col sm:flex-row items-center gap-2">
                                                 <h4 className="font-bold text-gray-900 dark:text-white text-base">Attempt #{attempt.attemptNumber}</h4>
                                                 <div className="flex flex-wrap justify-center sm:justify-start gap-2">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider ${effectiveStatus === 'Reviewed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' :
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider ${effectiveStatus === 'Graded' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' :
                                                             effectiveStatus === 'Submitted' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' :
                                                                 effectiveStatus === 'Processing' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400' :
                                                                     'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400'
@@ -353,33 +353,6 @@ export const QuizAttemptsPage = () => {
                                             </button>
                                         ) : (
                                             <>
-                                                {effectiveStatus === 'Submitted' && (
-                                                    <div className="group relative flex-1 sm:flex-none">
-                                                        <button
-                                                            onClick={() => setActiveAIGradingId(attempt.id)}
-                                                            disabled={!!activeAIGradingId || hasAIGradedAttempt}
-                                                            className={`w-full px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${(activeAIGradingId || hasAIGradedAttempt)
-                                                                    ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
-                                                                    : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white active:scale-95'
-                                                                }`}
-                                                        >
-                                                            <Sparkles className="w-3.5 h-3.5" />
-                                                            Grade with AI
-                                                        </button>
-                                                        {(!hasAIGradedAttempt && !!activeAIGradingId && activeAIGradingId !== attempt.id) && (
-                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] text-center px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                                                                You can only grade one attempt using AI
-                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-white" />
-                                                            </div>
-                                                        )}
-                                                        {hasAIGradedAttempt && (
-                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] text-center px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                                                                An attempt has already been graded for this quiz
-                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-white" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
                                                 {isProcessing && (
                                                     <button
                                                         disabled
@@ -400,16 +373,17 @@ export const QuizAttemptsPage = () => {
                                                 )}
                                                 <button
                                                     onClick={() => navigate(`/quizzes/${id}/attempt/${attempt.id}`)}
-                                                    disabled={isProcessing || !!activeAIGradingId}
-                                                    className={`flex-1 sm:flex-none px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${isProcessing || !!activeAIGradingId
+                                                    disabled={isProcessing || !!activeAIGradingId || !quizClosed}
+                                                    className={`flex-1 sm:flex-none px-5 py-3 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${isProcessing || !!activeAIGradingId || !quizClosed
                                                             ? 'bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed'
-                                                            : effectiveStatus === 'Reviewed'
+                                                            : effectiveStatus === 'Graded'
                                                                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95'
                                                                 : 'bg-[#21A9FF] hover:bg-[#0094F2] text-white active:scale-95'
                                                         }`}
+                                                    title={!quizClosed ? "Details will be available after the quiz deadline" : undefined}
                                                 >
                                                     <Eye className="w-3.5 h-3.5" />
-                                                    {effectiveStatus === 'Reviewed' ? 'View Result' : 'View Details'}
+                                                    {effectiveStatus === 'Graded' ? 'View Result' : 'View Details'}
                                                     <ChevronRight className="w-3.5 h-3.5" />
                                                 </button>
                                             </>

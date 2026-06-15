@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -12,9 +12,11 @@ import {
     Target, 
     FileText, 
     ChevronDown,
-    Check
+    Check,
+    Sparkles
 } from 'lucide-react';
 import { attemptsService } from '@/api/services';
+import { useAIGradeQuiz } from '@/features/quizzes/api';
 import type { AnswerDto, AttemptStatus, GradeSubmissionBody } from '@/types/api.types';
 import { QUERY_KEYS, ROUTES } from '@/lib/constants';
 import { toast } from 'sonner';
@@ -27,7 +29,7 @@ type GradeRow = {
 
 const STATUS_OPTIONS: Array<{ label: string; value: AttemptStatus }> = [
     { label: 'Submitted', value: 'Submitted' },
-    { label: 'Reviewed', value: 'Reviewed' },
+    { label: 'Graded', value: 'Graded' },
 ];
 
 export const InstructorQuizSubmissionReviewPage = () => {
@@ -35,15 +37,34 @@ export const InstructorQuizSubmissionReviewPage = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
-    const [targetStatus, setTargetStatus] = useState<AttemptStatus>('Reviewed');
+    const [targetStatus, setTargetStatus] = useState<AttemptStatus>('Graded');
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [gradeRows, setGradeRows] = useState<Record<string, GradeRow>>({});
+
+    const aiGradeMutation = useAIGradeQuiz(quizId);
+
+    const handleAIReGrade = async () => {
+        try {
+            await aiGradeMutation.mutateAsync([attemptId]);
+            toast.success('AI grading triggered successfully.');
+            refetch();
+        } catch {
+            toast.error('AI grading failed. Please try again.');
+        }
+    };
 
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: [...QUERY_KEYS.ATTEMPT_GRADE(attemptId), 'student-answers'],
         queryFn: () => attemptsService.getAttemptStudentAnswers(attemptId),
         enabled: !!attemptId,
     });
+
+    // Sync the status dropdown with the actual attempt status once data loads
+    useEffect(() => {
+        if (data?.status) {
+            setTargetStatus(data.status);
+        }
+    }, [data?.status]);
 
     const answers = useMemo(() => {
         const list = data?.answers ?? [];
@@ -138,7 +159,7 @@ export const InstructorQuizSubmissionReviewPage = () => {
     }
 
     const stats = [
-        { label: 'Status', value: data.status, icon: Target, color: data.status === 'Reviewed' ? 'emerald' : 'blue' },
+        { label: 'Status', value: data.status, icon: Target, color: data.status === 'Graded' ? 'emerald' : 'blue' },
         { label: 'Score', value: `${data.score} / ${data.totalScore}`, icon: FileText, color: 'violet' },
         { label: 'Questions', value: answers.length, icon: MessageSquare, color: 'orange' },
         { label: 'Time Spent', value: `${data.timeSpent || 0}m`, icon: Clock, color: 'emerald' },
@@ -158,7 +179,9 @@ export const InstructorQuizSubmissionReviewPage = () => {
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div>
-                            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">Review Submission</h1>
+                            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
+                                Review Submission {data.studentName ? `— ${data.studentName}` : ''}
+                            </h1>
                             <p className="text-[#21A9FF] mt-1.5 text-sm font-semibold flex items-center gap-2">
                                 <span className="opacity-60">Quiz:</span> {data.quizTitle}
                             </p>
@@ -198,6 +221,16 @@ export const InstructorQuizSubmissionReviewPage = () => {
                                 </>
                             )}
                         </div>
+                        {data.status === 'Graded' && (
+                            <button
+                                onClick={handleAIReGrade}
+                                disabled={aiGradeMutation.isPending}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-black text-sm rounded-xl transition-all shadow-lg shadow-violet-500/20 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {aiGradeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                {aiGradeMutation.isPending ? 'Grading...' : 'Re-Grade by AI'}
+                            </button>
+                        )}
                         <button
                             onClick={() => mutation.mutate()}
                             disabled={mutation.isPending}

@@ -10,11 +10,16 @@ import { useDeleteAssignment, useCourseAssignments, useAssignment } from '@/feat
 
 interface Ctx { courseId: string; numericCourseId: number | null }
 
+const parseServerDate = (iso?: string): Date => {
+    if (!iso) return new Date(0);
+    const normalized = iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z';
+    return new Date(normalized);
+};
+
 const toLocal = (iso?: string) => {
     if (!iso) return '—';
     try {
-        const normalized = iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z';
-        return new Date(normalized).toLocaleString(undefined, {
+        return parseServerDate(iso).toLocaleString(undefined, {
             year: 'numeric', month: 'short', day: 'numeric',
             hour: '2-digit', minute: '2-digit',
         });
@@ -42,17 +47,17 @@ export const CourseAssignmentsTab = () => {
         const term = search.trim().toLowerCase();
         return arr
             .filter((a) => {
-                const isPastDue = new Date(a.dueDate) < new Date();
+                const isPastDue = parseServerDate(a.dueDate) < new Date();
                 const status = isPastDue && a.isPublished ? 'closed' : a.isPublished ? 'published' : 'draft';
                 const statusOk = filterStatus === 'all' || status === filterStatus.toLowerCase();
                 const searchOk = !term || String(a.title ?? '').toLowerCase().startsWith(term);
                 return statusOk && searchOk;
             })
-            .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+            .sort((a, b) => parseServerDate(b.createdAt).getTime() - parseServerDate(a.createdAt).getTime());
     }, [assignments, filterStatus, search]);
 
     const getStatusBadge = (published: boolean, dueDate?: string) => {
-        const isPastDue = dueDate ? new Date(dueDate) < new Date() : false;
+        const isPastDue = dueDate ? parseServerDate(dueDate) < new Date() : false;
         if (isPastDue && published) {
             return <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400">Closed</span>;
         }
@@ -167,7 +172,7 @@ export const CourseAssignmentsTab = () => {
                                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Deadline</p>
                                                 <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate tracking-tight">{toLocal(assignment.dueDate)}</p>
                                             </div>
-                                            {new Date(assignment.dueDate) < new Date() && (
+                                            {parseServerDate(assignment.dueDate) < new Date() && (
                                                 <span className="ml-auto text-[8px] font-black text-red-500 uppercase tracking-widest bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded-lg border border-red-100 dark:border-red-500/20">Overdue</span>
                                             )}
                                         </div>

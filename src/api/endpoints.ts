@@ -109,6 +109,9 @@ export const ENDPOINTS = {
         ACCEPT_AI_QUESTION: (quizId: string, questionId: string) => `/Quizzes/${quizId}/ai-generated-questions/${questionId}/accept`,
         REJECT_AI_QUESTION: (quizId: string, questionId: string) => `/Quizzes/${quizId}/ai-generated-questions/${questionId}/reject`,
         ACCEPT_ALL_AI_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/ai-generated-questions/accept-all`,
+        AI_GRADE: (quizId: string) => `/Quizzes/${quizId}/ai-grade`,
+        AI_GRADING_CRITERIA: (quizId: string) => `/Quizzes/${quizId}/ai-grading-criteria`,
+        UPDATE_GRADING_CONFIG: (quizId: string, questionId: string) => `/Quizzes/${quizId}/questions/${questionId}/grading-config`,
     },
 
     // Sections endpoints

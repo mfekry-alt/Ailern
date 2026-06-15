@@ -126,7 +126,11 @@ export const InstructorAssignmentEditPage = () => {
             reset({
                 title: assignmentData.title || '',
                 instructions: assignmentData.instructions || '',
-                dueDate: assignmentData.dueDate ? new Date(assignmentData.dueDate) : undefined,
+                dueDate: assignmentData.dueDate ? new Date(
+                    assignmentData.dueDate.endsWith('Z') || assignmentData.dueDate.includes('+')
+                        ? assignmentData.dueDate
+                        : assignmentData.dueDate + 'Z'
+                ) : undefined,
                 allowLateSubmission: assignmentData.allowLateSubmission || false,
                 files: [],
             });

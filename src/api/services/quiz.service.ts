@@ -235,11 +235,21 @@ export const upsertQuizQuestions = async (
     await api.put<ApiResponse<null>>(ENDPOINTS.QUIZZES.UPSERT_QUESTIONS(quizId), questions);
 };
 
+export const aiGradeQuiz = async (
+    quizId: string,
+    attemptIds: string[]
+): Promise<void> => {
+    await api.post<ApiResponse<null>>(
+        ENDPOINTS.QUIZZES.AI_GRADE(quizId),
+        { attemptIds }
+    );
+};
+
 // --- Submissions (instructor) ---
 
 export const getQuizSubmissions = async (
     quizId: string,
-    status?: 'InProgress' | 'Submitted' | 'Reviewed' | null,
+    status?: 'InProgress' | 'Submitted' | 'Graded' | null,
     pageNo: number = 1,
     pageSize: number = 10
 ): Promise<PaginationResult<GetSubmissionsByQuizIdDto>> => {

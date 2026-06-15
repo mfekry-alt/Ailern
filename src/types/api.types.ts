@@ -517,6 +517,7 @@ export interface UpdateQuizBody {
     shuffleOptions: boolean;
     enableAIGrading?: boolean;
     globalAIInstructions?: string;
+    status: QuizStatus;
 }
 
 // --- Request DTOs (questions upsert) ---
@@ -549,6 +550,12 @@ export interface EssayQuestionAIConfig {
     aiInstructions?: string | null;
 }
 
+export interface QuestionCriteriaDto {
+    id?: string | null;
+    criteria: string;
+    mark: number;
+}
+
 export interface QuestionUpsertRequest {
     id?: string | null;
     questionText: string;
@@ -558,6 +565,8 @@ export interface QuestionUpsertRequest {
     explanation?: string | null;
     aiConfig?: EssayQuestionAIConfig | null;
     options: OptionRequest[];
+    modelAnswer?: string | null;
+    questionCriterias?: QuestionCriteriaDto[] | null;
 }
 
 /** @deprecated Use QuestionUpsertRequest instead */
@@ -602,6 +611,7 @@ export interface OptionDto {
     isCorrect: boolean;
     /** Present on some mappings; prefer optionNumber when ordering */
     id?: string;
+    optionId?: string | null;
 }
 
 export interface QuestionDto {
@@ -614,6 +624,8 @@ export interface QuestionDto {
     order: number;
     options?: OptionDto[] | null;
     aiConfig?: EssayQuestionAIConfig | null;
+    modelAnswer?: string | null;
+    criterias?: QuestionCriteriaDto[] | null;
 }
 
 export interface GetQuizDto {
@@ -647,7 +659,9 @@ export interface GetQuizDto {
 // Quiz Submission & Grading Types
 // ============================================================================
 
-export type AttemptStatus = 'InProgress' | 'Submitted' | 'Reviewed';
+export type AttemptStatus = 'InProgress' | 'Submitted' | 'Graded';
+
+export type AIGradingStatus = 'Pending' | 'InProgress' | 'Graded' | 'Overwritten' | 'Failed';
 
 export interface GetSubmissionsByQuizIdDto {
     id: string;
@@ -660,6 +674,8 @@ export interface GetSubmissionsByQuizIdDto {
     score?: number | null;
     attemptNumber: number;
     status: AttemptStatus;
+    aiGradingStatus?: AIGradingStatus;
+    isAIGraded?: boolean;
 }
 
 /** @deprecated Prefer GetSubmissionsByQuizIdDto */
@@ -780,6 +796,8 @@ export interface AnswerDto {
 export interface AttemptResultDto {
     attemptId: string;
     status: AttemptStatus;
+    studentId?: number;
+    studentName?: string;
     quizTitle: string;
     quizId: string;
     answers: AnswerDto[];

@@ -267,8 +267,8 @@ export const validateGradesArray = (grades: GradeEntry[]): ValidationResult => {
 export const validateGradeSubmissionStatus = (status: string): ValidationError[] => {
     const errors: ValidationError[] = [];
 
-    if (!['Submitted', 'Reviewed'].includes(status)) {
-        errors.push({ field: 'status', message: 'Status must be either "Submitted" or "Reviewed"' });
+    if (!['Submitted', 'Graded'].includes(status)) {
+        errors.push({ field: 'status', message: 'Status must be either "Submitted" or "Graded"' });
     }
 
     return errors;
@@ -279,7 +279,7 @@ export const validateGradeSubmissionStatus = (status: string): ValidationError[]
 // ============================================================================
 
 export interface SubmissionQueryParams {
-    status: 'InProgress' | 'Submitted' | 'Reviewed';
+    status: 'InProgress' | 'Submitted' | 'Graded';
     pageNo?: number;
     pageSize?: number;
 }
@@ -287,8 +287,8 @@ export interface SubmissionQueryParams {
 export const validateSubmissionQuery = (params: SubmissionQueryParams): ValidationResult => {
     const errors: ValidationError[] = [];
 
-    if (!['InProgress', 'Submitted', 'Reviewed'].includes(params.status)) {
-        errors.push({ field: 'status', message: 'Status must be "InProgress", "Submitted", or "Reviewed"' });
+    if (!['InProgress', 'Submitted', 'Graded'].includes(params.status)) {
+        errors.push({ field: 'status', message: 'Status must be "InProgress", "Submitted", or "Graded"' });
     }
 
     if (params.pageNo && params.pageNo < 1) {
