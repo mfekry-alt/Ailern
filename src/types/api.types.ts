@@ -342,6 +342,7 @@ export interface AssignmentUpdateCommand {
     dueDate: string; // ISO 8601 date-time format
     allowLateSubmission: boolean;
     isPublished: boolean;
+    status?: 'Draft' | 'Published';
     uploadedFileMetaData?: FileMetaData[];
 }
 

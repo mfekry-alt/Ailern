@@ -191,6 +191,7 @@ export const InstructorAssignmentEditPage = () => {
                 dueDate: data.dueDate.toISOString(),
                 allowLateSubmission: data.allowLateSubmission,
                 isPublished: !isDraft,
+                status: isDraft ? 'Draft' as const : 'Published' as const,
                 uploadedFileMetaData: attachments.map((file) => ({
                     fileName: file.name,
                     fileSize: file.size,
@@ -558,7 +559,7 @@ export const InstructorAssignmentEditPage = () => {
                                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-[#21A9FF] hover:bg-[#0094F2] text-white rounded-xl font-bold transition-all shadow-md shadow-[#21A9FF]/20 hover:shadow-[#21A9FF]/40 active:scale-95 text-sm disabled:opacity-50"
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                Update Assignment
+                                Save and Publish
                             </button>
                         </div>
                     </div>
