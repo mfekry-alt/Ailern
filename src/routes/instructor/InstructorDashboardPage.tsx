@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/store';
 import { useInstructorStats, useUpcomingEvents, useInstructorMyCourses } from '@/features/instructor/api';
-import { useInstructorAssignments } from '@/features/assignments/api';
 import type { GetAllCoursesDto, UpcomingEventDto } from '@/types/api.types';
 import { CourseProgressOverview } from '@/components/CourseProgressOverview';
 
@@ -252,33 +251,15 @@ export const InstructorDashboardPage = () => {
     const { data: stats, isLoading: statsLoading, error: statsError } = useInstructorStats();
     const { data: events, isLoading: eventsLoading, error: eventsError } = useUpcomingEvents();
     const { data: coursesData, isLoading: coursesLoading, error: coursesError } = useInstructorMyCourses({ PageNumber: 1, PageSize: 50 });
-    const { data: assignmentsData, isLoading: assignmentsLoading } = useInstructorAssignments({ PageNumber: 1, PageSize: 50 });
 
     // ── Derived state ──────────────────────────────────────────────────
     const courses = useMemo(() => coursesData?.items?.map((dto, idx) => mapCourseToUI(dto, idx)) ?? [], [coursesData]);
 
-    // Merge backend UpcomingEvents (quizzes) with dynamically computed upcoming assignments
+    // Sort upcoming events returned from the backend (both quizzes and assignments) by date
     const sortedEvents = useMemo(() => {
-        const eventsList = events ? [...events] : [];
-
-        // Find upcoming assignments not returned by the backend endpoint
-        if (assignmentsData && coursesData?.items) {
-            const now = new Date().getTime();
-
-            const upcomingAssignments = assignmentsData.filter(a => {
-                return new Date(a.dueDate).getTime() > now && a.isPublished !== false;
-            }).map(a => ({
-                courseName: coursesData.items.find(c => c.id === a.courseId)?.name || 'Course Assignment',
-                title: a.title,
-                availableUntil: a.dueDate,
-                eventType: 'Assignment' as const
-            }));
-
-            eventsList.push(...upcomingAssignments);
-        }
-
-        return eventsList.sort((a, b) => new Date(a.availableUntil).getTime() - new Date(b.availableUntil).getTime());
-    }, [events, assignmentsData, coursesData]);
+        if (!events) return [];
+        return [...events].sort((a, b) => new Date(a.availableUntil).getTime() - new Date(b.availableUntil).getTime());
+    }, [events]);
 
     // ── Stats config ───────────────────────────────────────────────────
     const statCards = [

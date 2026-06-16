@@ -923,7 +923,7 @@ export interface GetStudentProfileDto {
 // Content Reporting Types
 // ============================================================================
 
-export type ReportType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type ReportType = 0 | 1 | 2 | 3 | 4 | 5 | 6 |7;
 
 export const REPORT_TYPE_LABELS: Record<string | number, string> = {
     0: 'Sexual Content',
@@ -933,6 +933,7 @@ export const REPORT_TYPE_LABELS: Record<string | number, string> = {
     4: 'Copyright Violation',
     5: 'Misinformation',
     6: 'Spam',
+    7: 'Other',
     'SexualContent': 'Sexual Content',
     'HateSpeech': 'Hate Speech',
     'Harassment': 'Harassment',
@@ -940,12 +941,14 @@ export const REPORT_TYPE_LABELS: Record<string | number, string> = {
     'CopyrightViolation': 'Copyright Violation',
     'Misinformation': 'Misinformation',
     'Spam': 'Spam',
+    'Other': 'Other',
 };
 
-export const ALL_REPORT_TYPES: ReportType[] = [0, 1, 2, 3, 4, 5, 6];
+export const ALL_REPORT_TYPES: ReportType[] = [0, 1, 2, 3, 4, 5, 6,7];
 
 export interface SubmitReportCommand {
-    reportType: ReportType;
+    reportType: string | ReportType;
+    reason?: string;
 }
 
 export interface ContentReportsDashboardData {

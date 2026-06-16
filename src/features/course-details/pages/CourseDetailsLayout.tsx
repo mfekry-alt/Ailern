@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useParams, useNavigate, NavLink } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCourseOverview, useCourseQuizzes } from '../api';
-import { hasActiveInProgressAttemptInCourse } from '../utils/courseContentAccess';
+import { useCourseOverview } from '../api';
 import type { GetCourseDto } from '@/types/api.types';
 import { useAuth } from '@/hooks/useAuth';
 import { QUERY_KEYS } from '@/lib/constants';
@@ -79,9 +78,7 @@ export const CourseDetailsLayout = () => {
     }, [courseId]);
 
     const { data: course, isLoading } = useCourseOverview(numericId ?? 0);
-    const { data: courseQuizzes, isSuccess: courseQuizzesReady } = useCourseQuizzes(numericId ?? 0);
-    const sectionsLocked =
-        Boolean(numericId) && courseQuizzesReady && hasActiveInProgressAttemptInCourse(courseQuizzes);
+    const sectionsLocked = false;
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [courseThumbFailed, setCourseThumbFailed] = useState(false);

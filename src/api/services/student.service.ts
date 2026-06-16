@@ -14,8 +14,6 @@ import type {
     GetMyLearningDto,
     PaginationResult,
 } from '@/types/api.types';
-import { getCourseAssignmentsForStudent } from './assignment.service';
-import { getCourseQuizzes } from './quiz.service';
 import { getMyLearning } from './course.service';
 
 const extractStudentCoursesItems = (responseData: unknown): GetStudentCoursesDto[] => {
@@ -47,69 +45,7 @@ export const getMyStudentCourses = async (
     return extractStudentCoursesItems(response.data);
 };
 
-/**
- * Get all assignments for the student across all enrolled courses
- */
-export const getMyStudentAssignments = async (
-    courseId?: number,
-    preFetchedCourses?: GetStudentCoursesDto[],
-    paginationParams?: PaginationParams
-): Promise<GetAssignmentDto[]> => {
-    if (courseId) {
-        const res = await getCourseAssignmentsForStudent(courseId, paginationParams);
-        // Extract items safely
-        const data = (res as any)?.data ?? res;
-        if (Array.isArray(data)) return data;
-        if (data?.items && Array.isArray(data.items)) return data.items;
-        return [];
-    }
 
-    const courses = preFetchedCourses ?? await getMyStudentCourses(paginationParams);
-
-    if (courses.length === 0) return [];
-
-    const promises = courses.map(course =>
-        getCourseAssignmentsForStudent(course.id, paginationParams)
-            .then((res: any) => {
-                // استخراج الداتا الحقيقية من الـ Object
-                const data = res?.data ?? res;
-                if (Array.isArray(data)) return data;
-                if (data?.items && Array.isArray(data.items)) return data.items;
-                return [];
-            })
-            .catch(() => [])
-    );
-
-    const results = await Promise.all(promises);
-    return results.flat(); 
-};
-
-export const getMyStudentQuizzes = async (
-    courseId?: number,
-    preFetchedCourses?: GetStudentCoursesDto[]
-): Promise<GetAllQuizDto[]> => {
-    if (courseId) {
-        return getCourseQuizzes(courseId.toString());
-    }
-
-    const courses = preFetchedCourses ?? await getMyStudentCourses({ PageNumber: 1, PageSize: 100 });
-
-    if (courses.length === 0) return [];
-
-    const promises = courses.map(course =>
-        getCourseQuizzes(course.id.toString())
-            .then((items) =>
-                items.map((q) => ({
-                    ...q,
-                    courseName: course.name,
-                }))
-            )
-            .catch(() => [])
-    );
-
-    const results = await Promise.all(promises);
-    return results.flat();
-};
 
 export interface StudentDashboardData {
     courses: GetStudentCoursesDto[];
@@ -152,18 +88,6 @@ export const getStudentDashboardData = async (): Promise<StudentDashboardData> =
             })),
         ]);
 
-        let assignments: GetAssignmentDto[] = [];
-        let quizzes: GetAllQuizDto[] = [];
-
-        if (courses.length > 0) {
-            const [fetchedAssignments, fetchedQuizzes] = await Promise.all([
-                getMyStudentAssignments(undefined, courses).catch(() => []),
-                getMyStudentQuizzes(undefined, courses).catch(() => []),
-            ]);
-            assignments = fetchedAssignments;
-            quizzes = fetchedQuizzes;
-        }
-
         const continueLearning = (myLearningResult.items ?? []).map((row) => {
             const meta = courses.find((c) => c.id === row.courseId);
             return {
@@ -186,25 +110,15 @@ export const getStudentDashboardData = async (): Promise<StudentDashboardData> =
             };
         });
 
-        const now = new Date();
-        const upcomingAssignments = assignments
-            .filter((a) => new Date(a.dueDate) > now)
-            .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-            .slice(0, 5);
-
-        const pendingQuizzes = quizzes
-            .filter((q: GetAllQuizDto) => q.status === 'Published')
-            .slice(0, 5);
-
         return {
             courses,
             continueLearning,
-            upcomingAssignments,
-            pendingQuizzes,
+            upcomingAssignments: [],
+            pendingQuizzes: [],
             stats: {
                 totalCourses: courses.length,
                 completedAssignments: 0,
-                pendingAssignments: assignments.length,
+                pendingAssignments: 0,
                 averageGrade: 0,
             },
         };

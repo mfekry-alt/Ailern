@@ -301,3 +301,87 @@ export const validateSubmissionQuery = (params: SubmissionQueryParams): Validati
 
     return { isValid: errors.length === 0, errors };
 };
+
+// ============================================================================
+// File Meta Data Validation
+// ============================================================================
+
+export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;      // 10 MB
+export const MAX_VIDEO_SIZE_BYTES = 5 * 1024 * 1024 * 1024;   // 5 GB
+
+export const ALLOWED_FILE_CONTENT_TYPES = new Set<string>([
+    // Documents
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+
+    // Images
+    "image/jpeg",
+    "image/png",
+
+    // Archives
+    "application/zip",
+
+    // Videos
+    "video/mp4",
+    "video/webm",
+    "video/ogg",
+    "video/x-msvideo",   // avi
+    "video/quicktime",   // mov
+    "video/x-matroska"   // mkv
+]);
+
+export interface FileValidationInput {
+    name: string;
+    size: number;
+    type: string;
+}
+
+export const validateUploadedFile = (file: FileValidationInput): ValidationError[] => {
+    const errors: ValidationError[] = [];
+
+    // File name validation
+    if (!file.name?.trim()) {
+        errors.push({ field: 'FileName', message: 'File name must not be empty.' });
+    } else {
+        if (file.name.length > 255) {
+            errors.push({ field: 'FileName', message: 'File name must not exceed 255 characters.' });
+        }
+        
+        // Extension check (must have a valid extension)
+        const dotIndex = file.name.lastIndexOf('.');
+        if (dotIndex === -1 || dotIndex === file.name.length - 1) {
+            errors.push({ field: 'FileName', message: 'File name must have a valid extension.' });
+        }
+    }
+
+    // ContentType validation
+    const contentType = file.type?.trim();
+    if (!contentType) {
+        errors.push({ field: 'ContentType', message: 'Content type must not be empty.' });
+    } else if (!ALLOWED_FILE_CONTENT_TYPES.has(contentType)) {
+        errors.push({ field: 'ContentType', message: 'Content type is not allowed.' });
+    }
+
+    // FileSize validation
+    const isVideo = contentType && contentType.toLowerCase().startsWith('video/');
+    if (isVideo) {
+        if (file.size <= 0 || file.size > MAX_VIDEO_SIZE_BYTES) {
+            errors.push({ 
+                field: 'FileSize', 
+                message: `Video size must not exceed ${MAX_VIDEO_SIZE_BYTES / (1024 * 1024 * 1024)} GB.` 
+            });
+        }
+    } else {
+        if (file.size <= 0 || file.size > MAX_FILE_SIZE_BYTES) {
+            errors.push({ 
+                field: 'FileSize', 
+                message: `File size must not exceed ${MAX_FILE_SIZE_BYTES / (1024 * 1024)} MB.` 
+            });
+        }
+    }
+
+    return errors;
+};
+
