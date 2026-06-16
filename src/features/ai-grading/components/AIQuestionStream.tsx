@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import type { AIGradingCriteriaResponseItem } from '../types/ai-grading.types';
+import { QnARenderer } from '@/features/qna/components/QnARenderer';
 
 interface AIQuestionStreamProps {
     items: AIGradingCriteriaResponseItem[];
@@ -43,15 +44,18 @@ export const AIQuestionStream: React.FC<AIQuestionStreamProps> = ({
                         )}
 
                         <div className="flex flex-col gap-3 pl-1.5">
-                            <p
+                            <div
                                 className={`text-sm leading-snug line-clamp-2 transition-colors duration-300 ${
                                     isSelected
                                         ? 'font-black text-[#21A9FF] dark:text-[#21A9FF]'
                                         : 'font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'
                                 }`}
                             >
-                                {cleanHtmlText(item.questionText)}
-                            </p>
+                                <QnARenderer
+                                    content={item.questionText}
+                                    className="[&_*]:text-inherit [&_p]:my-0 [&_pre]:my-1 [&_pre]:p-1 [&_.code-block-wrapper]:my-1 [&_.code-block-wrapper]:shadow-none"
+                                />
+                            </div>
                             
                             <div className="flex items-center justify-between">
                                 <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200/40 dark:border-slate-700/40 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 shadow-sm">

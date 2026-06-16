@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sparkles, Edit3 } from 'lucide-react';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { MathEditorModal } from '@/components/ui/MathEditorModal';
 
 interface AIReferenceAnswerEditorProps {
     value: string;
@@ -12,6 +14,8 @@ export const AIReferenceAnswerEditor: React.FC<AIReferenceAnswerEditorProps> = (
     onChange,
     isDirty,
 }) => {
+    const [isMathOpen, setIsMathOpen] = useState(false);
+
     return (
         <div className="flex flex-col gap-4 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -35,7 +39,7 @@ export const AIReferenceAnswerEditor: React.FC<AIReferenceAnswerEditorProps> = (
                 </div>
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/5 dark:bg-indigo-500/10 px-3.5 py-2 rounded-xl border border-indigo-200/20 dark:border-indigo-500/20 self-start sm:self-auto shrink-0 shadow-sm">
                     <Edit3 className="w-3.5 h-3.5" />
-                    {value.length} characters
+                    {value ? value.replace(/<[^>]*>/g, '').length : 0} characters
                 </div>
             </div>
 
@@ -43,13 +47,24 @@ export const AIReferenceAnswerEditor: React.FC<AIReferenceAnswerEditorProps> = (
                 {/* Subtle gradient border effect on hover/focus */}
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-[#21A9FF] to-indigo-500 rounded-2xl blur opacity-0 transition duration-500 group-hover:opacity-15 group-focus-within:opacity-100 group-focus-within:from-[#21A9FF] group-focus-within:to-indigo-500 group-focus-within:blur-[6px]" />
                 
-                <textarea
-                    className="relative w-full min-h-[160px] p-6 bg-white/80 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-800 dark:text-slate-200 text-sm font-semibold leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-0 resize-y shadow-sm transition-all duration-300 custom-scrollbar focus:bg-white dark:focus:bg-slate-900"
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
+                <RichTextEditor
+                    content={value || ''}
+                    onChange={onChange}
                     placeholder="E.g., The ideal answer would demonstrate a clear understanding of the core concepts, providing specific examples..."
+                    onMathAction={() => setIsMathOpen(true)}
+                    className="relative w-full"
                 />
             </div>
+
+            <MathEditorModal
+                isOpen={isMathOpen}
+                onClose={() => setIsMathOpen(false)}
+                onApply={(latex) => {
+                    const current = value || '';
+                    const formatted = `${current} ${latex} `;
+                    onChange(formatted);
+                }}
+            />
         </div>
     );
 };

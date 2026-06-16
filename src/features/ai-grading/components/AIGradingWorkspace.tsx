@@ -3,6 +3,7 @@ import { Loader2, Save, X, AlertTriangle } from 'lucide-react';
 import type { AIGradingCriteriaResponseItem, AIGradingConfigUpdateRequest, AIGradingCriterion } from '../types/ai-grading.types';
 import { AIReferenceAnswerEditor } from './AIReferenceAnswerEditor';
 import { AICriteriaEditor } from './AICriteriaEditor';
+import { QnARenderer } from '@/features/qna/components/QnARenderer';
 
 interface AIGradingWorkspaceProps {
     item: AIGradingCriteriaResponseItem;
@@ -107,9 +108,9 @@ export const AIGradingWorkspace: React.FC<AIGradingWorkspaceProps> = ({
                 <div className="relative pl-6 py-2 bg-gradient-to-r from-[#21A9FF]/5 to-transparent rounded-2xl overflow-hidden">
                     {/* Floating active rounded indicator bar */}
                     <div className="absolute left-0 top-1 bottom-1 w-1 bg-gradient-to-b from-[#21A9FF] to-indigo-600 rounded-full" />
-                    <p className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed select-text">
-                        "{cleanHtmlText(item.questionText)}"
-                    </p>
+                    <div className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed select-text">
+                        <QnARenderer content={item.questionText} />
+                    </div>
                 </div>
             </div>
 
