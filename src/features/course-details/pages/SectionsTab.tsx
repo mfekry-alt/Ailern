@@ -1,116 +1,26 @@
 import { useMemo } from 'react';
-
 import { Navigate, useOutletContext } from 'react-router-dom';
-
 import { isAxiosError } from 'axios';
-
-import { useCourseQuizzes, useCourseSections } from '../api';
-
+import { useCourseSections } from '../api';
 import { SectionCard } from '../components/SectionCard';
-
 import { EmptyState } from '../components/EmptyState';
-
 import { TabLoadingState } from '../components/TabLoadingState';
-
-import { CourseSectionsAccessBlockedPanel } from '../components/CourseSectionsAccessBlockedPanel';
-
 import { ROUTES } from '@/lib/constants';
-
-import {
-
-    getFirstQuizWithActiveAttempt,
-
-    getHttpErrorMessage,
-
-    hasActiveInProgressAttemptInCourse,
-
-} from '../utils/courseContentAccess';
-
+import { getHttpErrorMessage } from '../utils/courseContentAccess';
 import { Layers, AlertCircle, RefreshCw } from 'lucide-react';
 
-
-
 interface CourseContext {
-
     courseId: string;
-
     numericCourseId: number | null;
-
 }
 
-
-
 export const SectionsTab = () => {
-
     const { courseId, numericCourseId } = useOutletContext<CourseContext>();
-
     const courseKey = numericCourseId ?? 0;
 
-    const quizzesQuery = useCourseQuizzes(courseKey);
-
-
-
-    const blockByInProgressAttempt = useMemo(
-
-        () => (quizzesQuery.isSuccess ? hasActiveInProgressAttemptInCourse(quizzesQuery.data) : false),
-
-        [quizzesQuery.isSuccess, quizzesQuery.data]
-
-    );
-
-
-
-    const activeQuiz = useMemo(
-
-        () => (quizzesQuery.isSuccess ? getFirstQuizWithActiveAttempt(quizzesQuery.data) : undefined),
-
-        [quizzesQuery.isSuccess, quizzesQuery.data]
-
-    );
-
-
-
-    const sectionsEnabled =
-
-        courseKey > 0 &&
-
-        (quizzesQuery.isError || quizzesQuery.isSuccess) &&
-
-        !blockByInProgressAttempt;
-
-
-
     const { data: sections, isLoading, error, refetch, isFetching } = useCourseSections(courseKey, {
-
-        enabled: sectionsEnabled,
-
+        enabled: courseKey > 0,
     });
-
-
-
-    if (quizzesQuery.isLoading) return <TabLoadingState />;
-
-
-
-    if (blockByInProgressAttempt) {
-
-        const quizListPath = `/courses/${courseId}/quizzes`;
-
-        return (
-
-            <CourseSectionsAccessBlockedPanel
-
-                courseId={courseId}
-
-                activeQuizId={activeQuiz?.id}
-
-                quizListPath={quizListPath}
-
-            />
-
-        );
-
-    }
 
 
 
@@ -148,9 +58,7 @@ export const SectionsTab = () => {
 
 
 
-    const showSectionsLoading = isLoading || (sectionsEnabled && isFetching && !sections);
-
-
+    const showSectionsLoading = isLoading || (isFetching && !sections);
 
     if (showSectionsLoading) return <TabLoadingState />;
 

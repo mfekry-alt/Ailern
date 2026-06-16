@@ -82,7 +82,6 @@ export const ROUTES = {
     ADMIN_USER_CREATE: '/admin/users/create',
     ADMIN_USER_EDIT: '/admin/users/:id/edit',
     ADMIN_COURSES: '/admin/courses',
-    ADMIN_REPORTS: '/admin/reports',
     ADMIN_SETTINGS: '/admin/settings',
     ADMIN_CONTENT_REPORTS: '/admin/content-reports',
 } as const;
@@ -90,6 +89,7 @@ export const ROUTES = {
 export const QUERY_KEYS = {
     ME: ['me'],
     COURSES: ['courses'],
+    ADMIN_COURSES: (params: object) => ['admin-courses', params],
     COURSE: (id: string) => ['course', id],
     LESSONS: (courseId: string) => ['lessons', courseId],
     LESSON: (id: string) => ['lesson', id],
@@ -102,6 +102,8 @@ export const QUERY_KEYS = {
         : ['quiz-submissions', quizId],
     USERS: ['users'],
     USER: (id: string) => ['user', id],
+    ADMIN_USERS: (params: object) => ['admin-users', params],
+    USER_COUNTS: ['user-counts'],
     ASSIGNMENTS: ['assignments'],
     ASSIGNMENT: (id: number) => ['assignment', id],
     INSTRUCTOR_ASSIGNMENTS: ['instructor-assignments'],

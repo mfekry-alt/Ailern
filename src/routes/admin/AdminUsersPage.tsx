@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/lib/constants';
+import { ROUTES, QUERY_KEYS } from '@/lib/constants';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getUsersWithRole, deleteUser as deleteUserApi, getUserCounts, type GetUsersWithRoleParams } from '@/api/services/user.service';
 import type { GetUsersByRoleDto, GetUsersByRoleDtoPaginationResult, GetUserCountsDto } from '@/types/api.types';
 import { handleApiError } from '@/api/client';
@@ -193,69 +194,56 @@ const PageSizeSelector = ({ pageSize, onPageSizeChange, disabled }: PageSizeSele
 
 export const AdminUsersPage = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRole, setSelectedRole] = useState<string>('all');
 
-    // Data state
-    const [users, setUsers] = useState<GetUsersByRoleDto[]>([]);
-    const [pagination, setPagination] = useState<GetUsersByRoleDtoPaginationResult | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
-    // Loading and error states
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    // Toast notification state
     const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
     // Delete modal state
     const [deletingUser, setDeletingUser] = useState<GetUsersByRoleDto | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const [counts, setCounts] = useState<GetUserCountsDto | null>(null);
+    // Fetch users query
+    const {
+        data: usersData,
+        isLoading,
+        error: usersError,
+        refetch: refetchUsers,
+    } = useQuery({
+        queryKey: QUERY_KEYS.ADMIN_USERS({ currentPage, pageSize, selectedRole }),
+        queryFn: () => getUsersWithRole({
+            pageNo: currentPage,
+            pageSize: pageSize,
+            role: selectedRole === 'all' ? null : selectedRole,
+        }),
+    });
 
-    // Fetch users from API
-    const fetchUsers = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
+    const error = usersError ? handleApiError(usersError).message : null;
 
-        try {
-            const params: GetUsersWithRoleParams = {
-                pageNo: currentPage,
-                pageSize: pageSize,
-                role: selectedRole === 'all' ? null : selectedRole,
-            };
+    // Fetch counts query
+    const { data: counts } = useQuery({
+        queryKey: QUERY_KEYS.USER_COUNTS,
+        queryFn: getUserCounts,
+    });
 
-            const result = await getUsersWithRole(params);
-            setUsers(result.items);
-            setPagination(result);
-        } catch (err) {
-            const apiError = handleApiError(err);
-            setError(apiError.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [currentPage, pageSize, selectedRole]);
+    // Derived states
+    const users = usersData?.items ?? [];
+    const pagination = usersData ?? null;
 
-    // Fetch counts from API
-    const fetchCounts = useCallback(async () => {
-        try {
-            const data = await getUserCounts();
-            setCounts(data);
-        } catch (err) {
-            console.error('Failed to fetch user counts:', err);
-        }
+    const handleRoleChange = useCallback((role: string) => {
+        setSelectedRole(role);
+        setCurrentPage(1);
     }, []);
 
-    // Fetch users on mount and when dependencies change
-    useEffect(() => {
-        fetchUsers();
-        fetchCounts();
-    }, [fetchUsers, fetchCounts]);
-
-    // Reset to page 1 when role filter or page size changes (not search - it's client-side now)
-    useEffect(() => {
+    const handlePageSizeChange = useCallback((size: number) => {
+        setPageSize(size);
         setCurrentPage(1);
-    }, [selectedRole, pageSize]);
+    }, []);
 
     // Client-side search filter with startsWith logic (fullName and userName only)
     const filteredUsers = useMemo(() => {
@@ -286,8 +274,8 @@ export const AdminUsersPage = () => {
         try {
             await deleteUserApi(deletingUser.id);
             showToast('User deleted successfully.');
-            fetchUsers();
-            fetchCounts(); // Refresh counts after deletion
+            queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER_COUNTS });
         } catch (err) {
             const apiError = handleApiError(err);
             showToast(apiError.message, 'error');
@@ -440,7 +428,7 @@ export const AdminUsersPage = () => {
                     <div className="flex w-full lg:w-auto gap-3">
                         <RoleFilter
                             selectedRole={selectedRole}
-                            onRoleChange={setSelectedRole}
+                            onRoleChange={handleRoleChange}
                             disabled={isLoading}
                         />
                     </div>
@@ -459,7 +447,7 @@ export const AdminUsersPage = () => {
                         <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
                         <p className="text-red-600 dark:text-red-400 font-semibold">{error}</p>
                         <button
-                            onClick={fetchUsers}
+                            onClick={() => refetchUsers()}
                             className="mt-3 px-4 py-2 bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 rounded-xl font-medium hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors"
                         >
                             Retry
@@ -595,7 +583,7 @@ export const AdminUsersPage = () => {
                                 <div className="h-6 w-px bg-gray-200 dark:bg-slate-700" />
                                 <PageSizeSelector
                                     pageSize={pageSize}
-                                    onPageSizeChange={setPageSize}
+                                    onPageSizeChange={handlePageSizeChange}
                                     disabled={isLoading}
                                 />
                             </div>

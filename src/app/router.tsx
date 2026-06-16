@@ -78,7 +78,6 @@ import { AdminUsersPage } from '@/routes/admin/AdminUsersPage';
 import { AdminUserCreatePage } from '@/routes/admin/AdminUserCreatePage';
 import { AdminUserEditPage } from '@/routes/admin/AdminUserEditPage';
 import { AdminCoursesPage } from '@/routes/admin/AdminCoursesPage';
-import { AdminReportsPage } from '@/routes/admin/AdminReportsPage';
 import { AdminSettingsPage } from '@/routes/admin/AdminSettingsPage';
 import { AdminContentReportsPage } from '@/routes/admin/AdminContentReportsPage';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -231,7 +230,6 @@ export const AppRouter = () => {
                 <Route path={ROUTES.ADMIN_USER_CREATE} element={<AdminUserCreatePage />} />
                 <Route path={ROUTES.ADMIN_USER_EDIT} element={<AdminUserEditPage />} />
                 <Route path={ROUTES.ADMIN_COURSES} element={<AdminCoursesPage />} />
-                <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReportsPage />} />
                 <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettingsPage />} />
                 <Route path={ROUTES.ADMIN_CONTENT_REPORTS} element={<AdminContentReportsPage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
