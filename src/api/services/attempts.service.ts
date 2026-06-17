@@ -191,9 +191,14 @@ export const getAttemptQuestions = async (attemptId: string): Promise<AttemptQue
 
     activeQuestionsPromise[attemptId] = (async () => {
         try {
-            const response = await api.get<ApiResponse<AttemptQuestionDto[]>>(ENDPOINTS.ATTEMPTS.GET_QUESTIONS(attemptId));
-            const rawQuestions = unwrapData(response.data) ?? [];
-            const arr = Array.isArray(rawQuestions) ? rawQuestions : [];
+            const response = await api.get<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.GET_QUESTIONS(attemptId));
+            const rawData = unwrapData<any>(response.data);
+            // API may return { answers: [...], weakTopics: [] } or a flat array
+            const rawQuestions: AttemptQuestionDto[] = Array.isArray(rawData)
+                ? rawData
+                : Array.isArray(rawData?.answers)
+                    ? rawData.answers
+                    : [];
 
             return arr.map((q: AttemptQuestionDto): AttemptQuestion => ({
                 id: String(q.id || ''),

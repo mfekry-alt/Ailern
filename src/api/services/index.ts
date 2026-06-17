@@ -15,3 +15,4 @@ export * as attemptsService from './attempts.service';
 export * as instructorService from './instructor.service';
 export * as dashboardService from './dashboard.service';
 export * as reportService from './report.service';
+export * as notificationService from './notification.service';

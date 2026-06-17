@@ -191,4 +191,9 @@ export const ENDPOINTS = {
         UNPIN: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/un_pin`,
         ANSWER: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/answer`,
     },
+
+    NOTIFICATIONS: {
+        GET: '/Notifications/Notifications',
+        MARK_ALL_AS_READ: '/Notifications/MarkAllAsRead',
+    },
 } as const;
