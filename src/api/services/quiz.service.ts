@@ -236,6 +236,16 @@ export const upsertQuizQuestions = async (
     await api.put<ApiResponse<null>>(ENDPOINTS.QUIZZES.UPSERT_QUESTIONS(quizId), questions);
 };
 
+export const aiGradeQuiz = async (
+    quizId: string,
+    attemptIds: string[]
+): Promise<void> => {
+    await api.post<ApiResponse<null>>(
+        ENDPOINTS.QUIZZES.AI_GRADE(quizId),
+        { attemptIds }
+    );
+};
+
 // --- Submissions (instructor) ---
 
 export const getQuizSubmissions = async (

@@ -7,7 +7,7 @@ import { useCourse } from '@/features/courses/api';
 import { QUERY_KEYS } from '@/lib/constants';
 import { quizService } from '@/api/services';
 import { DeleteQuizDialog } from '@/components/ui/DeleteQuizDialog';
-import { QuizStatusSelect } from '@/components/QuizStatusSelect';
+
 import {
     Plus, Eye, Edit, Trash2, Upload, Filter, FileText, Video,
     Presentation, HelpCircle, Users, Calendar, BookOpen, CheckCircle,
@@ -622,11 +622,13 @@ export const InstructorCourseEditContentPage = () => {
                                                 {String((quiz as any).quizStatus ?? (quiz as any).status ?? '') === 'Scheduled' && (
                                                     <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Scheduled</p>
                                                 )}
-                                                <QuizStatusSelect
-                                                    quizId={quiz.id}
-                                                    courseId={quizzesCourseId}
-                                                    status={String((quiz as any).quizStatus ?? (quiz as any).status ?? 'Draft')}
-                                                />
+                                                <div className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                                                    String((quiz as any).quizStatus ?? (quiz as any).status ?? 'Draft') === 'Published' 
+                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' 
+                                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
+                                                }`}>
+                                                    {String((quiz as any).quizStatus ?? (quiz as any).status ?? 'Draft')}
+                                                </div>
                                             </div>
                                             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0">
                                                 <button onClick={() => navigate(ROUTES.INSTRUCTOR_QUIZ_EDIT.replace(':id', quiz.id.toString()))} className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>

@@ -23,6 +23,8 @@ function quizToFormData(quiz: GetQuizDto): QuizFormData {
         showResultOnClose: quiz.showResultOnClose ?? true,
         shuffleQuestions: quiz.shuffleQuestions ?? true,
         shuffleOptions: quiz.shuffleOptions ?? true,
+        enableAIGrading: quiz.enableAIGrading,
+        globalAIInstructions: quiz.globalAIInstructions,
     };
 }
 
@@ -37,6 +39,9 @@ function formDataToUpdateBody(data: QuizFormData): UpdateQuizBody {
         showResultOnClose: data.showResultOnClose,
         shuffleQuestions: data.shuffleQuestions,
         shuffleOptions: data.shuffleOptions,
+        enableAIGrading: data.enableAIGrading,
+        globalAIInstructions: data.globalAIInstructions,
+        status: (data.status === 'Draft' || data.status === 'Published') ? data.status : 'Draft',
     };
 }
 
@@ -47,6 +52,7 @@ export const InstructorQuizEditPage = () => {
     const [apiError, setApiError] = useState<{ message: string; errors?: Record<string, string[]> } | null>(null);
     const [restoredFromDraft, setRestoredFromDraft] = useState(false);
     const [initialFormData, setInitialFormData] = useState<QuizFormData | null>(null);
+    const [actionState, setActionState] = useState<'draft' | 'publish' | null>(null);
 
     const { data: quizData, isLoading: isFetchingQuiz, error: fetchError } = useQuiz(quizId || '');
     const actualCourseId = courseId || quizData?.courseId?.toString() || '';
@@ -80,10 +86,11 @@ export const InstructorQuizEditPage = () => {
         if (quizData) setInitialFormData(quizToFormData(quizData));
     };
 
-    const handleSave = async (data: QuizFormData) => {
+    const handleSave = async (data: QuizFormData, targetStatus: 'Draft' | 'Published') => {
         try {
             setApiError(null);
-            const payload = formDataToUpdateBody(data);
+            setActionState(targetStatus === 'Draft' ? 'draft' : 'publish');
+            const payload = formDataToUpdateBody({ ...data, status: targetStatus });
             await updateQuizMutation.mutateAsync({ id: quizId!, cmd: payload });
             localStorage.removeItem(DRAFT_KEY);
             toast.success('Quiz updated successfully!');
@@ -95,6 +102,8 @@ export const InstructorQuizEditPage = () => {
                 errors: apiErrors,
             });
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+            setActionState(null);
         }
     };
 
@@ -195,9 +204,14 @@ export const InstructorQuizEditPage = () => {
                 <QuizForm
                     key={restoredFromDraft ? 'draft' : 'server'}
                     initialData={initialFormData}
-                    onSubmit={handleSave}
-                    isPending={updateQuizMutation.isPending}
-                    submitLabel="Save Changes"
+                    onSubmit={(data) => handleSave(data, 'Published')}
+                    isPending={actionState === 'publish'}
+                    submitLabel="Save & Publish"
+                    secondaryAction={{
+                        label: 'Save As Draft',
+                        isPending: actionState === 'draft',
+                        onClick: (data) => handleSave(data, 'Draft')
+                    }}
                     showVisibilitySection={false}
                     onCancel={() => {
                         localStorage.removeItem(DRAFT_KEY);

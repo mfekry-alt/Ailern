@@ -103,8 +103,8 @@ export const DashboardPage = () => {
     }));
 
     const totalCourses = data?.stats?.totalCourses || 0;
-    const pendingTasks = data?.stats?.pendingAssignments || 0;
-    const completedQuizzes = Array.isArray(data?.pendingQuizzes) ? data.pendingQuizzes.length : 0;
+    const pendingTasks = upcomingEvents?.filter((e) => e.eventType === 'Assignment').length || 0;
+    const completedQuizzes = upcomingEvents?.filter((e) => e.eventType === 'Quiz').length || 0;
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-200 font-sans selection:bg-blue-500/30">

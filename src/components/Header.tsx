@@ -1,10 +1,14 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES, APP_NAME } from '@/lib/constants';
-import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Menu, X, Sun, Moon, Camera, Image as ImageIcon, Trash2, User as UserIcon, LogOut, Settings } from 'lucide-react';
+import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Menu, X, Sun, Moon, Camera, Image as ImageIcon, Trash2, User as UserIcon, LogOut, Settings, ClipboardList, HelpCircle, Award, Sparkles } from 'lucide-react';
 import { api } from '@/api/client';
 import { useTheme } from '@/hooks/useTheme';
+import { formatDistanceToNow } from 'date-fns';
+import { notificationService } from '@/api/services';
+import type { NotificationDto } from '@/types/api.types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface NavLink {
     label: string;
@@ -31,37 +35,58 @@ export const Header = () => {
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-    const [notifications, setNotifications] = useState([
-        {
-            id: 1,
-            title: 'New assignment posted in Introduction to Psychology',
-            time: '10:30 AM',
-            isRead: false,
-            icon: BookOpen,
-            iconBg: 'bg-[#21A9FF]/10',
-            iconColor: 'text-[#21A9FF]'
-        },
-        {
-            id: 2,
-            title: 'Student submitted assignment for History 101',
-            time: 'Yesterday',
-            isRead: true,
-            icon: Users,
-            iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
-            iconColor: 'text-emerald-600 dark:text-emerald-400'
-        },
-        {
-            id: 3,
-            title: 'Grading deadline approaching for Calculus 202',
-            time: '2 days ago',
-            isRead: true,
-            icon: AlertTriangle,
-            iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-            iconColor: 'text-amber-600 dark:text-amber-400'
+    const getNotificationIcon = (type: string | number) => {
+        const t = String(type).toLowerCase();
+        
+        // Student type matches
+        if (t === '0' || t.includes('assignment')) {
+            return { icon: ClipboardList, bg: 'bg-[#21A9FF]/10', color: 'text-[#21A9FF]' };
         }
-    ]);
+        if (t === '1' || t.includes('material') || t.includes('update')) {
+            return { icon: BookOpen, bg: 'bg-[#21A9FF]/10', color: 'text-[#21A9FF]' };
+        }
+        if (t === '2' || t.includes('quiz')) {
+            return { icon: HelpCircle, bg: 'bg-amber-100 dark:bg-amber-900/30', color: 'text-amber-600 dark:text-amber-400' };
+        }
+        if (t === '3' || t.includes('attempt') || t.includes('review')) {
+            return { icon: Award, bg: 'bg-emerald-100 dark:bg-emerald-900/30', color: 'text-emerald-600 dark:text-emerald-400' };
+        }
+        
+        // Instructor type matches
+        if (t === '4' || t.includes('deadline')) {
+            return { icon: Clock, bg: 'bg-amber-100 dark:bg-amber-900/30', color: 'text-amber-600 dark:text-amber-400' };
+        }
+        if (t === '5' || t.includes('generation') || t.includes('finished')) {
+            return { icon: Sparkles, bg: 'bg-purple-100 dark:bg-purple-900/30', color: 'text-purple-600 dark:text-purple-400' };
+        }
+        if (t === '6' || t.includes('remove') || t.includes('admin')) {
+            return { icon: Trash2, bg: 'bg-red-100 dark:bg-red-900/30', color: 'text-red-600 dark:text-red-400' };
+        }
+
+        return { icon: Bell, bg: 'bg-gray-100 dark:bg-gray-800', color: 'text-gray-600 dark:text-gray-400' };
+    };
+
+    const queryClient = useQueryClient();
+    const [localReadIds, setLocalReadIds] = useState<string[]>([]);
+
+    const { data: notificationsData } = useQuery({
+        queryKey: ['notifications', 1, 3],
+        queryFn: () => notificationService.getNotifications(1, 3),
+        enabled: !!user,
+        staleTime: 20000, // 20 seconds cache to prevent duplicate calls
+    });
+
+    const notifications = useMemo(() => {
+        const items = notificationsData?.items || [];
+        return items.map(n => ({
+            ...n,
+            isRead: n.isRead || localReadIds.includes(n.id)
+        }));
+    }, [notificationsData, localReadIds]);
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
+
+
 
     useEffect(() => {
         setIsMobileMenuOpen(false);
@@ -84,18 +109,20 @@ export const Header = () => {
         };
     }, []);
 
+    const markAllMutation = useMutation({
+        mutationFn: () => notificationService.markAllAsRead(),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            setLocalReadIds([]);
+        }
+    });
+
     const markAllAsRead = () => {
-        setNotifications(prev =>
-            prev.map(notification => ({ ...notification, isRead: true }))
-        );
+        markAllMutation.mutate();
     };
 
-    const markNotificationAsRead = (id: number) => {
-        setNotifications(prev =>
-            prev.map(notification =>
-                notification.id === id ? { ...notification, isRead: true } : notification
-            )
-        );
+    const markNotificationAsRead = (id: string) => {
+        setLocalReadIds(prev => [...prev, id]);
     };
 
     // 🌟 التعديل الأساسي هنا لحل مشكلة البحث و الـ 403
@@ -196,7 +223,6 @@ export const Header = () => {
                 { label: 'Dashboard', path: ROUTES.ADMIN },
                 { label: 'Users', path: ROUTES.ADMIN_USERS },
                 { label: 'Courses', path: ROUTES.ADMIN_COURSES },
-                { label: 'Reports', path: ROUTES.ADMIN_REPORTS },
                 { label: 'Content Reports', path: ROUTES.ADMIN_CONTENT_REPORTS },
                 { label: 'Settings', path: ROUTES.ADMIN_SETTINGS },
             ];
@@ -351,37 +377,56 @@ export const Header = () => {
 
                                         {/* Notifications List */}
                                         <div className="max-h-[360px] overflow-auto custom-scrollbar">
-                                            {notifications.map((notification) => {
-                                                const IconComponent = notification.icon;
-                                                return (
-                                                    <button
-                                                        type="button"
-                                                        key={notification.id}
-                                                        onClick={() => markNotificationAsRead(notification.id)}
-                                                        className={`w-full text-left border-b border-gray-50 dark:border-slate-800/50 last:border-0 p-4 transition-colors flex items-start gap-4 ${notification.isRead
-                                                            ? 'hover:bg-gray-50 dark:hover:bg-slate-800/50'
-                                                            : 'bg-blue-50/50 dark:bg-[#21A9FF]/10 hover:bg-blue-50 dark:hover:bg-[#21A9FF]/20'
-                                                            }`}
-                                                    >
-                                                        <div className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${notification.iconBg}`}>
-                                                            <IconComponent className={`w-5 h-5 ${notification.iconColor}`} />
-                                                        </div>
+                                            {notifications.length === 0 ? (
+                                                <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-slate-400">
+                                                    No notifications
+                                                </div>
+                                            ) : (
+                                                notifications.map((notification) => {
+                                                    const iconConfig = getNotificationIcon(notification.type);
+                                                    const IconComponent = iconConfig.icon;
+                                                    let timeStr = '';
+                                                    try {
+                                                        timeStr = formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true });
+                                                    } catch (e) {
+                                                        timeStr = notification.createdAt;
+                                                    }
 
-                                                        <div className="flex-1 min-w-0 pr-2">
-                                                            <p className={`text-sm leading-snug mb-1 ${notification.isRead ? 'text-gray-700 dark:text-slate-300' : 'text-gray-900 dark:text-white font-medium'}`}>
-                                                                {notification.title}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500 dark:text-slate-500">
-                                                                {notification.time}
-                                                            </p>
-                                                        </div>
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            key={notification.id}
+                                                            onClick={() => markNotificationAsRead(notification.id)}
+                                                            className={`w-full text-left border-b border-gray-50 dark:border-slate-800/50 last:border-0 p-4 transition-colors flex items-start gap-4 ${notification.isRead
+                                                                ? 'hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                                                                : 'bg-blue-50/50 dark:bg-[#21A9FF]/10 hover:bg-blue-50 dark:hover:bg-[#21A9FF]/20'
+                                                                }`}
+                                                        >
+                                                            <div className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${iconConfig.bg}`}>
+                                                                <IconComponent className={`w-5 h-5 ${iconConfig.color}`} />
+                                                            </div>
 
-                                                        {!notification.isRead && (
-                                                            <div className="w-2 h-2 bg-[#21A9FF] rounded-full shrink-0 mt-2 shadow-sm shadow-[#21A9FF]/50"></div>
-                                                        )}
-                                                    </button>
-                                                );
-                                            })}
+                                                            <div className="flex-1 min-w-0 pr-2">
+                                                                <p className={`text-sm leading-snug mb-1 ${notification.isRead ? 'text-gray-700 dark:text-slate-300' : 'text-gray-900 dark:text-white font-medium'}`}>
+                                                                    {notification.title}
+                                                                </p>
+                                                                {notification.message && (
+                                                                    <p className="text-xs text-gray-500 dark:text-slate-400 line-clamp-2 mb-1">
+                                                                        {notification.message}
+                                                                    </p>
+                                                                )}
+                                                                <p className="text-[10px] text-gray-400 dark:text-slate-500">
+                                                                    {timeStr}
+                                                                </p>
+                                                            </div>
+
+                                                            {!notification.isRead && (
+                                                                <div className="w-2 h-2 bg-[#21A9FF] rounded-full shrink-0 mt-2 shadow-sm shadow-[#21A9FF]/50"></div>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })
+                                            )}
                                         </div>
 
                                         {/* Footer */}

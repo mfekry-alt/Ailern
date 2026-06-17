@@ -118,6 +118,20 @@ export const useQuizSubmissions = (
     });
 
 /**
+ * Trigger AI grading for one or more attempts
+ */
+export const useAIGradeQuiz = (quizId: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (attemptIds: string[]) =>
+            quizService.aiGradeQuiz(quizId, attemptIds),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: QUERY_KEYS.QUIZ_SUBMISSIONS(quizId) });
+        },
+    });
+};
+
+/**
  * Grade a quiz submission
  * Allows instructor to assign scores and feedback to submitted attempts
  */

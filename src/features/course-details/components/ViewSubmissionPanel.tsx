@@ -168,16 +168,19 @@ export const ViewSubmissionPanel = ({ open, onClose, submission, isLoading, assi
 
                             {/* Feedback Section */}
                             {submission.feedback && (
-                                <div className="p-6 bg-blue-50/50 dark:bg-[#21A9FF]/5 border border-blue-100/50 dark:border-blue-500/10 rounded-[2rem] space-y-3 animate-in zoom-in-95 duration-500">
-                                    <div className="flex items-center gap-2 text-[#21A9FF]">
+                                <div className="p-6 bg-blue-50/50 dark:bg-[#21A9FF]/5 border border-blue-100/50 dark:border-blue-500/10 rounded-[2rem] space-y-3 animate-in zoom-in-95 duration-500 relative overflow-hidden">
+                                    <div className="absolute left-0 top-0 w-1.5 h-full bg-[#21A9FF]" />
+                                    <div className="flex items-center gap-2 text-[#21A9FF] pl-2">
                                         <MessageSquare className="w-5 h-5" />
-                                        <span className="text-xs font-black uppercase tracking-widest">Instructor Feedback</span>
+                                        <span className="text-xs font-black uppercase tracking-widest">Feedback</span>
                                     </div>
-                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed pl-7">
-                                        {submission.feedback}
-                                    </p>
+                                    <div className="bg-white/80 dark:bg-slate-950/60 rounded-xl p-4 border border-blue-100/50 dark:border-slate-800/80 ml-2 shadow-inner">
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
+                                            {submission.feedback}
+                                        </p>
+                                    </div>
                                     {submission.grade !== undefined && submission.grade !== null && (
-                                        <div className="mt-4 pt-4 border-t border-blue-100 dark:border-blue-500/10 pl-7">
+                                        <div className="mt-4 pt-4 border-t border-blue-100 dark:border-blue-500/10 pl-2">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Grade</span>
                                                 <span className="text-lg font-black text-[#21A9FF]">

@@ -57,21 +57,46 @@ export const ProfilePage = () => {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const toastId = toast.loading('Uploading profile photo...');
-            changePhotoMutation.mutate(file, {
-                onSuccess: () => {
-                    setIsAvatarDropdownOpen(false);
-                    toast.success('Photo updated successfully! 📸', { id: toastId });
-                },
-                onError: (error: any) => {
-                    console.error('Failed to change photo:', error);
-                    toast.error('Failed to update photo. Please try again. ❌', { id: toastId });
-                }
-            });
-        }
+        
         // Reset input value so same file can be selected again
         e.target.value = '';
+
+        if (!file) {
+            toast.error('Image is required.');
+            return;
+        }
+
+        // 1. File Size Validation (Max 2MB)
+        const MAX_FILE_SIZE = 2 * 1024 * 1024;
+        if (file.size > MAX_FILE_SIZE) {
+            toast.error('Image size must not exceed 2MB.');
+            return;
+        }
+
+        // 2. Content Type Validation (JPEG or PNG)
+        const validTypes = ['image/jpeg', 'image/png'];
+        if (!validTypes.includes(file.type)) {
+            toast.error('Only JPEG and PNG images are allowed.');
+            return;
+        }
+
+        // 3. File Name Validation
+        if (!file.name || file.name.trim() === '') {
+            toast.error('File name is required.');
+            return;
+        }
+
+        const toastId = toast.loading('Uploading profile photo...');
+        changePhotoMutation.mutate(file, {
+            onSuccess: () => {
+                setIsAvatarDropdownOpen(false);
+                toast.success('Photo updated successfully! 📸', { id: toastId });
+            },
+            onError: (error: any) => {
+                console.error('Failed to change photo:', error);
+                toast.error('Failed to update photo. Please try again. ❌', { id: toastId });
+            }
+        });
     };
 
     const handleDeletePhoto = () => {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/lib/constants';
+import { ROUTES, QUERY_KEYS } from '@/lib/constants';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllCourses } from '@/api/services/course.service';
 import type { GetAllCoursesDto, GetAllCoursesDtoPaginationResult } from '@/types/api.types';
 import { handleApiError } from '@/api/client';
@@ -169,20 +170,15 @@ const SortSelector = ({ sortBy, order, onSortChange, disabled }: SortSelectorPro
 };
 
 export const AdminCoursesPage = () => {
-    const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Data state
-    const [courses, setCourses] = useState<GetAllCoursesDto[]>([]);
-    const [pagination, setPagination] = useState<GetAllCoursesDtoPaginationResult | null>(null);
     const [pageNo, setPageNo] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [sortBy, setSortBy] = useState('CreatedAt');
     const [order, setOrder] = useState<'asc' | 'desc'>('desc');
 
-    // Loading and error states
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    // Toast notification state
     const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
     // Modal state
@@ -198,35 +194,30 @@ export const AdminCoursesPage = () => {
         setTimeout(() => setStatusMessage(null), 3000);
     };
 
-    // Fetch courses from API
-    const fetchCourses = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
+    // Fetch courses query
+    const {
+        data: coursesData,
+        isLoading,
+        error: coursesError,
+        refetch: refetchCourses,
+    } = useQuery({
+        queryKey: QUERY_KEYS.ADMIN_COURSES({ pageNo, pageSize }),
+        queryFn: () => getAllCourses({
+            PageNumber: pageNo,
+            PageSize: pageSize,
+        }),
+    });
 
-        try {
-            const result = await getAllCourses({
-                PageNumber: pageNo,
-                PageSize: pageSize,
-            });
-            setCourses(result.items);
-            setPagination(result);
-        } catch (err) {
-            const apiError = handleApiError(err);
-            setError(apiError.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [pageNo, pageSize]);
+    const error = coursesError ? handleApiError(coursesError).message : null;
 
-    // Fetch courses on mount and when dependencies change
-    useEffect(() => {
-        fetchCourses();
-    }, [fetchCourses]);
+    // Derived states
+    const courses = coursesData?.items ?? [];
+    const pagination = coursesData ?? null;
 
-    // Reset to page 1 when page size changes
-    useEffect(() => {
+    const handlePageSizeChange = useCallback((size: number) => {
+        setPageSize(size);
         setPageNo(1);
-    }, [pageSize]);
+    }, []);
 
     const confirmDeleteCourse = async () => {
         if (!deletingCourse) return;
@@ -234,7 +225,7 @@ export const AdminCoursesPage = () => {
         try {
             await deleteCourseApi(deletingCourse.id);
             showToast('Course deleted successfully.', 'success');
-            fetchCourses();
+            queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
         } catch (err) {
             const apiError = handleApiError(err);
             showToast(apiError.message, 'error');
@@ -498,7 +489,7 @@ export const AdminCoursesPage = () => {
                                 <div className="h-6 w-px bg-gray-200 dark:bg-slate-700" />
                                 <PageSizeSelector
                                     pageSize={pageSize}
-                                    onPageSizeChange={setPageSize}
+                                    onPageSizeChange={handlePageSizeChange}
                                     disabled={isLoading}
                                 />
                             </div>
@@ -536,7 +527,7 @@ export const AdminCoursesPage = () => {
                             <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
                             <p className="text-red-600 dark:text-red-400 font-semibold">{error}</p>
                             <button
-                                onClick={fetchCourses}
+                                onClick={() => refetchCourses()}
                                 className="mt-3 px-4 py-2 bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 rounded-xl font-medium hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors"
                             >
                                 Retry

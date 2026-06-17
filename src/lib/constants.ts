@@ -72,11 +72,9 @@ export const ROUTES = {
     INSTRUCTOR_QUIZ_DASHBOARD: '/quiz-dashboard/:quizId',
     INSTRUCTOR_QUIZ_SUBMISSIONS: '/instructor/quizzes/:quizId/submissions',
     INSTRUCTOR_QUIZ_SUBMISSION_REVIEW: '/instructor/quizzes/:quizId/submissions/:attemptId',
-    INSTRUCTOR_AI_GRADING_DASHBOARD: '/instructor/courses/:courseId/manage/quizzes/:quizId/ai-evaluation',
-    INSTRUCTOR_AI_GRADING_DETAILS: '/instructor/courses/:courseId/manage/quizzes/:quizId/ai-evaluation/:submissionId',
     INSTRUCTOR_AI_ASSISTANT: '/instructor/courses/:id/manage/ai-assistant',
     INSTRUCTOR_QUIZ_MANAGE: '/instructor/quiz/:quizId/manage',
-    INSTRUCTOR_QUIZ_AI_GRADER: '/instructor/quiz/:quizId/manage/ai-grader',
+    INSTRUCTOR_QUIZ_AI_GRADING: '/quizzes/:quizId/ai-grading',
 
     // Admin routes
     ADMIN: '/admin',
@@ -84,7 +82,6 @@ export const ROUTES = {
     ADMIN_USER_CREATE: '/admin/users/create',
     ADMIN_USER_EDIT: '/admin/users/:id/edit',
     ADMIN_COURSES: '/admin/courses',
-    ADMIN_REPORTS: '/admin/reports',
     ADMIN_SETTINGS: '/admin/settings',
     ADMIN_CONTENT_REPORTS: '/admin/content-reports',
 } as const;
@@ -92,6 +89,7 @@ export const ROUTES = {
 export const QUERY_KEYS = {
     ME: ['me'],
     COURSES: ['courses'],
+    ADMIN_COURSES: (params: object) => ['admin-courses', params],
     COURSE: (id: string) => ['course', id],
     LESSONS: (courseId: string) => ['lessons', courseId],
     LESSON: (id: string) => ['lesson', id],
@@ -104,6 +102,8 @@ export const QUERY_KEYS = {
         : ['quiz-submissions', quizId],
     USERS: ['users'],
     USER: (id: string) => ['user', id],
+    ADMIN_USERS: (params: object) => ['admin-users', params],
+    USER_COUNTS: ['user-counts'],
     ASSIGNMENTS: ['assignments'],
     ASSIGNMENT: (id: number) => ['assignment', id],
     INSTRUCTOR_ASSIGNMENTS: ['instructor-assignments'],

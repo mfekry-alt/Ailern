@@ -6,6 +6,7 @@ import type { AttemptResult } from '@/api/services/attempts.service';
 import type { AnswerDto } from '@/types/api.types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { QnARenderer } from '@/features/qna/components/QnARenderer';
+import { AiWeakTopicsCard } from '@/components/ui';
 
 const decodeHtml = (html: string) => {
     if (!html) return '';
@@ -158,6 +159,8 @@ export const QuizResultViewer = () => {
                     </div>
                 </div>
 
+                <AiWeakTopicsCard weakTopics={result.weakTopics} />
+
                 <div className="space-y-6 pt-3">
                     <div className="flex items-center gap-3 border-b border-gray-200 dark:border-slate-700/50 pb-4">
                         <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
@@ -268,11 +271,16 @@ export const QuizResultViewer = () => {
                                         )}
 
                                         {answer.feedback && (
-                                            <div className="mt-4 rounded-xl border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-500/10 p-4">
-                                                <p className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 mb-2 flex items-center gap-1">
-                                                    <MessageSquare className="w-3 h-3" /> Instructor Feedback
+                                            <div className="mt-4 rounded-[1.5rem] border border-purple-100/80 dark:border-purple-500/20 bg-purple-50/50 dark:bg-purple-500/5 p-5 relative overflow-hidden group">
+                                                <div className="absolute left-0 top-0 w-1 h-full bg-purple-500" />
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-purple-600 dark:text-purple-400 mb-3 flex items-center gap-2 pl-2">
+                                                    <MessageSquare className="w-3.5 h-3.5" /> Feedback
                                                 </p>
-                                                <p className="text-sm text-purple-900 dark:text-purple-100 whitespace-pre-wrap">{answer.feedback}</p>
+                                                <div className="bg-white/80 dark:bg-slate-900/60 rounded-xl p-4 border border-purple-100/50 dark:border-purple-900/25 ml-2 shadow-inner">
+                                                    <p className="text-sm font-semibold text-purple-950 dark:text-purple-100 whitespace-pre-wrap leading-relaxed">
+                                                        {answer.feedback}
+                                                    </p>
+                                                </div>
                                             </div>
                                         )}
                                     </div>

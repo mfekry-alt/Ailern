@@ -342,6 +342,7 @@ export interface AssignmentUpdateCommand {
     dueDate: string; // ISO 8601 date-time format
     allowLateSubmission: boolean;
     isPublished: boolean;
+    status?: 'Draft' | 'Published';
     uploadedFileMetaData?: FileMetaData[];
 }
 
@@ -517,6 +518,7 @@ export interface UpdateQuizBody {
     shuffleOptions: boolean;
     enableAIGrading?: boolean;
     globalAIInstructions?: string;
+    status: QuizStatus;
 }
 
 // --- Request DTOs (questions upsert) ---
@@ -549,6 +551,12 @@ export interface EssayQuestionAIConfig {
     aiInstructions?: string | null;
 }
 
+export interface QuestionCriteriaDto {
+    id?: string | null;
+    criteria: string;
+    mark: number;
+}
+
 export interface QuestionUpsertRequest {
     id?: string | null;
     questionText: string;
@@ -558,6 +566,8 @@ export interface QuestionUpsertRequest {
     explanation?: string | null;
     aiConfig?: EssayQuestionAIConfig | null;
     options: OptionRequest[];
+    modelAnswer?: string | null;
+    questionCriterias?: QuestionCriteriaDto[] | null;
 }
 
 /** @deprecated Use QuestionUpsertRequest instead */
@@ -602,6 +612,7 @@ export interface OptionDto {
     isCorrect: boolean;
     /** Present on some mappings; prefer optionNumber when ordering */
     id?: string;
+    optionId?: string | null;
 }
 
 export interface QuestionDto {
@@ -614,6 +625,8 @@ export interface QuestionDto {
     order: number;
     options?: OptionDto[] | null;
     aiConfig?: EssayQuestionAIConfig | null;
+    modelAnswer?: string | null;
+    criterias?: QuestionCriteriaDto[] | null;
 }
 
 export interface GetQuizDto {
@@ -647,6 +660,8 @@ export interface GetQuizDto {
 // Quiz Submission & Grading Types
 // ============================================================================
 
+
+export type AIGradingStatus = 'Pending' | 'InProgress' | 'Graded' | 'Overwritten' | 'Failed';
 export type AttemptStatus = 'InProgress' | 'Submitted' | 'Reviewed' | 'Graded';
 
 export interface GetSubmissionsByQuizIdDto {
@@ -660,6 +675,8 @@ export interface GetSubmissionsByQuizIdDto {
     score?: number | null;
     attemptNumber: number;
     status: AttemptStatus;
+    aiGradingStatus?: AIGradingStatus;
+    isAIGraded?: boolean;
 }
 
 /** @deprecated Prefer GetSubmissionsByQuizIdDto */
@@ -780,12 +797,15 @@ export interface AnswerDto {
 export interface AttemptResultDto {
     attemptId: string;
     status: AttemptStatus;
+    studentId?: number;
+    studentName?: string;
     quizTitle: string;
     quizId: string;
     answers: AnswerDto[];
     timeSpent: number;
     totalScore: number;
     score: number;
+    weakTopics?: string[];
 }
 
 // ============================================================================
@@ -903,7 +923,7 @@ export interface GetStudentProfileDto {
 // Content Reporting Types
 // ============================================================================
 
-export type ReportType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type ReportType = 0 | 1 | 2 | 3 | 4 | 5 | 6 |7;
 
 export const REPORT_TYPE_LABELS: Record<string | number, string> = {
     0: 'Sexual Content',
@@ -913,6 +933,7 @@ export const REPORT_TYPE_LABELS: Record<string | number, string> = {
     4: 'Copyright Violation',
     5: 'Misinformation',
     6: 'Spam',
+    7: 'Other',
     'SexualContent': 'Sexual Content',
     'HateSpeech': 'Hate Speech',
     'Harassment': 'Harassment',
@@ -920,12 +941,14 @@ export const REPORT_TYPE_LABELS: Record<string | number, string> = {
     'CopyrightViolation': 'Copyright Violation',
     'Misinformation': 'Misinformation',
     'Spam': 'Spam',
+    'Other': 'Other',
 };
 
-export const ALL_REPORT_TYPES: ReportType[] = [0, 1, 2, 3, 4, 5, 6];
+export const ALL_REPORT_TYPES: ReportType[] = [0, 1, 2, 3, 4, 5, 6,7];
 
 export interface SubmitReportCommand {
-    reportType: ReportType;
+    reportType: string | ReportType;
+    reason?: string;
 }
 
 export interface ContentReportsDashboardData {
@@ -936,4 +959,18 @@ export interface ContentReportsDashboardData {
     rejectedReports: number;
     topReportReasons: Record<string, number>;
     topReportForMaterial: Record<string, number>;
+}
+
+// ============================================================================
+// Notifications Types
+// ============================================================================
+
+export interface NotificationDto {
+    id: string;
+    title: string;
+    message: string;
+    createdAt: string;
+    url?: string | null;
+    type: string;
+    isRead: boolean;
 }

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Upload, X, FileText, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { SubmissionSuccessMessage } from './SubmissionSuccessMessage';
+import { validateUploadedFile } from '@/lib/validators';
 
 interface SubmitAssignmentModalProps {
     open: boolean;
@@ -32,6 +33,16 @@ export const SubmitAssignmentModal = ({
             if (!fileList) return;
             setError('');
             const newFiles = Array.from(fileList);
+            
+            // Validate each new file
+            for (const file of newFiles) {
+                const validationErrors = validateUploadedFile(file);
+                if (validationErrors.length > 0) {
+                    setError(`${file.name}: ${validationErrors[0].message}`);
+                    return;
+                }
+            }
+            
             setSelectedFiles((prev) => [...prev, ...newFiles]);
         },
         []
@@ -79,6 +90,16 @@ export const SubmitAssignmentModal = ({
             setError('Please attach at least one file.');
             return;
         }
+
+        // Validate each selected file
+        for (const file of selectedFiles) {
+            const validationErrors = validateUploadedFile(file);
+            if (validationErrors.length > 0) {
+                setError(`${file.name}: ${validationErrors[0].message}`);
+                return;
+            }
+        }
+
         setError('');
         try {
             await onSubmit(selectedFiles);

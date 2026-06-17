@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AlertTriangle, Settings, CalendarClock, Eye, Timer, AlertCircle, BrainCircuit } from 'lucide-react';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import type { QuizFormStatus } from '@/types/api.types';
@@ -24,7 +24,7 @@ export interface QuizFormData {
     globalAIInstructions?: string;
 }
 
-const quizSchema = yup.object().shape({
+const getQuizSchema = (timingState: 'NotStarted' | 'Started' | 'Ended', initialData?: Partial<QuizFormData>) => yup.object().shape({
     title: yup.string()
         .required('Title is required.')
         .max(200, 'Title must be 200 characters or less.'),
@@ -34,25 +34,42 @@ const quizSchema = yup.object().shape({
         .default(''),
     availableFrom: yup.string()
         .required('Available From is required.')
-        .test('future-date', 'AvailableFrom must be in the future.', (val) => !val || new Date(val) > new Date()),
+        .test('future-date', 'AvailableFrom must be in the future.', (val) => timingState !== 'NotStarted' || (!val || new Date(val) > new Date())),
     availableUntil: yup.string()
         .required('Available Until is required.')
-        .test('future-date', 'AvailableUntil must be in the future.', (val) => !val || new Date(val) > new Date())
+        .test('future-date', 'AvailableUntil must be in the future.', (val) => timingState !== 'NotStarted' || (!val || new Date(val) > new Date()))
         .test('is-after-from', 'Available Until must be after Available From.', function(value) {
             const { availableFrom } = this.parent;
             if (!availableFrom || !value) return true;
             return new Date(value) > new Date(availableFrom);
+        })
+        .test('increase-only', 'Available Until can only be extended.', function(value) {
+            if (timingState === 'NotStarted' || !initialData?.availableUntil || !value) return true;
+            return new Date(value) >= new Date(initialData.availableUntil);
+        })
+        .test('future-if-published', 'Available Until must be in the future to publish.', function(value) {
+            const { status } = this.parent;
+            if (status !== 'Published' || !value) return true;
+            return new Date(value) > new Date();
         }),
     maximumAttempts: yup.number()
         .typeError('Maximum attempts must be a number.')
         .required('Maximum attempts is required.')
         .min(1, 'MaximumAttempts must be between 1 and 3.')
-        .max(3, 'MaximumAttempts must be between 1 and 3.'),
+        .max(3, 'MaximumAttempts must be between 1 and 3.')
+        .test('increase-only', 'Maximum attempts can only be increased.', function(value) {
+            if (timingState === 'NotStarted' || initialData?.maximumAttempts === undefined || value === undefined) return true;
+            return value >= initialData.maximumAttempts;
+        }),
     attemptTimeLimit: yup.number()
         .transform((value) => (isNaN(value) ? undefined : value))
         .typeError('Time limit must be a number.')
         .required('AttemptTimeLimit must be greater than 0.')
         .positive('AttemptTimeLimit must be greater than 0.')
+        .test('increase-only', 'Time limit can only be increased.', function(value) {
+            if (timingState === 'NotStarted' || initialData?.attemptTimeLimit === undefined || value === undefined) return true;
+            return value >= initialData.attemptTimeLimit;
+        })
         .test('within-window', 'AttemptTimeLimit must be less than or equal to the total available time.', function(value) {
             const { availableFrom, availableUntil } = this.parent;
             if (!availableFrom || !availableUntil || !value) return true;
@@ -75,10 +92,6 @@ const quizSchema = yup.object().shape({
     shuffleQuestions: yup.boolean().default(true),
     shuffleOptions: yup.boolean().default(true),
 });
-
-const quizCreateSchema = quizSchema;
-
-const quizEditSchema = quizSchema;
 
 interface QuizFormProps {
     initialData?: Partial<QuizFormData>;
@@ -200,7 +213,24 @@ export const QuizForm = ({
     validationMode = 'edit',
     showVisibilitySection = true,
 }: QuizFormProps) => {
-    const schema = validationMode === 'create' ? quizCreateSchema : quizEditSchema;
+    const timingState = useMemo(() => {
+        if (!initialData || !initialData.availableFrom || !initialData.availableUntil) return 'NotStarted';
+        const initialFrom = new Date(initialData.availableFrom).getTime();
+        const initialUntil = new Date(initialData.availableUntil).getTime();
+        const nowTime = new Date().getTime();
+        if (nowTime >= initialUntil) return 'Ended';
+        if (nowTime >= initialFrom && nowTime < initialUntil) return 'Started';
+        return 'NotStarted';
+    }, [initialData]);
+
+    const displayStatus = useMemo(() => {
+        if (!initialData || initialData.status === 'Draft') return 'Draft';
+        if (timingState === 'Started') return 'Started';
+        if (timingState === 'Ended') return 'Ended';
+        return 'Published';
+    }, [timingState, initialData]);
+
+    const schema = useMemo(() => getQuizSchema(timingState, initialData), [timingState, initialData]);
 
     const {
         register,
@@ -241,9 +271,9 @@ export const QuizForm = ({
 
     const handleSecondaryAction = async () => {
         if (secondaryAction) {
-            const data = watch();
-            // We still want to validate before secondary action if it's a save-like action
-            await secondaryAction.onClick(data);
+            handleSubmit(async (data) => {
+                await secondaryAction.onClick(data);
+            })();
         }
     };
 
@@ -257,9 +287,15 @@ export const QuizForm = ({
 
                 {/* Basic Information */}
                 <div className="space-y-5">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700/50 pb-3">
-                        <Settings className="w-5 h-5 text-indigo-500" /> Basic Information
-                    </h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700/50 pb-3">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Settings className="w-5 h-5 text-indigo-500" /> Basic Information
+                        </h3>
+                        <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-slate-700/50 rounded-full w-fit">
+                            <div className={`w-2 h-2 rounded-full ${displayStatus === 'Published' || displayStatus === 'Started' ? 'bg-emerald-500' : displayStatus === 'Ended' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                            <span className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">{displayStatus}</span>
+                        </div>
+                    </div>
                     <div>
                         <label htmlFor="title" className={labelCls}>Quiz Title <span className="text-red-500">*</span></label>
                         <input
@@ -305,9 +341,9 @@ export const QuizForm = ({
                                         id="availableFrom"
                                         value={parseDateStr(field.value)}
                                         onChange={(d) => field.onChange(dateToLocalStr(d))}
-                                        minDate={nowDate}
+                                        minDate={timingState === 'NotStarted' ? nowDate : undefined}
                                         hasError={!!errors.availableFrom}
-                                        disabled={busy}
+                                        disabled={busy || timingState === 'Started' || timingState === 'Ended'}
                                         placeholder="Select start date & time"
                                         iconColor="text-emerald-500"
                                     />
@@ -340,6 +376,8 @@ export const QuizForm = ({
                             <input
                                 id="maximumAttempts"
                                 type="number"
+                                min={timingState !== 'NotStarted' ? Math.max(1, initialData?.maximumAttempts || 1) : 1}
+                                max={3}
                                 {...register('maximumAttempts')}
                                 className={getInputCls(!!errors.maximumAttempts)}
                                 disabled={busy}
@@ -359,6 +397,7 @@ export const QuizForm = ({
                                 <input
                                     id="attemptTimeLimit"
                                     type="number"
+                                    min={timingState !== 'NotStarted' ? Math.max(1, initialData?.attemptTimeLimit || 1) : 1}
                                     {...register('attemptTimeLimit')}
                                     className={`${getInputCls(!!errors.attemptTimeLimit)} pl-11`}
                                     disabled={busy}
@@ -459,12 +498,12 @@ export const QuizForm = ({
                     Cancel
                 </button>
                 <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
-                    {secondaryAction && (
+                    {secondaryAction && timingState === 'NotStarted' && (
                         <button 
                             type="button" 
                             onClick={handleSecondaryAction} 
                             disabled={busy} 
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-gray-900 hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl font-bold transition-all shadow-md active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 text-gray-900 dark:text-white rounded-xl font-bold transition-all shadow-sm active:scale-95 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {secondaryAction.isPending ? 'Saving...' : secondaryAction.label}
                         </button>

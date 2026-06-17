@@ -103,26 +103,26 @@ export const ENDPOINTS = {
     REVIEW: (submissionId: number) => `/Assignments/Submissions/${submissionId}`,
   },
 
-  // Quizzes endpoints (single-quiz operations; course-scoped list/create under COURSES.QUIZZES)
-  QUIZZES: {
-    GET: (id: string) => `/Quizzes/${id}`,
-    UPDATE: (id: string) => `/Quizzes/${id}`,
-    DELETE: (id: string) => `/Quizzes/${id}`,
-    UPDATE_STATUS: (id: string) => `/Quizzes/${id}/update-status`,
-    LIST: '/Quizzes',
-    GENERATE_BY_AI: (quizId: string) => `/Quizzes/${quizId}/generate-by-ai`,
-    UPSERT_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/questions`,
-    GENERATE_FILES: (quizId: string) => `/Quizzes/${quizId}/generate-questions-files`,
-    JOB_STATUS: (jobId: string) => `/Quizzes/job/${jobId}`,
-    GET_SUBMISSIONS: (quizId: string) => `/Quizzes/${quizId}/submissions`,
-    AI_GENERATED_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/ai-generated-questions`,
-    ACCEPT_AI_QUESTION: (quizId: string, questionId: string) =>
-      `/Quizzes/${quizId}/ai-generated-questions/${questionId}/accept`,
-    REJECT_AI_QUESTION: (quizId: string, questionId: string) =>
-      `/Quizzes/${quizId}/ai-generated-questions/${questionId}/reject`,
-    ACCEPT_ALL_AI_QUESTIONS: (quizId: string) =>
-      `/Quizzes/${quizId}/ai-generated-questions/accept-all`,
-  },
+    // Quizzes endpoints (single-quiz operations; course-scoped list/create under COURSES.QUIZZES)
+    QUIZZES: {
+        GET: (id: string) => `/Quizzes/${id}`,
+        UPDATE: (id: string) => `/Quizzes/${id}`,
+        DELETE: (id: string) => `/Quizzes/${id}`,
+        UPDATE_STATUS: (id: string) => `/Quizzes/${id}/update-status`,
+        LIST: '/Quizzes',
+        GENERATE_BY_AI: (quizId: string) => `/Quizzes/${quizId}/generate-by-ai`,
+        UPSERT_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/questions`,
+        GENERATE_FILES: (quizId: string) => `/Quizzes/${quizId}/generate-questions-files`,
+        JOB_STATUS: (jobId: string) => `/Quizzes/job/${jobId}`,
+        GET_SUBMISSIONS: (quizId: string) => `/Quizzes/${quizId}/submissions`,
+        AI_GENERATED_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/ai-generated-questions`,
+        ACCEPT_AI_QUESTION: (quizId: string, questionId: string) => `/Quizzes/${quizId}/ai-generated-questions/${questionId}/accept`,
+        REJECT_AI_QUESTION: (quizId: string, questionId: string) => `/Quizzes/${quizId}/ai-generated-questions/${questionId}/reject`,
+        ACCEPT_ALL_AI_QUESTIONS: (quizId: string) => `/Quizzes/${quizId}/ai-generated-questions/accept-all`,
+        AI_GRADE: (quizId: string) => `/Quizzes/${quizId}/ai-grade`,
+        AI_GRADING_CRITERIA: (quizId: string) => `/Quizzes/${quizId}/ai-grading-criteria`,
+        UPDATE_GRADING_CONFIG: (quizId: string, questionId: string) => `/Quizzes/${quizId}/questions/${questionId}/grading-config`,
+    },
 
     // Sections endpoints
     SECTIONS: {
@@ -190,5 +190,10 @@ export const ENDPOINTS = {
         PIN: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/pin`,
         UNPIN: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/un_pin`,
         ANSWER: (courseId: number | string, discussionId: string | number) => `/Courses/course/${courseId}/discussions/${discussionId}/answer`,
+    },
+
+    NOTIFICATIONS: {
+        GET: '/Notifications/Notifications',
+        MARK_ALL_AS_READ: '/Notifications/MarkAllAsRead',
     },
 } as const;

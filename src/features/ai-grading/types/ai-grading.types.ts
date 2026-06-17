@@ -78,3 +78,26 @@ export interface AIGradingAttemptResult {
     questions: AIGradedQuestion[];
     gradedAt: string;
 }
+
+// ─── AI Grading Configuration (for Instructors) ─────────────────────────
+
+export interface AIGradingCriterion {
+    id: string | null;
+    criterion: string;
+    mark: number;
+}
+
+export interface AIGradingConfigUpdateRequest {
+    modelAnswer: string;
+    criteria: AIGradingCriterion[];
+}
+
+export interface AIGradingCriteriaResponseItem {
+    questionId: string;
+    questionText: string;
+    mark: number;
+    modelAnswer: string;
+    criteriaList: AIGradingCriterion[];
+}
+
+export type AIGradingCriteriaResponse = AIGradingCriteriaResponseItem[];
