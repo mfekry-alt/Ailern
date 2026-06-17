@@ -4,22 +4,22 @@
 
 export interface GetDiscussionDto {
   id: string;
-  title?: string;
-  question?: string;
-  answer?: string | null;
-  answerAt?: string | null;
-  createdAt?: string;
-  instructorName?: string | null;
-  instructorAvatar?: string | null;
-  studentId?: number;
-  studentName?: string;
-  studentAvatar?: string | null;
-  votesCount?: number;
-  isPinned?: boolean;
-  pinnedAt?: string | null;
+  title: string;
+  question: string;
+  answer: string | null;
+  answerAt: string | null;
+  createdAt: string;
+  instructorName: string | null;
+  instructorAvatar: string | null;
+  studentId: number;
+  studentName: string;
+  studentAvatar: string | null;
+  votesCount: number;
+  isPinned: boolean;
+  pinnedAt: string | null;
   // UI needs these even if API doesn't provide them in this view
   courseId?: number;
-  isUpVotedByCurrentUser?: boolean;
+  isUpVotedByCurrentUser: boolean;
 }
 
 export interface GetReplyDto {
