@@ -1,66 +1,163 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     Bell, BookOpen, Award, UserCheck,
     X, CheckCircle2, Megaphone, Clock, Search, SearchX,
-    Activity, Info, ChevronRight
+    Activity, Info, ChevronRight, ClipboardList, HelpCircle, Sparkles, Trash2
 } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/store';
+import { formatDistanceToNow } from 'date-fns';
+import { notificationService } from '@/api/services';
+import type { NotificationDto } from '@/types/api.types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-type NotificationType = 'all' | 'enrollment' | 'announcement' | 'assignment_grade' | 'quiz_grade' | 'course_update';
+type NotificationType = string;
 
-interface Notification {
-    id: number;
-    title: string;
-    description: string;
-    time: string;
-    isRead: boolean;
-    type: NotificationType;
-    role: 'instructor' | 'student' | 'all';
-}
+const formatFilterLabel = (type: string) => {
+    if (type === 'all') return 'ALL';
+    return type
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (str) => str.toUpperCase())
+        .replace(/\bAi\b/gi, 'AI')
+        .trim();
+};
 
-const initialNotifications: Notification[] = [
-    { id: 1, title: 'New Student Enrolled', description: 'Sami Ahmad has enrolled in "Advanced React Mastery".', time: '2 mins ago', isRead: false, type: 'enrollment', role: 'instructor' },
-    { id: 2, title: 'New Course Announcement', description: 'The final project requirements have been updated for all students.', time: '1 hour ago', isRead: false, type: 'announcement', role: 'all' },
-    { id: 3, title: 'Assignment Graded', description: 'Your "Database Design" assignment has been reviewed by the instructor.', time: '3 hours ago', isRead: true, type: 'assignment_grade', role: 'student' },
-    { id: 4, title: 'Quiz Score Available', description: 'You scored 95% in the "Logic Gates" quiz. Great job!', time: 'Yesterday', isRead: true, type: 'quiz_grade', role: 'student' },
-    { id: 5, title: 'Course Content Updated', description: '3 new lectures added to "Machine Learning 101" module.', time: '2 days ago', isRead: true, type: 'course_update', role: 'all' },
-    { id: 6, title: 'Enrollment Request', description: 'Sara Ali is requesting to join your private session.', time: '3 days ago', isRead: true, type: 'enrollment', role: 'instructor' },
-];
+const isTypeMatch = (notificationType: string | number, filterType: string) => {
+    if (filterType === 'all') return true;
+
+    const notifStr = String(notificationType).toLowerCase();
+    const filterStr = filterType.toLowerCase();
+
+    if (notifStr === filterStr) return true;
+
+    const enumMap: Record<string, string[]> = {
+        '0': ['newassignmentadded'],
+        '1': ['coursematerialsupdated'],
+        '2': ['newquizadded'],
+        '3': ['attemptreviewed'],
+        '4': ['deadlinereached'],
+        '5': ['aiquestiongenerationfinished'],
+        '6': ['courseremovedbyadmin'],
+    };
+
+    const mapped = enumMap[notifStr];
+    if (mapped && mapped.includes(filterStr)) return true;
+
+    return false;
+};
 
 export const NotificationsPage = () => {
     const user = useAuthStore((state) => state.user);
-    const userRole = user?.roles?.[0]?.toLowerCase() || 'instructor';
+    const isStudent = user?.roles?.some(r => r.toLowerCase() === 'student');
 
     const [selectedType, setSelectedType] = useState<NotificationType>('all');
     const [searchQuery, setSearchQuery] = useState('');
-    const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+    
+    const queryClient = useQueryClient();
+    const [localReadIds, setLocalReadIds] = useState<string[]>([]);
+    const [deletedIds, setDeletedIds] = useState<string[]>([]);
+
+    const filterTypes = useMemo(() => {
+        if (isStudent) {
+            return ['all', 'NewAssignmentAdded', 'CourseMaterialsUpdated', 'NewQuizAdded', 'AttemptReviewed'];
+        } else {
+            return ['all', 'DeadlineReached', 'AiQuestionGenerationFinished', 'CourseRemovedByAdmin'];
+        }
+    }, [isStudent]);
+
+    const { data: notificationsData, isLoading } = useQuery({
+        queryKey: ['notifications', 1, 100],
+        queryFn: () => notificationService.getNotifications(1, 100),
+        enabled: !!user,
+        staleTime: 20000, // 20 seconds cache to prevent duplicate calls
+    });
+
+    const notifications = useMemo(() => {
+        const items = notificationsData?.items || [];
+        return items
+            .filter(n => !deletedIds.includes(n.id))
+            .map(n => ({
+                ...n,
+                isRead: n.isRead || localReadIds.includes(n.id)
+            }));
+    }, [notificationsData, localReadIds, deletedIds]);
+
+    const markAllMutation = useMutation({
+        mutationFn: () => notificationService.markAllAsRead(),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            setLocalReadIds([]);
+        }
+    });
 
     const markAllAsRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        markAllMutation.mutate();
     };
 
-    const deleteNotification = (id: number) => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
+    const deleteNotification = (id: string) => {
+        setDeletedIds(prev => [...prev, id]);
     };
 
     const finalFilteredNotifications = useMemo(() => {
         return notifications.filter(n => {
-            const roleMatch = n.role === 'all' || n.role === userRole;
-            const typeMatch = selectedType === 'all' || n.type === selectedType;
-            const searchMatch = n.title.toLowerCase().startsWith(searchQuery.toLowerCase()) ||
-                n.description.toLowerCase().startsWith(searchQuery.toLowerCase());
-            return roleMatch && typeMatch && searchMatch;
+            const typeMatch = isTypeMatch(n.type, selectedType);
+            const searchMatch = (n.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (n.message || '').toLowerCase().includes(searchQuery.toLowerCase());
+            return typeMatch && searchMatch;
         });
-    }, [notifications, selectedType, searchQuery, userRole]);
+    }, [notifications, selectedType, searchQuery]);
 
-    const getIcon = (type: NotificationType) => {
-        switch (type) {
-            case 'enrollment': return { icon: UserCheck, color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
-            case 'announcement': return { icon: Megaphone, color: 'text-amber-500', bg: 'bg-amber-500/10' };
-            case 'assignment_grade': case 'quiz_grade': return { icon: Award, color: 'text-indigo-500', bg: 'bg-indigo-500/10' };
-            case 'course_update': return { icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-500/10' };
-            default: return { icon: Bell, color: 'text-slate-500', bg: 'bg-slate-500/10' };
+    const summaryStats = useMemo(() => {
+        const stats = [
+            { label: 'Unread Tasks', val: notifications.filter(n => !n.isRead).length, color: 'blue' }
+        ];
+
+        if (isStudent) {
+            stats.push(
+                { label: 'New Assignments', val: notifications.filter(n => isTypeMatch(n.type, 'NewAssignmentAdded')).length, color: 'indigo' },
+                { label: 'Course Updates', val: notifications.filter(n => isTypeMatch(n.type, 'CourseMaterialsUpdated')).length, color: 'emerald' },
+                { label: 'New Quizzes', val: notifications.filter(n => isTypeMatch(n.type, 'NewQuizAdded')).length, color: 'amber' },
+                { label: 'Reviewed Attempts', val: notifications.filter(n => isTypeMatch(n.type, 'AttemptReviewed')).length, color: 'purple' }
+            );
+        } else {
+            stats.push(
+                { label: 'Deadline Reached', val: notifications.filter(n => isTypeMatch(n.type, 'DeadlineReached')).length, color: 'rose' },
+                { label: 'AI Quiz Finished', val: notifications.filter(n => isTypeMatch(n.type, 'AiQuestionGenerationFinished')).length, color: 'amber' },
+                { label: 'Course Removed', val: notifications.filter(n => isTypeMatch(n.type, 'CourseRemovedByAdmin')).length, color: 'red' }
+            );
         }
+
+        return stats;
+    }, [notifications, isStudent]);
+
+    const getIcon = (type: string | number) => {
+        const t = String(type).toLowerCase();
+        
+        // Student type matches
+        if (t === '0' || t.includes('assignment')) {
+            return { icon: ClipboardList, color: 'text-indigo-500', bg: 'bg-indigo-500/10' };
+        }
+        if (t === '1' || t.includes('material') || t.includes('update')) {
+            return { icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-500/10' };
+        }
+        if (t === '2' || t.includes('quiz')) {
+            return { icon: HelpCircle, color: 'text-amber-500', bg: 'bg-amber-500/10' };
+        }
+        if (t === '3' || t.includes('attempt') || t.includes('review')) {
+            return { icon: Award, color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
+        }
+        
+        // Instructor type matches
+        if (t === '4' || t.includes('deadline')) {
+            return { icon: Clock, color: 'text-rose-500', bg: 'bg-rose-500/10' };
+        }
+        if (t === '5' || t.includes('generation') || t.includes('finished')) {
+            return { icon: Sparkles, color: 'text-purple-500', bg: 'bg-purple-500/10' };
+        }
+        if (t === '6' || t.includes('remove') || t.includes('admin')) {
+            return { icon: Trash2, color: 'text-red-500', bg: 'bg-red-500/10' };
+        }
+
+        return { icon: Bell, color: 'text-slate-500', bg: 'bg-slate-500/10' };
     };
 
     return (
@@ -92,16 +189,16 @@ export const NotificationsPage = () => {
                     <div className="space-y-8">
                         {/* Filter Pills - Larger */}
                         <div className="flex overflow-x-auto custom-scrollbar gap-3 p-2 bg-white/40 dark:bg-slate-800/20 backdrop-blur-md rounded-[2rem] border border-gray-200 dark:border-slate-700/50 shadow-inner">
-                            {['all', 'enrollment', 'announcement', 'assignment_grade', 'course_update'].map((f) => (
+                            {filterTypes.map((f) => (
                                 <button
                                     key={f}
-                                    onClick={() => setSelectedType(f as any)}
+                                    onClick={() => setSelectedType(f)}
                                     className={`px-6 py-3 rounded-2xl text-xs font-black transition-all whitespace-nowrap uppercase tracking-widest ${selectedType === f
                                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                                             : 'text-gray-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700'
                                         }`}
                                 >
-                                    {f.replace('_', ' ')}
+                                    {formatFilterLabel(f)}
                                 </button>
                             ))}
                         </div>
@@ -110,6 +207,13 @@ export const NotificationsPage = () => {
                             {finalFilteredNotifications.length > 0 ? (
                                 finalFilteredNotifications.map((notif) => {
                                     const config = getIcon(notif.type);
+                                    let timeStr = '';
+                                    try {
+                                        timeStr = formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true });
+                                    } catch (e) {
+                                        timeStr = notif.createdAt;
+                                    }
+
                                     return (
                                         <div
                                             key={notif.id}
@@ -130,10 +234,10 @@ export const NotificationsPage = () => {
                                                     <h3 className={`text-lg sm:text-xl font-extrabold truncate ${notif.isRead ? 'text-gray-700 dark:text-slate-200' : 'text-gray-900 dark:text-white'}`}>
                                                         {notif.title}
                                                     </h3>
-                                                    <span className="text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-tighter mt-1 shrink-0 bg-gray-50 dark:bg-slate-900 px-2 py-1 rounded-md">{notif.time}</span>
+                                                    <span className="text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-tighter mt-1 shrink-0 bg-gray-50 dark:bg-slate-900 px-2 py-1 rounded-md">{timeStr}</span>
                                                 </div>
                                                 <p className="text-base sm:text-lg text-gray-500 dark:text-slate-400 font-medium leading-relaxed">
-                                                    {notif.description}
+                                                    {notif.message}
                                                 </p>
                                             </div>
 
@@ -180,12 +284,7 @@ export const NotificationsPage = () => {
                                 <Activity className="w-4 h-4 text-blue-500" /> Dashboard Summary
                             </h3>
                             <div className="space-y-4">
-                                {[
-                                    { label: 'Unread Tasks', val: notifications.filter(n => !n.isRead).length, color: 'blue' },
-                                    { label: 'Enrollments', val: notifications.filter(n => n.type === 'enrollment').length, color: 'emerald' },
-                                    { label: 'News Alerts', val: notifications.filter(n => n.type === 'announcement').length, color: 'amber' },
-                                    { label: 'Grade Updates', val: notifications.filter(n => n.type.includes('grade')).length, color: 'indigo' },
-                                ].map((s, i) => (
+                                {summaryStats.map((s, i) => (
                                     <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700/30 group hover:border-blue-400 transition-colors">
                                         <span className="text-sm font-bold text-gray-600 dark:text-slate-400">{s.label}</span>
                                         <span className={`text-xl font-black text-${s.color}-600 dark:text-${s.color}-400 bg-${s.color}-500/10 px-3 py-1 rounded-xl`}>

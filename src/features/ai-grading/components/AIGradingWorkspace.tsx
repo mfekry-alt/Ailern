@@ -94,29 +94,28 @@ export const AIGradingWorkspace: React.FC<AIGradingWorkspaceProps> = ({
 
     return (
         <div className="flex flex-col h-full relative">
-            {/* Header (Question Context) */}
-            <div className="p-6 pb-5 bg-white/50 dark:bg-slate-900/40 backdrop-blur-sm shrink-0">
-                <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#21A9FF] animate-pulse" />
-                        Question Context
-                    </span>
-                    <span className="px-3 py-1.5 bg-gradient-to-r from-[#21A9FF]/10 to-indigo-500/10 border border-[#21A9FF]/20 text-[#21A9FF] rounded-xl text-xs font-black uppercase tracking-wider shadow-sm">
-                        {criteria.reduce((sum, c) => sum + Number(c.mark || 0), 0)} MARKS TOTAL
-                    </span>
-                </div>
-                <div className="relative pl-6 py-2 bg-gradient-to-r from-[#21A9FF]/5 to-transparent rounded-2xl overflow-hidden">
-                    {/* Floating active rounded indicator bar */}
-                    <div className="absolute left-0 top-1 bottom-1 w-1 bg-gradient-to-b from-[#21A9FF] to-indigo-600 rounded-full" />
-                    <div className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed select-text">
-                        <QnARenderer content={item.questionText} />
-                    </div>
-                </div>
-            </div>
-
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 dark:bg-transparent custom-scrollbar">
                 <div className="max-w-3xl mx-auto space-y-8">
+                    {/* Header (Question Context - Moved inside scroll area) */}
+                    <div className="bg-transparent pb-2 shrink-0">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#21A9FF] animate-pulse" />
+                                Question Context
+                            </span>
+                            <span className="px-3 py-1.5 bg-gradient-to-r from-[#21A9FF]/10 to-indigo-500/10 border border-[#21A9FF]/20 text-[#21A9FF] rounded-xl text-xs font-black uppercase tracking-wider shadow-sm">
+                                {criteria.reduce((sum, c) => sum + Number(c.mark || 0), 0)} MARKS TOTAL
+                            </span>
+                        </div>
+                        <div className="relative pl-6 py-2 bg-gradient-to-r from-[#21A9FF]/5 to-transparent rounded-2xl overflow-hidden">
+                            {/* Floating active rounded indicator bar */}
+                            <div className="absolute left-0 top-1 bottom-1 w-1 bg-gradient-to-b from-[#21A9FF] to-indigo-600 rounded-full" />
+                            <div className="text-base sm:text-lg font-extrabold text-slate-800 dark:text-slate-100 leading-relaxed select-text">
+                                <QnARenderer content={item.questionText} />
+                            </div>
+                        </div>
+                    </div>
                     <AIReferenceAnswerEditor
                         value={modelAnswer}
                         onChange={setModelAnswer}

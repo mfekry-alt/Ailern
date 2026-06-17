@@ -960,3 +960,17 @@ export interface ContentReportsDashboardData {
     topReportReasons: Record<string, number>;
     topReportForMaterial: Record<string, number>;
 }
+
+// ============================================================================
+// Notifications Types
+// ============================================================================
+
+export interface NotificationDto {
+    id: string;
+    title: string;
+    message: string;
+    createdAt: string;
+    url?: string | null;
+    type: string;
+    isRead: boolean;
+}
