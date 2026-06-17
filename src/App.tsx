@@ -6,6 +6,7 @@ import { GlobalErrorOverlay } from './app/GlobalErrorOverlay';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { AuthProvider } from './features/auth';
 import { SessionExpiredHandler } from './components/SessionExpiredHandler';
+import { NotificationProvider } from './features/notifications';
 
 /**
  * AppContent handles the initial loading state for the application.
@@ -45,9 +46,11 @@ function App() {
   return (
     <AppProviders>
       <AuthProvider>
-        <ErrorBoundary>
-          <AppContent />
-        </ErrorBoundary>
+        <NotificationProvider>
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
+        </NotificationProvider>
       </AuthProvider>
       <GlobalErrorOverlay />
     </AppProviders>

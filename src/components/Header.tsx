@@ -2,13 +2,57 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES, APP_NAME } from '@/lib/constants';
-import { Bell, Search, BookOpen, Users, AlertTriangle, MessageSquare, Clock, CheckCircle, Menu, X, Sun, Moon, Camera, Image as ImageIcon, Trash2, User as UserIcon, LogOut, Settings } from 'lucide-react';
+import { Bell, Clock, CheckCircle2, Menu, X, Sun, Moon, Trash2, User as UserIcon, Settings, FolderOpen, FileQuestion, ClipboardList, Sparkles } from 'lucide-react';
 import { api } from '@/api/client';
 import { useTheme } from '@/hooks/useTheme';
+import { useNotificationStore, NotificationType } from '@/features/notifications';
 
 interface NavLink {
     label: string;
     path: string;
+}
+
+// ─── Per-type icon helper ────────────────────────────────────────────────────
+
+interface NotifStyle {
+    Icon: React.ElementType;
+    bg: string;
+    color: string;
+}
+
+function getNotifStyle(type?: NotificationType): NotifStyle {
+    switch (type) {
+        case NotificationType.NewAssignmentAdded:
+            return { Icon: ClipboardList, bg: 'bg-indigo-500/15', color: 'text-indigo-400' };
+        case NotificationType.CourseMaterialsUpdated:
+            return { Icon: FolderOpen,   bg: 'bg-blue-500/15',   color: 'text-blue-400' };
+        case NotificationType.NewQuizAdded:
+            return { Icon: FileQuestion, bg: 'bg-orange-500/15', color: 'text-orange-400' };
+        case NotificationType.AttemptReviewed:
+            return { Icon: CheckCircle2, bg: 'bg-emerald-500/15',color: 'text-emerald-400' };
+        case NotificationType.DeadlineReached:
+            return { Icon: Clock,        bg: 'bg-red-500/15',    color: 'text-red-400' };
+        case NotificationType.AiQuestionGenerationFinished:
+            return { Icon: Sparkles,     bg: 'bg-cyan-500/15',   color: 'text-cyan-400' };
+        case NotificationType.CourseRemovedByAdmin:
+            return { Icon: Trash2,       bg: 'bg-red-900/20',    color: 'text-red-400' };
+        default:
+            return { Icon: Bell,         bg: 'bg-[#21A9FF]/10',  color: 'text-[#21A9FF]' };
+    }
+}
+
+/** Converts an ISO-8601 timestamp to a human-readable relative string. */
+function formatNotificationTime(isoString: string): string {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMins = Math.floor((now.getTime() - date.getTime()) / 60_000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays}d ago`;
 }
 
 export const Header = () => {
@@ -31,37 +75,8 @@ export const Header = () => {
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-    const [notifications, setNotifications] = useState([
-        {
-            id: 1,
-            title: 'New assignment posted in Introduction to Psychology',
-            time: '10:30 AM',
-            isRead: false,
-            icon: BookOpen,
-            iconBg: 'bg-[#21A9FF]/10',
-            iconColor: 'text-[#21A9FF]'
-        },
-        {
-            id: 2,
-            title: 'Student submitted assignment for History 101',
-            time: 'Yesterday',
-            isRead: true,
-            icon: Users,
-            iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
-            iconColor: 'text-emerald-600 dark:text-emerald-400'
-        },
-        {
-            id: 3,
-            title: 'Grading deadline approaching for Calculus 202',
-            time: '2 days ago',
-            isRead: true,
-            icon: AlertTriangle,
-            iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-            iconColor: 'text-amber-600 dark:text-amber-400'
-        }
-    ]);
-
-    const unreadCount = notifications.filter(n => !n.isRead).length;
+    // ── Global notification state (SignalR-powered) ──────────────────────────
+    const { notifications, hasUnread, markAllRead, markRead } = useNotificationStore();
 
     useEffect(() => {
         setIsMobileMenuOpen(false);
@@ -84,19 +99,7 @@ export const Header = () => {
         };
     }, []);
 
-    const markAllAsRead = () => {
-        setNotifications(prev =>
-            prev.map(notification => ({ ...notification, isRead: true }))
-        );
-    };
 
-    const markNotificationAsRead = (id: number) => {
-        setNotifications(prev =>
-            prev.map(notification =>
-                notification.id === id ? { ...notification, isRead: true } : notification
-            )
-        );
-    };
 
     // 🌟 التعديل الأساسي هنا لحل مشكلة البحث و الـ 403
     const searchCourses = useCallback(async (query: string) => {
@@ -328,7 +331,7 @@ export const Header = () => {
                                     className="relative p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-[#21A9FF] dark:hover:text-[#21A9FF] transition-colors"
                                 >
                                     <Bell className="w-5 h-5" />
-                                    {unreadCount > 0 && (
+                                    {hasUnread && (
                                         <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border-2 border-white dark:border-slate-900 shadow-sm" />
                                     )}
                                 </button>
@@ -341,7 +344,7 @@ export const Header = () => {
                                             <h3 className="text-base font-bold text-gray-900 dark:text-white">Notifications</h3>
                                             <button
                                                 type="button"
-                                                onClick={markAllAsRead}
+                                                onClick={markAllRead}
                                                 className="text-xs font-semibold text-[#21A9FF] dark:text-[#21A9FF] hover:text-[#0094F2] transition-colors"
                                             >
                                                 Mark all as read
@@ -350,37 +353,55 @@ export const Header = () => {
 
                                         {/* Notifications List */}
                                         <div className="max-h-[360px] overflow-auto custom-scrollbar">
-                                            {notifications.map((notification) => {
-                                                const IconComponent = notification.icon;
-                                                return (
+                                            {notifications.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                                    <Bell className="w-8 h-8 text-gray-300 dark:text-slate-600" />
+                                                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                                                        No notifications yet
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                notifications.map(notification => (
                                                     <button
                                                         type="button"
                                                         key={notification.id}
-                                                        onClick={() => markNotificationAsRead(notification.id)}
-                                                        className={`w-full text-left border-b border-gray-50 dark:border-slate-800/50 last:border-0 p-4 transition-colors flex items-start gap-4 ${notification.isRead
-                                                            ? 'hover:bg-gray-50 dark:hover:bg-slate-800/50'
-                                                            : 'bg-blue-50/50 dark:bg-[#21A9FF]/10 hover:bg-blue-50 dark:hover:bg-[#21A9FF]/20'
-                                                            }`}
+                                                        onClick={() => markRead(notification.id)}
+                                                        className={`w-full text-left border-b border-gray-50 dark:border-slate-800/50 last:border-0 p-4 transition-colors flex items-start gap-3 ${
+                                                            notification.isRead
+                                                                ? 'hover:bg-gray-50 dark:hover:bg-slate-800/50'
+                                                                : 'bg-blue-50/50 dark:bg-[#21A9FF]/10 hover:bg-blue-50 dark:hover:bg-[#21A9FF]/20'
+                                                        }`}
                                                     >
-                                                        <div className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${notification.iconBg}`}>
-                                                            <IconComponent className={`w-5 h-5 ${notification.iconColor}`} />
+                                                        {(() => { const { Icon, bg, color } = getNotifStyle(notification.type); return (
+                                                        <div className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${bg}`}>
+                                                            <Icon className={`w-5 h-5 ${color}`} />
                                                         </div>
+                                                        ); })()}
 
                                                         <div className="flex-1 min-w-0 pr-2">
-                                                            <p className={`text-sm leading-snug mb-1 ${notification.isRead ? 'text-gray-700 dark:text-slate-300' : 'text-gray-900 dark:text-white font-medium'}`}>
+                                                            <p className={`text-sm font-semibold leading-snug mb-0.5 ${
+                                                                notification.isRead
+                                                                    ? 'text-gray-700 dark:text-slate-300'
+                                                                    : 'text-gray-900 dark:text-white'
+                                                            }`}>
                                                                 {notification.title}
                                                             </p>
-                                                            <p className="text-xs text-gray-500 dark:text-slate-500">
-                                                                {notification.time}
+                                                            {notification.message && (
+                                                                <p className="text-xs text-gray-500 dark:text-slate-400 line-clamp-2 mb-1">
+                                                                    {notification.message}
+                                                                </p>
+                                                            )}
+                                                            <p className="text-xs text-gray-400 dark:text-slate-500">
+                                                                {formatNotificationTime(notification.receivedAt)}
                                                             </p>
                                                         </div>
 
                                                         {!notification.isRead && (
-                                                            <div className="w-2 h-2 bg-[#21A9FF] rounded-full shrink-0 mt-2 shadow-sm shadow-[#21A9FF]/50"></div>
+                                                            <div className="w-2 h-2 bg-[#21A9FF] rounded-full shrink-0 mt-2 shadow-sm shadow-[#21A9FF]/50" />
                                                         )}
                                                     </button>
-                                                );
-                                            })}
+                                                ))
+                                            )}
                                         </div>
 
                                         {/* Footer */}

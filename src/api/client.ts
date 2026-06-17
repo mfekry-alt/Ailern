@@ -61,6 +61,17 @@ export const setOnTokenRefreshedCallback = (callback: (() => void) | null) => {
     onTokenRefreshedCallback = callback;
 };
 
+// Separate callback to notify SignalR to reconnect after token refresh
+let onSignalRTokenRefreshedCallback: (() => void) | null = null;
+
+/**
+ * Set callback to be called after successful token refresh for SignalR reconnection.
+ * This allows the NotificationProvider to reconnect with the latest JWT.
+ */
+export const setOnSignalRTokenRefreshedCallback = (callback: (() => void) | null) => {
+    onSignalRTokenRefreshedCallback = callback;
+};
+
 const processQueue = (error: any = null, token: string | null = null) => {
     failedQueue.forEach((promise) => {
         if (error) {
@@ -151,6 +162,15 @@ api.interceptors.response.use(
                     onTokenRefreshedCallback();
                 } catch (e) {
                     console.error('[API] Error in token refresh callback:', e);
+                }
+            }
+
+            // Notify SignalR to reconnect with the new JWT
+            if (onSignalRTokenRefreshedCallback) {
+                try {
+                    onSignalRTokenRefreshedCallback();
+                } catch (e) {
+                    console.error('[API] Error in SignalR token refresh callback:', e);
                 }
             }
 
