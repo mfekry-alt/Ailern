@@ -186,36 +186,41 @@ export const syncAttemptTime = async (attemptId: string): Promise<SyncTimeRespon
 
 let activeQuestionsPromise: Partial<Record<string, Promise<AttemptQuestion[]>>> = {};
 
-export const getAttemptQuestions = async (attemptId: string): Promise<AttemptQuestion[]> => {
-    if (activeQuestionsPromise[attemptId]) return activeQuestionsPromise[attemptId]!;
+export const getAttemptQuestions = async (
+    attemptId: string
+): Promise<AttemptQuestion[]> => {
+    if (activeQuestionsPromise[attemptId]) {
+        return activeQuestionsPromise[attemptId]!;
+    }
 
     activeQuestionsPromise[attemptId] = (async () => {
         try {
-            const response = await api.get<ApiResponse<any>>(ENDPOINTS.ATTEMPTS.GET_QUESTIONS(attemptId));
-            const rawData = unwrapData<any>(response.data);
-            // API may return { answers: [...], weakTopics: [] } or a flat array
-            const rawQuestions: AttemptQuestionDto[] = Array.isArray(rawData)
-                ? rawData
-                : Array.isArray(rawData?.answers)
-                    ? rawData.answers
-                    : [];
+            const response = await api.get<ApiResponse<AttemptQuestionDto[]>>(
+                ENDPOINTS.ATTEMPTS.GET_QUESTIONS(attemptId)
+            );
 
-            return arr.map((q: AttemptQuestionDto): AttemptQuestion => ({
-                id: String(q.id || ''),
-                question: q.question || '',
-                type: q.type || 'MCQ',
-                mark: Number(q.mark ?? 0),
-                instructions: q.instructions ?? null,
-                options: (q.options || []).map((opt) => ({
-                    option: opt.option || '',
-                    optionId: String(opt.optionId || ''),
-                    order: opt.order,
-                })),
-                writtenAnswer: q.writtenAnswer ?? null,
-                selectedOptionId: q.selectedOptionId ?? null,
-                order: q.order,
-                shuffledOptionIds: q.shuffledOptionIds ?? [],
-            }));
+            const rawQuestions = unwrapData<AttemptQuestionDto[]>(
+                response.data
+            ) || [];
+
+            return rawQuestions.map(
+                (q: AttemptQuestionDto): AttemptQuestion => ({
+                    id: String(q.id || ''),
+                    question: q.question || '',
+                    type: q.type || 'MCQ',
+                    mark: Number(q.mark ?? 0),
+                    instructions: q.instructions ?? null,
+                    options: (q.options || []).map((opt) => ({
+                        option: opt.option || '',
+                        optionId: String(opt.optionId || ''),
+                        order: opt.order,
+                    })),
+                    writtenAnswer: q.writtenAnswer ?? null,
+                    selectedOptionId: q.selectedOptionId ?? null,
+                    order: q.order,
+                    shuffledOptionIds: q.shuffledOptionIds ?? [],
+                })
+            );
         } finally {
             delete activeQuestionsPromise[attemptId];
         }
