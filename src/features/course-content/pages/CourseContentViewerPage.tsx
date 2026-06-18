@@ -9,7 +9,7 @@
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, BookOpen, AlertCircle, RefreshCw, Loader2, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
+import { ArrowLeft, BookOpen, AlertCircle, RefreshCw, Loader2, ChevronLeft, ChevronRight, Flag, ShieldAlert, Lock, Timer, BookX, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { ReportContentModal } from '@/components/ReportContentModal';
 
@@ -343,6 +343,88 @@ export const CourseContentViewerPage = () => {
                     <p className="text-gray-500 dark:text-slate-400">
                         This course doesn't have any sections or files yet.
                     </p>
+                </div>
+            </div>
+        );
+    }
+
+    const activeQuiz = quizzes?.find((q) => q.hasActiveAttempt) ?? null;
+
+    if (activeQuiz) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center p-4">
+                <div className="relative w-full max-w-lg">
+                    {/* Ambient glow */}
+                    <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 via-red-500/20 to-orange-500/20 rounded-[3rem] blur-2xl opacity-60 animate-pulse" />
+
+                    <div className="relative bg-white dark:bg-slate-900/90 backdrop-blur-xl border border-amber-200/60 dark:border-amber-500/30 rounded-[2.5rem] shadow-2xl shadow-amber-500/10 overflow-hidden">
+
+                        {/* Top warning strip */}
+                        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 px-6 py-3 flex items-center justify-center gap-2">
+                            <ShieldAlert className="w-4 h-4 text-white animate-pulse" />
+                            <span className="text-xs font-black text-white uppercase tracking-[0.2em]">Exam Mode Active</span>
+                            <ShieldAlert className="w-4 h-4 text-white animate-pulse" />
+                        </div>
+
+                        <div className="p-8 sm:p-10 text-center">
+                            {/* Lock Icon */}
+                            <div className="relative mx-auto mb-6 w-20 h-20">
+                                <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-red-500 rounded-[1.5rem] rotate-3 opacity-20" />
+                                <div className="relative w-20 h-20 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-red-900/30 rounded-[1.5rem] flex items-center justify-center border border-amber-200 dark:border-amber-700/50 shadow-inner">
+                                    <Lock className="w-10 h-10 text-amber-600 dark:text-amber-400" />
+                                </div>
+                            </div>
+
+                            {/* Title */}
+                            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight mb-3">
+                                Course Content Locked
+                            </h2>
+                            <p className="text-gray-500 dark:text-slate-400 text-sm sm:text-base font-medium leading-relaxed max-w-sm mx-auto mb-8">
+                                Course materials and sections are temporarily unavailable while you have an active quiz in progress. Complete or submit your quiz to unlock access.
+                            </p>
+
+                            {/* Active Quiz Card */}
+                            <div className="bg-amber-50/80 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-700/40 rounded-2xl p-5 mb-8 text-left">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-10 h-10 bg-amber-100 dark:bg-amber-800/40 rounded-xl flex items-center justify-center shrink-0">
+                                        <Timer className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.15em] mb-1">Quiz In Progress</p>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">{activeQuiz.title}</h3>
+                                        {activeQuiz.description && (
+                                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 line-clamp-2">{activeQuiz.description}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    onClick={() => navigate(`/quizzes/${activeQuiz.id}/attempt`, { state: { resume: true, courseId: numericCourseId.toString() } })}
+                                    className="flex-1 flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5 active:scale-[0.98] group"
+                                >
+                                    Resume Quiz
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                                </button>
+                                <button
+                                    onClick={() => navigate(`/courses/${numericCourseId}/quizzes`)}
+                                    className="flex-1 px-6 py-3.5 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-xl font-bold text-sm transition-all border border-gray-200 dark:border-slate-700"
+                                >
+                                    View All Quizzes
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Bottom info strip */}
+                        <div className="border-t border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-900/10 px-6 py-3.5 flex items-center justify-center gap-2">
+                            <BookX className="w-3.5 h-3.5 text-amber-500" />
+                            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                                Materials will unlock automatically once your quiz is submitted
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
