@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Navigate, useOutletContext } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { useCourseSections } from '../api';
@@ -22,113 +21,58 @@ export const SectionsTab = () => {
         enabled: courseKey > 0,
     });
 
-
-
     if (isAxiosError(error) && error.response?.status === 403) {
-
         return (
-
             <Navigate
-
                 to={ROUTES.FORBIDDEN}
-
                 replace
-
                 state={{
-
                     title: 'Access denied',
-
                     message: getHttpErrorMessage(
-
                         error,
-
                         'Course content is not available right now. If you have a quiz in progress, complete it first.'
-
                     ),
-
                     backTo: `/courses/${courseId}/quizzes`,
-
                 }}
-
             />
-
         );
-
     }
-
-
 
     const showSectionsLoading = isLoading || (isFetching && !sections);
-
     if (showSectionsLoading) return <TabLoadingState />;
 
-
-
     if (error) {
-
         return (
-
             <div className="flex flex-col items-center justify-center py-20 text-center">
-
                 <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-
                     <AlertCircle className="w-8 h-8 text-red-500" />
-
                 </div>
-
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-
                     Failed to load sections
-
                 </h2>
-
                 <p className="text-gray-500 dark:text-slate-400 text-sm mb-6">
-
                     Could not fetch course sections. Please try again.
-
                 </p>
-
                 <button
-
                     onClick={() => refetch()}
-
                     className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors"
-
                 >
-
                     <RefreshCw className="w-4 h-4" />
-
                     Retry
-
                 </button>
-
             </div>
-
         );
-
     }
-
-
 
     if (!sections || sections.length === 0) {
-
         return (
-
             <EmptyState
-
                 icon={Layers}
-
                 title="No sections yet"
-
                 description="This course doesn't have any sections or materials yet. Check back later."
-
             />
-
         );
-
     }
-
-
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -162,6 +106,4 @@ export const SectionsTab = () => {
             </div>
         </div>
     );
-
 };
-
