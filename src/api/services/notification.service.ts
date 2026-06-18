@@ -48,3 +48,15 @@ export const markAllAsRead = async (): Promise<any> => {
     const payload = response.data;
     return (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
 };
+
+/**
+ * Delete a Notification
+ * DELETE /api/Notifications/{notificationId}
+ */
+export const deleteNotification = async (notificationId: string): Promise<any> => {
+    const response = await api.delete<ApiResponse<any>>(
+        ENDPOINTS.NOTIFICATIONS.DELETE(notificationId)
+    );
+    const payload = response.data;
+    return (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
+};
