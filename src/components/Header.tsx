@@ -9,6 +9,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { notificationService } from '@/api/services';
 import type { NotificationDto } from '@/types/api.types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AnimatePresence } from 'framer-motion';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { NotificationToast } from '@/components/NotificationToast';
 
 interface NavLink {
     label: string;
@@ -22,6 +25,7 @@ export const Header = () => {
     const { isDark, toggleTheme } = useTheme();
     const isGuest = !user;
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+    const { activeToast, clearActiveToast } = useRealtimeNotifications();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<{ id: string; name: string; code: string }[]>([]);
@@ -359,6 +363,16 @@ export const Header = () => {
                                         <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border-2 border-white dark:border-slate-900 shadow-sm" />
                                     )}
                                 </button>
+
+                                <AnimatePresence>
+                                     {activeToast && (
+                                         <NotificationToast
+                                             toast={activeToast}
+                                             onClose={clearActiveToast}
+                                             isDropdownOpen={isNotificationsOpen}
+                                         />
+                                     )}
+                                </AnimatePresence>
 
                                 {/* Notifications Dropdown */}
                                 {isNotificationsOpen && (
