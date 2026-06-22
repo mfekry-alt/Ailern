@@ -10,6 +10,8 @@ import {
 import { useQuiz, useUpsertQuizQuestions, useAiGeneratedQuestions, useAcceptAiGeneratedQuestion, useRejectAiGeneratedQuestion } from '@/features/quizzes/api';
 import { AIQuestionGeneratorModal } from '@/components/ui/AIQuestionGeneratorModal';
 import { toast } from 'sonner';
+import { submitAIQuestionValidation } from '@/api/services/quiz.service';
+import { useMe } from '@/features/auth/api';
 import type { OptionRequest, QuestionUpsertRequest, QuestionType, QuestionDto, OptionDto } from '@/types/api.types';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -221,6 +223,8 @@ export const InstructorQuizQuestionsEditPage = () => {
     const [showAIModal, setShowAIModal] = useState(false);
     const [loaded, setLoaded] = useState(false);
     const [activeTab, setActiveTab] = useState<'questions' | 'ai-generated'>('questions');
+    const [questionValidations, setQuestionValidations] = useState<Record<string, { isRelated: boolean; isSubmitted: boolean }>>({});
+    const { data: currentUser } = useMe();
     
     // Drag & Drop States
     const [draggedQuestionIndex, setDraggedQuestionIndex] = useState<number | null>(null);
@@ -1040,6 +1044,98 @@ export const InstructorQuizQuestionsEditPage = () => {
                                                 <p className="text-[11px] sm:text-xs text-gray-600 dark:text-slate-400">{q.explanation}</p>
                                             </div>
                                         )}
+
+                                        {/* AI Topic Validation Section */}
+                                        <div className="mt-6 pt-6 border-t border-gray-150 dark:border-slate-750 bg-gray-50/50 dark:bg-slate-900/10 p-5 rounded-2xl border border-gray-100 dark:border-slate-800">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <BrainCircuit className="w-4.5 h-4.5 text-purple-500 animate-pulse" />
+                                                <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">AI Topic Validation</h4>
+                                            </div>
+                                            <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-4">
+                                                Help improve future AI-generated questions by validating whether this question matches the intended learning content.
+                                            </p>
+
+                                            {questionValidations[q.id]?.isSubmitted ? (
+                                                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-bold bg-emerald-50 dark:bg-emerald-500/10 p-3 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                    <span>Thank you. Your validation helps improve future AI-generated assessments.</span>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    <p className="text-xs font-bold text-gray-700 dark:text-slate-350">
+                                                        Does this question accurately relate to the uploaded content and intended topic?
+                                                    </p>
+                                                    <div className="flex gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setQuestionValidations(prev => ({
+                                                                    ...prev,
+                                                                    [q.id]: { isRelated: true, isSubmitted: false }
+                                                                }));
+                                                            }}
+                                                            className={`flex-1 py-3 px-4 border rounded-xl font-bold text-xs uppercase tracking-widest transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 ${
+                                                                questionValidations[q.id]?.isRelated === true
+                                                                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/25'
+                                                                    : 'bg-white dark:bg-slate-800/40 border-gray-200 dark:border-slate-700 text-slate-650 dark:text-slate-350 hover:border-emerald-350 hover:bg-emerald-50/10'
+                                                            }`}
+                                                        >
+                                                            ✓ Related
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setQuestionValidations(prev => ({
+                                                                    ...prev,
+                                                                    [q.id]: { isRelated: false, isSubmitted: false }
+                                                                }));
+                                                            }}
+                                                            className={`flex-1 py-3 px-4 border rounded-xl font-bold text-xs uppercase tracking-widest transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 ${
+                                                                questionValidations[q.id]?.isRelated === false
+                                                                    ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-500/25'
+                                                                    : 'bg-white dark:bg-slate-800/40 border-gray-200 dark:border-slate-700 text-slate-650 dark:text-slate-350 hover:border-rose-355 hover:bg-rose-50/10'
+                                                            }`}
+                                                        >
+                                                            ✗ Unrelated
+                                                        </button>
+                                                    </div>
+
+                                                    {questionValidations[q.id]?.isRelated !== undefined && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                const isRelated = questionValidations[q.id].isRelated;
+                                                                try {
+                                                                    const payload = {
+                                                                        questionId: q.id,
+                                                                        quizId: quizId ?? '',
+                                                                        instructorId: (quiz as any)?.instructorId ?? currentUser?.id ?? 'unknown-instructor',
+                                                                        isRelated,
+                                                                        courseId: quiz?.courseId ?? 0,
+                                                                        topicName: q.topicName || 'Machine Learning',
+                                                                        questionText: q.questionText,
+                                                                        courseName: (quiz as any)?.courseName || 'Advanced Neural Networks',
+                                                                        instructorName: 'Dr. Sarah Jenkins',
+                                                                        createdAt: new Date().toISOString()
+                                                                    };
+                                                                    await submitAIQuestionValidation(payload);
+                                                                    setQuestionValidations(prev => ({
+                                                                        ...prev,
+                                                                        [q.id]: { ...prev[q.id], isSubmitted: true }
+                                                                    }));
+                                                                    toast.success('Validation submitted.');
+                                                                } catch (err) {
+                                                                    toast.error('Failed to submit validation.');
+                                                                }
+                                                            }}
+                                                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95"
+                                                        >
+                                                            Submit Validation
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}

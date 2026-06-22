@@ -17,6 +17,7 @@ import type {
     QuestionType,
     QuestionUpsertRequest,
     UpdateQuizBody,
+    AIQuestionValidationDto,
 } from '@/types/api.types';
 
 export interface QuizGenerationFile {
@@ -207,6 +208,7 @@ export interface AiGeneratedQuestionDto {
     instructions?: string | null;
     explanation?: string | null;
     options?: OptionDto[] | null;
+    topicName?: string;
 }
 
 export const getAiGeneratedQuestions = async (quizId: string): Promise<AiGeneratedQuestionDto[]> => {
@@ -276,4 +278,20 @@ export const getQuizSubmissions = async (
             items: [],
         }
     );
+};
+
+export const submitAIQuestionValidation = async (
+    payload: AIQuestionValidationDto
+): Promise<unknown> => {
+    const { quizId, questionId, ...rest } = payload;
+    const response = await api.put<ApiResponse<null>>(
+        `/Quizzes/${quizId}/ai-generated-questions/${questionId}/evaluate`,
+        rest
+    );
+    return unwrapApiResponse(response.data);
+};
+
+export const getAIQuestionValidationAnalytics = async (): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>('/Quizzes/ai-questions/validation-analytics');
+    return unwrapApiResponse(response.data);
 };

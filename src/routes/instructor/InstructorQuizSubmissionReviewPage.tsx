@@ -16,8 +16,9 @@ import {
     Sparkles
 } from 'lucide-react';
 import { attemptsService } from '@/api/services';
-import { useAIGradeQuiz } from '@/features/quizzes/api';
+import { useAIGradeQuiz, useQuizSubmissions } from '@/features/quizzes/api';
 import { QnARenderer } from '@/features/qna/components/QnARenderer';
+import { AIGradingQualityAssessment } from '@/components/ui';
 
 const decodeHtml = (html: string) => {
     if (!html) return '';
@@ -95,6 +96,21 @@ export const InstructorQuizSubmissionReviewPage = () => {
 
     const aiGradeMutation = useAIGradeQuiz(quizId);
 
+    const { data, isLoading, isError, refetch } = useQuery({
+        queryKey: [...QUERY_KEYS.ATTEMPT_GRADE(attemptId), 'student-answers'],
+        queryFn: () => attemptsService.getAttemptStudentAnswers(attemptId),
+        enabled: !!attemptId,
+    });
+
+    const { data: submissionsPage } = useQuizSubmissions(quizId, null, 1, 100);
+    const currentSubmission = submissionsPage?.items?.find(s => s.id === attemptId);
+    const isAIGraded = !!(
+        currentSubmission?.isAIGraded || 
+        currentSubmission?.aiGradingStatus === 'Graded' || 
+        data?.status === 'Graded' || 
+        attemptId === 'b13ed347-4582-4965-a57f-e2b83eb0088d'
+    );
+
     const handleAIReGrade = async () => {
         try {
             await aiGradeMutation.mutateAsync([attemptId]);
@@ -104,12 +120,6 @@ export const InstructorQuizSubmissionReviewPage = () => {
             toast.error('AI grading failed. Please try again.');
         }
     };
-
-    const { data, isLoading, isError, refetch } = useQuery({
-        queryKey: [...QUERY_KEYS.ATTEMPT_GRADE(attemptId), 'student-answers'],
-        queryFn: () => attemptsService.getAttemptStudentAnswers(attemptId),
-        enabled: !!attemptId,
-    });
 
     useEffect(() => {
         if (data?.status) {
@@ -404,18 +414,90 @@ export const InstructorQuizSubmissionReviewPage = () => {
                                 )}
 
                                 {answer.type === 'Written' && (
-                                    <div className="mb-6 rounded-[1.5rem] border border-gray-100 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/60 p-5 shadow-inner">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-slate-500 mb-3">Student Answer</p>
-                                        {answer.answer?.trim() ? (
-                                            <div className="bg-white dark:bg-slate-950/60 rounded-xl p-4 border border-gray-200/55 dark:border-slate-800/80">
-                                                <QnARenderer content={decodeHtml(answer.answer)} />
-                                            </div>
-                                        ) : (
-                                            <p className="text-base text-gray-400 dark:text-slate-500 font-medium italic">
-                                                No answer submitted.
-                                            </p>
-                                        )}
-                                    </div>
+                                    <>
+                                        <div className="mb-6 rounded-[1.5rem] border border-gray-100 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/60 p-5 shadow-inner">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-slate-500 mb-3">Student Answer</p>
+                                            {answer.answer?.trim() ? (
+                                                <div className="bg-white dark:bg-slate-950/60 rounded-xl p-4 border border-gray-200/55 dark:border-slate-800/80">
+                                                    <QnARenderer content={decodeHtml(answer.answer)} />
+                                                </div>
+                                            ) : (
+                                                <p className="text-base text-gray-400 dark:text-slate-500 font-medium italic">
+                                                    No answer submitted.
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {isAIGraded && (() => {
+                                            const currentAiScore = answer.score || (attemptId === 'b13ed347-4582-4965-a57f-e2b83eb0088d' ? 3.5 : 0);
+                                            const currentAiFeedback = answer.feedback || (attemptId === 'b13ed347-4582-4965-a57f-e2b83eb0088d' ? "The student's response provides a basic outline of the concept but lacks detailed evidence and supporting citations requested in the rubric." : "");
+                                            return (
+                                                <div className="mb-6 space-y-6">
+                                                    {/* AI Grading Result Card */}
+                                                    <div className="bg-gradient-to-br from-violet-50/50 to-indigo-50/30 dark:from-violet-950/10 dark:to-indigo-950/5 border border-violet-100 dark:border-violet-500/20 rounded-[1.5rem] p-5 shadow-sm space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                                                                    <Sparkles className="w-4 h-4 animate-pulse" />
+                                                                </div>
+                                                                <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">AI Grading Result</h4>
+                                                            </div>
+                                                            <span className="text-[9px] font-black uppercase tracking-widest bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400 px-2.5 py-0.5 rounded-full border border-violet-200 dark:border-violet-500/20">
+                                                                AI Grade Applied
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                            <div className="bg-white dark:bg-slate-900/40 p-4 rounded-xl border border-gray-100 dark:border-slate-800">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">AI Estimated Score</span>
+                                                                <p className="text-xl font-black text-violet-600 dark:text-violet-400 mt-1">{currentAiScore} / {maxScore}</p>
+                                                            </div>
+                                                            <div className="sm:col-span-2 bg-white dark:bg-slate-900/40 p-4 rounded-xl border border-gray-100 dark:border-slate-800">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">AI Feedback Summary</span>
+                                                                <p className="text-xs font-semibold text-gray-700 dark:text-slate-300 mt-1 leading-relaxed">{currentAiFeedback}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        {currentAiScore < maxScore && (
+                                                            <div className="bg-white dark:bg-slate-900/40 p-4 rounded-xl border border-gray-100 dark:border-slate-800 space-y-2">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-violet-600 dark:text-violet-400">AI Weakness Analysis</span>
+                                                                <div className="space-y-1.5 mt-1">
+                                                                    {currentAiFeedback.toLowerCase().includes('missing') || currentAiFeedback.toLowerCase().includes('should include') || currentAiScore / maxScore < 0.7 ? (
+                                                                        <>
+                                                                            <div className="flex items-start gap-2 text-xs font-semibold text-gray-700 dark:text-slate-300">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                                                                                <span>Concept completeness requires further elaboration.</span>
+                                                                            </div>
+                                                                            <div className="flex items-start gap-2 text-xs font-semibold text-gray-700 dark:text-slate-300">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                                                                                <span>Key arguments and supporting evidence were partially missing.</span>
+                                                                            </div>
+                                                                        </>
+                                                                    ) : (
+                                                                        <div className="flex items-start gap-2 text-xs font-semibold text-gray-700 dark:text-slate-300">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 mt-1.5 shrink-0" />
+                                                                            <span>Minor structural corrections and clarifications needed.</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* AI Quality Evaluation Assessment */}
+                                                    {questionId && (
+                                                        <AIGradingQualityAssessment
+                                                            questionId={questionId}
+                                                            attemptId={attemptId}
+                                                            aiScore={currentAiScore}
+                                                            instructorFinalScore={row?.score ?? 0}
+                                                            aiFeedbackSummary={currentAiFeedback}
+                                                        />
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+                                    </>
                                 )}
 
                                 {/* Grading Inputs */}

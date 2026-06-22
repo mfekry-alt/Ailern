@@ -80,6 +80,7 @@ import { AdminUserEditPage } from '@/routes/admin/AdminUserEditPage';
 import { AdminCoursesPage } from '@/routes/admin/AdminCoursesPage';
 import { AdminSettingsPage } from '@/routes/admin/AdminSettingsPage';
 import { AdminContentReportsPage } from '@/routes/admin/AdminContentReportsPage';
+import { AdminAiPerformancePage } from '@/routes/admin/AdminAiPerformancePage';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export const AppRouter = () => {
@@ -232,6 +233,7 @@ export const AppRouter = () => {
                 <Route path={ROUTES.ADMIN_COURSES} element={<AdminCoursesPage />} />
                 <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettingsPage />} />
                 <Route path={ROUTES.ADMIN_CONTENT_REPORTS} element={<AdminContentReportsPage />} />
+                <Route path={ROUTES.ADMIN_AI_PERFORMANCE} element={<AdminAiPerformancePage />} />
                 <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
                 <Route path={ROUTES.CHANGE_PASSWORD} element={<ChangePasswordPage />} />
                 <Route path={ROUTES.CHANGE_EMAIL} element={<ChangeEmailPage />} />
