@@ -368,10 +368,30 @@ export const submitAIEvaluation = async (payload: AIEvaluationDto): Promise<unkn
     return unwrapData(response.data);
 };
 
+export interface EvaluateAiGradingQuestionPayload {
+    instructorId: string | number;
+    aiRating: 'Poor' | 'Fair' | 'Good' | 'VeryGood' | 'Excellent';
+    instructorComment?:
+        | 'AccurateRubricAlignment'
+        | 'GenericFeedback'
+        | 'ModelStrictnessOnSynonyms'
+        | 'ScoreTooHigh'
+        | 'ScoreTooLow'
+        | 'FeedbackDetailIsExceptional'
+        | 'MissedKeyConcepts'
+        | 'MinorOverCreditingOnLength'
+        | 'StrongExplanationQuality'
+        | 'AccuratePartialMarks'
+        | 'Other';
+    additionalFeedback?: string;
+    aiScore: number;
+    createdAt?: string;
+}
+
 export const evaluateAiGradingQuestion = async (
     attemptId: string,
     questionId: string,
-    payload: Omit<AIEvaluationDto, 'attemptId' | 'questionId'>
+    payload: EvaluateAiGradingQuestionPayload
 ): Promise<unknown> => {
     const response = await api.put<ApiResponse<null>>(
         `/Attempts/${attemptId}/questions/${questionId}/evaluate_ai_grading_question`,

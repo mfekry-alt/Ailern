@@ -14,7 +14,7 @@ import {
     ChevronDown,
     ChevronUp
 } from 'lucide-react';
-import { submitAIEvaluation, evaluateAiGradingQuestion } from '@/api/services/attempts.service';
+import { submitAIEvaluation, evaluateAiGradingQuestion, type EvaluateAiGradingQuestionPayload } from '@/api/services/attempts.service';
 import { useMe } from '@/features/auth/api';
 import { toast } from 'sonner';
 
@@ -105,6 +105,28 @@ const FEEDBACK_THEMES = [
     'Other'
 ];
 
+const RATING_MAP: Record<number, 'Poor' | 'Fair' | 'Good' | 'VeryGood' | 'Excellent'> = {
+    1: 'Poor',
+    2: 'Fair',
+    3: 'Good',
+    4: 'VeryGood',
+    5: 'Excellent'
+};
+
+const THEME_MAP: Record<string, 'AccurateRubricAlignment' | 'GenericFeedback' | 'ModelStrictnessOnSynonyms' | 'ScoreTooHigh' | 'ScoreTooLow' | 'FeedbackDetailIsExceptional' | 'MissedKeyConcepts' | 'MinorOverCreditingOnLength' | 'StrongExplanationQuality' | 'AccuratePartialMarks' | 'Other'> = {
+    'Accurate Rubric Alignment': 'AccurateRubricAlignment',
+    'Generic Feedback': 'GenericFeedback',
+    'Model Strictness on Synonyms': 'ModelStrictnessOnSynonyms',
+    'Score Too High': 'ScoreTooHigh',
+    'Score Too Low': 'ScoreTooLow',
+    'Feedback Detail is Exceptional': 'FeedbackDetailIsExceptional',
+    'Missed Key Concepts': 'MissedKeyConcepts',
+    'Minor Over-crediting on Length': 'MinorOverCreditingOnLength',
+    'Strong Explanation Quality': 'StrongExplanationQuality',
+    'Accurate Partial Marks': 'AccuratePartialMarks',
+    'Other': 'Other'
+};
+
 export const AIGradingQualityAssessment = ({
     questionId,
     attemptId,
@@ -126,19 +148,16 @@ export const AIGradingQualityAssessment = ({
         mutationFn: async () => {
             if (!rating) throw new Error('Please select a rating level.');
             
-            const joinedComment = [
-                ...selectedThemes,
-                selectedThemes.includes('Other') ? comment.trim() : ''
-            ].filter(Boolean).join(', ');
+            const selectedTheme = selectedThemes[0];
+            const mappedRating = RATING_MAP[rating];
+            const mappedTheme = selectedTheme ? THEME_MAP[selectedTheme] : undefined;
 
-            const payload = {
+            const payload: EvaluateAiGradingQuestionPayload = {
                 instructorId: currentUser?.id ?? 'unknown-instructor',
-                aiRating: rating,
-                instructorComment: joinedComment,
-                selectedFeedbackThemes: selectedThemes,
-                additionalFeedback: selectedThemes.includes('Other') ? comment.trim() : '',
+                aiRating: mappedRating,
+                instructorComment: mappedTheme,
+                additionalFeedback: selectedTheme === 'Other' ? comment.trim() : '',
                 aiScore,
-                instructorFinalScore,
                 createdAt: new Date().toISOString()
             };
             
