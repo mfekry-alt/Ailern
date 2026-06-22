@@ -195,5 +195,6 @@ export const ENDPOINTS = {
     NOTIFICATIONS: {
         GET: '/Notifications/Notifications',
         MARK_ALL_AS_READ: '/Notifications/MarkAllAsRead',
+        DELETE: (id: string) => `/Notifications/${id}`,
     },
 } as const;

@@ -9,6 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { notificationService } from '@/api/services';
 import type { NotificationDto } from '@/types/api.types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 type NotificationType = string;
 
@@ -93,8 +94,19 @@ export const NotificationsPage = () => {
         markAllMutation.mutate();
     };
 
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => notificationService.deleteNotification(id),
+        onMutate: async (id: string) => {
+            setDeletedIds(prev => [...prev, id]);
+        },
+        onError: (err, id) => {
+            setDeletedIds(prev => prev.filter(deletedId => deletedId !== id));
+            toast.error('Failed to delete notification');
+        }
+    });
+
     const deleteNotification = (id: string) => {
-        setDeletedIds(prev => [...prev, id]);
+        deleteMutation.mutate(id);
     };
 
     const finalFilteredNotifications = useMemo(() => {
