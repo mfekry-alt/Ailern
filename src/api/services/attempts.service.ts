@@ -11,6 +11,7 @@ import type {
     AttemptResultDto,
     GetAttemptsByQuizIdDto,
     GradeSubmissionBody,
+    AIEvaluationDto,
 } from '@/types/api.types';
 
 // ─── Interfaces ────────────────────────────────────────────────────────────
@@ -356,5 +357,25 @@ export type GradeSubmissionPayload = GradeSubmissionBody;
 
 export const gradeSubmission = async (attemptId: string, payload: GradeSubmissionPayload): Promise<unknown> => {
     const response = await api.put<ApiResponse<null>>(ENDPOINTS.ATTEMPTS.GRADE(attemptId), payload);
+    return unwrapData(response.data);
+};
+
+// ─── AI Quality Evaluation ──────────────────────────────────────────────────
+
+export const submitAIEvaluation = async (payload: AIEvaluationDto): Promise<unknown> => {
+    // Send to backend API
+    const response = await api.post<ApiResponse<null>>('/Attempts/ai-evaluations', payload);
+    return unwrapData(response.data);
+};
+
+export const evaluateAiGradingQuestion = async (
+    attemptId: string,
+    questionId: string,
+    payload: Omit<AIEvaluationDto, 'attemptId' | 'questionId'>
+): Promise<unknown> => {
+    const response = await api.put<ApiResponse<null>>(
+        `/Attempts/${attemptId}/questions/${questionId}/evaluate_ai_grading_question`,
+        payload
+    );
     return unwrapData(response.data);
 };

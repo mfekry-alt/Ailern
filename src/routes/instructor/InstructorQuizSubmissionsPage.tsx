@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useQuiz, useQuizSubmissions, useAIGradeQuiz } from '@/features/quizzes/api';
+import { AIGradingAnalyticsDashboard } from '@/components/ui';
 import { ROUTES } from '@/lib/constants';
 import type { AttemptStatus } from '@/types/api.types';
 
@@ -359,6 +360,9 @@ export const InstructorQuizSubmissionsPage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* AI Grading Analytics Dashboard */}
+                <AIGradingAnalyticsDashboard />
 
                 {/* ─── Filter Bar ─── */}
                 <div

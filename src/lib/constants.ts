@@ -84,6 +84,7 @@ export const ROUTES = {
     ADMIN_COURSES: '/admin/courses',
     ADMIN_SETTINGS: '/admin/settings',
     ADMIN_CONTENT_REPORTS: '/admin/content-reports',
+    ADMIN_AI_PERFORMANCE: '/admin/ai-performance',
 } as const;
 
 export const QUERY_KEYS = {

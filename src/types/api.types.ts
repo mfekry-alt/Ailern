@@ -974,3 +974,80 @@ export interface NotificationDto {
     type: string;
     isRead: boolean;
 }
+
+// ============================================================================
+// AI Grading Evaluation Types
+// ============================================================================
+
+export interface AIEvaluationDto {
+    questionId: string;
+    attemptId: string;
+    instructorId: string | number;
+    aiRating: number; // 1-5 rating
+    instructorComment?: string;
+    selectedFeedbackThemes?: string[];
+    additionalFeedback?: string;
+    aiScore: number;
+    instructorFinalScore: number;
+    createdAt: string;
+}
+
+export interface AIQuestionValidationDto {
+    questionId: string;
+    quizId: string;
+    instructorId: string | number;
+    isRelated: boolean;
+    courseId: number;
+    topicName: string;
+    questionText: string;
+    courseName: string;
+    instructorName: string;
+    createdAt: string;
+}
+
+export interface OverviewByCourseDto {
+    courseName: string;
+    generatedByAi: number;
+    relatedCount: number;
+    unRelatedCount: number;
+}
+
+export interface AIQuestionGenerationDashboardData {
+    totalValidation: number;
+    topicAlignmentRate: number;
+    relatedQuestions: number;
+    unrelatedQuestions: number;
+    overviewByCourses: OverviewByCourseDto[];
+}
+
+export interface InstructorFeedbackOnAiGradingDto {
+    MissedKeyConcepts?: number;
+    AccurateRubricAlignment?: number;
+    AccuratePartialMarks?: number;
+    StrongExplanationQuality?: number;
+    Other?: number;
+    [key: string]: number | undefined;
+}
+
+export interface LowestRatedAiEvaluationDto {
+    rating: number;
+    questionText: string;
+    courseName: string;
+    aiScore: number;
+    aiFeedback: string | null;
+    instructorName: string;
+}
+
+export interface AIGradingDashboardData {
+    totalAiEvaluation: number;
+    averageAiRating: number;
+    satisfacationRate: number;
+    lowQualityReviews: number;
+    poorCount: number;
+    fairCount: number;
+    goodCount: number;
+    veryGoodCount: number;
+    excellentCount: number;
+    instructorFeedbackOnAiGrading: InstructorFeedbackOnAiGradingDto;
+    lowestRatedAiEvaluations: LowestRatedAiEvaluationDto[];
+}
